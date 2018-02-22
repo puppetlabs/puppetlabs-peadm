@@ -20,7 +20,7 @@ These are just sketched out instructions right now. It's likely there are big ga
 
 ### Prepare the Control Repositories
 
-You'll need 
+You'll need two control repositories configured. One dedicated to managing Puppet Enterprise nodes (consider it kinda like an appliance), and another for your regular Puppet code used to manage your infrastructure.
 
 ### Installing the Primary Master
 
