@@ -1,0 +1,30 @@
+{
+  "name": "reidmv-pe_architecture",
+  "version": "0.1.0",
+  "author": "Reid Vandewiele",
+  "license": "Apache-2.0",
+  "summary": "Profile classes used to deploy an at-scale Puppet Enterprise architecture",
+  "source": "https://github.com/reidmv/reidmv-pe_architecture",
+  "project_page": "https://github.com/reidmv/reidmv-pe_architecture",
+  "dependencies": [
+    { "name":"puppetlabs/stdlib","version_requirement":">= 4.20.0 < 5.0.0" },
+    { "name":"puppetlabs/haproxy","version_requirement":">= 0.4.1 < 2.0.0" },
+    { "name":"WhatsARanjit/node_manager","version_requirement":">= 0.6.1 < 2.0.0" }
+  ],
+  "requirements": [
+    {
+      "name": "puppet",
+      "version_requirement": ">=5.3.0"
+    }
+  ],
+  "operatingsystem_support": [
+    {
+      "operatingsystem":"RedHat",
+      "operatingsystemrelease":[ "7.2", "7.3", "7.4" ]
+    },
+    {
+      "operatingsystem":"CentOS",
+      "operatingsystemrelease":[ "7.2", "7.3", "7.4" ]
+    }
+  ]
+}
