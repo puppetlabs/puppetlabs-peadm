@@ -1,0 +1,4 @@
+---
+extension_requests:
+  pp_role: "pe_architecture::primary_master"
+  pp_environment: "production"
