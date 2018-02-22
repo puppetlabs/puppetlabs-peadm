@@ -1,4 +1,4 @@
 ---
 extension_requests:
   pp_role: "pe_architecture::puppetdb_database"
-  pp_environment: "production"
+  pp_environment: "pe_production"

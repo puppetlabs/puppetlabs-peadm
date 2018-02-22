@@ -13,7 +13,7 @@
 #
 class pe_architecture::node_manager (
   String[1]        $default_environment = 'production',
-  Array[String[1]] $environments        = ['production'],
+  Array[String[1]] $environments        = ['production', 'pe_production'],
 ) {
 
   ##################################################
