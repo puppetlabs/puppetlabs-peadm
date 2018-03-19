@@ -58,7 +58,7 @@ class pe_architecture::node_manager (
 
   node_group { 'Default environment':
     ensure               => present,
-    environment          => 'production',
+    environment          => $default_environment,
     override_environment => true,
     parent               => 'All Nodes',
     rule                 => ['and', ['~', 'name', '.*']],
@@ -74,7 +74,9 @@ class pe_architecture::node_manager (
   }
 
   $environments.each |$env| {
-    node_group { "${env} environment":
+    $title_env = capitalize($env)
+
+    node_group { "${title_env} environment":
       ensure               => present,
       environment          => $env,
       override_environment => true,
@@ -82,12 +84,13 @@ class pe_architecture::node_manager (
       rule                 => ['and', ['=', ['trusted', 'extensions', 'pp_environment'], $env]],
     }
 
-    node_group { "${env} temp assignment":
+    node_group { "${title_env} one-time run exception":
       ensure               => present,
-      description          => "Allow ${env} nodes to use a different Puppet environment temporarily",
+      description          => "Allow ${env} nodes to request a different puppet environment for a one-time run",
       environment          => 'agent-specified',
       override_environment => true,
-      parent               => "${env} environment",
+      parent               => "${title_env} environment",
+      rule                 => ['and', ['~', ['fact', 'agent_specified_environment'], '.+']],
     }
   }
 
