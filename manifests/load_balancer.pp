@@ -1,5 +1,5 @@
-class pe_architecture::load_balancer {
-  include pe_architecture::agent
+class pe_xl::load_balancer {
+  include pe_xl::agent
 
   class { 'haproxy':
     global_options   => {

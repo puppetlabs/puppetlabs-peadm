@@ -1,5 +1,5 @@
-class pe_architecture::puppetdb {
-  include pe_architecture::agent
+class pe_xl::puppetdb {
+  include pe_xl::agent
 
   @@haproxy::balancermember { "${::clientcert}_puppetdb_listener":
     listening_service => 'puppetdb',

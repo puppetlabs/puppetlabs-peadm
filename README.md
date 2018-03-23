@@ -1,4 +1,4 @@
-# PE Architecture
+# PE Extra Large
 
 This Puppet module contains profile classes used to deploy an at-scale Puppet Enterprise architecture.
 
@@ -37,7 +37,7 @@ You'll need two control repositories configured. One dedicated to managing Puppe
 7. Using the same list of environments deployed above, run e.g.
 
         puppet apply --environment pe_production --exec '
-          class { "pe_architecture::node_manager":
+          class { "pe_xl::node_manager":
             environments => ["production", "pe_production"],
           }
         '
@@ -59,6 +59,6 @@ You'll need two control repositories configured. One dedicated to managing Puppe
 ```
 curl -k https://primary-master.example.com:8140/packages/current/install.bash | sudo bash -s \
   main:certname=<certname> \
-  extension_requests:pp_role="pe_architecture::compile_master" \
+  extension_requests:pp_role="pe_xl::compile_master" \
   extension_requests:pp_environment="pe_production"
 ```

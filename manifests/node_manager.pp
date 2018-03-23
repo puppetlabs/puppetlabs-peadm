@@ -7,11 +7,11 @@
 # This class will be applied during primary master bootstrap using e.g.
 #
 #     puppet apply \
-#       --exec 'class { "pe_architecture::node_manager":
+#       --exec 'class { "pe_xl::node_manager":
 #                 environments => ["production", "staging", "development"],
 #               }'
 #
-class pe_architecture::node_manager (
+class pe_xl::node_manager (
   String[1]        $default_environment = 'production',
   Array[String[1]] $environments        = ['production', 'pe_production'],
 ) {
@@ -21,20 +21,20 @@ class pe_architecture::node_manager (
   ##################################################
 
   node_group { 'PE Infrastructure Agent':
-    rule   => ['and', ['~', ['trusted', 'extensions', 'pp_role'], '^pe_architecture::']],
+    rule   => ['and', ['~', ['trusted', 'extensions', 'pp_role'], '^pe_xl::']],
   }
 
   node_group { 'PE Master':
     rule   => ['or',
-      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_architecture::primary_master'],
-      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_architecture::compile_master'],
+      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::primary_master'],
+      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master'],
     ],
   }
 
   node_group { 'PE PuppetDB':
     rule   => ['or',
-      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_architecture::primary_master'],
-      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_architecture::compile_master'],
+      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::primary_master'],
+      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master'],
     ],
   }
 
@@ -46,7 +46,7 @@ class pe_architecture::node_manager (
     parent               => 'PE Infrastructure',
     environment          => 'production',
     override_environment => false,
-    rule                 => ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_architecture::puppetdb_database']],
+    rule                 => ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::puppetdb_database']],
     classes              => {
       'puppet_enterprise::profile::database' => { },
     },

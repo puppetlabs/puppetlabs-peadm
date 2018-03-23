@@ -1,5 +1,5 @@
-class pe_architecture::compile_master {
-  include pe_architecture::agent
+class pe_xl::compile_master {
+  include pe_xl::agent
 
   @@haproxy::balancermember { "${::clientcert}_puppetserver_listener":
     listening_service => 'puppetserver',

@@ -1,3 +1,3 @@
-class pe_architecture::agent {
+class pe_xl::agent {
 
 }
