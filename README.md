@@ -1,4 +1,4 @@
-# PE Extra Large
+# Puppet Enterprise Extra Large
 
 This Puppet module contains profile classes used to deploy an at-scale Puppet Enterprise architecture.
 
@@ -12,7 +12,7 @@ Note pending more detailed instructions:
 
 ## Architecture
 
-Big diagram goes here
+![architecture](architecture.png)
 
 ## Installation
 
