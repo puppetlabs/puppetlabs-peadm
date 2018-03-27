@@ -14,11 +14,11 @@ class pe_xl::load_balancer {
     },
     defaults_options => {
       'timeout' => [
-        'http-request 120s',
-        'queue 1m',
         'connect 10s',
+        'queue 1m',
         'client 2m',
         'server 2m',
+        'http-request 120s',
       ]
     }
   } 
@@ -42,6 +42,10 @@ class pe_xl::load_balancer {
     options          => {
       option  => ['tcplog'],
       balance => 'leastconn',
+      timeout => [
+        'tunnel 15m',
+        'client-fin 30s',
+      ],
     },
   }
 
