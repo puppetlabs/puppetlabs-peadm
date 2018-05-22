@@ -64,7 +64,7 @@ class pe_xl::node_manager (
     rule                 => ['and', ['~', 'name', '.*']],
   }
 
-  node_group { 'agent-specified environment':
+  node_group { 'Agent-specified environment':
     ensure               => present,
     description          => 'This environment group exists for unusual testing and development only. Expect it to be empty',
     environment          => 'agent-specified',
