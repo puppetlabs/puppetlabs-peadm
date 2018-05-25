@@ -56,8 +56,9 @@ class pe_xl::node_manager (
   # ENVIRONMENT GROUPS
   ##################################################
 
-  node_group { 'Default environment':
+  node_group { 'All Environments':
     ensure               => present,
+    description          => 'Environment group parent and default',
     environment          => $default_environment,
     override_environment => true,
     parent               => 'All Nodes',
