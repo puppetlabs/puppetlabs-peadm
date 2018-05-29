@@ -70,7 +70,7 @@ class pe_xl::node_manager (
     description          => 'This environment group exists for unusual testing and development only. Expect it to be empty',
     environment          => 'agent-specified',
     override_environment => true,
-    parent               => 'Default environment',
+    parent               => 'All Environments',
     rule                 => [ ],
   }
 
@@ -81,7 +81,7 @@ class pe_xl::node_manager (
       ensure               => present,
       environment          => $env,
       override_environment => true,
-      parent               => 'Default environment',
+      parent               => 'All Environments',
       rule                 => ['and', ['=', ['trusted', 'extensions', 'pp_environment'], $env]],
     }
 
