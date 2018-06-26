@@ -61,18 +61,22 @@ plan pe_xl::install (
 
   pe_xl::file_content_upload($primary_master_pe_conf, '/tmp/pe.conf', $primary_master_host)
   run_task('pe_xl::pe_install', $primary_master_host,
-    csr_attributes => {
-      'pp_auth_role' => 'primary_master',
-      'pp_cluster'   => 'puppet-enterprise-A',
-    },
+    csr_attributes_yaml => @("HEREDOC")
+      ---
+      extension_requests:
+        pp_auth_role: "primary_master"
+        pp_cluster: "puppet-enterprise-A"
+      | HEREDOC
   )
 
   pe_xl::file_content_upload($puppetdb_database_pe_conf, '/tmp/pe.conf', $puppetdb_database_host)
   run_task('pe_xl::pe_install', $puppetdb_database_host,
-    csr_attributes => {
-      'pp_auth_role' => 'puppetdb_database',
-      'pp_cluster'   => 'puppet-enterprise-A',
-    },
+    csr_attributes_yaml => @("HEREDOC")
+      ---
+      extension_requests:
+        pp_auth_role: "puppetdb_database"
+        pp_cluster: "puppet-enterprise-A"
+      | HEREDOC
   )
 
   # Deploy the PE agent to all non-core hosts

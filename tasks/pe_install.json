@@ -1,0 +1,16 @@
+{
+  "description": "Install Puppet Enterprise from a tarball",
+  "parameters": {
+    "filename": {
+      "type": "String",
+      "description": "Where to save the downloaded file"
+    },
+    "version": {
+      "type": "String",
+      "description": "Which version of Puppet Enterprise to download"
+    }
+  },
+  "implementations": [
+    {"name": "pe_install.sh"}
+  ]
+}
