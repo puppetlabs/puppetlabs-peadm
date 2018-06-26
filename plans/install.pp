@@ -66,7 +66,7 @@ plan pe_xl::install (
     csr_attributes_yaml => @("HEREDOC")
       ---
       extension_requests:
-        pp_auth_role: "primary_master"
+        pp_role: "primary_master"
         pp_cluster: "puppet-enterprise-A"
       | HEREDOC
   )
@@ -78,7 +78,7 @@ plan pe_xl::install (
     csr_attributes_yaml => @("HEREDOC")
       ---
       extension_requests:
-        pp_auth_role: "puppetdb_database"
+        pp_role: "puppetdb_database"
         pp_cluster: "puppet-enterprise-A"
       | HEREDOC
   )
@@ -90,7 +90,7 @@ plan pe_xl::install (
     server        => $primary_master_host,
     install_flags => [
       "main:dns_alt_names=${dns_alt_names}",
-      'extension_requests:pp_auth_role=primary_master',
+      'extension_requests:pp_role=primary_master',
       'extension_requests:pp_cluster=puppet-enterprise-B',
     ],
   )
@@ -98,7 +98,7 @@ plan pe_xl::install (
   run_task('pe_xl::agent_install', $puppetdb_database_replica_host,
     server        => $primary_master_host,
     install_flags => [
-      'extension_requests:pp_auth_role=puppetdb_database',
+      'extension_requests:pp_role=puppetdb_database',
       'extension_requests:pp_cluster=puppet-enterprise-B',
     ],
   )
