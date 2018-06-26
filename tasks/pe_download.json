@@ -11,6 +11,6 @@
     }
   },
   "implementations": [
-    {"name": "hostname.sh"}
+    {"name": "pe_download.sh"}
   ]
 }
