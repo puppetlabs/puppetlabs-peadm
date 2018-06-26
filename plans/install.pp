@@ -20,7 +20,7 @@ plan pe_xl::install (
     $load_balancer_host,
     $primary_master_replica_host,
     $puppetdb_database_replica_host,
-  ].flatten
+  ].pe_xl::flatten_compact()
 
   # Validate that the name given for each system is both a resolvable name AND
   # the configured hostname.

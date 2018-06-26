@@ -1,3 +1,3 @@
 #!/bin/bash
 
-/usr/bin/hostname -f
+/usr/bin/hostnamectl --static
