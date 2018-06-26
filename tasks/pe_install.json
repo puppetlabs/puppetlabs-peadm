@@ -1,13 +1,17 @@
 {
   "description": "Install Puppet Enterprise from a tarball",
   "parameters": {
-    "filename": {
+    "csr_attributes_yaml": {
       "type": "String",
-      "description": "Where to save the downloaded file"
+      "description": "The literal yaml content to populate the csr_attributes.yaml file with"
     },
-    "version": {
+    "tarball": {
       "type": "String",
-      "description": "Which version of Puppet Enterprise to download"
+      "description": "The path to the Puppet Enterprise tarball"
+    },
+    "peconf": {
+      "type": "String",
+      "description": "The path to the pe.conf file"
     }
   },
   "implementations": [
