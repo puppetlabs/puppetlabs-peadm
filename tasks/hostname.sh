@@ -1,3 +1,3 @@
 #!/bin/bash
 
-/usr/bin/hostnamectl --static
+/usr/bin/hostnamectl --transient
