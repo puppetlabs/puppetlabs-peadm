@@ -32,14 +32,14 @@ plan pe_xl::install (
     }
   }
 
-  $primary_master_pe_conf = epp('templates/primary_master-pe.conf.epp',
+  $primary_master_pe_conf = epp('pe_xl/primary_master-pe.conf.epp',
     console_password       => $console_password,
     primary_master_host    => $primary_master_host,
     puppetdb_database_host => $puppetdb_database_host,
     dns_alt_names          => $dns_alt_names,
   )
 
-  $puppetdb_database_pe_conf = epp('templates/puppetdb_database-pe.conf.epp',
+  $puppetdb_database_pe_conf = epp('pe_xl/puppetdb_database-pe.conf.epp',
     primary_master_host    => $primary_master_host,
     puppetdb_database_host => $puppetdb_database_host,
   )
