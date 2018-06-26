@@ -1,0 +1,16 @@
+{
+  "description": "Download the Puppet Enterprise installer",
+  "parameters": {
+    "filename": {
+      "type": "String",
+      "description": "Where to save the downloaded file"
+    },
+    "version": {
+      "type": "String",
+      "description": "Which version of Puppet Enterprise to download"
+    }
+  },
+  "implementations": [
+    {"name": "hostname.sh"}
+  ]
+}
