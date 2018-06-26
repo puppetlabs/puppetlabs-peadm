@@ -45,7 +45,7 @@ plan pe_xl::install (
   )
 
   # Download the PE tarball and send it to the nodes that need it
-  $pe_tarball = "puppet-enterprise-${version}-el-7-x86_64.tar.gz"
+  $pe_tarball = "/tmp/puppet-enterprise-${version}-el-7-x86_64.tar.gz"
 
   run_task('pe_xl::pe_download', 'local://localhost',
     version  => $version,
