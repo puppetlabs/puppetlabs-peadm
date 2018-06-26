@@ -1,7 +1,9 @@
 #!/bin/bash
 
 mkdir -p /etc/puppetlabs/puppet
-cat "$PT_csr_attributes_yaml" > /etc/puppetlabs/puppet/csr_attributes.yaml
+cat <<EOF > /etc/puppetlabs/puppet/csr_attributes.yaml
+$PT_csr_attributes_yaml
+EOF
 
 cd $(dirname "$PT_tarball")
 mkdir puppet-enterprise && tar -xzf "$PT_tarball" -C puppet-enterprise --strip-components 1
