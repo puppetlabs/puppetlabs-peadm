@@ -25,12 +25,12 @@ plan pe_xl::install (
   # Validate that the name given for each system is both a resolvable name AND
   # the configured hostname.
   run_task('pe_xl::hostname', $all_hosts).each |$task| {
-    if $task.target.hostname != $task.result['stdout'] {
+    if $task.target.name != $task['_output'].chomp {
       fail_plan("Hostname / DNS name mismatch: ${task}")
     }
   }
 
-  $pe_conf = epp('templates/pe.conf.epp',
+  $primary_master_pe_conf = epp('templates/primary_master-pe.conf.epp',
     primary_master_host    => $primary_master_host,
     puppetdb_database_host => $puppetdb_database_host,
     dns_alt_names          => $dns_alt_names,
