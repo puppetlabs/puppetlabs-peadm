@@ -17,7 +17,7 @@
 
   # Basic Puppet Enterprise configuration
   "puppet_enterprise::puppet_master_host": "<%= $primary_master_host %>"
-  "pe_install::puppet_master_dnsaltnames": [ <%= $dns_alt_names %> ]
+  "pe_install::puppet_master_dnsaltnames": <%= $dns_alt_names %>
 
   # PuppetDB Database configuration
   # This parameter does not change the "role" of the primary master; the
