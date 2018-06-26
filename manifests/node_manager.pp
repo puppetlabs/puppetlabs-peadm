@@ -12,8 +12,8 @@
 #               }'
 #
 class pe_xl::node_manager (
-  String[1]        $default_environment = 'production',
-  Array[String[1]] $environments        = ['production', 'pe_production'],
+  Pattern[/\A[a-z0-9_]+\Z/]        $default_environment = 'production',
+  Array[Pattern[/\A[a-z0-9_]+\Z/]] $environments        = ['production', 'pe_production'],
 ) {
 
   ##################################################
