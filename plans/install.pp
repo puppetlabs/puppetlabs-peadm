@@ -1,5 +1,7 @@
 plan pe_xl::install (
-  String[1]           $version = '2017.3.5',
+  String[1]           $version = '2018.1.2',
+  String[1]           $console_password,
+
   String[1]           $primary_master_host,
   String[1]           $puppetdb_database_host,
   Array[String[1]]    $compile_master_hosts = [ ],
@@ -31,6 +33,7 @@ plan pe_xl::install (
   }
 
   $primary_master_pe_conf = epp('templates/primary_master-pe.conf.epp',
+    console_password       => $console_password,
     primary_master_host    => $primary_master_host,
     puppetdb_database_host => $puppetdb_database_host,
     dns_alt_names          => $dns_alt_names,
