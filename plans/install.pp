@@ -60,17 +60,21 @@ plan pe_xl::install (
   # Get the core installation up and running
 
   pe_xl::file_content_upload($primary_master_pe_conf, '/tmp/pe.conf', $primary_master_host)
-  run_task('pe_xl::pe_install', $primary_master_host,
-    _catch_errors       => true,
-    tarball             => $pe_tarball,
-    peconf              => '/tmp/pe.conf',
-    csr_attributes_yaml => @("HEREDOC"),
-      ---
-      extension_requests:
-        pp_role: "primary_master"
-        pp_cluster: "puppet-enterprise-A"
-      | HEREDOC
-  )
+  without_default_logging() || {
+    notice("Starting: task pe_xl::pe_install on ${primary_master_host}")
+    run_task('pe_xl::pe_install', $primary_master_host,
+      _catch_errors       => true,
+      tarball             => $pe_tarball,
+      peconf              => '/tmp/pe.conf',
+      csr_attributes_yaml => @("HEREDOC"),
+        ---
+        extension_requests:
+          pp_role: "primary_master"
+          pp_cluster: "puppet-enterprise-A"
+        | HEREDOC
+    )
+    notice("Finished: task pe_xl::pe_install on ${primary_master_host}")
+  }
 
   pe_xl::file_content_upload($puppetdb_database_pe_conf, '/tmp/pe.conf', $puppetdb_database_host)
   run_task('pe_xl::pe_install', $puppetdb_database_host,
