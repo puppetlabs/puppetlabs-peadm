@@ -10,6 +10,7 @@
       "description": "Which version of Puppet Enterprise to download"
     }
   },
+  "input_method": "environment",
   "implementations": [
     {"name": "pe_download.sh"}
   ]

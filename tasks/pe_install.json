@@ -14,6 +14,7 @@
       "description": "The path to the pe.conf file"
     }
   },
+  "input_method": "environment",
   "implementations": [
     {"name": "pe_install.sh"}
   ]

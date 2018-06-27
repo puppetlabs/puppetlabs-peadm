@@ -1,6 +1,7 @@
 {
   "description": "Print the hostname of a system",
   "parameters": { },
+  "input_method": "environment",
   "implementations": [
     {"name": "hostname.sh"}
   ]
