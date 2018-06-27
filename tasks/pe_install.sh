@@ -14,6 +14,7 @@ if [ ! "$PT_shortcircuit_puppetdb" = "" ]; then
 	cat > /etc/systemd/system/pe-puppetdb.service.d/short-circuit.conf <<-EOF
 		[service]
 		TimeoutStartSec=1
+		TimeoutStopSec=1
 	EOF
 fi
 
