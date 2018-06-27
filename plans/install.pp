@@ -76,6 +76,9 @@ plan pe_xl::install (
     notice("Finished: task pe_xl::pe_install on ${primary_master_host}")
   }
 
+  # Configure autosigning for the database host
+  pe_xl::file_content_upload($puppetdb_database_host, '/etc/puppetlabs/puppet/autosign.conf', $primary_master_host)
+
   pe_xl::file_content_upload($puppetdb_database_pe_conf, '/tmp/pe.conf', $puppetdb_database_host)
   run_task('pe_xl::pe_install', $puppetdb_database_host,
     tarball             => $pe_tarball,
