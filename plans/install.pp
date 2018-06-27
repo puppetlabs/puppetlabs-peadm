@@ -92,6 +92,9 @@ plan pe_xl::install (
       | HEREDOC
   )
 
+  # Now that the PuppetDB database node is ready, start PuppetDB
+  run_command('systemctl start pe-puppetdb', $primary_master_host)
+
   # Deploy the PE agent to all non-core hosts
   $non_core_hosts = $all_hosts - [$primary_master_host, $puppetdb_database_host]
 
