@@ -11,8 +11,8 @@ EOF
 # giving up on it.
 if [ "$PT_shortcircuit_puppetdb" = "true" ]; then
 	mkdir /etc/systemd/system/pe-puppetdb.service.d
-	cat > /etc/systemd/system/pe-puppetdb.service.d/short-circuit.conf <<-EOF
-		[service]
+	cat > /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf <<-EOF
+		[Service]
 		TimeoutStartSec=1
 		TimeoutStopSec=1
 	EOF
@@ -24,6 +24,6 @@ mkdir puppet-enterprise && tar -xzf "$PT_tarball" -C puppet-enterprise --strip-c
 ./puppet-enterprise/puppet-enterprise-installer -c "$PT_peconf"
 
 if [ "$PT_shortcircuit_puppetdb" = "true" ]; then
-	rm /etc/systemd/system/pe-puppetdb.service.d/short-circuit.conf
+	rm /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf
 	systemctl daemon-reload
 fi
