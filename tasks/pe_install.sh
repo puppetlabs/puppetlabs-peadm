@@ -16,6 +16,7 @@ if [ "$PT_shortcircuit_puppetdb" = "true" ]; then
 		TimeoutStartSec=1
 		TimeoutStopSec=1
 	EOF
+	systemctl daemon-reload
 fi
 
 cd $(dirname "$PT_tarball")
@@ -24,4 +25,5 @@ mkdir puppet-enterprise && tar -xzf "$PT_tarball" -C puppet-enterprise --strip-c
 
 if [ "$PT_shortcircuit_puppetdb" = "true" ]; then
 	rm /etc/systemd/system/pe-puppetdb.service.d/short-circuit.conf
+	systemctl daemon-reload
 fi
