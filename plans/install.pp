@@ -63,10 +63,11 @@ plan pe_xl::install (
   without_default_logging() || {
     notice("Starting: task pe_xl::pe_install on ${primary_master_host}")
     run_task('pe_xl::pe_install', $primary_master_host,
-      _catch_errors       => true,
-      tarball             => $pe_tarball,
-      peconf              => '/tmp/pe.conf',
-      csr_attributes_yaml => @("HEREDOC"),
+      _catch_errors         => true,
+      tarball               => $pe_tarball,
+      peconf                => '/tmp/pe.conf',
+      shortcircuit_puppetdb => true,
+      csr_attributes_yaml   => @("HEREDOC"),
         ---
         extension_requests:
           pp_role: "primary_master"
