@@ -14,7 +14,7 @@
       "description": "The path to the pe.conf file"
     },
     "shortcircuit_puppetdb": {
-      "type": "Boolean",
+      "type": "Optional[Boolean]",
       "description": "If true, during install, configure PuppetDB to short-circuit its startup"
     }
   },

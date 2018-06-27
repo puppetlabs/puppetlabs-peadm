@@ -9,7 +9,7 @@ EOF
 # in situations where PuppetDB WILL fail, such as when PostgreSQL is not yet
 # configured, and we don't want to let PuppetDB wait five minutes before
 # giving up on it.
-if [ ! "$PT_shortcircuit_puppetdb" = "" ]; then
+if [ "$PT_shortcircuit_puppetdb" = "true" ]; then
 	mkdir /etc/systemd/system/pe-puppetdb.service.d
 	cat > /etc/systemd/system/pe-puppetdb.service.d/short-circuit.conf <<-EOF
 		[service]
@@ -22,6 +22,6 @@ cd $(dirname "$PT_tarball")
 mkdir puppet-enterprise && tar -xzf "$PT_tarball" -C puppet-enterprise --strip-components 1
 ./puppet-enterprise/puppet-enterprise-installer -c "$PT_peconf"
 
-if [ ! "$PT_shortcircuit_puppetdb" = "" ]; then
+if [ "$PT_shortcircuit_puppetdb" = "true" ]; then
 	rm /etc/systemd/system/pe-puppetdb.service.d/short-circuit.conf
 fi
