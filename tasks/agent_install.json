@@ -1,0 +1,17 @@
+{
+  "description": "Install the Puppet agent from a master",
+  "parameters": {
+    "server": {
+      "type": "String",
+      "description": "The resolvable name of the Puppet server to install from"
+    },
+    "install_flags": {
+      "type": "Array[String]",
+      "description": "Positional arguments to pass to the shell installer"
+    }
+  },
+  "input_method": "environment",
+  "implementations": [
+    {"name": "agent_install.sh"}
+  ]
+}
