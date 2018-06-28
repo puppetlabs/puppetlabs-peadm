@@ -114,7 +114,7 @@ plan pe_xl::install (
       | HEREDOC
   )
 
-  # Get the core installation up and running
+  # Get the primary master installation up and running
   without_default_logging() || {
     notice("Starting: task pe_xl::pe_install on ${primary_master_host}")
     run_task('pe_xl::pe_install', $primary_master_host,
@@ -126,7 +126,7 @@ plan pe_xl::install (
     notice("Finished: task pe_xl::pe_install on ${primary_master_host}")
   }
 
-  # Configure autosigning for the hosts that need it
+  # Configure autosigning for the puppetdb database hosts 'cause they need it
   run_task('pe_xl::mkdir_p_file', $primary_master_host,
     path    => '/etc/puppetlabs/puppet/autosign.conf',
     owner   => 'pe-puppet',
@@ -138,18 +138,16 @@ plan pe_xl::install (
       | HEREDOC
   )
 
-  # Run the PE installer on the other hosts that need it
+  # Run the PE installer on the puppetdb database hosts
   run_task('pe_xl::pe_install', [$puppetdb_database_host, $puppetdb_database_replica_host],
     tarball => $pe_tarball,
     peconf  => '/tmp/pe.conf',
   )
 
-  # Now that the PuppetDB database node is ready, start PuppetDB on the primary master
+  # Now that the main PuppetDB database node is ready, start PuppetDB on the primary master
   run_command('systemctl start pe-puppetdb', $primary_master_host)
 
-  # Deploy the PE agent to all remaining non-core hosts
-  $non_core_hosts = $all_hosts - [$primary_master_host]
-
+  # Deploy the PE agent to all remaining hosts
   run_task('pe_xl::agent_install', $primary_master_replica_host,
     server        => $primary_master_host,
     install_flags => [
@@ -198,4 +196,6 @@ plan pe_xl::install (
 
   run_task('pe_xl::puppet_runonce', $agent_installer_hosts)
   run_task('pe_xl::puppet_runonce', $pe_installer_hosts)
+
+  # TODO: moar
 }
