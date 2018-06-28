@@ -143,9 +143,9 @@ plan pe_xl::install (
 
   # Do a Puppet agent run to ensure certificate requests have been submitted
   without_default_logging() || {
-    notice("Starting: task pe_xl::pe_install on ${non_core_hosts}")
-    run_command('/opt/puppetlabs/bin/puppet agent -t', $non_core_hosts)
-    notice("Finished: task pe_xl::pe_install on ${non_core_hosts}")
+    notice("Starting: task pe_xl::puppet_runonce on ${non_core_hosts}")
+    run_task('pe_xl::puppet_runonce', $non_core_hosts)
+    notice("Finished: task pe_xl::puppet_runonce on ${non_core_hosts}")
   }
 
   run_command(inline_epp(@("HEREDOC"), $primary_master_host))
