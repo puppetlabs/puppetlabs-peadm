@@ -1,10 +1,5 @@
 #!/bin/bash
 
-mkdir -p /etc/puppetlabs/puppet
-cat <<EOF > /etc/puppetlabs/puppet/csr_attributes.yaml
-$PT_csr_attributes_yaml
-EOF
-
 # This stanza configures PuppetDB to quickly fail on start. This is desirable
 # in situations where PuppetDB WILL fail, such as when PostgreSQL is not yet
 # configured, and we don't want to let PuppetDB wait five minutes before

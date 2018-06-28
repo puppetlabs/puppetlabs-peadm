@@ -1,0 +1,29 @@
+{
+  "description": "Create a file with the specified content at the specified location",
+  "parameters": {
+    "path": {
+      "type": "String",
+      "description": "The fully qualified path of the file to create"
+    },
+    "content": {
+      "type": "String",
+      "description": "The content to create the file with"
+    },
+    "owner": {
+      "type": "Optional[String]",
+      "description": "The file owner"
+    },
+    "group": {
+      "type": "Optional[String]",
+      "description": "The file group"
+    },
+    "mode": {
+      "type": "Optional[String]",
+      "description": "The file mode"
+    }
+  },
+  "input_method": "environment",
+  "implementations": [
+    {"name": "mkdir_p_file.sh"}
+  ]
+}

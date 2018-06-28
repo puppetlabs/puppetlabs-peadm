@@ -1,10 +1,6 @@
 {
   "description": "Install Puppet Enterprise from a tarball",
   "parameters": {
-    "csr_attributes_yaml": {
-      "type": "String",
-      "description": "The literal yaml content to populate the csr_attributes.yaml file with"
-    },
     "tarball": {
       "type": "String",
       "description": "The path to the Puppet Enterprise tarball"
