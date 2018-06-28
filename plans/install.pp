@@ -79,9 +79,8 @@ plan pe_xl::install (
     notice("Finished: task pe_xl::pe_install on ${primary_master_host}")
   }
 
-  # Configure autosigning for infrastructure hosts
-  $autosign_conf = epp('pe_xl/autosign.conf.epp', {lines => $all_hosts})
-  pe_xl::file_content_upload($autosign_conf, '/etc/puppetlabs/puppet/autosign.conf', $primary_master_host)
+  # Configure autosigning for core host(s)
+  pe_xl::file_content_upload("${puppetdb_database_host}\n", '/etc/puppetlabs/puppet/autosign.conf', $primary_master_host)
   run_command('chown pe-puppet:pe-puppet /etc/puppetlabs/puppet/autosign.conf', $primary_master_host)
 
   pe_xl::file_content_upload($puppetdb_database_pe_conf, '/tmp/pe.conf', $puppetdb_database_host)
@@ -105,6 +104,7 @@ plan pe_xl::install (
   run_task('pe_xl::agent_install', $primary_master_replica_host,
     server        => $primary_master_host,
     install_flags => [
+      '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
       'extension_requests:pp_role=primary_master',
       'extension_requests:pp_cluster=puppet-enterprise-B',
@@ -114,6 +114,7 @@ plan pe_xl::install (
   run_task('pe_xl::agent_install', $puppetdb_database_replica_host,
     server        => $primary_master_host,
     install_flags => [
+      '--puppet-service-ensure', 'stopped',
       'extension_requests:pp_role=puppetdb_database',
       'extension_requests:pp_cluster=puppet-enterprise-B',
     ],
@@ -123,18 +124,35 @@ plan pe_xl::install (
   run_task('pe_xl::agent_install', $compile_master_hosts,
     server        => $primary_master_host,
     install_flags => [
+      '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
-      'extension_requests:pp_auth_role=compile_master',
+      'extension_requests:pp_role=compile_master',
       'extension_requests:pp_cluster=puppet-enterprise-A',
     ],
   )
 
-  run_task('pe_xl::agent_install', $load_balancer_host,
-    server        => $primary_master_host,
-    install_flags => [
-      'extension_requests:pp_auth_role=load_balancer',
-    ],
-  )
+  if $load_balancer_host {
+    run_task('pe_xl::agent_install', $load_balancer_host,
+      server        => $primary_master_host,
+      install_flags => [
+        '--puppet-service-ensure', 'stopped',
+        'extension_requests:pp_role=load_balancer',
+      ],
+    )
+  }
 
+  # Do a Puppet agent run to ensure certificate requests have been submitted
+  without_default_logging() || {
+    notice("Starting: task pe_xl::pe_install on ${non_core_hosts}")
+    run_command('/opt/puppetlabs/bin/puppet agent -t', $non_core_hosts)
+    notice("Finished: task pe_xl::pe_install on ${non_core_hosts}")
+  }
 
+  run_command(inline_epp(@("HEREDOC"), $primary_master_host))
+    puppet cert sign \\
+      <% $non_core_hosts.each |$host| { %><%= $host %> \\<% } %>
+      --allow-dns-alt-names
+    | HEREDOC
+
+  run_command('/opt/puppetlabs/bin/puppet agent -t', $non_core_hosts)
 }
