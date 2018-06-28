@@ -24,6 +24,8 @@ plan pe_xl::install (
     $puppetdb_database_replica_host,
   ].pe_xl::flatten_compact()
 
+  $dns_alt_names_csv = $dns_alt_names.reduce |$csv,$x| { "${csv},${x}" }
+
   # Validate that the name given for each system is both a resolvable name AND
   # the configured hostname.
   run_task('pe_xl::hostname', $all_hosts).each |$task| {
@@ -103,7 +105,7 @@ plan pe_xl::install (
   run_task('pe_xl::agent_install', $primary_master_replica_host,
     server        => $primary_master_host,
     install_flags => [
-      "main:dns_alt_names=${dns_alt_names}",
+      "main:dns_alt_names=${dns_alt_names_csv}",
       'extension_requests:pp_role=primary_master',
       'extension_requests:pp_cluster=puppet-enterprise-B',
     ],
@@ -121,7 +123,7 @@ plan pe_xl::install (
   run_task('pe_xl::agent_install', $compile_master_hosts,
     server        => $primary_master_host,
     install_flags => [
-      "main:dns_alt_names=${dns_alt_names}",
+      "main:dns_alt_names=${dns_alt_names_csv}",
       'extension_requests:pp_auth_role=compile_master',
       'extension_requests:pp_cluster=puppet-enterprise-A',
     ],
