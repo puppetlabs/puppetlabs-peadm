@@ -148,9 +148,11 @@ plan pe_xl::install (
     notice("Finished: task pe_xl::puppet_runonce on ${non_core_hosts}")
   }
 
-  run_command(inline_epp(@(HEREDOC)), $primary_master_host)
+  run_command(inline_epp(@(HEREDOC/n)), $primary_master_host)
     puppet cert sign \
-      <% $non_core_hosts.each |$host| { %><%= $host %> \<% } %>
+      <% $non_core_hosts.each |$host| { -%>
+      <%= $host %> \
+      <% } -%>
       --allow-dns-alt-names
     | HEREDOC
 
