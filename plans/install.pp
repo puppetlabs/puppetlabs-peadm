@@ -154,5 +154,6 @@ plan pe_xl::install (
       --allow-dns-alt-names
     | HEREDOC
 
-  run_command('/opt/puppetlabs/bin/puppet agent -t', $non_core_hosts)
+  run_task('pe_xl::puppet_runonce', $non_core_hosts)
+  run_task('pe_xl::puppet_runonce', $all_hosts)
 }

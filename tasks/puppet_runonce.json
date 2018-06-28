@@ -1,0 +1,8 @@
+{
+  "description": "Run the Puppet agent one time",
+  "parameters": { },
+  "input_method": "environment",
+  "implementations": [
+    {"name": "puppet_runonce.sh"}
+  ]
+}
