@@ -1,18 +1,17 @@
 plan pe_xl::install (
   String[1]           $version = '2018.1.2',
   String[1]           $console_password,
+  Hash                $r10k_sources = { },
 
   String[1]           $primary_master_host,
   String[1]           $puppetdb_database_host,
   Array[String[1]]    $compile_master_hosts = [ ],
   Array[String[1]]    $dns_alt_names = [ ],
-  Optional[String[1]] $load_balancer_host = undef,
-
-  Optional[String[1]] $r10k_remote = undef,
-  String[1]           $pe_environment = 'pe',
 
   Optional[String[1]] $primary_master_replica_host = undef,
   Optional[String[1]] $puppetdb_database_replica_host = undef,
+
+  Optional[String[1]] $load_balancer_host = undef,
 
   String[1]           $stagingdir = '/tmp',
 ) {
@@ -55,6 +54,7 @@ plan pe_xl::install (
     primary_master_host    => $primary_master_host,
     puppetdb_database_host => $puppetdb_database_host,
     dns_alt_names          => $dns_alt_names,
+    r10k_sources           => $r10k_sources,
   )
 
   $puppetdb_database_pe_conf = epp('pe_xl/puppetdb_database-pe.conf.epp',
