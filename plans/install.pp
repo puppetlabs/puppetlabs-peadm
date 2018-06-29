@@ -73,14 +73,14 @@ plan pe_xl::install (
   pe_xl::file_content_upload($puppetdb_database_replica_pe_conf, '/tmp/pe.conf', $puppetdb_database_replica_host)
 
   # Download the PE tarball and send it to the nodes that need it
-  $pe_tarball = "puppet-enterprise-${version}-el-7-x86_64.tar.gz"
-  $pe_src  = "${stagingdir}/${pe_tarball}"
-  $pe_dest = "/tmp/${pe_tarball}"
+  $pe_tarball_name     = "puppet-enterprise-${version}-el-7-x86_64.tar.gz"
+  $local_tarball_path  = "${stagingdir}/${pe_tarball_name}"
+  $upload_tarball_path = "/tmp/${pe_tarball_name}"
 
   pe_xl::retrieve_and_upload(
     "https://s3.amazonaws.com/pe-builds/released/${version}/puppet-enterprise-${version}-el-7-x86_64.tar.gz",
-    $pe_src,
-    $pe_dest,
+    $local_tarball_path,
+    $upload_tarball_path,
     [$primary_master_host, $puppetdb_database_host, $puppetdb_database_replica_host]
   )
 
@@ -124,7 +124,7 @@ plan pe_xl::install (
     notice("Starting: task pe_xl::pe_install on ${primary_master_host}")
     run_task('pe_xl::pe_install', $primary_master_host,
       _catch_errors         => true,
-      tarball               => $pe_dest,
+      tarball               => $upload_tarball_path,
       peconf                => '/tmp/pe.conf',
       shortcircuit_puppetdb => true,
     )
@@ -145,7 +145,7 @@ plan pe_xl::install (
 
   # Run the PE installer on the puppetdb database hosts
   run_task('pe_xl::pe_install', [$puppetdb_database_host, $puppetdb_database_replica_host],
-    tarball => $pe_tarball,
+    tarball => $upload_tarball_path,
     peconf  => '/tmp/pe.conf',
   )
 
