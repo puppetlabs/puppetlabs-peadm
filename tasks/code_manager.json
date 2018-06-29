@@ -1,0 +1,13 @@
+{
+  "description": "Perform various code manager actions",
+  "parameters": {
+    "action": {
+      "type": "Enum['deploy','commit','flush-environment-cache','file-sync commit']",
+      "description": "Which code manager action to perform"
+    }
+  },
+  "input_method": "environment",
+  "implementations": [
+    {"name": "code_manager.sh"}
+  ]
+}

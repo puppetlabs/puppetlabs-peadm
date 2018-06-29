@@ -149,8 +149,12 @@ plan pe_xl::install (
     peconf  => '/tmp/pe.conf',
   )
 
-  # Now that the main PuppetDB database node is ready, start PuppetDB on the primary master
+  # Now that the main PuppetDB database node is ready, finish priming the
+  # primary master
   run_command('systemctl start pe-puppetdb', $primary_master_host)
+  run_task('pe_xl::code_manager', $primary_master_host,
+    action => 'file-sync commit',
+  )
 
   # Deploy the PE agent to all remaining hosts
   run_task('pe_xl::agent_install', $primary_master_replica_host,
