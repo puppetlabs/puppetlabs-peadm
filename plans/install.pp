@@ -13,6 +13,8 @@ plan pe_xl::install (
 
   Optional[String[1]] $primary_master_replica_host = undef,
   Optional[String[1]] $puppetdb_database_replica_host = undef,
+
+  String[1]           $stagingdir = '/tmp',
 ) {
 
   $all_hosts = [
@@ -71,17 +73,16 @@ plan pe_xl::install (
   pe_xl::file_content_upload($puppetdb_database_replica_pe_conf, '/tmp/pe.conf', $puppetdb_database_replica_host)
 
   # Download the PE tarball and send it to the nodes that need it
-  $pe_tarball = "/tmp/puppet-enterprise-${version}-el-7-x86_64.tar.gz"
-  run_task('pe_xl::pe_download', 'local://localhost',
-    version  => $version,
-    filename => $pe_tarball,
-  )
+  $pe_tarball = "puppet-enterprise-${version}-el-7-x86_64.tar.gz"
+  $pe_src  = "${stagingdir}/${pe_tarball}"
+  $pe_dest = "/tmp/${pe_tarball}"
 
-  file_upload($pe_tarball, $pe_tarball, [
-    $primary_master_host,
-    $puppetdb_database_host,
-    $puppetdb_database_replica_host,
-  ])
+  pe_xl::retrieve_and_upload(
+    "https://s3.amazonaws.com/pe-builds/released/${version}/puppet-enterprise-${version}-el-7-x86_64.tar.gz",
+    $pe_src,
+    $pe_dest,
+    [$primary_master_host, $puppetdb_database_host, $puppetdb_database_replica_host]
+  )
 
   # Create csr_attributes.yaml files for the nodes that need them
   run_task('pe_xl::mkdir_p_file', $primary_master_host,

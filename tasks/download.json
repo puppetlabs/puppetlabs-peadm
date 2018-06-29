@@ -1,0 +1,17 @@
+{
+  "description": "Download a file using curl",
+  "parameters": {
+    "source": {
+      "type": "String",
+      "description": "Where to download the file from"
+    },
+    "path": {
+      "type": "String",
+      "description": "Where to save the downloaded file"
+    }
+  },
+  "input_method": "environment",
+  "implementations": [
+    {"name": "download.sh"}
+  ]
+}
