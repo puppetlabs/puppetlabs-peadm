@@ -1,4 +1,5 @@
 #!/opt/puppetlabs/bin/puppet apply
+function param($name) { inline_template("<%= ENV['PT_${name}'] %>") }
 
 $default_environment = 'production'
 $environments        = ['production']
@@ -13,15 +14,15 @@ node_group { 'PE Infrastructure Agent':
 
 node_group { 'PE Master':
   rule   => ['or',
-    ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::primary_master'],
-    ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master'],
+    ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master']],
+    ['=', 'name', param('primary_master_host')],
   ],
 }
 
 node_group { 'PE PuppetDB':
   rule   => ['or',
-    ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::primary_master'],
-    ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master'],
+    ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master']],
+    ['=', 'name', param('primary_master_host')],
   ],
 }
 

@@ -1,6 +1,11 @@
 {
   "description": "Configure console node groups for a new install",
-  "parameters": { },
+  "parameters": {
+    "primary_master_host": {
+      "type": "String",
+      "description": "The certname of the primary master"
+    }
+  },
   "input_method": "environment",
   "implementations": [
     {"name": "configure_node_groups.pp"}
