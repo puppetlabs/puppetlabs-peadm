@@ -124,7 +124,7 @@ plan pe_xl::install (
     notice("Starting: task pe_xl::pe_install on ${primary_master_host}")
     run_task('pe_xl::pe_install', $primary_master_host,
       _catch_errors         => true,
-      tarball               => $pe_tarball,
+      tarball               => $pe_dest,
       peconf                => '/tmp/pe.conf',
       shortcircuit_puppetdb => true,
     )
