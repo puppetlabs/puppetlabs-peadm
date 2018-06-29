@@ -152,6 +152,9 @@ plan pe_xl::install (
   # Now that the main PuppetDB database node is ready, finish priming the
   # primary master
   run_command('systemctl start pe-puppetdb', $primary_master_host)
+  run_task('pe_xl::rbac_token', $primary_master_host,
+    password => $console_password,
+  )
   run_task('pe_xl::code_manager', $primary_master_host,
     action => 'file-sync commit',
   )
