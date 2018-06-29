@@ -89,8 +89,9 @@ plan pe_xl::install (
     content => @("HEREDOC"),
       ---
       extension_requests:
+        pp_application: "puppet"
         pp_role: "primary_master"
-        pp_cluster: "puppet-enterprise-A"
+        pp_cluster: "A"
       | HEREDOC
   )
 
@@ -99,8 +100,9 @@ plan pe_xl::install (
     content => @("HEREDOC"),
       ---
       extension_requests:
+        pp_application: "puppet"
         pp_role: "puppetdb_database"
-        pp_cluster: "puppet-enterprise-A"
+        pp_cluster: "A"
       | HEREDOC
   )
 
@@ -109,12 +111,14 @@ plan pe_xl::install (
     content => @("HEREDOC"),
       ---
       extension_requests:
+        pp_application: "puppet"
         pp_role: "puppetdb_database"
-        pp_cluster: "puppet-enterprise-B"
+        pp_cluster: "B"
       | HEREDOC
   )
 
-  # Get the primary master installation up and running
+  # Get the primary master installation up and running. The installer will
+  # "fail" because PuppetDB can't start. That's expected.
   without_default_logging() || {
     notice("Starting: task pe_xl::pe_install on ${primary_master_host}")
     run_task('pe_xl::pe_install', $primary_master_host,
@@ -153,8 +157,9 @@ plan pe_xl::install (
     install_flags => [
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
+      'extension_requests:pp_application=puppet',
       'extension_requests:pp_role=primary_master',
-      'extension_requests:pp_cluster=puppet-enterprise-B',
+      'extension_requests:pp_cluster=B',
     ],
   )
 
@@ -164,8 +169,9 @@ plan pe_xl::install (
     install_flags => [
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
+      'extension_requests:pp_application=puppet',
       'extension_requests:pp_role=compile_master',
-      'extension_requests:pp_cluster=puppet-enterprise-A',
+      'extension_requests:pp_cluster=A',
     ],
   )
 
@@ -174,12 +180,14 @@ plan pe_xl::install (
       server        => $primary_master_host,
       install_flags => [
         '--puppet-service-ensure', 'stopped',
+        'extension_requests:pp_application=puppet',
         'extension_requests:pp_role=load_balancer',
       ],
     )
   }
 
   # Do a Puppet agent run to ensure certificate requests have been submitted
+  # These runs will "fail", and that's expected.
   without_default_logging() || {
     notice("Starting: task pe_xl::puppet_runonce on ${agent_installer_hosts}")
     run_task('pe_xl::puppet_runonce', $agent_installer_hosts, {_catch_errors => true})
@@ -197,5 +205,5 @@ plan pe_xl::install (
   run_task('pe_xl::puppet_runonce', $agent_installer_hosts)
   run_task('pe_xl::puppet_runonce', $pe_installer_hosts)
 
-  # TODO: moar
+  return('Installation succeeded')
 }
