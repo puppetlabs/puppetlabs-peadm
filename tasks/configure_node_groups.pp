@@ -1,7 +1,7 @@
 #!/opt/puppetlabs/bin/puppet apply
 
-$default_environment = 'production',
-$environments        = ['production'],
+$default_environment = 'production'
+$environments        = ['production']
 
 ##################################################
 # PE INFRASTRUCTURE GROUPS
