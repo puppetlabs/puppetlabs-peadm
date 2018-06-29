@@ -90,7 +90,7 @@ plan pe_xl::install (
       ---
       extension_requests:
         pp_application: "puppet"
-        pp_role: "primary_master"
+        pp_role: "pe_xl::primary_master"
         pp_cluster: "A"
       | HEREDOC
   )
@@ -101,7 +101,7 @@ plan pe_xl::install (
       ---
       extension_requests:
         pp_application: "puppet"
-        pp_role: "puppetdb_database"
+        pp_role: "pe_xl::puppetdb_database"
         pp_cluster: "A"
       | HEREDOC
   )
@@ -112,7 +112,7 @@ plan pe_xl::install (
       ---
       extension_requests:
         pp_application: "puppet"
-        pp_role: "puppetdb_database"
+        pp_role: "pe_xl::puppetdb_database"
         pp_cluster: "B"
       | HEREDOC
   )
@@ -158,7 +158,7 @@ plan pe_xl::install (
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
       'extension_requests:pp_application=puppet',
-      'extension_requests:pp_role=primary_master',
+      'extension_requests:pp_role=pe_xl::primary_master',
       'extension_requests:pp_cluster=B',
     ],
   )
@@ -170,7 +170,7 @@ plan pe_xl::install (
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
       'extension_requests:pp_application=puppet',
-      'extension_requests:pp_role=compile_master',
+      'extension_requests:pp_role=pe_xl::compile_master',
       'extension_requests:pp_cluster=A',
     ],
   )
@@ -181,7 +181,7 @@ plan pe_xl::install (
       install_flags => [
         '--puppet-service-ensure', 'stopped',
         'extension_requests:pp_application=puppet',
-        'extension_requests:pp_role=load_balancer',
+        'extension_requests:pp_role=pe_xl::load_balancer',
       ],
     )
   }
