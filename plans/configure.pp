@@ -28,6 +28,7 @@ plan pe_xl::configure (
   run_command("/opt/puppetlabs/bin/puppet module install /tmp/${pexl_module_tarball}", $primary_master_host)
   run_command('chown -R pe-puppet:pe-puppet /etc/puppetlabs/code', $primary_master_host)
 
+  run_task('pe_xl::configure_node_groups', $primary_master_host)
   run_task('pe_xl::puppet_runonce', [
     $primary_master_host,
     $puppetdb_database_host,
