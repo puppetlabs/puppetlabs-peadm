@@ -18,7 +18,7 @@ plan pe_xl::configure (
 
   $pexl_module_tarball = 'reidmv-pe_xl-master.tar.gz'
   pe_xl::retrieve_and_upload(
-    'https://github.com/reidmv/reidmv-pe_xl/archive/master.zip',
+    'https://github.com/reidmv/reidmv-pe_xl/archive/master.tar.gz',
     "${stagingdir}/${pexl_module_tarball}",
     "/tmp/${pexl_module_tarball}",
     $primary_master_host
