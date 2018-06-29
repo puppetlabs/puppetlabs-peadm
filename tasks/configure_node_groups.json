@@ -1,0 +1,8 @@
+{
+  "description": "Configure console node groups for a new install",
+  "parameters": { },
+  "input_method": "environment",
+  "implementations": [
+    {"name": "configure_node_groups.pp"}
+  ]
+}
