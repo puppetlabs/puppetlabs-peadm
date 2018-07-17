@@ -203,7 +203,7 @@ plan pe_xl::install (
   }
 
   run_command(inline_epp(@(HEREDOC)), $primary_master_host)
-    puppet cert sign \
+    /opt/puppetlabs/bin/puppet cert sign \
       <% $agent_installer_hosts.each |$host| { -%>
       <%= $host %> \
       <% } -%>
