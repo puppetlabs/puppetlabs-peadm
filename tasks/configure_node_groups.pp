@@ -26,6 +26,36 @@ node_group { 'PE PuppetDB':
   ],
 }
 
+if param('load_balancer_host') {
+  node_group { 'PE Load Balancer':
+    ensure               => 'present',
+    classes              => {
+      'profile::haproxy' => {
+      }
+    },
+    parent               => 'PE Infrastructure',
+    rule                 => ['and',
+    ['~',
+      ['trusted', 'extensions', 'pp_role'],
+      'pe_xl::load_balancer']],
+  }
+}
+
+if param('compile_master_hosts') {
+  node_group { 'PE Compile Masters':
+    ensure               => 'present',
+    classes              => {
+      'profile::compile_master' => {
+      }
+    },
+    parent               => 'PE Master',
+    rule                 => ['and',
+    ['=',
+      ['trusted', 'extensions', 'pp_role'],
+      'pe_xl::compile_master']],
+  }
+}
+
 # This class has to be included here because puppet_enterprise is declared
 # in the console with parameters. It is therefore not possible to include
 # puppet_enterprise::profile::database in code without causing a conflict.
@@ -82,3 +112,4 @@ $environments.each |$env| {
     rule                 => ['and', ['~', ['fact', 'agent_specified_environment'], '.+']],
   }
 }
+
