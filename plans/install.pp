@@ -13,6 +13,8 @@ plan pe_xl::install (
 
   Optional[String[1]] $load_balancer_host = undef,
 
+  Optional[String[1]] $deploy_environment = 'production',
+
   String[1]           $stagingdir = '/tmp',
 ) {
 
@@ -210,7 +212,17 @@ plan pe_xl::install (
       --allow-dns-alt-names
     | HEREDOC
 
-  run_task('pe_xl::puppet_runonce', $agent_installer_hosts)
+  $merged = $r10k_sources.reduce |$memo, $value| {
+    $string = "${memo[0]}${value[0]}"
+  }
+
+  if $merged {
+    run_task('pe_xl::code_manager', $primary_master_host,
+      action => 'deploy',
+      environment => $deploy_environment,
+    )
+  }
+
   run_task('pe_xl::puppet_runonce', $pe_installer_hosts)
 
   return('Installation succeeded')
