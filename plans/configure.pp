@@ -25,7 +25,6 @@ plan pe_xl::configure (
     $puppetdb_database_host,
     $primary_master_replica_host,
     $puppetdb_database_replica_host,
-    $compile_master_hosts,
   ].pe_xl::flatten_compact()
 
   # Stop puppet on all hosts to be upgraded
