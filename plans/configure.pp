@@ -1,12 +1,25 @@
 plan pe_xl::configure (
+
+  String[1]           $version = '2018.1.2',
+  String[1]           $console_password,
+  Hash                $r10k_sources = { },
+
   String[1]           $primary_master_host,
   String[1]           $puppetdb_database_host,
   Array[String[1]]    $compile_master_hosts = [ ],
+  Array[String[1]]    $dns_alt_names = [ ],
+
   Optional[String[1]] $primary_master_replica_host = undef,
   Optional[String[1]] $puppetdb_database_replica_host = undef,
 
+  Optional[String[1]] $load_balancer_host = undef,
+
   String[1]           $stagingdir = '/tmp',
 ) {
+
+  run_task('pe_xl::configure_node_groups', $primary_master_host,
+    primary_master_host => $primary_master_host
+  )
 
   $nm_module_tarball = 'WhatsARanjit-node_manager-0.7.1.tar.gz'
   pe_xl::retrieve_and_upload(
@@ -38,4 +51,25 @@ plan pe_xl::configure (
     $primary_master_replica_host,
     $puppetdb_database_replica_host,
   ])
+
+  # Run the PE Replica Provision
+  run_task('pe_xl::provision_replica', $primary_master_host,
+    primary_master_replica => $primary_master_replica_host,
+  )
+
+  run_task('pe_xl::puppet_runonce', [
+    $primary_master_host,
+    $primary_master_replica_host,
+  ])
+
+  run_task(pe_xl::configure_replica_db_node_group, $primary_master_host,
+    puppetdb_database_replica_host => $puppetdb_database_replica_host,
+  )
+  run_task('pe_xl::puppet_runonce', $compile_master_hosts)
+
+  if $load_balancer_host {
+    run_task('pe_xl::puppet_runonce', $load_balancer_host)
+  }
+
+  run_task('pe_xl::puppet_runonce', $compile_master_hosts)
 }

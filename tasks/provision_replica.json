@@ -1,0 +1,13 @@
+{
+  "description": "Execute the replica provision puppet command ",
+  "parameters": {
+    "primary_master_replica": {
+      "type": "String",
+      "description": "The path to the Puppet Enterprise tarball"
+    }
+  },
+  "input_method": "environment",
+  "implementations": [
+    {"name": "provision_replica.sh"}
+  ]
+}
