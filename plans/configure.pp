@@ -12,6 +12,8 @@ plan pe_xl::configure (
   Optional[String[1]] $primary_master_replica_host = undef,
   Optional[String[1]] $puppetdb_database_replica_host = undef,
 
+  Optional[String[1]] $deploy_environment = 'production',
+
   Optional[String[1]] $load_balancer_host = undef,
 
   String[1]           $stagingdir = '/tmp',
