@@ -163,36 +163,30 @@ plan pe_xl::install (
 
   # Deploy the PE agent to all remaining hosts
   run_task('pe_xl::agent_install', $primary_master_replica_host,
-    server        => $primary_master_host,
-    install_flags => [
-      '--puppet-service-ensure', 'stopped',
-      "main:dns_alt_names=${dns_alt_names_csv}",
-      'extension_requests:pp_application=puppet',
-      'extension_requests:pp_role=pe_xl::primary_master',
-      'extension_requests:pp_cluster=B',
-    ],
+    master            => $primary_master_host,
+    command_options   => '--puppet-service-ensure stopped',
+    dns_alt_names     => $dns_alt_names_csv,
+    extension_request => 'pp_application=puppet
+      extension_requests:pp_role=pe_xl::primary_master
+      extension_requests:pp_cluster=B',
   )
 
   # TODO: Split the compile masters into two pools, A and B.
   run_task('pe_xl::agent_install', $compile_master_hosts,
-    server        => $primary_master_host,
-    install_flags => [
-      '--puppet-service-ensure', 'stopped',
-      "main:dns_alt_names=${dns_alt_names_csv}",
-      'extension_requests:pp_application=puppet',
-      'extension_requests:pp_role=pe_xl::compile_master',
-      'extension_requests:pp_cluster=A',
-    ],
+    master            => $primary_master_host,
+    command_options   =>  '--puppet-service-ensure stopped',
+    dns_alt_names     => $dns_alt_names_csv,
+    extension_request => 'pp_application=puppet
+      extension_requests:pp_role=pe_xl::compile_master
+      extension_requests:pp_cluster=A',
   )
 
   if $load_balancer_host {
     run_task('pe_xl::agent_install', $load_balancer_host,
-      server        => $primary_master_host,
-      install_flags => [
-        '--puppet-service-ensure', 'stopped',
-        'extension_requests:pp_application=puppet',
-        'extension_requests:pp_role=pe_xl::load_balancer',
-      ],
+      master          => $primary_master_host,
+      command_options => '--puppet-service-ensure stopped',
+      extension_request => 'pp_application=puppet
+        extension_requests:pp_role=pe_xl::load_balancer',
     )
   }
 
