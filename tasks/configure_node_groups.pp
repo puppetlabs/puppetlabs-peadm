@@ -56,8 +56,7 @@ if param('load_balancer_host') {
 if param('compile_master_hosts') {
   node_group { 'PE Compile Masters':
     ensure               => 'present',
-    classes              => { $compile_classes }
-    },
+    classes              => { $compile_classes },
     parent               => 'PE Master',
     rule                 => ['and',
     ['=',
