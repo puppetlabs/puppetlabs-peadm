@@ -163,30 +163,36 @@ plan pe_xl::install (
 
   # Deploy the PE agent to all remaining hosts
   run_task('pe_xl::agent_install', $primary_master_replica_host,
-    master            => $primary_master_host,
-    command_options   => '--puppet-service-ensure stopped',
-    dns_alt_names     => $dns_alt_names_csv,
-    extension_request => 'pp_application=puppet
-      extension_requests:pp_role=pe_xl::primary_master
-      extension_requests:pp_cluster=B',
+    server        => $primary_master_host,
+    install_flags => [
+      '--puppet-service-ensure', 'stopped',
+      "main:dns_alt_names=${dns_alt_names_csv}",
+      'extension_requests:pp_application=puppet',
+      'extension_requests:pp_role=pe_xl::primary_master',
+      'extension_requests:pp_cluster=B',
+    ],
   )
 
   # TODO: Split the compile masters into two pools, A and B.
   run_task('pe_xl::agent_install', $compile_master_hosts,
-    master            => $primary_master_host,
-    command_options   =>  '--puppet-service-ensure stopped',
-    dns_alt_names     => $dns_alt_names_csv,
-    extension_request => 'pp_application=puppet
-      extension_requests:pp_role=pe_xl::compile_master
-      extension_requests:pp_cluster=A',
+    server        => $primary_master_host,
+    install_flags => [
+      '--puppet-service-ensure', 'stopped',
+      "main:dns_alt_names=${dns_alt_names_csv}",
+      'extension_requests:pp_application=puppet',
+      'extension_requests:pp_role=pe_xl::compile_master',
+      'extension_requests:pp_cluster=A',
+    ],
   )
 
   if $load_balancer_host {
     run_task('pe_xl::agent_install', $load_balancer_host,
-      master          => $primary_master_host,
-      command_options => '--puppet-service-ensure stopped',
-      extension_request => 'pp_application=puppet
-        extension_requests:pp_role=pe_xl::load_balancer',
+      server        => $primary_master_host,
+      install_flags => [
+        '--puppet-service-ensure', 'stopped',
+        'extension_requests:pp_application=puppet',
+        'extension_requests:pp_role=pe_xl::load_balancer',
+      ],
     )
   }
 
@@ -206,11 +212,11 @@ plan pe_xl::install (
       --allow-dns-alt-names
     | HEREDOC
 
-  $merged = $r10k_sources.reduce |$memo, $value| {
+  $control_repo = $r10k_sources.reduce |$memo, $value| {
     $string = "${memo[0]}${value[0]}"
   }
 
-  if $merged {
+  if $control_repo {
     run_task('pe_xl::code_manager', $primary_master_host,
       action => 'deploy',
       environment => $deploy_environment,

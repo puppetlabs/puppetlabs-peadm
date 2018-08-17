@@ -65,11 +65,17 @@ plan pe_xl::configure (
   run_task(pe_xl::configure_replica_db_node_group, $primary_master_host,
     puppetdb_database_replica_host => $puppetdb_database_replica_host,
   )
-  run_task('pe_xl::puppet_runonce', $compile_master_hosts)
+  if $compile_master_hosts {
+    run_task('pe_xl::puppet_runonce', $compile_master_hosts)
+  }
 
   if $load_balancer_host {
     run_task('pe_xl::puppet_runonce', $load_balancer_host)
   }
 
-  run_task('pe_xl::puppet_runonce', $compile_master_hosts)
+  if $compile_master_hosts {
+    run_task('pe_xl::puppet_runonce', $compile_master_hosts)
+  }
+
+  return('Configuration of Puppet Enterprise with replica succeeded.')
 }

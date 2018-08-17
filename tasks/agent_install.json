@@ -1,38 +1,17 @@
 {
-  "description": "Bootstrap a node with puppet-agent for Linux",
-  "input_method": "environment",
+  "description": "Install the Puppet agent from a master",
   "parameters": {
-    "master": {
-      "description": "The master from which the puppet-agent should be bootstrapped",
-      "type": "String"
+    "server": {
+      "type": "String",
+      "description": "The resolvable name of the Puppet server to install from"
     },
-    "cacert_content": {
-      "description": "The expected CA certificate content for the master",
-      "type": "Optional[String]"
-    },
-    "certname": {
-      "description": "The certname with which the node should be bootstrapped",
-      "type": "Optional[String]"
-    },
-    "environment": {
-      "description": "The environment in which the node should be bootstrapped",
-      "type": "Optional[String]"
-    },
-    "command_options": {
-      "description": "The additional options to be passed to the install.bash installer",
-      "type": "Optional[String]"
-    },
-    "dns_alt_names": {
-      "description": "The DNS alt names with which the agent certificate should be generated",
-      "type": "Optional[String]"
-    },
-    "custom_attribute": {
-      "description": "This setting is added to puppet.conf and included in the custom_attributes section of csr_attributes.yaml",
-      "type": "Optional[Pattern[/\\w+=\\w+/]]"
-    },
-    "extension_request": {
-      "description": "This setting is added to puppet.conf and included in the extension_requests section of csr_attributes.yaml",
-      "type": "Optional[Pattern[/\\w+=\\w+/]]"
+    "install_flags": {
+      "type": "Array[String]",
+      "description": "Positional arguments to pass to the shell installer"
     }
-  }
+  },
+  "input_method": "environment",
+  "implementations": [
+    {"name": "agent_install.sh"}
+  ]
 }
