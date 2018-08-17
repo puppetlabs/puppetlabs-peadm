@@ -17,20 +17,31 @@ plan pe_xl::configure (
   String[1]           $stagingdir = '/tmp',
 ) {
 
+  $control_repo = $r10k_sources.reduce |$memo, $value| {
+    $string = "${memo[0]}${value[0]}"
+  }
+
+  if $control_repo {
+    run_task('pe_xl::code_manager', $primary_master_host,
+      action => 'deploy',
+      environment => $deploy_environment,
+    )
+  } else {
+  
   $nm_module_tarball = 'WhatsARanjit-node_manager-0.7.1.tar.gz'
-  pe_xl::retrieve_and_upload(
-    "https://forge.puppet.com/v3/files/${nm_module_tarball}",
-    "${stagingdir}/${nm_module_tarball}",
-    "/tmp/${nm_module_tarball}",
-    $primary_master_host
+
+  # Download module tar files
+  run_task('pe_xl::download', $primary_master_host,
+    source => "https://forge.puppet.com/v3/files/${nm_module_tarball}", 
+    path   => "/tmp/${nm_module_tarball}",
   )
 
   $pexl_module_tarball = 'reidmv-pe_xl-master.tar.gz'
-  pe_xl::retrieve_and_upload(
-    'https://github.com/reidmv/reidmv-pe_xl/archive/master.tar.gz',
-    "${stagingdir}/${pexl_module_tarball}",
-    "/tmp/${pexl_module_tarball}",
-    $primary_master_host
+
+  # Download module tar files
+  run_task('pe_xl::download', $primary_master_host,
+    source => 'https://github.com/reidmv/reidmv-pe_xl/archive/master.tar.gz', 
+    path   => "/tmp/${pexl_module_tarball}",
   )
 
   run_command("/opt/puppetlabs/bin/puppet module install /tmp/${nm_module_tarball}", $primary_master_host)
