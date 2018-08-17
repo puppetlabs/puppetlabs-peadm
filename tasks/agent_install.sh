@@ -1,11 +1,7 @@
 #!/bin/bash
 #
-#set -e
-#
-#flags=$(echo "$PT_install_flags" | tr '[],"' ' ')
-#
-#curl -k "https://${PT_server}:8140/packages/current/install.bash" | bash -s -- $flags
-#!/bin/sh
+# Modified orig source was 'https://github.com/puppetlabs/puppetlabs-bootstrap/blob/master/tasks/linux.sh'
+#  Added additional option to manage command_options
 
 validate() {
   if $(echo $1 | grep \' > /dev/null) ; then
