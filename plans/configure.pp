@@ -19,10 +19,26 @@ plan pe_xl::configure (
   String[1]           $stagingdir = '/tmp',
 ) {
 
+  # Set variables and groups of nodes
+  $all_hosts_pe_hosts = [
+    $primary_master_host,
+    $puppetdb_database_host,
+    $primary_master_replica_host,
+    $puppetdb_database_replica_host,
+    $compile_master_hosts,
+  ].pe_xl::flatten_compact()
+
+  # Stop puppet on all hosts to be upgraded
+  run_task('service', $all_hosts_pe_hosts,
+    name   => puppet,
+    action => stop,
+  )
+
   $control_repo = $r10k_sources.reduce |$memo, $value| {
     $string = "${memo[0]}${value[0]}"
   }
 
+  # This will see if any content is in the r10k_sources hash
   if $control_repo {
     run_task('pe_xl::code_manager', $primary_master_host,
       action => 'deploy',
