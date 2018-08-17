@@ -26,13 +26,25 @@ node_group { 'PE PuppetDB':
   ],
 }
 
+$control_repo = $r10k_sources.reduce |$memo, $value| {
+  $string = "${memo[0]}${value[0]}"
+}
+
+if $control_repo {
+  $lb_classes = {
+    'profile::haproxy' => {
+    }
+  }
+  $compile_classes = {
+    'profile::compile_master' => {
+    }
+  }
+}
+
 if param('load_balancer_host') {
   node_group { 'PE Load Balancer':
     ensure               => 'present',
-    classes              => {
-      'profile::haproxy' => {
-      }
-    },
+    classes              => { $lb_classes },
     parent               => 'PE Infrastructure',
     rule                 => ['and',
     ['~',
@@ -44,9 +56,7 @@ if param('load_balancer_host') {
 if param('compile_master_hosts') {
   node_group { 'PE Compile Masters':
     ensure               => 'present',
-    classes              => {
-      'profile::compile_master' => {
-      }
+    classes              => { $compile_classes }
     },
     parent               => 'PE Master',
     rule                 => ['and',
