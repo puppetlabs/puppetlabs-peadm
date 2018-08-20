@@ -78,6 +78,7 @@ plan pe_xl::configure (
 
   # Run the PE Replica Provision
   run_task('pe_xl::provision_replica', $primary_master_host,
+    primary_master_host    => $primary_master_host,
     primary_master_replica => $primary_master_replica_host,
   )
 
