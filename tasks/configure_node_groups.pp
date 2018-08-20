@@ -1,4 +1,4 @@
-#!/opt/puppetlabs/bin/puppet apply
+#!/opt/puppetlabs/bin/puppet apply --debug
 function param($name) { inline_template("<%= ENV['PT_${name}'] %>") }
 
 $default_environment = 'production'
