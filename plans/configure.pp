@@ -68,7 +68,9 @@ plan pe_xl::configure (
   }
 
   run_task('pe_xl::configure_node_groups', $primary_master_host,
-    primary_master_host => $primary_master_host,
+    primary_master_host  => $primary_master_host,
+    load_balancer_host   => $load_balancer_host,
+    compile_master_hosts => $compile_master_hosts,
   )
 
   run_task('pe_xl::pe_puppet_run', $primary_master_host)
