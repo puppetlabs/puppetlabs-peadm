@@ -1,5 +1,5 @@
-#!/opt/puppetlabs/bin/puppet apply
-function param($name) { inline_template("<%= ENV['PT_${name}'] %>") }
+# #!/opt/puppetlabs/bin/puppet apply
+# #function param($name) { inline_template("<%= ENV['PT_${name}'] %>") }
 
 $default_environment = 'production'
 $environments        = ['production']
@@ -30,38 +30,52 @@ $control_repo = $r10k_sources.reduce |$memo, $value| {
   $string = "${memo[0]}${value[0]}"
 }
 
-if $control_repo {
-  $lb_classes = {
-    'profile::haproxy' => {
-    }
-  }
-  $compile_classes = {
-    'profile::compile_master' => {
-    }
-  }
-}
-
 if param('load_balancer_host') {
-  node_group { 'PE Load Balancer':
-    ensure               => 'present',
-    classes              => { $lb_classes },
-    parent               => 'PE Infrastructure',
-    rule                 => ['and',
-    ['~',
-      ['trusted', 'extensions', 'pp_role'],
-      'pe_xl::load_balancer']],
+  if $control_repo {
+    node_group { 'PE Load Balancer':
+      ensure               => 'present',
+      classes              => {
+        'profile::haproxy' => { }
+      },
+      parent               => 'PE Infrastructure',
+      rule                 => ['and',
+      ['~',
+        ['trusted', 'extensions', 'pp_role'],
+        'pe_xl::load_balancer']],
+    }
+  } else {
+    node_group { 'PE Load Balancer':
+      ensure               => 'present',
+      parent               => 'PE Infrastructure',
+      rule                 => ['and',
+      ['~',
+        ['trusted', 'extensions', 'pp_role'],
+        'pe_xl::load_balancer']],
+    }
   }
-}
 
 if param('compile_master_hosts') {
-  node_group { 'PE Compile Masters':
-    ensure               => 'present',
-    classes              => { $compile_classes },
-    parent               => 'PE Master',
-    rule                 => ['and',
-    ['=',
-      ['trusted', 'extensions', 'pp_role'],
-      'pe_xl::compile_master']],
+  if $control_repo {
+    node_group { 'PE Compile Masters':
+      ensure               => 'present',
+      classes              => { 
+        'profile::compile_master' => { }
+      },
+      parent               => 'PE Master',
+      rule                 => ['and',
+      ['=',
+        ['trusted', 'extensions', 'pp_role'],
+        'pe_xl::compile_master']],
+    }
+  } else {
+    node_group { 'PE Compile Masters':
+      ensure               => 'present',
+      parent               => 'PE Master',
+      rule                 => ['and',
+      ['=',
+        ['trusted', 'extensions', 'pp_role'],
+        'pe_xl::compile_master']],
+    }
   }
 }
 
