@@ -1,5 +1,5 @@
-# #!/opt/puppetlabs/bin/puppet apply
-# #function param($name) { inline_template("<%= ENV['PT_${name}'] %>") }
+#!/opt/puppetlabs/bin/puppet apply
+function param($name) { inline_template("<%= ENV['PT_${name}'] %>") }
 
 $default_environment = 'production'
 $environments        = ['production']
