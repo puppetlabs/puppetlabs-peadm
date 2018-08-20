@@ -71,10 +71,10 @@ plan pe_xl::configure (
     primary_master_host => $primary_master_host,
   )
 
-  run_task('pe_xl::puppet_runonce', $primary_master_host)
-  run_task('pe_xl::puppet_runonce', $puppetdb_database_host)
-  run_task('pe_xl::puppet_runonce', $primary_master_replica_host)
-  run_task('pe_xl::puppet_runonce', $puppetdb_database_replica_host)
+  run_task('pe_xl::pe_puppet_run', $primary_master_host)
+  run_task('pe_xl::pe_puppet_run', $puppetdb_database_host)
+  run_task('pe_xl::pe_puppet_run', $primary_master_replica_host)
+  run_task('pe_xl::pe_puppet_run', $puppetdb_database_replica_host)
 
   # Run the PE Replica Provision
   run_task('pe_xl::provision_replica', $primary_master_host,
@@ -82,7 +82,7 @@ plan pe_xl::configure (
     primary_master_replica => $primary_master_replica_host,
   )
 
-  run_task('pe_xl::puppet_runonce', [
+  run_task('pe_xl::pe_puppet_run', [
     $primary_master_host,
     $primary_master_replica_host,
   ])
@@ -91,15 +91,15 @@ plan pe_xl::configure (
     puppetdb_database_replica_host => $puppetdb_database_replica_host,
   )
   if $compile_master_hosts {
-    run_task('pe_xl::puppet_runonce', $compile_master_hosts)
+    run_task('pe_xl::pe_puppet_run', $compile_master_hosts)
   }
 
   if $load_balancer_host {
-    run_task('pe_xl::puppet_runonce', $load_balancer_host)
+    run_task('pe_xl::pe_puppet_run', $load_balancer_host)
   }
 
   if $compile_master_hosts {
-    run_task('pe_xl::puppet_runonce', $compile_master_hosts)
+    run_task('pe_xl::pe_puppet_run', $compile_master_hosts)
   }
 
   return('Configuration of Puppet Enterprise with replica succeeded.')
