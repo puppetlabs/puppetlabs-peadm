@@ -1,0 +1,8 @@
+{
+  "description": "Runs puppet on a pxp-agent hosts",
+  "parameters": { }
+  "input_method": "stdin",
+  "implementations": [
+    {"name": "pe_puppet_run.rb"}
+  ]
+}
