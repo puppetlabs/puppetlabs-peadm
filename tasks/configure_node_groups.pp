@@ -26,7 +26,7 @@ node_group { 'PE PuppetDB':
   ],
 }
 
-$control_repo = $r10k_sources.reduce |$memo, $value| {
+$control_repo = param(r10k_sources).reduce |$memo, $value| {
   $string = "${memo[0]}${value[0]}"
 }
 

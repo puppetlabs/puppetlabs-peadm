@@ -5,6 +5,10 @@
       "type": "String",
       "description": "The certname of the primary master"
     },
+    "r10k_sources": {
+      "type": "Optional['String']",
+      "description": "The r10k control repo sources"
+    },
     "compile_master_hosts": {
       "type": "Optional['String']",
       "description": "The certname of all the compile masters"

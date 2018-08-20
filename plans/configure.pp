@@ -71,6 +71,7 @@ plan pe_xl::configure (
     primary_master_host  => $primary_master_host,
     load_balancer_host   => $load_balancer_host,
     compile_master_hosts => $compile_master_hosts,
+    r10k_sources         => $r10k_sources,
   )
 
   run_task('pe_xl::pe_puppet_run', $primary_master_host)
