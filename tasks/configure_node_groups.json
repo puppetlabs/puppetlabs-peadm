@@ -12,7 +12,6 @@
       "description": "The certname of all the compile masters"
     },
     "load_balancer_host": {
-      "type": "Optional['String']",
       "description": "The certname of the load balancer"
     }
   },
