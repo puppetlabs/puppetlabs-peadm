@@ -6,7 +6,7 @@
       "description": "The certname of the primary master"
     },
     "compile_master_hosts": {
-      "type": "Optional['Array']",
+      "type": "Optional['String']",
       "description": "The certname of all the compile masters"
     },
     "load_balancer_host": {
