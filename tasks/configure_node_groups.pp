@@ -53,6 +53,7 @@ if param('load_balancer_host') {
         'pe_xl::load_balancer']],
     }
   }
+}
 
 if param('compile_master_hosts') {
   if $control_repo {
