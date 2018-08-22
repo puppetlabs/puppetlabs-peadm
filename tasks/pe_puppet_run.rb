@@ -18,9 +18,14 @@ command = 'env PATH=/opt/puppetlabs/bin:$PATH puppet agent --onetime   --verbose
   --no-daemonize --no-usecacheonfailure --no-splay --no-use_cached_catalog'
 
 begin
+  retries ||= 0
   result = get2(command)
   puts result.to_json
-
   exit result[:exit_code]
+rescue
+  retry if (retries += 1) < 3
 end
+
+
+
 
