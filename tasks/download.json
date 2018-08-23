@@ -12,6 +12,6 @@
   },
   "input_method": "environment",
   "implementations": [
-    {"name": "download.sh"}
+    {"name": "download.rb"}
   ]
 }
