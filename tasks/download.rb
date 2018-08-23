@@ -18,11 +18,11 @@ def download(source, path)
 
 end
 
-params = JSON.parse(STDIN.read)
-#path = ENV['PT_path']
-#source = ENV['PT_source']
-path = params['path']
-source = params['source']
+#params = JSON.parse(STDIN.read)
+path = ENV['PT_path']
+source = ENV['PT_source']
+#path = params['path']
+#source = params['source']
 
 output = download(source, path)
 if output[:exit_code].zero?
