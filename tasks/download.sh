@@ -5,7 +5,7 @@ filesize=$(stat -c%s "$PT_path" 2>/dev/null)
 
 # Assume that if the file exists and is the same size, we don't have to
 # re-download.
-if [[ ! -z "$urisize" && ! -z "$filesize" && "$filesize" -eq "$urisize" ]]; then
+if [[ ! -z "$urisize" && "${urisize}x" != 'x' && ! -z "$filesize" && "$filesize" -eq "$urisize" ]]; then
 #  exit 0
   echo "URLSIZE: $urisize, FILESIZE: $filesize"
 else
