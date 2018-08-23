@@ -7,6 +7,9 @@
 #   * path - The location to save the file
 #
 require 'open3'
+require 'puppet'
+
+Puppet.initialize_settings
 
 def download(source, path)
   stdout, stderr, status = Open3.capture3('/opt/puppetlabs/puppet/bin/curl', '-k', '-o', path, source)
