@@ -12,6 +12,7 @@ require 'puppet'
 Puppet.initialize_settings
 
 def download(source, path)
+  puts "Starting download of #{source}"
   stdout, stderr, status = Open3.capture3('/opt/puppetlabs/puppet/bin/curl', '-k', '-o', path, source)
   {
       stdout: stdout.strip,
@@ -25,6 +26,7 @@ path = ENV['PT_path']
 source = ENV['PT_source']
 
 output = download(source, path)
+puts "Starting script."
 if output[:exit_code].zero?
   puts "Download of file #{source} completed"
 else
