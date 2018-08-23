@@ -8,8 +8,6 @@
 #
 require 'open3'
 
-Puppet.initialize_settings
-
 def download(source, path)
   stdout, stderr, status = Open3.capture3('/opt/puppetlabs/puppet/bin/curl', '-k', '-o', path, source)
   {
