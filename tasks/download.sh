@@ -7,9 +7,9 @@ filesize=$(stat -c%s "$PT_path" 2>/dev/null)
 # re-download.
 if [[ ! -z "$urisize" && "${urisize}x" != 'x' && ! -z "$filesize" && "$filesize" -eq "$urisize" ]]; then
 #  exit 0
-  echo "URLSIZE: $urisize, FILESIZE: $filesize"
+  echo "URLSIZE: $urisize, FILESIZE: $filesize" 2>&1
 else
-  echo  "PATH: $PT_path SOURCE: $PT_source"
+  echo  "PATH: $PT_path SOURCE: $PT_source" 2>&1
   curl -L -o "$PT_path" "$PT_source"
 fi
 
