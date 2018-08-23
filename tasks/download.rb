@@ -11,18 +11,23 @@ require 'puppet'
 
 Puppet.initialize_settings
 
+exit_code = 1
 def download(source, path)
   stdout_head, stderr_head, status_head = Open3.capture3('/opt/puppetlabs/puppet/bin/curl', '-s', '-L', '--head', source)
-  remote_size = stdout_head.match(/Content-Length: [0-9]+/).to_s.split(" ")[1].to_i
-  local_size = File.size?(path).to_i
+  remote_size = stdout_head.match(/Content-Length: [0-9]+/).to_s.split(" ")[1].chomp.to_i
+  local_size = File.size?(path)
   if local_size == remote_size
-    exit_code = 0
+    {
+        stdout: "",
+        stderr: "",
+        exit_code: 0,
+    }
   else
     stdout, stderr, status = Open3.capture3('/opt/puppetlabs/puppet/bin/curl', '-k', '-o', path, source)
     {
-      stdout: stdout.strip,
-      stderr: stderr.strip,
-      exit_code: status.exitstatus,
+        stdout: stdout.strip,
+        stderr: stderr.strip,
+        exit_code: status.exitstatus,
     }
   end
 
