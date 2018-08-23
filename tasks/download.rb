@@ -12,13 +12,20 @@ require 'puppet'
 Puppet.initialize_settings
 
 def download(source, path)
-  puts "Starting download of #{source}"
-  stdout, stderr, status = Open3.capture3('/opt/puppetlabs/puppet/bin/curl', '-k', '-o', path, source)
-  {
+  stdout_head, stderr_head, status_head = Open3.capture3('/opt/puppetlabs/puppet/bin/curl', '-s', '-L', '--head', source)
+  remote_size = stdout_head.match(/Content-Length: [0-9]+/).to_s.split(" ")[1].to_i
+  local_size = File.size?(path).to_i
+  if local_size == remote_size
+    exit_code = 0
+  else
+    stdout, stderr, status = Open3.capture3('/opt/puppetlabs/puppet/bin/curl', '-k', '-o', path, source)
+    {
       stdout: stdout.strip,
       stderr: stderr.strip,
       exit_code: status.exitstatus,
-  }
+    }
+  end
+
 
 end
 
@@ -26,9 +33,10 @@ path = ENV['PT_path']
 source = ENV['PT_source']
 
 output = download(source, path)
-puts "Starting script."
 if output[:exit_code].zero?
   puts "Download of file #{source} completed"
+  return exit_code
 else
   puts "There was a problem: #{output[:stderr]}"
+  return exit_code
 end
