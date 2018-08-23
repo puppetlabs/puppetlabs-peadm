@@ -6,7 +6,10 @@ filesize=$(stat -c%s "$PT_path" 2>/dev/null)
 # Assume that if the file exists and is the same size, we don't have to
 # re-download.
 if [[ ! -z "$urisize" && ! -z "$filesize" && "$filesize" -eq "$urisize" ]]; then
-  exit 0
+#  exit 0
+  echo "URLSIZE: $urisize, FILESIZE: $filesize"
 else
+  echo  "PATH: $PT_path SOURCE: $PT_source"
   curl -L -o "$PT_path" "$PT_source"
 fi
+
