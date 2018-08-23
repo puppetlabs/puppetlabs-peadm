@@ -10,7 +10,7 @@ require 'open3'
 
 Puppet.initialize_settings
 
-def exports(source, path)
+def download(source, path)
   stdout, stderr, status = Open3.capture3('/opt/puppetlabs/puppet/bin/curl', '-k', '-o', path, source)
   {
       stdout: stdout.strip,
