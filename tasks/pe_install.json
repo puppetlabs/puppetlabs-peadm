@@ -1,6 +1,10 @@
 {
   "description": "Install Puppet Enterprise from a tarball",
   "parameters": {
+    "debug": {
+      "type": "Optional[Boolean]",
+      "description": "Run script in debug mode to output more information"
+    },
     "tarball": {
       "type": "String",
       "description": "The path to the Puppet Enterprise tarball"
@@ -16,6 +20,6 @@
   },
   "input_method": "environment",
   "implementations": [
-    {"name": "pe_install.sh"}
+    {"name": "pe_install.rb"}
   ]
 }
