@@ -72,8 +72,8 @@ end
 
 # check if vars are set
 if ! $shortcircuit or ! $tarball or ! $pe_conf
-  @logger.error "Required params not provided."
-  @logger.error 'Please ensure ENV["PT_shortcircuit_puppetdb"], ENV["PT_tarball"], ENV["PT_pe_conf"] are set.'
+  $logger.error "Required params not provided."
+  $logger.error 'Please ensure ENV["PT_shortcircuit_puppetdb"], ENV["PT_tarball"], ENV["PT_pe_conf"] are set.'
   exit 1
 end
 
