@@ -51,7 +51,11 @@ def run_command(*args)
   }
 end
 
-$shortcircuit = ENV['PT_shortcircuit_puppetdb']
+if "ENV['PT_shortcircuit_puppetdb']x" != 'x'
+  $shortcircuit = ENV['PT_shortcircuit_puppetdb']
+else
+  $shortcircuit = false
+end
 $tarball = ENV['PT_tarball']
 $pe_conf = ENV['PT_peconf']
 
