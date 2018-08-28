@@ -8,7 +8,7 @@
 # Parameters:
 #   * shortcircuit_puppetdb - configures PuppetDB to quickly fail on start
 #   * tarball               - The location of the pe install package
-#   * pe_conf               - The location of the pe.conf file to use for install
+#   * peconf               - The location of the pe.conf file to use for install
 #   * debug                 - logger setting to debug
 #
 
@@ -53,7 +53,7 @@ end
 
 $shortcircuit = ENV['PT_shortcircuit_puppetdb']
 $tarball = ENV['PT_tarball']
-$pe_conf = ENV['PT_pe_conf']
+$pe_conf = ENV['PT_peconf']
 
 def start_shortciruit
   run_command('mkdir /etc/systemd/system/pe-puppetdb.service.d', [ 0, 1 ] )
