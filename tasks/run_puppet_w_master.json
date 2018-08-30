@@ -1,5 +1,5 @@
 {
-  "description": "Install Puppet Enterprise from a tarball",
+  "description": "Run Puppet Enterprise against a identified master",
   "parameters": {
     "debug": {
       "type": "Optional[Boolean]",
@@ -8,7 +8,7 @@
     "puppet_master": {
       "type": "String",
       "description": "The puppet master to run puppet against"
-    },
+    }
   },
   "input_method": "environment",
   "implementations": [
