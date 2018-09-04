@@ -16,6 +16,7 @@ plan pe_xl::configure (
   Optional[String[1]] $deploy_environment = 'production',
 
   Optional[String[1]] $load_balancer_host = undef,
+  Optional[String[1]] $token_file = undef,
 
   String[1]           $stagingdir = '/tmp',
 ) {
