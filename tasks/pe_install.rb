@@ -25,7 +25,7 @@ $logger.level = $debug ? Logger::DEBUG : Logger::INFO
 $exit_code = 1
 
 # array of acceptable exit codes for the installer process
-$installer_acceptable_codes = [ 0, 6 ]
+$installer_acceptable_codes = [ 0, 2, 6 ]
 
 def run_command(*args)
   command = args[0]
