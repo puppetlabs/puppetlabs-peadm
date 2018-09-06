@@ -41,23 +41,6 @@ fi
 
 set -e
 
-[ -d /etc/puppetlabs/puppet/ssl/certs ] || mkdir -p /etc/puppetlabs/puppet/ssl/certs
-if [ -n "${cacert_content?}" ]; then
-  echo "${cacert_content}" > /etc/puppetlabs/puppet/ssl/certs/ca.pem
-  curl_arg="--cacert /etc/puppetlabs/puppet/ssl/certs/ca.pem"
-else
-  curl_arg="-k"
-fi
+flags=$(echo $PT_install_flags | sed -e 's/^\["//' -e 's/\"]$//' -e 's/", *"/ /g')
 
-if curl ${curl_arg?} https://${master}:8140/packages/current/install.bash -o /tmp/install.bash; then
-  if bash /tmp/install.bash ${command_options} ${certname_arg}${alt_names_arg}${custom_attributes_arg}${extension_requests_arg}; then
-    echo "Installed"
-    exit 0
-  else
-    echo "Failed to run install.bash"
-    exit 1
-  fi
-else
-  echo "Failed to download install.bash"
-  exit 1
-fi
+curl -k "https://${PT_server}:8140/packages/current/install.bash" | bash -s -- $flags
