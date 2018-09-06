@@ -1,0 +1,13 @@
+{
+  "description": "Add replica DB to the node_group",
+  "parameters": {
+    "puppetdb_database_replica_host": {
+      "type": "String",
+      "description": "The certname of the replica database node"
+    }
+  },
+  "input_method": "environment",
+  "implementations": [
+    {"name": "configure_replica_db_node_group.pp"}
+  ]
+}
