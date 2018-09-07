@@ -152,17 +152,21 @@ plan pe_xl::upgrade::replica_set (
     )
   }
 
+  $front_hosts.each |$host| {
+    run_task('pe_xl::agent_install', $host,
+      server        => $primary_master_host,
+      install_flags => [
+        ' --puppet-service-ensure ', 'stopped',
+      ],
+    )
+  }
   # Run puppet to change any configs needed to point to primary_master_host
   $front_hosts.each |$host| {
     run_task('pe_xl::run_puppet_w_master', $host,
       puppet_master => $primary_master_host,
     )
   }
-  # Run puppet to change any configs needed to point to primary_master_host
-  $all_hosts.each |$host| {
-    run_task('pe_xl::run_puppet_w_master', $host,
-      puppet_master => $primary_master_host,
-    )
-  }
+  # Run puppet on all hosts
+  run_task('pe_xl::puppet_runonce', $all_hosts)
 }
 
