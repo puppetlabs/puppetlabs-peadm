@@ -72,6 +72,9 @@ plan pe_xl::upgrade::primary_set (
     --classifier-termini=${primary_master_host}:4433,${primary_master_replica_host}:4433 \
     --puppetdb-termini=${balancer}:8081${primary_master_replica_host}:8081 --yes "
 
+  # Stop puppet on all hosts to be upgraded
+  run_command('service puppet stop', $all_hosts)
+
   # Run the enable command to point all infrastecture at primary_master_host
   run_task(pe_xl::enable_replica, $primary_master_host_local,
     primary_master_replica => $primary_master_replica_host,
@@ -102,20 +105,6 @@ plan pe_xl::upgrade::primary_set (
     --key /etc/puppetlabs/puppet/ssl/private_keys/${primary_master_host}.pem \
     --cacert /etc/puppetlabs/puppet/ssl/certs/ca.pem  --silent"
 
-  # Stop puppet on all hosts to be upgraded
-  run_command('service puppet stop', $all_hosts)
-
-  # Run puppet to change any configs needed to point to primary_master_host
-  $all_hosts.each |$host| {
-    run_task('pe_xl::puppet_runonce', $host)
-  }
-
-  # Run the enable command to point all infrastecture at primary_master_host
-  run_task(pe_xl::enable_replica, $primary_master_host_local,
-    primary_master_replica => $primary_master_replica_host,
-    command_options        => $enable_options_to_replica,
-  )
-  
   # Run puppet to change any configs needed to point to primary_master_host
   $front_hosts.each |$host| {
     run_task('pe_xl::puppet_runonce', $host)
