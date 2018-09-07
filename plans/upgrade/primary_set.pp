@@ -144,12 +144,12 @@ plan pe_xl::upgrade::primary_set (
   )
 
   # Stop puppet on all hosts to be upgraded
-  run_command('service puppet stop', $primary_master_hosts)
+  run_command('service puppet stop', $primary_master_hosts_local)
 
   run_command("export STATE=true ;while \$STATE ; do export CHECK=$($check_orchestrator) ;  if [[ \$CHECK == 'running' ]] ; then export STATE=false; fi ;sleep 3 ;  done ", $primary_master_host_local)
 
   # Run puppet to change any configs needed to point to primary_master_host
-  run_task('pe_xl::run_puppet_w_master', $primary_master_host_local
+  run_task('pe_xl::run_puppet_w_master', $primary_master_host_local,
     puppet_master => $primary_master_host,
   )
 
