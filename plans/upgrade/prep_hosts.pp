@@ -109,15 +109,15 @@ plan pe_xl::upgrade::prep_hosts (
   run_task('pe_xl::puppet_runonce', $all_hosts)
   
 
-#  # Run the enable command to point all infrastecture at primary_master_host
-#  run_task(pe_xl::enable_replica, $primary_master_host_local,
-#    primary_master_replica => $primary_master_replica_host,
-#    command_options        => $enable_options_1,
-#  )
-#
-#  # Run puppet to change any configs needed to point to primary_master_host
-#  $all_hosts.each |$host| {
-#    run_task('pe_xl::puppet_runonce', $host)
-#  }
+  # Run the enable command to point all infrastecture at primary_master_host
+  run_task(pe_xl::enable_replica, $primary_master_host_local,
+    primary_master_replica => $primary_master_replica_host,
+    command_options        => $enable_options_1,
+  )
+
+  # Run puppet to change any configs needed to point to primary_master_host
+  $all_hosts.each |$host| {
+    run_task('pe_xl::puppet_runonce', $host)
+  }
 
 }
