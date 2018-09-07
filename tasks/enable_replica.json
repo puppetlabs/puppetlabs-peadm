@@ -1,0 +1,17 @@
+{
+  "description": "Enable the replica puppet command ",
+  "parameters": {
+    "command_options": {
+      "type": "String",
+      "description": "Command options to pass to 'puppet infrastructure enable replica'."
+    },
+    "primary_master_replica": {
+      "type": "String",
+      "description": "The certname of the Master Replica"
+    }
+  },
+  "input_method": "environment",
+  "implementations": [
+    {"name": "enable_replica.rb"}
+  ]
+}
