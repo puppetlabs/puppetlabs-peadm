@@ -44,7 +44,7 @@ plan pe_xl::upgrade::prep_hosts (
     --infra-pcp-brokers=${primary_master_host}:8142 \
     --topology=mono-with-compile \
     --classifier-termini=${primary_master_host}:4433,${primary_master_replica_host}:4433 \
-    --puppetdb-termini=${balancer}:8081,${primary_master_host}:8081,${primary_master_replica_host}:8081 \
+    --puppetdb-termini=${balancer}:8081,${primary_master_replica_host}:8081 \
     --skip-agent-config --yes "
 
   $all_hosts = [
