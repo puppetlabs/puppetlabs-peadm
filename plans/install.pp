@@ -13,8 +13,37 @@ plan pe_xl::install (
 
   Optional[String[1]] $load_balancer_host = undef,
 
+  Optional[String[1]] $deploy_environment = 'production',
+
   String[1]           $stagingdir = '/tmp',
 ) {
+
+  # split hosts compilemasters to even then odd group a, b
+  if ! $compile_master_hosts.empty{
+    $cmaster_group_a = $compile_master_hosts.filter | $name | { $name =~ /^[a-z]+.*([0,2,4,6,8])\./ }
+    $cmaster_group_b = $compile_master_hosts.filter | $name | { $name =~ /^[a-z]+.*([1,3,5,7,9])\./ }
+    $group_a = [
+      $primary_master_host, 
+      $puppetdb_database_host,
+      $cmaster_group_a,
+    ].pe_xl::flatten_compact()
+  
+    $group_b = [
+      $primary_master_replica_host,
+      $puppetdb_database_replica_host,
+      $cmaster_group_b,
+    ].pe_xl::flatten_compact()
+  } else {
+    $group_a = [
+      $primary_master_host, 
+      $puppetdb_database_host,
+    ].pe_xl::flatten_compact()
+  
+    $group_b = [
+      $primary_master_replica_host,
+      $puppetdb_database_replica_host,
+    ].pe_xl::flatten_compact()
+  }
 
   $all_hosts = [
     $primary_master_host, 
@@ -36,7 +65,6 @@ plan pe_xl::install (
     $load_balancer_host,
     $primary_master_replica_host,
   ].pe_xl::flatten_compact()
-
 
   $dns_alt_names_csv = $dns_alt_names.reduce |$csv,$x| { "${csv},${x}" }
 
@@ -172,7 +200,7 @@ plan pe_xl::install (
   )
 
   # TODO: Split the compile masters into two pools, A and B.
-  run_task('pe_xl::agent_install', $compile_master_hosts,
+  run_task('pe_xl::agent_install', $cmaster_group_a,
     server        => $primary_master_host,
     install_flags => [
       '--puppet-service-ensure', 'stopped',
@@ -180,6 +208,18 @@ plan pe_xl::install (
       'extension_requests:pp_application=puppet',
       'extension_requests:pp_role=pe_xl::compile_master',
       'extension_requests:pp_cluster=A',
+    ],
+  )
+
+  # TODO: Split the compile masters into two pools, A and B.
+  run_task('pe_xl::agent_install', $cmaster_group_b,
+    server        => $primary_master_host,
+    install_flags => [
+      '--puppet-service-ensure', 'stopped',
+      "main:dns_alt_names=${dns_alt_names_csv}",
+      'extension_requests:pp_application=puppet',
+      'extension_requests:pp_role=pe_xl::compile_master',
+      'extension_requests:pp_cluster=B',
     ],
   )
 
@@ -210,8 +250,29 @@ plan pe_xl::install (
       --allow-dns-alt-names
     | HEREDOC
 
-  run_task('pe_xl::puppet_runonce', $agent_installer_hosts)
-  run_task('pe_xl::puppet_runonce', $pe_installer_hosts)
+  $control_repo = $r10k_sources.reduce |$memo, $value| {
+    $string = "${memo[0]}${value[0]}"
+  }
+
+  if $control_repo {
+    run_task('pe_xl::code_manager', $primary_master_host,
+      action => 'deploy',
+      environment => $deploy_environment,
+    )
+  }
+
+  run_task('pe_xl::puppet_runonce', $primary_master_host)
+  run_task('pe_xl::puppet_runonce', $puppetdb_database_host)
+  run_task('pe_xl::puppet_runonce', $primary_master_replica_host)
+  run_task('pe_xl::puppet_runonce', $puppetdb_database_replica_host)
+  if ! $compile_master_hosts.empty {
+    $compile_master_hosts.each |$host| {
+      run_task('pe_xl::puppet_runonce', $host)
+    }
+  }
+  if $load_balancer_host {
+    run_task('pe_xl::puppet_runonce', $load_balancer_host)
+  }
 
   return('Installation succeeded')
 }
