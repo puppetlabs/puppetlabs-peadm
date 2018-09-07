@@ -1,4 +1,4 @@
-#!/opt/puppetlabs/bin/puppet apply
+#!/opt/puppetlabs/bin/puppet apply 
 function param($name) { inline_template("<%= ENV['PT_${name}'] %>") }
 
 $default_environment = 'production'
@@ -24,6 +24,36 @@ node_group { 'PE PuppetDB':
     ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master']],
     ['=', 'name', param('primary_master_host')],
   ],
+}
+
+if param('load_balancer_host') {
+  node_group { 'PE Load Balancer':
+    ensure               => 'present',
+    classes              => {
+      'profile::haproxy' => {
+      }
+    },
+    parent               => 'PE Infrastructure',
+    rule                 => ['and',
+    ['~',
+      ['trusted', 'extensions', 'pp_role'],
+      'pe_xl::load_balancer']],
+  }
+}
+
+if param('compile_master_hosts') {
+  node_group { 'PE Compile Masters':
+    ensure               => 'present',
+    classes              => {
+      'profile::compile_master' => {
+      }
+    },
+    parent               => 'PE Master',
+    rule                 => ['and',
+    ['=',
+      ['trusted', 'extensions', 'pp_role'],
+      'pe_xl::compile_master']],
+  }
 }
 
 # This class has to be included here because puppet_enterprise is declared
@@ -82,3 +112,4 @@ $environments.each |$env| {
     rule                 => ['and', ['~', ['fact', 'agent_specified_environment'], '.+']],
   }
 }
+
