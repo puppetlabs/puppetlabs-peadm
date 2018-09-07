@@ -35,12 +35,12 @@ plan pe_xl::upgrade::primary_set (
     $load_balancer_host,
   ].pe_xl::flatten_compact()
 
-  $group_a_hosts = [
+  $primary_master_hosts = [
     $primary_master_host_local,
     $puppetdb_database_host,
   ].pe_xl::flatten_compact()
-  
-  $group_b_hosts = [
+
+  $replica_master_hosts = [
     $primary_master_replica_host,
     $puppetdb_database_replica_host,
   ].pe_xl::flatten_compact()
@@ -122,7 +122,7 @@ plan pe_xl::upgrade::primary_set (
   }
 
   # Run puppet to change any configs needed to point to primary_master_host
-  $group_a_hosts.each |$host| {
+  $primary_master_hosts.each |$host| {
     run_task('pe_xl::puppet_runonce', $host)
   }
 
@@ -154,14 +154,14 @@ plan pe_xl::upgrade::primary_set (
   )
 
   # Stop puppet on all hosts to be upgraded
-  run_command('service puppet stop', $group_a_hosts)
+  run_command('service puppet stop', $primary_master_hosts)
 
   run_command("export STATE=true ;while \$STATE ; do export CHECK=$($check_orchestrator) ;  if [[ \$CHECK == 'running' ]] ; then export STATE=false; fi ;sleep 3 ;  done ", $primary_master_host_local)
 
   run_task('pe_xl::puppet_runonce', $primary_master_host_local)
 
   # Run puppet to change any configs needed to point replica
-  $group_a_hosts.each |$host| {
+  $primary_master_hosts.each |$host| {
     run_task('pe_xl::puppet_runonce', $host)
   }
 
@@ -172,7 +172,7 @@ plan pe_xl::upgrade::primary_set (
   )
 
   # Run puppet to change any configs needed to point replica
-  $group_a_hosts.each |$host| {
+  $primary_master_hosts.each |$host| {
     run_task('pe_xl::puppet_runonce', $host)
   }
 
