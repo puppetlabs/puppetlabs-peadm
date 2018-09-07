@@ -121,7 +121,6 @@ plan pe_xl::upgrade::replica_set (
   # Get the primary master replica set upgrade done.
   [$primary_master_replica_host,$puppetdb_database_replica_host].each |$host| {
     run_task('pe_xl::pe_install', $host,
-      debug                 => true,
       tarball               => $upload_tarball_path,
       peconf                => '/tmp/pe.conf',
       shortcircuit_puppetdb => false,

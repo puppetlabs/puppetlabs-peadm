@@ -70,7 +70,7 @@ plan pe_xl::upgrade::primary_set (
     --infra-pcp-brokers=${primary_master_host}:8142 \
     --topology=mono-with-compile \
     --classifier-termini=${primary_master_host}:4433,${primary_master_replica_host}:4433 \
-    --puppetdb-termini=${balancer}:8081${primary_master_replica_host}:8081 --yes "
+    --puppetdb-termini=${balancer}:8081,${primary_master_replica_host}:8081 --yes "
 
   $enable_options_to_primary = "$token_options \
     --pcp-brokers=${primary_master_host}:8142 --agent-server-urls=${balancer}:8140 \
@@ -78,7 +78,7 @@ plan pe_xl::upgrade::primary_set (
     --infra-pcp-brokers=${primary_master_host}:8142 \
     --topology=mono-with-compile \
     --classifier-termini=${primary_master_host}:4433,${primary_master_replica_host}:4433 \
-    --puppetdb-termini=${balancer}:8081,${primary_master_host}:8081,${primary_master_replica_host}:8081 \
+    --puppetdb-termini=${balancer}:8081,${primary_master_replica_host}:8081 \
     --skip-agent-config --yes "
 
   $check_orchestrator = "curl https://${primary_master_host}:8143/status/v1/simple \
@@ -118,7 +118,6 @@ plan pe_xl::upgrade::primary_set (
 
   # Get the primary master set upgrade done.
   run_task('pe_xl::pe_install', $primary_master_host_local,
-    debug                 => true,
     tarball               => $upload_tarball_path,
     peconf                => '/tmp/pe.conf',
     shortcircuit_puppetdb => false,
@@ -127,7 +126,6 @@ plan pe_xl::upgrade::primary_set (
   run_command("export STATE=true ;while \$STATE ; do export CHECK=$($check_orchestrator) ;  if [[ \$CHECK == 'running' ]] ; then export STATE=false; fi ;sleep 3 ;  done ", $primary_master_host_local)
 
   run_task('pe_xl::pe_install', $puppetdb_database_host,
-    debug                 => true,
     tarball               => $upload_tarball_path,
     peconf                => '/tmp/pe.conf',
     shortcircuit_puppetdb => false,
@@ -146,12 +144,12 @@ plan pe_xl::upgrade::primary_set (
   # Stop puppet on all hosts to be upgraded
   run_command('service puppet stop', $primary_master_hosts)
 
-  run_command("export STATE=true ;while \$STATE ; do export CHECK=$($check_orchestrator) ;  if [[ \$CHECK == 'running' ]] ; then export STATE=false; fi ;sleep 3 ;  done ", $primary_master_host_local)
-
   # Run puppet to change any configs needed to point to primary_master_host
   run_task('pe_xl::run_puppet_w_master', $primary_master_host_local,
     puppet_master => $primary_master_host,
   )
+
+  run_command("export STATE=true ;while \$STATE ; do export CHECK=$($check_orchestrator) ;  if [[ \$CHECK == 'running' ]] ; then export STATE=false; fi ;sleep 3 ;  done ", $primary_master_host_local)
 
   # Run puppet to change any configs needed to point replica
   $primary_master_hosts.each |$host| {
