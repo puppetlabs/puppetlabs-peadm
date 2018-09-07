@@ -151,11 +151,11 @@ plan pe_xl::upgrade::primary_set (
 
   run_command("export STATE=true ;while \$STATE ; do export CHECK=$($check_orchestrator) ;  if [[ \$CHECK == 'running' ]] ; then export STATE=false; fi ;sleep 3 ;  done ", $primary_master_host_local)
 
-  # Run puppet to change any configs needed to point replica
-  $primary_master_hosts.each |$host| {
-    run_task('pe_xl::puppet_runonce', $host)
-  }
-
+#  # Run puppet to change any configs needed to point replica
+#  $primary_master_hosts.each |$host| {
+#    run_task('pe_xl::puppet_runonce', $host)
+#  }
+#
   # Run the enable command to point all infrastecture at primary_master_host
 #  run_task(pe_xl::enable_replica, $primary_master_host_local,
 #    primary_master_replica => $primary_master_replica_host,
@@ -163,11 +163,11 @@ plan pe_xl::upgrade::primary_set (
 #  )
 
   # Run puppet to change any configs needed to point to primary_master_host
-#  $primary_master_hosts.each |$host| {
-#    run_task('pe_xl::run_puppet_w_master', $host,
-#      puppet_master => $primary_master_host,
-#    )
-#  }
+  $primary_master_hosts.each |$host| {
+    run_task('pe_xl::run_puppet_w_master', $host,
+      puppet_master => $primary_master_host,
+    )
+  }
 
 #  # Run puppet to change any configs needed to point to primary_master_host
 #  $front_hosts.each |$host| {
