@@ -65,9 +65,28 @@ plan pe_xl::upgrade::replica_set (
   } else {
     $token_options =  ''
   }
+  $enable_options_1 = "$token_options \
+    --pcp-brokers=${primary_master_host}:8142 --agent-server-urls=${balancer}:8140 \
+    --infra-agent-server-urls=${primary_master_host}:8140  \
+    --infra-pcp-brokers=${primary_master_host}:8142 \
+    --topology=mono-with-compile \
+    --classifier-termini=${primary_master_host}:4433,${primary_master_replica_host}:4433 \
+    --puppetdb-termini=${balancer}:8081,${primary_master_host}:8081,${primary_master_replica_host}:8081 \
+    --skip-agent-config --yes "
 
   # Stop puppet on all hosts to be upgraded
     run_command('service puppet stop', $all_hosts)
+
+  # Run the enable command to point all infrastecture at primary_master_host
+  run_task(pe_xl::enable_replica, $primary_master_host_local,
+    primary_master_replica => $primary_master_replica_host,
+    command_options        => $enable_options_1,
+  )
+
+  # Run puppet to change any configs needed to point to primary_master_host
+  $all_hosts.each |$host| {
+    run_task('pe_xl::puppet_runonce', $host)
+  }
 
   # Run puppet to change any configs needed to point to primary_master_host
   $all_hosts.each |$host| {
@@ -92,6 +111,7 @@ plan pe_xl::upgrade::replica_set (
       action => stop,
     )
   }
+
   # Run puppet to change any configs needed to point replica
   run_task('pe_xl::run_puppet_w_master', $primary_master_replica_host,
     puppet_master => $primary_master_replica_host,
@@ -106,29 +126,29 @@ plan pe_xl::upgrade::replica_set (
     puppet_master => $primary_master_replica_host,
   )
 
-  $enable_options_on_replica = "$token_options \
-    --pcp-brokers=${primary_master_host}:8142 --agent-server-urls=${balancer}:8140 \
-    --infra-agent-server-urls=${primary_master_replica_host}:8140  \
-    --infra-pcp-brokers=${primary_master_host}:8142 \
-    --topology=mono-with-compile \
-    --classifier-termini=${primary_master_host}:4433,${primary_master_replica_host}:4433 \
-    --puppetdb-termini=${balancer}:8081${primary_master_replica_host}:8081 --yes "
-
-  # Run the enable command to point all infrastecture at primary_master_host
-  run_task(pe_xl::enable_replica, $primary_master_host_local,
-    primary_master_replica => $primary_master_replica_host,
-    command_options        => $enable_options_on_replica,
-  )
-
-  # Run puppet to change any configs needed to point replica
-  $replica_master_hosts.each |$host| {
-    run_task('pe_xl::run_puppet_w_master', $host,
-      puppet_master => $primary_master_replica_host,
-    )
-  }
-  # Run puppet to change any configs needed to point to primary_master_host
-  $front_hosts.each |$host| {
-    run_task('pe_xl::puppet_runonce', $host)
-  }
+#  $enable_options_on_replica = "$token_options \
+#    --pcp-brokers=${primary_master_host}:8142 --agent-server-urls=${balancer}:8140 \
+#    --infra-agent-server-urls=${primary_master_replica_host}:8140  \
+#    --infra-pcp-brokers=${primary_master_host}:8142 \
+#    --topology=mono-with-compile \
+#    --classifier-termini=${primary_master_host}:4433,${primary_master_replica_host}:4433 \
+#    --puppetdb-termini=${balancer}:8081${primary_master_replica_host}:8081 --yes "
+#
+#  # Run the enable command to point all infrastecture at primary_master_host
+#  run_task(pe_xl::enable_replica, $primary_master_host_local,
+#    primary_master_replica => $primary_master_replica_host,
+#    command_options        => $enable_options_on_replica,
+#  )
+#
+#  # Run puppet to change any configs needed to point replica
+#  $replica_master_hosts.each |$host| {
+#    run_task('pe_xl::run_puppet_w_master', $host,
+#      puppet_master => $primary_master_replica_host,
+#    )
+#  }
+#  # Run puppet to change any configs needed to point to primary_master_host
+#  $front_hosts.each |$host| {
+#    run_task('pe_xl::puppet_runonce', $host)
+#  }
 
 }
