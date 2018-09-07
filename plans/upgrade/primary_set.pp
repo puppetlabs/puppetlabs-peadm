@@ -157,7 +157,7 @@ plan pe_xl::upgrade::primary_set (
   # Run the enable command to point all infrastecture at primary_master_host
   run_task(pe_xl::enable_replica, $primary_master_host_local,
     primary_master_replica => $primary_master_replica_host,
-    command_options        => $enable_options_to_replica,
+    command_options        => $enable_options_on_replica,
   )
 
   # Run puppet to change any configs needed to point replica
