@@ -144,7 +144,7 @@ plan pe_xl::upgrade::primary_set (
   )
 
   # Stop puppet on all hosts to be upgraded
-  run_command('service puppet stop', $primary_master_hosts_local)
+  run_command('service puppet stop', $primary_master_hosts)
 
   run_command("export STATE=true ;while \$STATE ; do export CHECK=$($check_orchestrator) ;  if [[ \$CHECK == 'running' ]] ; then export STATE=false; fi ;sleep 3 ;  done ", $primary_master_host_local)
 
