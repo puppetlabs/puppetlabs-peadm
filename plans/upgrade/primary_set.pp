@@ -90,10 +90,10 @@ plan pe_xl::upgrade::primary_set (
   run_command('service puppet stop', $all_hosts)
 
   # Run the enable command to point all infrastecture at primary_master_host
-  run_task(pe_xl::enable_replica, $primary_master_host_local,
-    primary_master_replica => $primary_master_replica_host,
-    command_options        => $enable_options_on_replica,
-  )
+#  run_task(pe_xl::enable_replica, $primary_master_host_local,
+#    primary_master_replica => $primary_master_replica_host,
+#    command_options        => $enable_options_on_replica,
+#  )
 
   # Run puppet to change any configs needed to point replica
   $replica_master_hosts.each |$host| {
@@ -102,19 +102,19 @@ plan pe_xl::upgrade::primary_set (
     )
   }
 
-  # Run puppet to change any configs needed to point to primary_master_host
-  $primary_master_hosts.each |$host| {
-    run_task('pe_xl::run_puppet_w_master', $host,
-      puppet_master => $primary_master_host,
-    )
-  }
-
-  # Run puppet to change any configs needed to point to primary_master_host
-  $front_hosts.each |$host| {
-    run_task('pe_xl::run_puppet_w_master', $host,
-      puppet_master => $primary_master_replica_host,
-    )
-  }
+#  # Run puppet to change any configs needed to point to primary_master_host
+#  $primary_master_hosts.each |$host| {
+#    run_task('pe_xl::run_puppet_w_master', $host,
+#      puppet_master => $primary_master_host,
+#    )
+#  }
+#
+#  # Run puppet to change any configs needed to point to primary_master_host
+#  $front_hosts.each |$host| {
+#    run_task('pe_xl::run_puppet_w_master', $host,
+#      puppet_master => $primary_master_replica_host,
+#    )
+#  }
 
   # Get the primary master set upgrade done.
   run_task('pe_xl::pe_install', $primary_master_host_local,
@@ -157,30 +157,30 @@ plan pe_xl::upgrade::primary_set (
   }
 
   # Run the enable command to point all infrastecture at primary_master_host
-  run_task(pe_xl::enable_replica, $primary_master_host_local,
-    primary_master_replica => $primary_master_replica_host,
-    command_options        => $enable_options_on_replica,
-  )
+#  run_task(pe_xl::enable_replica, $primary_master_host_local,
+#    primary_master_replica => $primary_master_replica_host,
+#    command_options        => $enable_options_on_replica,
+#  )
 
   # Run puppet to change any configs needed to point to primary_master_host
-  $primary_master_hosts.each |$host| {
-    run_task('pe_xl::run_puppet_w_master', $host,
-      puppet_master => $primary_master_host,
-    )
-  }
+#  $primary_master_hosts.each |$host| {
+#    run_task('pe_xl::run_puppet_w_master', $host,
+#      puppet_master => $primary_master_host,
+#    )
+#  }
 
-  # Run puppet to change any configs needed to point to primary_master_host
-  $front_hosts.each |$host| {
-    run_task('pe_xl::run_puppet_w_master', $host,
-      puppet_master => $primary_master_replica_host,
-    )
-  }
+#  # Run puppet to change any configs needed to point to primary_master_host
+#  $front_hosts.each |$host| {
+#    run_task('pe_xl::run_puppet_w_master', $host,
+#      puppet_master => $primary_master_replica_host,
+#    )
+#  }
 
-  # Run puppet to change any configs needed to point replica
-  $replica_master_hosts.each |$host| {
-    run_task('pe_xl::run_puppet_w_master', $host,
-      puppet_master => $primary_master_replica_host,
-    )
-  }
+#  # Run puppet to change any configs needed to point replica
+#  $replica_master_hosts.each |$host| {
+#    run_task('pe_xl::run_puppet_w_master', $host,
+#      puppet_master => $primary_master_replica_host,
+#    )
+#  }
 
 }
