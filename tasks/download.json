@@ -1,6 +1,4 @@
 {
-  "puppet_task_version": 1,
-  "supports_noop": false,
   "description": "Download a file using curl",
   "parameters": {
     "source": {
@@ -12,7 +10,8 @@
       "description": "Where to save the downloaded file"
     }
   },
+  "input_method": "environment",
   "implementations": [
-    {"name": "download.rb"}
+    {"name": "download.sh"}
   ]
 }

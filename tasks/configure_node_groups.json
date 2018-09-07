@@ -6,12 +6,15 @@
       "description": "The certname of the primary master"
     },
     "r10k_sources": {
-      "description": "The r10k control repo sources"
+      "type": "Optional['Hash']",
+      "description": "The r10k control repos"
     },
     "compile_master_hosts": {
+      "type": "Optional['Array']",
       "description": "The certname of all the compile masters"
     },
     "load_balancer_host": {
+      "type": "Optional['String']",
       "description": "The certname of the load balancer"
     }
   },

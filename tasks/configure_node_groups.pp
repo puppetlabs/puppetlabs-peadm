@@ -26,57 +26,33 @@ node_group { 'PE PuppetDB':
   ],
 }
 
-$control_repo = ENV['PT_r10k_sources'].reduce |$memo, $value| {
-  $string = "${memo[0]}${value[0]}"
-}
-
 if param('load_balancer_host') {
-  if $control_repo {
-    node_group { 'PE Load Balancer':
-      ensure               => 'present',
-      classes              => {
-        'profile::haproxy' => { }
-      },
-      parent               => 'PE Infrastructure',
-      rule                 => ['and',
-      ['~',
-        ['trusted', 'extensions', 'pp_role'],
-        'pe_xl::load_balancer']],
-    }
-  } else {
-    node_group { 'PE Load Balancer':
-      ensure               => 'present',
-      parent               => 'PE Infrastructure',
-      rule                 => ['and',
-      ['~',
-        ['trusted', 'extensions', 'pp_role'],
-        'pe_xl::load_balancer']],
-    }
+  node_group { 'PE Load Balancer':
+    ensure               => 'present',
+    classes              => {
+      'profile::haproxy' => {
+      }
+    },
+    parent               => 'PE Infrastructure',
+    rule                 => ['and',
+    ['~',
+      ['trusted', 'extensions', 'pp_role'],
+      'pe_xl::load_balancer']],
   }
 }
 
 if param('compile_master_hosts') {
-  if $control_repo {
-    node_group { 'PE Compile Masters':
-      ensure               => 'present',
-      classes              => { 
-        'profile::compile_master' => { }
-      },
-      parent               => 'PE Master',
-      rule                 => ['and',
-      ['=',
-        ['trusted', 'extensions', 'pp_role'],
-        'pe_xl::compile_master']],
-    }
-  } else {
-    node_group { 'PE Compile Masters':
-      ensure               => 'present',
-      parent               => 'PE Master',
-      rule                 => ['and',
-      ['=',
-        ['trusted', 'extensions', 'pp_role'],
-        'pe_xl::compile_master']],
-    }
+  node_group { 'PE Compile Masters':
+    ensure               => 'present',
+    classes              => {
+      'profile::compile_master' => {
+      }
+    },
+    parent               => 'PE Master',
+    rule                 => ['and',
+    ['=',
+      ['trusted', 'extensions', 'pp_role'],
+      'pe_xl::compile_master']],
   }
 }
 
