@@ -66,6 +66,11 @@ plan pe_xl::upgrade::replica_set (
     $token_options =  ''
   }
 
+  $check_orchestrator = "curl https://${primary_master_host}:8143/status/v1/simple \
+    --cert /etc/puppetlabs/puppet/ssl/certs/${primary_master_host}.pem \
+    --key /etc/puppetlabs/puppet/ssl/private_keys/${primary_master_host}.pem \
+    --cacert /etc/puppetlabs/puppet/ssl/certs/ca.pem  --silent"
+
   $enable_options_to_replica = "$token_options \
     --pcp-brokers=${primary_master_host}:8142 --agent-server-urls=${balancer}:8140 \
     --infra-agent-server-urls=${primary_master_replica_host}:8140  \
@@ -165,6 +170,9 @@ plan pe_xl::upgrade::replica_set (
       puppet_master => $primary_master_host,
     )
   }
+
+  run_command("export STATE=true ;while \$STATE ; do export CHECK=$($check_orchestrator) ;  if [[ \$CHECK == 'running' ]] ; then export STATE=false; fi ;sleep 3 ;  done ", $primary_master_host_local)
+
   # Run puppet on all hosts
   run_task('pe_xl::puppet_runonce', $all_hosts)
 }
