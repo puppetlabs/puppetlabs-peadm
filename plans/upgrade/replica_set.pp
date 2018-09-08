@@ -103,7 +103,7 @@ plan pe_xl::upgrade::replica_set (
   run_command("export STATE=true ;while \$STATE ; do export CHECK=$($check_orchestrator) ;  if [[ \$CHECK == 'running' ]] ; then export STATE=false; fi ;sleep 3 ;  done ", $primary_master_host_local)
 
   # Stop puppetdb on replica during upgrade
-  run_task('service', $replica_master_host,
+  run_task('service', $primary_master_replica_host,
     name   => pe-puppetdb,
     action => stop,
   )
