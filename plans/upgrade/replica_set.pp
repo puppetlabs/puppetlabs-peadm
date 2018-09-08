@@ -66,11 +66,6 @@ plan pe_xl::upgrade::replica_set (
     $token_options =  ''
   }
 
-  $check_orchestrator = "curl https://${primary_master_host}:8143/status/v1/simple \
-    --cert /etc/puppetlabs/puppet/ssl/certs/${primary_master_host}.pem \
-    --key /etc/puppetlabs/puppet/ssl/private_keys/${primary_master_host}.pem \
-    --cacert /etc/puppetlabs/puppet/ssl/certs/ca.pem  --silent"
-
   $enable_options_to_replica = "$token_options \
     --pcp-brokers=${primary_master_host}:8142 --agent-server-urls=${balancer}:8140 \
     --infra-agent-server-urls=${primary_master_replica_host}:8140  \
