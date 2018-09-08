@@ -91,33 +91,6 @@ plan pe_xl::upgrade::replica_set (
   # Stop puppet on all hosts to be upgraded
     run_command('service puppet stop', $all_hosts)
 
-#  # Run the enable command to point all infrastecture at primary_master_host
-#  run_task(pe_xl::enable_replica, $primary_master_host_local,
-#    primary_master_replica => $primary_master_replica_host,
-#    command_options        => $enable_options_to_primary,
-#  )
-
-#  # Run puppet to change any configs needed to point to primary_master_host
-#  $primary_master_hosts.each |$host| {
-#    run_task('pe_xl::run_puppet_w_master', $host,
-#      puppet_master => $primary_master_host,
-#    )
-#  }
-
-  # Run puppet to change any configs needed to point replica
-  $replica_master_hosts.each |$host| {
-    run_task('pe_xl::run_puppet_w_master', $host,
-      puppet_master => $primary_master_replica_host,
-    )
-  }
-
-#  # Run puppet to change any configs needed to point to primary_master_host
-#  $front_hosts.each |$host| {
-#    run_task('pe_xl::run_puppet_w_master', $host,
-#      puppet_master => $primary_master_replica_host,
-#    )
-#  }
-
   # Get the primary master replica set upgrade done.
   [$primary_master_replica_host,$puppetdb_database_replica_host].each |$host| {
     run_task('pe_xl::pe_install', $host,
@@ -129,6 +102,12 @@ plan pe_xl::upgrade::replica_set (
 
   run_command("export STATE=true ;while \$STATE ; do export CHECK=$($check_orchestrator) ;  if [[ \$CHECK == 'running' ]] ; then export STATE=false; fi ;sleep 3 ;  done ", $primary_master_host_local)
 
+  # Stop puppetdb on replica during upgrade
+  run_task('service', $replica_master_host,
+    name   => pe-puppetdb,
+    action => stop,
+  )
+
   # Stop puppet on all hosts to be upgraded
   $replica_master_hosts.each |$host| {
     run_task('service', $host,
@@ -137,19 +116,16 @@ plan pe_xl::upgrade::replica_set (
     )
   }
 
-#  # Run puppet to change any configs needed to point to primary_master_host
-#  $primary_master_hosts.each |$host| {
-#    run_task('pe_xl::run_puppet_w_master', $host,
-#      puppet_master => $primary_master_host,
-#    )
-#  }
+  run_task('pe_xl::puppet_runonce', $primary_master_replica_host)
+
+  # Stop puppetdb on replica during upgrade
+  run_task('service', $replica_master_host,
+    name   => pe-puppetdb,
+    action => stop,
+  )
 
   # Run puppet to change any configs needed to point replica
-  $replica_master_hosts.each |$host| {
-    run_task('pe_xl::run_puppet_w_master', $host,
-      puppet_master => $primary_master_replica_host,
-    )
-  }
+  run_task('pe_xl::puppet_runonce', $puppetdb_database_replica_host)
 
   $front_hosts.each |$host| {
     run_task('pe_xl::agent_install', $host,
