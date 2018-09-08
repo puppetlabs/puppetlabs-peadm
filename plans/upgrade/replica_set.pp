@@ -119,7 +119,7 @@ plan pe_xl::upgrade::replica_set (
   run_task('pe_xl::puppet_runonce', $primary_master_replica_host)
 
   # Stop puppetdb on replica during upgrade
-  run_task('service', $replica_master_host,
+  run_task('service', $primary_master_replica_host,
     name   => pe-puppetdb,
     action => stop,
   )
