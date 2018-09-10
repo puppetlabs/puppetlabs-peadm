@@ -70,7 +70,7 @@ function main()
 function deploy()
 {
   [ "$#" = 1 ] || { echo "specify an environment to deploy"; exit 1; }
-  cm_r10k deploy environment "$PT_environment" && commit
+  cm_r10k deploy environment "$1" && commit
 }
 
 function commit()
@@ -164,4 +164,4 @@ function curl_wrapper()
   fi
 }
 
-main $PT_action $PT_environment
+main $PT_action
