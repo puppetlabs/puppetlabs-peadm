@@ -17,5 +17,5 @@ function pe_xl::retrieve_and_upload(
     )
   }
 
-  file_upload($local_path, $upload_path, $target)
+  upload_file($local_path, $upload_path, $target)
 }
