@@ -26,34 +26,22 @@ node_group { 'PE PuppetDB':
   ],
 }
 
-if param('load_balancer_host') {
-  node_group { 'PE Load Balancer':
-    ensure               => 'present',
-    classes              => {
-      'profile::haproxy' => {
-      }
-    },
-    parent               => 'PE Infrastructure',
-    rule                 => ['and',
-    ['~',
-      ['trusted', 'extensions', 'pp_role'],
-      'pe_xl::load_balancer']],
-  }
+node_group { 'PE Load Balancer':
+  ensure  => 'present',
+  parent  => 'PE Infrastructure',
+  rule    => ['or', ['and', ['~', ['trusted', 'extensions', 'pp_role'], 'pe_xl::load_balancer']]],
+  classes => {
+    'pe_xl::load_balancer' => { },
+  },
 }
 
-if param('compile_master_hosts') {
-  node_group { 'PE Compile Masters':
-    ensure               => 'present',
-    classes              => {
-      'profile::compile_master' => {
-      }
-    },
-    parent               => 'PE Master',
-    rule                 => ['and',
-    ['=',
-      ['trusted', 'extensions', 'pp_role'],
-      'pe_xl::compile_master']],
-  }
+node_group { 'PE Compile Masters':
+  ensure  => 'present',
+  parent  => 'PE Master',
+  rule    => ['or', ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master']]],
+  classes => {
+    'pe_xl::compile_master' => { },
+  },
 }
 
 # This class has to be included here because puppet_enterprise is declared
@@ -64,7 +52,7 @@ node_group { 'PE Database':
   parent               => 'PE Infrastructure',
   environment          => 'production',
   override_environment => false,
-  rule                 => ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::puppetdb_database']],
+  rule                 => ['or', ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::puppetdb_database']]],
   classes              => {
     'puppet_enterprise::profile::database' => { },
   },

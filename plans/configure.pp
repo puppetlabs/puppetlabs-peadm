@@ -17,10 +17,6 @@ plan pe_xl::configure (
   String[1]           $stagingdir = '/tmp',
 ) {
 
-  run_task('pe_xl::configure_node_groups', $primary_master_host,
-    primary_master_host => $primary_master_host
-  )
-
   $nm_module_tarball = 'WhatsARanjit-node_manager-0.7.1.tar.gz'
   pe_xl::retrieve_and_upload(
     "https://forge.puppet.com/v3/files/${nm_module_tarball}",
