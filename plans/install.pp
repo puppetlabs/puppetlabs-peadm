@@ -49,7 +49,7 @@ plan pe_xl::install (
   # the configured hostname.
   run_task('pe_xl::hostname', $all_hosts).each |$task| {
     if $task.target.name != $task['_output'].chomp {
-      fail_plan("Hostname / DNS name mismatch: ${task}")
+      fail_plan("Hostname / DNS name mismatch: target ${task.target.name} reports '${task['_output'].chomp}'")
     }
   }
 
