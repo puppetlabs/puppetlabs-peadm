@@ -160,6 +160,20 @@ plan pe_xl::install (
   run_task('pe_xl::rbac_token', $primary_master_host,
     password => $console_password,
   )
+
+  # Stub a production environment and commit it to file-sync. At least one
+  # commit (content irrelevant) is necessary to be able to configure
+  # replication. A production environment must exist when committed to avoid
+  # corrupting the PE console.
+  run_task('pe_xl::mkdir_p_file', $primary_master_host,
+    path    => '/etc/puppetlabs/code-staging/environments/production/environment.conf',
+    chown_r => '/etc/puppetlabs/code-staging/environments',
+    owner   => 'pe-puppet',
+    group   => 'pe-puppet',
+    mode    => '0644',
+    content => "modulepath = \$basemodulepath\n",
+  )
+
   run_task('pe_xl::code_manager', $primary_master_host,
     action => 'file-sync commit',
   )
