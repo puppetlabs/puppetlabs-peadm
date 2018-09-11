@@ -64,7 +64,10 @@ class configure_node_groups (
   node_group { 'PE HA Replica':
     ensure  => 'present',
     parent  => 'PE Infrastructure',
-    rule    => ['and', ['=', 'name', '** N/A: use node pinning for group membership']],
+    rule => ['or',
+      ['and', ['=', 'name', '** N/A: use node pinning for group membership']],
+      ['=', 'name', $primary_master_replica_host],
+    ],
     classes => {
       'puppet_enterprise::profile::primary_master_replica' => { }
     },

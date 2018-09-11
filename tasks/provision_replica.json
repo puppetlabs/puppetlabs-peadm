@@ -3,7 +3,7 @@
   "parameters": {
     "primary_master_replica": {
       "type": "String",
-      "description": "The path to the Puppet Enterprise tarball"
+      "description": "The name of the replica to provision"
     }
   },
   "input_method": "environment",

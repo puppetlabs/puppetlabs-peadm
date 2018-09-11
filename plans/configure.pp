@@ -53,7 +53,7 @@ plan pe_xl::configure (
   # Run Puppet in no-op on the compile masters so that their status in PuppetDB
   # is updated and they can be identified by the puppet_enterprise module as
   # CMs
-  run_task('pe_xl::puppet_runonce', $compile_master_hosts,
+  run_task('pe_xl::puppet_runonce', [$compile_master_hosts, $primary_master_replica_host],
     noop => true,
   )
 
@@ -76,9 +76,9 @@ plan pe_xl::configure (
   )
 
   # Run the PE Replica Enable
-  #run_task('pe_xl::provision_replica', $primary_master_host,
-  #  primary_master_replica => $primary_master_replica_host,
-  #)
+  run_task('pe_xl::enable_replica', $primary_master_host,
+    primary_master_replica => $primary_master_replica_host,
+  )
 
   if $load_balancer_host {
     run_task('pe_xl::puppet_runonce', $load_balancer_host)
