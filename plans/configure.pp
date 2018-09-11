@@ -18,6 +18,8 @@ plan pe_xl::configure (
   String[1]           $stagingdir = '/tmp',
 ) {
 
+  # Retrieve and deploy a couple of modules from the Forge so that they can be
+  # used for ensuring some configuration.
   $nm_module_tarball = 'WhatsARanjit-node_manager-0.7.1.tar.gz'
   pe_xl::retrieve_and_upload(
     "https://forge.puppet.com/v3/files/${nm_module_tarball}",
@@ -38,6 +40,8 @@ plan pe_xl::configure (
   run_command("/opt/puppetlabs/bin/puppet module install /tmp/${pexl_module_tarball}", $primary_master_host)
   run_command('chown -R pe-puppet:pe-puppet /etc/puppetlabs/code', $primary_master_host)
 
+  # Set up the console node groups to configure the various hosts in their
+  # roles
   run_task('pe_xl::configure_node_groups', $primary_master_host,
     primary_master_host            => $primary_master_host,
     primary_master_replica_host    => $primary_master_replica_host,
@@ -46,11 +50,24 @@ plan pe_xl::configure (
     compile_master_pool_address    => $compile_master_pool_address,
   )
 
+  # Run Puppet in no-op on the compile masters so that their status in PuppetDB
+  # is updated and they can be identified by the puppet_enterprise module as
+  # CMs
+  run_task('pe_xl::puppet_runonce', $compile_master_hosts,
+    noop => true,
+  )
+
+  # Run Puppet on the PuppetDB Database hosts to update their auth
+  # configuration to allow the compile masters to connect
+  run_task('pe_xl::puppet_runonce', [
+    $puppetdb_database_host,
+    $puppetdb_database_replica_host,
+  ])
+
+  # Run Puppet in normal mode on compile master hosts to finish configuration
   run_task('pe_xl::puppet_runonce', [
     $primary_master_host,
-    $puppetdb_database_host,
-    $primary_master_replica_host,
-    $puppetdb_database_replica_host,
+    $compile_master_hosts,
   ])
 
   # Run the PE Replica Provision
@@ -58,24 +75,16 @@ plan pe_xl::configure (
     primary_master_replica => $primary_master_replica_host,
   )
 
-  run_task('pe_xl::puppet_runonce', [
-    $primary_master_host,
-    $primary_master_replica_host,
-  ])
+  #run_task('pe_xl::puppet_runonce', [
+  #  $primary_master_host,
+  #  $primary_master_replica_host,
+  #])
 
-  run_task(pe_xl::configure_replica_db_node_group, $primary_master_host,
-    puppetdb_database_replica_host => $puppetdb_database_replica_host,
-  )
-  if $compile_master_hosts {
-    run_task('pe_xl::puppet_runonce', $compile_master_hosts)
-  }
-
+  #run_task(pe_xl::configure_replica_db_node_group, $primary_master_host,
+  #  puppetdb_database_replica_host => $puppetdb_database_replica_host,
+  #)
   if $load_balancer_host {
     run_task('pe_xl::puppet_runonce', $load_balancer_host)
-  }
-
-  if $compile_master_hosts {
-    run_task('pe_xl::puppet_runonce', $compile_master_hosts)
   }
 
   return('Configuration of Puppet Enterprise with replica succeeded.')
