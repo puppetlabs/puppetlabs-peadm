@@ -16,15 +16,15 @@ class configure_node_groups (
   ##################################################
 
   node_group { 'PE Infrastructure Agent':
-    rule   => ['and', ['~', ['trusted', 'extensions', 'pp_role'], '^pe_xl::']],
+    rule => ['and', ['~', ['trusted', 'extensions', 'pp_role'], '^pe_xl::']],
   }
 
   node_group { 'PE Master':
-    rule   => ['or',
+    rule => ['or',
       ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master']],
       ['=', 'name', $primary_master_host],
     ],
-    data   => {
+    data => {
       'pe_repo' => { 'compile_master_pool_address' => $compile_master_pool_address },
     },
   }
@@ -36,6 +36,9 @@ class configure_node_groups (
       ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master'],
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'A'],
     ], 
+    classes => {
+      'puppet_enterprise::profile::puppetdb' => { }
+    },
     data    => {
       'puppet_enterprise::profile::primary_master_replica' => {'database_host_puppetdb' => $puppetdb_database_host }
     },
@@ -48,17 +51,19 @@ class configure_node_groups (
       ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master'],
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
     ], 
+    classes => {
+      'puppet_enterprise::profile::puppetdb' => { }
+    },
     data    => {
       'puppet_enterprise::profile::primary_master_replica' => {'database_host_puppetdb' => $puppetdb_database_replica_host }
     },
   }
 
-  node_group { 'PE PuppetDB':
-    rule   => ['or',
-      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::primary_master'],
-      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master'],
-    ],
-  }
+  # Do not manage the PuppetDB group. It causes problems regarding duplicate
+  # resource definition errors.
+  # node_group { 'PE PuppetDB':
+  #   rule => ['or', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master']],
+  # }
 
   # This class has to be included here because puppet_enterprise is declared
   # in the console with parameters. It is therefore not possible to include
