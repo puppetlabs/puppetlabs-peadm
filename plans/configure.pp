@@ -75,14 +75,11 @@ plan pe_xl::configure (
     primary_master_replica => $primary_master_replica_host,
   )
 
-  #run_task('pe_xl::puppet_runonce', [
-  #  $primary_master_host,
-  #  $primary_master_replica_host,
-  #])
-
-  #run_task(pe_xl::configure_replica_db_node_group, $primary_master_host,
-  #  puppetdb_database_replica_host => $puppetdb_database_replica_host,
+  # Run the PE Replica Enable
+  #run_task('pe_xl::provision_replica', $primary_master_host,
+  #  primary_master_replica => $primary_master_replica_host,
   #)
+
   if $load_balancer_host {
     run_task('pe_xl::puppet_runonce', $load_balancer_host)
   }
