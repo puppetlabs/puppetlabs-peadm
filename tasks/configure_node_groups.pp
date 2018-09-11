@@ -64,15 +64,16 @@ class configure_node_groups (
   node_group { 'PE HA Replica':
     ensure  => 'present',
     parent  => 'PE Infrastructure',
+    rule    => ['and', ['=', 'name', '** N/A: use node pinning for group membership']],
     classes => {
       'puppet_enterprise::profile::primary_master_replica' => { }
     },
   }
 
   node_group { 'PE HA Replica A':
-    ensure      => present,
-    parent      => 'PE HA Replica',
-    rule        => ['and',
+    ensure  => present,
+    parent  => 'PE HA Replica',
+    rule    => ['and',
       ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::primary_master'],
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'A'],
     ], 
@@ -84,9 +85,9 @@ class configure_node_groups (
   }
 
   node_group { 'PE HA Replica B':
-    ensure      => present,
-    parent      => 'PE HA Replica',
-    rule        => ['and',
+    ensure  => present,
+    parent  => 'PE HA Replica',
+    rule    => ['and',
       ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::primary_master'],
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
     ], 
