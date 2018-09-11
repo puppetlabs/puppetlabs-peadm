@@ -11,6 +11,7 @@ plan pe_xl::install (
   Optional[String[1]] $primary_master_replica_host = undef,
   Optional[String[1]] $puppetdb_database_replica_host = undef,
 
+  String[1]           $compile_master_pool_address = $primary_master_host,
   Optional[String[1]] $load_balancer_host = undef,
 
   String[1]           $stagingdir = '/tmp',

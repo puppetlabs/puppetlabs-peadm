@@ -12,8 +12,13 @@
 #               }'
 #
 class pe_xl::node_manager (
-  Pattern[/\A[a-z0-9_]+\Z/]        $default_environment = 'production',
-  Array[Pattern[/\A[a-z0-9_]+\Z/]] $environments        = ['production', 'pe_production'],
+  String[1]                        $primary_master_host,
+  String[1]                        $primary_master_replica_host,
+  String[1]                        $puppetdb_database_host,
+  String[1]                        $puppetdb_database_replica_host,
+  String[1]                        $compile_master_pool_address,
+  Pattern[/\A[a-z0-9_]+\Z/]        $default_environment         = 'production',
+  Array[Pattern[/\A[a-z0-9_]+\Z/]] $environments                = ['production'],
 ) {
 
   ##################################################
@@ -26,9 +31,36 @@ class pe_xl::node_manager (
 
   node_group { 'PE Master':
     rule   => ['or',
-      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::primary_master'],
-      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master'],
+      ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master']],
+      ['=', 'name', $primary_master_host],
     ],
+    data   => {
+      'pe_repo' => { 'compile_master_pool_address' => $compile_master_pool_address },
+    },
+  }
+
+  node_group { 'PE Compile Master Group A':
+    ensure  => 'present',
+    parent  => 'PE Master',
+    rule    => ['and',
+      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master'],
+      ['=', ['trusted', 'extensions', 'pp_cluster'], 'A'],
+    ], 
+    data    => {
+      'puppet_enterprise::profile::primary_master_replica' => {'database_host_puppetdb' => $puppetdb_database_host }
+    },
+  }
+
+  node_group { 'PE Compile Master Group B':
+    ensure  => 'present',
+    parent  => 'PE Master',
+    rule    => ['and',
+      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master'],
+      ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
+    ], 
+    data    => {
+      'puppet_enterprise::profile::primary_master_replica' => {'database_host_puppetdb' => $puppetdb_database_replica_host }
+    },
   }
 
   node_group { 'PE PuppetDB':
