@@ -1,5 +1,5 @@
 plan pe_xl::install (
-  String[1]           $version = '2018.1.2',
+  String[1]           $version = '2018.1.3',
   String[1]           $console_password,
   Hash                $r10k_sources = { },
 
