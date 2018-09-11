@@ -165,14 +165,15 @@ plan pe_xl::install (
   # Stub a production environment and commit it to file-sync. At least one
   # commit (content irrelevant) is necessary to be able to configure
   # replication. A production environment must exist when committed to avoid
-  # corrupting the PE console.
+  # corrupting the PE console. Create the site.pp file specifically to avoid
+  # breaking the `puppet infra configure` command.
   run_task('pe_xl::mkdir_p_file', $primary_master_host,
-    path    => '/etc/puppetlabs/code-staging/environments/production/environment.conf',
+    path    => '/etc/puppetlabs/code-staging/environments/production/manifests/site.pp',
     chown_r => '/etc/puppetlabs/code-staging/environments',
     owner   => 'pe-puppet',
     group   => 'pe-puppet',
     mode    => '0644',
-    content => "modulepath = \$basemodulepath\n",
+    content => "# Empty manifest\n",
   )
 
   run_task('pe_xl::code_manager', $primary_master_host,
