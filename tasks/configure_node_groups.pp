@@ -37,7 +37,8 @@ class configure_node_groups (
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'A'],
     ], 
     classes => {
-      'puppet_enterprise::profile::puppetdb' => {
+      'puppet_enterprise::profile::puppetdb' => { },
+      'puppet_enterprise::profile::master'   => {
         'puppetdb_host' => ['${clientcert}', $primary_master_host],
         'puppetdb_port' => [8081],
       }
@@ -52,7 +53,8 @@ class configure_node_groups (
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
     ], 
     classes => {
-      'puppet_enterprise::profile::puppetdb' => {
+      'puppet_enterprise::profile::puppetdb' => { },
+      'puppet_enterprise::profile::master'   => {
         'puppetdb_host' => ['${clientcert}', $primary_master_replica_host],
         'puppetdb_port' => [8081],
       }
@@ -61,6 +63,7 @@ class configure_node_groups (
 
   node_group { 'PE HA Master':
     ensure => present,
+    parent => 'PE Master',
     data   => {
       'puppet_enterprise::profile::primary_master_replica' => {'database_host_puppetdb' => $puppetdb_database_replica_host }
     },
