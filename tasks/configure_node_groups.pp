@@ -61,11 +61,39 @@ class configure_node_groups (
     },
   }
 
-  node_group { 'PE HA Master':
-    ensure => present,
-    parent => 'PE Master',
-    data   => {
-      'puppet_enterprise::profile::primary_master_replica' => {'database_host_puppetdb' => $puppetdb_database_replica_host }
+  node_group { 'PE HA Replica':
+    ensure  => 'present',
+    parent  => 'PE Infrastructure',
+    classes => {
+      'puppet_enterprise::profile::primary_master_replica' => { }
+    },
+  }
+
+  node_group { 'PE HA Replica A':
+    ensure      => present,
+    parent      => 'PE HA Replica',
+    rule        => ['and',
+      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::primary_master'],
+      ['=', ['trusted', 'extensions', 'pp_cluster'], 'A'],
+    ], 
+    classes => {
+      'puppet_enterprise::profile::primary_master_replica' => {
+        'database_host_puppetdb' => $puppetdb_database_host,
+      }
+    },
+  }
+
+  node_group { 'PE HA Replica B':
+    ensure      => present,
+    parent      => 'PE HA Replica',
+    rule        => ['and',
+      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::primary_master'],
+      ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
+    ], 
+    classes => {
+      'puppet_enterprise::profile::primary_master_replica' => {
+        'database_host_puppetdb' => $puppetdb_database_replica_host,
+      }
     },
   }
 
