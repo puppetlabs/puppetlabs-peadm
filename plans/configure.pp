@@ -9,8 +9,8 @@ plan pe_xl::configure (
   Array[String[1]]    $compile_master_hosts = [ ],
   Array[String[1]]    $dns_alt_names = [ ],
 
-  Optional[String[1]] $primary_master_replica_host = undef,
-  Optional[String[1]] $puppetdb_database_replica_host = undef,
+  String[1]           $primary_master_replica_host = undef,
+  String[1]           $puppetdb_database_replica_host = undef,
 
   String[1]           $compile_master_pool_address = $primary_master_host,
   Optional[String[1]] $load_balancer_host = undef,
@@ -18,18 +18,10 @@ plan pe_xl::configure (
   String[1]           $stagingdir = '/tmp',
 ) {
 
-  # Retrieve and deploy the node_manager module from the Forge so that it can
-  # be used for ensuring some configuration.
-  $nm_module_tarball = 'WhatsARanjit-node_manager-0.7.1.tar.gz'
-  pe_xl::retrieve_and_upload(
-    "https://forge.puppet.com/v3/files/${nm_module_tarball}",
-    "${stagingdir}/${nm_module_tarball}",
-    "/tmp/${nm_module_tarball}",
-    $primary_master_host
-  )
-
-  run_command("/opt/puppetlabs/bin/puppet module install /tmp/${nm_module_tarball}", $primary_master_host)
-  run_command('chown -R pe-puppet:pe-puppet /etc/puppetlabs/code', $primary_master_host)
+  # Retrieve and deploy Puppet modules from the Forge so that they can be used
+  # for ensuring some configuration (node groups)
+  pe_xl::install_module($primary_master_host, 'WhatsARanjit-node_manager', '0.7.1')
+  pe_xl::install_module($primary_master_host, 'puppetlabs-stdlib', '5.0.0')
 
   # Set up the console node groups to configure the various hosts in their
   # roles
