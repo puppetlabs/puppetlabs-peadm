@@ -10,9 +10,13 @@ Note pending more detailed instructions:
 * This deployment assumes that at least for PE infrastructure nodes, Puppet certnames are correct, resolvable FQDNs.
 * This deployment assumes the control repository to manage PE is independent of the normal "customer" control-repo.
 
+## Documentation
+
+See this README file and any documents in the [docs](docs) directory.
+
 ## Architecture
 
-![architecture](architecture.png)
+![architecture](docs/images/architecture.png)
 
 ## Installation
 
