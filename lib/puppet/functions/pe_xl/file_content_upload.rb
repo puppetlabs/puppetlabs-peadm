@@ -15,7 +15,7 @@ Puppet::Functions.create_function(:'pe_xl::file_content_upload') do
     file = Tempfile.new('pe_xl')
     file.write(content)
     file.flush
-    result = call_function('file_upload', file.path, destination, *targets)
+    result = call_function('upload_file', file.path, destination, *targets)
     file.close
     file.unlink
     result

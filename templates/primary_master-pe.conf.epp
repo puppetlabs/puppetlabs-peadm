@@ -34,22 +34,22 @@
 
   # Sizing configuration for PE components. Adjust for size of VM(s)
   "puppet_enterprise::profile::master::java_args": {
-    "Xmx": "4096m",
-    "Xms": "2048m",
+    "Xmx": "2048m",
+    "Xms": "512m",
   }
 
   "puppet_enterprise::profile::console::java_args": {
-    "Xmx": "1024m",
+    "Xmx": "768m",
     "Xms": "256m",
   }
 
   "puppet_enterprise::profile::orchestrator::java_args": {
-    "Xmx": "1024m",
+    "Xmx": "768m",
     "Xms": "256m",
   }
 
   "puppet_enterprise::profile::puppetdb::java_args": {
-    "Xmx": "1024m",
+    "Xmx": "768m",
     "Xms": "256m",
   }
 

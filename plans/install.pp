@@ -1,55 +1,24 @@
 plan pe_xl::install (
-  String[1]           $version = '2018.1.2',
-  String[1]           $console_password,
-  Hash                $r10k_sources = { },
-
   String[1]           $primary_master_host,
   String[1]           $puppetdb_database_host,
+  String[1]           $primary_master_replica_host,
+  String[1]           $puppetdb_database_replica_host,
   Array[String[1]]    $compile_master_hosts = [ ],
+
+  String[1]           $console_password,
+  String[1]           $version = '2018.1.3',
+  Hash                $r10k_sources = { },
   Array[String[1]]    $dns_alt_names = [ ],
-
-  Optional[String[1]] $primary_master_replica_host = undef,
-  Optional[String[1]] $puppetdb_database_replica_host = undef,
-
-  Optional[String[1]] $load_balancer_host = undef,
-
-  Optional[String[1]] $deploy_environment = 'production',
 
   String[1]           $stagingdir = '/tmp',
 ) {
 
-  # split hosts compilemasters to even then odd group a, b
-  if ! $compile_master_hosts.empty{
-    $cmaster_group_a = $compile_master_hosts.filter | $name | { $name =~ /^[a-z]+.*([0,2,4,6,8])\./ }
-    $cmaster_group_b = $compile_master_hosts.filter | $name | { $name =~ /^[a-z]+.*([1,3,5,7,9])\./ }
-    $group_a = [
-      $primary_master_host, 
-      $puppetdb_database_host,
-      $cmaster_group_a,
-    ].pe_xl::flatten_compact()
-  
-    $group_b = [
-      $primary_master_replica_host,
-      $puppetdb_database_replica_host,
-      $cmaster_group_b,
-    ].pe_xl::flatten_compact()
-  } else {
-    $group_a = [
-      $primary_master_host, 
-      $puppetdb_database_host,
-    ].pe_xl::flatten_compact()
-  
-    $group_b = [
-      $primary_master_replica_host,
-      $puppetdb_database_replica_host,
-    ].pe_xl::flatten_compact()
-  }
+  # Define a number of host groupings for use later in the plan
 
   $all_hosts = [
     $primary_master_host, 
     $puppetdb_database_host,
     $compile_master_hosts,
-    $load_balancer_host,
     $primary_master_replica_host,
     $puppetdb_database_replica_host,
   ].pe_xl::flatten_compact()
@@ -62,9 +31,12 @@ plan pe_xl::install (
 
   $agent_installer_hosts = [
     $compile_master_hosts,
-    $load_balancer_host,
     $primary_master_replica_host,
   ].pe_xl::flatten_compact()
+
+  # Clusters A and B are used to divide PuppetDB availability for compile masters
+  $cm_cluster_a = $compile_master_hosts.filter |$index,$cm| { $index % 2 == 0 }
+  $cm_cluster_b = $compile_master_hosts.filter |$index,$cm| { $index % 2 != 0 }
 
   $dns_alt_names_csv = $dns_alt_names.reduce |$csv,$x| { "${csv},${x}" }
 
@@ -72,7 +44,7 @@ plan pe_xl::install (
   # the configured hostname.
   run_task('pe_xl::hostname', $all_hosts).each |$task| {
     if $task.target.name != $task['_output'].chomp {
-      fail_plan("Hostname / DNS name mismatch: ${task}")
+      fail_plan("Hostname / DNS name mismatch: target ${task.target.name} reports '${task['_output'].chomp}'")
     }
   }
 
@@ -183,6 +155,21 @@ plan pe_xl::install (
   run_task('pe_xl::rbac_token', $primary_master_host,
     password => $console_password,
   )
+
+  # Stub a production environment and commit it to file-sync. At least one
+  # commit (content irrelevant) is necessary to be able to configure
+  # replication. A production environment must exist when committed to avoid
+  # corrupting the PE console. Create the site.pp file specifically to avoid
+  # breaking the `puppet infra configure` command.
+  run_task('pe_xl::mkdir_p_file', $primary_master_host,
+    path    => '/etc/puppetlabs/code-staging/environments/production/manifests/site.pp',
+    chown_r => '/etc/puppetlabs/code-staging/environments',
+    owner   => 'pe-puppet',
+    group   => 'pe-puppet',
+    mode    => '0644',
+    content => "# Empty manifest\n",
+  )
+
   run_task('pe_xl::code_manager', $primary_master_host,
     action => 'file-sync commit',
   )
@@ -199,8 +186,7 @@ plan pe_xl::install (
     ],
   )
 
-  # TODO: Split the compile masters into two pools, A and B.
-  run_task('pe_xl::agent_install', $cmaster_group_a,
+  run_task('pe_xl::agent_install', $cm_cluster_a,
     server        => $primary_master_host,
     install_flags => [
       '--puppet-service-ensure', 'stopped',
@@ -211,8 +197,7 @@ plan pe_xl::install (
     ],
   )
 
-  # TODO: Split the compile masters into two pools, A and B.
-  run_task('pe_xl::agent_install', $cmaster_group_b,
+  run_task('pe_xl::agent_install', $cm_cluster_b,
     server        => $primary_master_host,
     install_flags => [
       '--puppet-service-ensure', 'stopped',
@@ -222,17 +207,6 @@ plan pe_xl::install (
       'extension_requests:pp_cluster=B',
     ],
   )
-
-  if $load_balancer_host {
-    run_task('pe_xl::agent_install', $load_balancer_host,
-      server        => $primary_master_host,
-      install_flags => [
-        '--puppet-service-ensure', 'stopped',
-        'extension_requests:pp_application=puppet',
-        'extension_requests:pp_role=pe_xl::load_balancer',
-      ],
-    )
-  }
 
   # Do a Puppet agent run to ensure certificate requests have been submitted
   # These runs will "fail", and that's expected.
@@ -250,29 +224,8 @@ plan pe_xl::install (
       --allow-dns-alt-names
     | HEREDOC
 
-  $control_repo = $r10k_sources.reduce |$memo, $value| {
-    $string = "${memo[0]}${value[0]}"
-  }
-
-  if $control_repo {
-    run_task('pe_xl::code_manager', $primary_master_host,
-      action => 'deploy',
-      environment => $deploy_environment,
-    )
-  }
-
   run_task('pe_xl::puppet_runonce', $primary_master_host)
-  run_task('pe_xl::puppet_runonce', $puppetdb_database_host)
-  run_task('pe_xl::puppet_runonce', $primary_master_replica_host)
-  run_task('pe_xl::puppet_runonce', $puppetdb_database_replica_host)
-  if ! $compile_master_hosts.empty {
-    $compile_master_hosts.each |$host| {
-      run_task('pe_xl::puppet_runonce', $host)
-    }
-  }
-  if $load_balancer_host {
-    run_task('pe_xl::puppet_runonce', $load_balancer_host)
-  }
+  run_task('pe_xl::puppet_runonce', $all_hosts - $primary_master_host)
 
   return('Installation succeeded')
 }

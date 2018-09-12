@@ -20,6 +20,10 @@
     "mode": {
       "type": "Optional[String]",
       "description": "The file mode"
+    },
+    "chown_r": {
+      "type": "Optional[String]",
+      "description": "If supplied, recursively chown starting at this path"
     }
   },
   "input_method": "environment",

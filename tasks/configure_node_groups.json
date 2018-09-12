@@ -5,17 +5,21 @@
       "type": "String",
       "description": "The certname of the primary master"
     },
-    "r10k_sources": {
-      "type": "Optional['Hash']",
-      "description": "The r10k control repos"
+    "primary_master_replica_host": {
+      "type": "String",
+      "description": "The certname of the primary master replica"
     },
-    "compile_master_hosts": {
-      "type": "Optional['Array']",
-      "description": "The certname of all the compile masters"
+    "puppetdb_database_host": {
+      "type": "String",
+      "description": "The certname of the PuppetDB database"
     },
-    "load_balancer_host": {
-      "type": "Optional['String']",
-      "description": "The certname of the load balancer"
+    "puppetdb_database_replica_host": {
+      "type": "String",
+      "description": "The certname of the PuppetDB database replica"
+    },
+    "compile_master_pool_address": {
+      "type": "String",
+      "description": "The service name to use for the compile master pool"
     }
   },
   "input_method": "environment",
