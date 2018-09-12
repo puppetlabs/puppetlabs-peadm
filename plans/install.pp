@@ -1,18 +1,14 @@
 plan pe_xl::install (
-  String[1]           $version = '2018.1.3',
-  String[1]           $console_password,
-  Hash                $r10k_sources = { },
-
   String[1]           $primary_master_host,
   String[1]           $puppetdb_database_host,
+  String[1]           $primary_master_replica_host,
+  String[1]           $puppetdb_database_replica_host,
   Array[String[1]]    $compile_master_hosts = [ ],
+
+  String[1]           $console_password,
+  String[1]           $version = '2018.1.3',
+  Hash                $r10k_sources = { },
   Array[String[1]]    $dns_alt_names = [ ],
-
-  String[1]           $primary_master_replica_host = undef,
-  String[1]           $puppetdb_database_replica_host = undef,
-
-  String[1]           $compile_master_pool_address = $primary_master_host,
-  Optional[String[1]] $load_balancer_host = undef,
 
   String[1]           $stagingdir = '/tmp',
 ) {
@@ -23,7 +19,6 @@ plan pe_xl::install (
     $primary_master_host, 
     $puppetdb_database_host,
     $compile_master_hosts,
-    $load_balancer_host,
     $primary_master_replica_host,
     $puppetdb_database_replica_host,
   ].pe_xl::flatten_compact()
@@ -36,7 +31,6 @@ plan pe_xl::install (
 
   $agent_installer_hosts = [
     $compile_master_hosts,
-    $load_balancer_host,
     $primary_master_replica_host,
   ].pe_xl::flatten_compact()
 
@@ -213,17 +207,6 @@ plan pe_xl::install (
       'extension_requests:pp_cluster=B',
     ],
   )
-
-  if $load_balancer_host {
-    run_task('pe_xl::agent_install', $load_balancer_host,
-      server        => $primary_master_host,
-      install_flags => [
-        '--puppet-service-ensure', 'stopped',
-        'extension_requests:pp_application=puppet',
-        'extension_requests:pp_role=pe_xl::load_balancer',
-      ],
-    )
-  }
 
   # Do a Puppet agent run to ensure certificate requests have been submitted
   # These runs will "fail", and that's expected.
