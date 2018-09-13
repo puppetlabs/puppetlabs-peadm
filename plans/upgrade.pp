@@ -22,13 +22,32 @@ plan pe_xl::upgrade (
     "https://s3.amazonaws.com/pe-builds/released/${version}/puppet-enterprise-${version}-el-7-x86_64.tar.gz",
     $local_tarball_path,
     $upload_tarball_path,
-    $primary_master_host,
+    [$primary_master_host, $puppetdb_database_host, $puppetdb_database_replica_host],
   )
 
   # Upgrade the primary master
   run_task('pe_xl::pe_install', $primary_master_host,
     tarball => $upload_tarball_path,
   )
+
+  # Upgrade the primary PuppetDB PostgreSQL host. Note that installer-driven
+  # upgrade will de-configure auth access for compile masters. Re-run Puppet
+  # immediately to fully re-enable
+  run_task('pe_xl::pe_install', $puppetdb_database_host,
+    tarball => $upload_tarball_path,
+  )
+  run_task('pe_xl::puppet_runonce', $puppetdb_database_host)
+
+  # Run the upgrade.sh script on the primary master replica host
+  run_task('pe_xl::agent_upgrade', $puppetdb_database_host,
+    server => $primary_master_host,
+  )
+
+  # Upgrade the replica's PuppetDB PostgreSQL host
+  run_task('pe_xl::pe_install', $puppetdb_database_replica_host,
+    tarball => $upload_tarball_path,
+  )
+  run_task('pe_xl::puppet_runonce', $puppetdb_database_replica_host)
 
   return('End Plan')
 }
