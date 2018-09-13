@@ -26,9 +26,9 @@ plan pe_xl::upgrade (
   )
 
   # Upgrade the primary master
-  #run_task('pe_xl::pe_install', $primary_master_host,
-  #  tarball => $upload_tarball_path,
-  #)
+  run_task('pe_xl::pe_install', $primary_master_host,
+    tarball => $upload_tarball_path,
+  )
 
   return('End Plan')
 }
