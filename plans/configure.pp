@@ -40,12 +40,6 @@ plan pe_xl::configure (
     $puppetdb_database_replica_host,
   ])
 
-  # Run Puppet in normal mode on compile master hosts to finish configuration
-  run_task('pe_xl::puppet_runonce', [
-    $primary_master_host,
-    $compile_master_hosts,
-  ])
-
   # Run the PE Replica Provision
   run_task('pe_xl::provision_replica', $primary_master_host,
     primary_master_replica => $primary_master_replica_host,
