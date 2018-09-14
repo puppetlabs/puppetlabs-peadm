@@ -11,6 +11,28 @@ plan pe_xl::upgrade (
   String[1]           $stagingdir = '/tmp',
 ) {
 
+  $all_hosts = [
+    $primary_master_host, 
+    $puppetdb_database_host,
+    $primary_master_replica_host,
+    $puppetdb_database_replica_host,
+    $compile_master_hosts,
+  ].pe_xl::flatten_compact()
+
+  $cm_cluster_primary_hosts = puppetdb_query(@("PQL")).map |$node| { $node['certname'] }
+    resources[certname] { 
+      type = "Class" and
+      title = "Puppet_enterprise::Profile::Puppetdb" and
+      parameters.database_host = "${puppetdb_database_host}" }
+    | PQL
+
+  $cm_cluster_replica_hosts = puppetdb_query(@("PQL")).map |$node| { $node['certname'] }
+    resources[certname] { 
+      type = "Class" and
+      title = "Puppet_enterprise::Profile::Puppetdb" and
+      parameters.database_host = "${puppetdb_database_replica_host}" }
+    | PQL
+
   # TODO: Do we need to update the pe.conf(s) with a console password?
 
   # Download the PE tarball and send it to the nodes that need it
@@ -25,8 +47,32 @@ plan pe_xl::upgrade (
     [$primary_master_host, $puppetdb_database_host, $puppetdb_database_replica_host],
   )
 
-  # Upgrade the primary master
-  run_task('pe_xl::pe_install', $primary_master_host,
+  # Shut down Puppet on all infra hosts
+  run_task('service', $all_hosts,
+    action => 'stop',
+    name   => 'puppet',
+  )
+
+  # Shut down PuppetDB on CMs that use the PM's PDB PG
+  run_task('service', $cm_cluster_primary_hosts,
+    action => 'stop',
+    name   => 'pe-puppetdb',
+  )
+
+  # Shut down pe-* services on the primary master. Only shutting down the ones
+  # that have failover pairs on the replica.
+  ['pe-console-services', 'pe-nginx', 'pe-puppetserver', 'pe-puppetdb', 'pe-postgresql'].each |$service| {
+    run_task('service', "local://${primary_master_host}",
+      action => 'stop',
+      name   => $service,
+    )
+  }
+
+  # TODO: Firewall up the primary master
+
+  # Upgrade the primary master using the local:// transport in anticipation of
+  # the orchestrator service being restarted during the upgrade.
+  run_task('pe_xl::pe_install', "local://${primary_master_host}",
     tarball => $upload_tarball_path,
   )
 
@@ -38,6 +84,33 @@ plan pe_xl::upgrade (
   )
   run_task('pe_xl::puppet_runonce', $puppetdb_database_host)
 
+  # Stop PuppetDB on the primary master
+  run_task('service', $primary_master_host,
+    action => 'stop',
+    name   => 'pe-puppetdb',
+  )
+
+  # TODO: Unblock 8081 between the primary master and the replica
+
+  # Start PuppetDB on the primary master
+  run_task('service', $primary_master_host,
+    action => 'start',
+    name   => 'pe-puppetdb',
+  )
+
+  # TODO: Remove remaining firewall blocks
+
+  # Upgrade the compile master group A hosts
+  run_task('pe_xl::agent_upgrade', $cm_cluster_primary_hosts,
+    server => $primary_master_host,
+  )
+
+  # Shut down PuppetDB on CMs that use the PMR's PDB PG
+  run_task('service', $cm_cluster_replica_hosts,
+    action => 'stop',
+    name   => 'pe-puppetdb',
+  )
+
   # Run the upgrade.sh script on the primary master replica host
   run_task('pe_xl::agent_upgrade', $primary_master_replica_host,
     server => $primary_master_host,
@@ -48,6 +121,11 @@ plan pe_xl::upgrade (
     tarball => $upload_tarball_path,
   )
   run_task('pe_xl::puppet_runonce', $puppetdb_database_replica_host)
+
+  # Upgrade the compile master group B hosts
+  run_task('pe_xl::agent_upgrade', $cm_cluster_replica_hosts,
+    server => $primary_master_host,
+  )
 
   return('End Plan')
 }
