@@ -39,7 +39,7 @@ plan pe_xl::upgrade (
   run_task('pe_xl::puppet_runonce', $puppetdb_database_host)
 
   # Run the upgrade.sh script on the primary master replica host
-  run_task('pe_xl::agent_upgrade', $puppetdb_database_host,
+  run_task('pe_xl::agent_upgrade', $primary_master_replica_host,
     server => $primary_master_host,
   )
 
