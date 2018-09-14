@@ -63,7 +63,6 @@ plan pe_xl (
       puppetdb_database_host         => $puppetdb_database_host,
       primary_master_replica_host    => $primary_master_replica_host,
       puppetdb_database_replica_host => $puppetdb_database_replica_host,
-      compile_master_hosts           => $compile_master_hosts,
 
       version                        => $version,
 

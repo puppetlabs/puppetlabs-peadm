@@ -3,7 +3,6 @@ plan pe_xl::upgrade (
   String[1]        $puppetdb_database_host,
   String[1]        $primary_master_replica_host,
   String[1]        $puppetdb_database_replica_host,
-  Array[String[1]] $compile_master_hosts = [ ],
 
 #  String[1]        $console_password,
   String[1]        $version = '2018.1.3',
@@ -12,17 +11,9 @@ plan pe_xl::upgrade (
   String[1]        $pe_source  = "https://s3.amazonaws.com/pe-builds/released/${version}/puppet-enterprise-${version}-el-7-x86_64.tar.gz",
 ) {
 
-  $all_hosts = [
-    $primary_master_host, 
-    $puppetdb_database_host,
-    $primary_master_replica_host,
-    $puppetdb_database_replica_host,
-    $compile_master_hosts,
-  ].pe_xl::flatten_compact()
-
-  $primary_master_local = "local://$primary_master_host"
-
-
+  # Look up which hosts are compile masters in the stack
+  # We look up groups of CMs separately since when they are upgraded is determined
+  # by which PDB PG host they are affiliated with
   $cm_cluster_primary_hosts = puppetdb_query(@("PQL")).map |$node| { $node['certname'] }
     resources[certname] { 
       type = "Class" and
@@ -38,6 +29,17 @@ plan pe_xl::upgrade (
       parameters.database_host = "${puppetdb_database_replica_host}" and
       !(certname = "$primary_master_replica_host") }
     | PQL
+
+  $all_hosts = [
+    $primary_master_host,
+    $puppetdb_database_host,
+    $primary_master_replica_host,
+    $puppetdb_database_replica_host,
+    $cm_cluster_primary_hosts,
+    $cm_cluster_replica_hosts,
+  ].pe_xl::flatten_compact()
+
+  $primary_master_local = "local://$primary_master_host"
 
   # TODO: Do we need to update the pe.conf(s) with a console password?
 
@@ -106,6 +108,9 @@ plan pe_xl::upgrade (
 
   # TODO: Remove remaining firewall blocks
 
+  # TODO: Wait until services healthy to proceed
+  run_command("/opt/puppetlabs/bin/puppet-infra status --host ${primary_master_host}", $primary_master_local)
+
   # Upgrade the compile master group A hosts
   run_task('pe_xl::agent_upgrade', $cm_cluster_primary_hosts,
     server => $primary_master_host,
@@ -131,6 +136,12 @@ plan pe_xl::upgrade (
   # Upgrade the compile master group B hosts
   run_task('pe_xl::agent_upgrade', $cm_cluster_replica_hosts,
     server => $primary_master_host,
+  )
+
+  # Ensure Puppet running on all infrastructure hosts
+  run_task('service', $all_hosts,
+    action => 'start',
+    name   => 'puppet',
   )
 
   return('End Plan')
