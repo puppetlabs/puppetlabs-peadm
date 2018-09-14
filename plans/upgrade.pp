@@ -22,18 +22,21 @@ plan pe_xl::upgrade (
 
   $primary_master_local = "local://$primary_master_host"
 
+
   $cm_cluster_primary_hosts = puppetdb_query(@("PQL")).map |$node| { $node['certname'] }
     resources[certname] { 
       type = "Class" and
       title = "Puppet_enterprise::Profile::Puppetdb" and
-      parameters.database_host = "${puppetdb_database_host}" }
+      parameters.database_host = "${puppetdb_database_host}" and
+      !(certname = "$primary_master_host") }
     | PQL
 
   $cm_cluster_replica_hosts = puppetdb_query(@("PQL")).map |$node| { $node['certname'] }
     resources[certname] { 
       type = "Class" and
       title = "Puppet_enterprise::Profile::Puppetdb" and
-      parameters.database_host = "${puppetdb_database_replica_host}" }
+      parameters.database_host = "${puppetdb_database_replica_host}" and
+      !(certname = "$primary_master_replica_host") }
     | PQL
 
   # TODO: Do we need to update the pe.conf(s) with a console password?
