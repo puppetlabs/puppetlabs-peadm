@@ -20,6 +20,8 @@ plan pe_xl::upgrade (
     $compile_master_hosts,
   ].pe_xl::flatten_compact()
 
+  $primary_master_local = "local://$primary_master_host"
+
   $cm_cluster_primary_hosts = puppetdb_query(@("PQL")).map |$node| { $node['certname'] }
     resources[certname] { 
       type = "Class" and
@@ -63,7 +65,7 @@ plan pe_xl::upgrade (
   # Shut down pe-* services on the primary master. Only shutting down the ones
   # that have failover pairs on the replica.
   ['pe-console-services', 'pe-nginx', 'pe-puppetserver', 'pe-puppetdb', 'pe-postgresql'].each |$service| {
-    run_task('service', "local://${primary_master_host}",
+    run_task('service', $primary_master_local,
       action => 'stop',
       name   => $service,
     )
@@ -73,7 +75,7 @@ plan pe_xl::upgrade (
 
   # Upgrade the primary master using the local:// transport in anticipation of
   # the orchestrator service being restarted during the upgrade.
-  run_task('pe_xl::pe_install', "local://${primary_master_host}",
+  run_task('pe_xl::pe_install', $primary_master_local,
     tarball => $upload_tarball_path,
   )
 
@@ -86,7 +88,7 @@ plan pe_xl::upgrade (
   run_task('pe_xl::puppet_runonce', $puppetdb_database_host)
 
   # Stop PuppetDB on the primary master
-  run_task('service', $primary_master_host,
+  run_task('service', $primary_master_local,
     action => 'stop',
     name   => 'pe-puppetdb',
   )
@@ -94,7 +96,7 @@ plan pe_xl::upgrade (
   # TODO: Unblock 8081 between the primary master and the replica
 
   # Start PuppetDB on the primary master
-  run_task('service', $primary_master_host,
+  run_task('service', $primary_master_local,
     action => 'start',
     name   => 'pe-puppetdb',
   )
