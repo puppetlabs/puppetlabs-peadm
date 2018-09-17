@@ -1,0 +1,8 @@
+{
+  "description": "Return when the orchestrator service is healthy, or timeout after 15 seconds",
+  "parameters": { },
+  "input_method": "environment",
+  "implementations": [
+    {"name": "orchestrator_healthcheck.sh"}
+  ]
+}

@@ -108,8 +108,8 @@ plan pe_xl::upgrade (
 
   # TODO: Remove remaining firewall blocks
 
-  # TODO: Wait until services healthy to proceed
-  run_command("/opt/puppetlabs/bin/puppet-infra status --host ${primary_master_host}", $primary_master_local)
+  # Wait until orchestrator service is healthy to proceed
+  run_task('pe_xl::orchestrator_healthcheck', $primary_master_local)
 
   # Upgrade the compile master group A hosts
   run_task('pe_xl::agent_upgrade', $cm_cluster_primary_hosts,
