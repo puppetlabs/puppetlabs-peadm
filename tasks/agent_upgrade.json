@@ -1,0 +1,13 @@
+{
+  "description": "Upgrade the target system using upgrade.bash from a master",
+  "parameters": {
+    "server": {
+      "type": "String",
+      "description": "The resolvable name of the Puppet server to upgrade from"
+    }
+  },
+  "input_method": "environment",
+  "implementations": [
+    {"name": "agent_upgrade.sh"}
+  ]
+}

@@ -6,6 +6,7 @@
 plan pe_xl (
   Boolean $install   = false,
   Boolean $configure = false,
+  Boolean $upgrade   = false,
 
   Optional[String[1]]        $primary_master_host = undef,
   Optional[String[1]]        $puppetdb_database_host = undef,
@@ -56,10 +57,24 @@ plan pe_xl (
     )
   }
 
+  if $upgrade {
+    run_plan('pe_xl::upgrade',
+      primary_master_host            => $primary_master_host,
+      puppetdb_database_host         => $puppetdb_database_host,
+      primary_master_replica_host    => $primary_master_replica_host,
+      puppetdb_database_replica_host => $puppetdb_database_replica_host,
+
+      version                        => $version,
+
+      stagingdir                     => $stagingdir,
+    )
+  }
+
   # Return a string banner reporting on what was done
   $actions = {
     'install'   => $install,
     'configure' => $configure,
+    'upgrade'   => $upgrade,
   }.filter |$keypair| {
     $keypair[1] == true
   }.map |$keypair| {

@@ -6,7 +6,7 @@
       "description": "The path to the Puppet Enterprise tarball"
     },
     "peconf": {
-      "type": "String",
+      "type": "Optional[String]",
       "description": "The path to the pe.conf file"
     },
     "shortcircuit_puppetdb": {

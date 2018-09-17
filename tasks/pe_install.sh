@@ -14,9 +14,16 @@ if [ "$PT_shortcircuit_puppetdb" = "true" ]; then
 	systemctl daemon-reload
 fi
 
-cd $(dirname "$PT_tarball")
-mkdir puppet-enterprise && tar -xzf "$PT_tarball" -C puppet-enterprise --strip-components 1
-./puppet-enterprise/puppet-enterprise-installer -c "$PT_peconf"
+tgzdir=$(dirname "$PT_tarball")
+pedir=$(tar -tf "$PT_tarball" | head -n 1 | xargs dirname)
+
+tar -C "$tgzdir" -xzf "$PT_tarball"
+
+if [ ! -z "$PT_peconf" ]; then
+	"${tgzdir}/${pedir}/puppet-enterprise-installer" -y -c "$PT_peconf"
+else
+	"${tgzdir}/${pedir}/puppet-enterprise-installer" -y
+fi
 
 if [ "$PT_shortcircuit_puppetdb" = "true" ]; then
 	rm /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf

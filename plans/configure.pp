@@ -40,6 +40,12 @@ plan pe_xl::configure (
     $puppetdb_database_replica_host,
   ])
 
+  # Run Puppet on the primary master to ensure all services configured and
+  # running in prep for provisioning the replica. This is done separately so
+  # that a service restart of pe-puppetserver doesn't cause Puppet runs on
+  # other nodes to fail.
+  run_task('pe_xl::puppet_runonce', $primary_master_host)
+
   # Run the PE Replica Provision
   run_task('pe_xl::provision_replica', $primary_master_host,
     primary_master_replica => $primary_master_replica_host,
