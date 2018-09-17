@@ -14,7 +14,7 @@ function pe_xl::install_module(
     $target
   )
 
-  run_command("/opt/puppetlabs/bin/puppet module install --modulepath /etc/puppetlabs/code-staging/environments/production/modules /tmp/${module_tarball}", $target)
+  run_command("/opt/puppetlabs/bin/puppet module install --modulepath /etc/puppetlabs/code-staging/environments/production/modules --ignore-dependencies /tmp/${module_tarball}", $target)
   run_command('chown -R pe-puppet:pe-puppet /etc/puppetlabs/code-staging', $target)
   run_task('pe_xl::code_manager', $target,
     action => 'file-sync commit',
