@@ -1,0 +1,13 @@
+{
+  "description": "Return the size of a file in bytes",
+  "parameters": {
+    "path": {
+      "type": "String",
+      "description": "Path to the file to return the size of"
+    }
+  },
+  "input_method": "environment",
+  "implementations": [
+    {"name": "filesize.sh"}
+  ]
+}
