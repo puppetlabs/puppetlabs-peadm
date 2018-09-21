@@ -42,9 +42,9 @@ plan pe_xl::install (
 
   # Validate that the name given for each system is both a resolvable name AND
   # the configured hostname.
-  run_task('pe_xl::hostname', $all_hosts).each |$task| {
-    if $task.target.name != $task['_output'].chomp {
-      fail_plan("Hostname / DNS name mismatch: target ${task.target.name} reports '${task['_output'].chomp}'")
+  run_task('pe_xl::hostname', $all_hosts).each |$result| {
+    if $result.target.name != $result['hostname'] {
+      fail_plan("Hostname / DNS name mismatch: target ${result.target.name} reports '${result['hostname']}'")
     }
   }
 
