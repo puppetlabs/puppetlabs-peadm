@@ -24,6 +24,7 @@ The reference implementation uses trusted facts to put nodes in the right groups
 1. Ensure the hostname of each system is set correctly, to the same value that will be used to connect to the system, and refer to the system as. If the hostname is not set as expected the installation plan will refuse to continue.
 2. Install Bolt on a jumphost. This can be the primary master, or any other system.
 3. Download or git clone the pe\_xl module and put it somewhere on the jumphost, e.g. ~/modules/pe\_xl.
+4. Install the pe\_xl module's dependencies, [puppetlabs/stdlib](https://forge.puppet.com/puppetlabs/stdlib) and [WhatsARanjit/node\_manager](https://forge.puppet.com/WhatsARanjit/node_manager), in the same modules directory as pe\_xl
 4. Create an inventory file with connection information. Example included below. Available Bolt configuration options are documented here.
 5. Create a parameters file. Example included below. Note at the top of the file are arguments which dictate which plans should be run, such as install+configure.
 6. Run the pe\_xl plan with the inputs created. Example:
