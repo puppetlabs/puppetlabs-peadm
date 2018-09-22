@@ -17,14 +17,16 @@ function pe_xl::retrieve_and_upload(
     )
   }
 
-  $size = run_command("stat -c%s '${local_path}' 2>/dev/null", 'local://localhost').first.value['stdout'].chomp
+  $local_size = run_task('pe_xl::filesize', 'local://localhost',
+    path => $local_path,
+  ).first['size']
 
   $targets_needing_file = run_task('pe_xl::filesize', $target,
     path => $upload_path,
-  ).filter |$task| {
-    $task['_output'].chomp != $size
-  }.map |$task| {
-    $task.target
+  ).filter |$result| {
+    $result['size'] != $local_size
+  }.map |$result| {
+    $result.target
   }
 
   upload_file($local_path, $upload_path, $targets_needing_file)
