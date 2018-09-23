@@ -25,92 +25,29 @@ class pe_xl::node_manager (
   # PE INFRASTRUCTURE GROUPS
   ##################################################
 
-  # We modify this group's rule such that all PE infrastructure nodes will be
-  # members.
   node_group { 'PE Infrastructure Agent':
-    rule => ['and', ['~', ['trusted', 'extensions', 'pp_role'], '^pe_xl::']],
+    rule   => ['and', ['~', ['trusted', 'extensions', 'pp_role'], '^pe_xl::']],
   }
 
-  # We modify this group to add, as data, the compile_master_pool_address only.
-  # Because the group does not have any data by default this does not impact
-  # out-of-box configuration of the group.
   node_group { 'PE Master':
-    rule => ['or',
+    rule   => ['or',
       ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master']],
       ['=', 'name', $primary_master_host],
     ],
-    data => {
+    data   => {
       'pe_repo' => { 'compile_master_pool_address' => $compile_master_pool_address },
     },
   }
 
-  # We need to pre-create this group so that the primary master replica can be
-  # identified as running PuppetDB, so that Puppet will create a pg_ident
-  # authorization rule for it on the PostgreSQL nodes.
-  node_group { 'PE HA Replica':
-    ensure  => 'present',
-    parent  => 'PE Infrastructure',
-    rule => ['or', ['=', 'name', $primary_master_replica_host]],
-    classes => {
-      'puppet_enterprise::profile::primary_master_replica' => { }
-    },
-  }
-
-  # Create data-only groups to store PuppetDB PostgreSQL database configuration
-  # information specific to the primary master and primary master replica nodes.
-  node_group { 'PE Master A':
-    ensure  => present,
-    parent  => 'PE Infrastructure',
-    rule    => ['and',
-      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::primary_master'],
-      ['=', ['trusted', 'extensions', 'pp_cluster'], 'A'],
-    ],
-    data => {
-      'puppet_enterprise::profile::primary_master_replica' => {
-        'database_host_puppetdb' => $puppetdb_database_host,
-      },
-      'puppet_enterprise::profile::puppetdb' => {
-        'database_host' => $puppetdb_database_host,
-      },
-    },
-  }
-
-  node_group { 'PE Master B':
-    ensure  => present,
-    parent  => 'PE Infrastructure',
-    rule    => ['and',
-      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::primary_master'],
-      ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
-    ],
-    data => {
-      'puppet_enterprise::profile::primary_master_replica' => {
-        'database_host_puppetdb' => $puppetdb_database_replica_host,
-      },
-      'puppet_enterprise::profile::puppetdb' => {
-        'database_host' => $puppetdb_database_replica_host,
-      },
-    },
-  }
-
-  # Configure the compile masters for HA, grouped into two pools, each pool
-  # having an affinity for one "availability zone" or the other. Even with an
-  # affinity, note that data from each compile master is replicated to both
-  # "availability zones".
   node_group { 'PE Compile Master Group A':
     ensure  => 'present',
     parent  => 'PE Master',
     rule    => ['and',
       ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master'],
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'A'],
-    ],
-    classes => {
-      'puppet_enterprise::profile::puppetdb' => {
-        'database_host' => $puppetdb_database_host,
-      },
-      'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => ['${clientcert}', $primary_master_replica_host],
-        'puppetdb_port' => [8081],
-      }
+    ], 
+    data    => {
+      'puppet_enterprise::profile::primary_master_replica' => {'database_host_puppetdb' => $puppetdb_database_host }
     },
   }
 
@@ -120,16 +57,17 @@ class pe_xl::node_manager (
     rule    => ['and',
       ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master'],
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
-    ],
-    classes => {
-      'puppet_enterprise::profile::puppetdb' => {
-        'database_host' => $puppetdb_database_replica_host,
-      },
-      'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => ['${clientcert}', $primary_master_host],
-        'puppetdb_port' => [8081],
-      }
+    ], 
+    data    => {
+      'puppet_enterprise::profile::primary_master_replica' => {'database_host_puppetdb' => $puppetdb_database_replica_host }
     },
+  }
+
+  node_group { 'PE PuppetDB':
+    rule   => ['or',
+      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::primary_master'],
+      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master'],
+    ],
   }
 
   # This class has to be included here because puppet_enterprise is declared

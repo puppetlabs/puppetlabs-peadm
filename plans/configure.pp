@@ -11,17 +11,20 @@ plan pe_xl::configure (
   String[1]           $stagingdir = '/tmp',
 ) {
 
+  # Retrieve and deploy Puppet modules from the Forge so that they can be used
+  # for ensuring some configuration (node groups)
+  pe_xl::install_module($primary_master_host, 'WhatsARanjit-node_manager', '0.7.1', $stagingdir)
+  pe_xl::install_module($primary_master_host, 'puppetlabs-stdlib', '5.0.0', $stagingdir)
+
   # Set up the console node groups to configure the various hosts in their
   # roles
-  apply($primary_master_host) {
-    class { 'pe_xl::node_manager':
-      primary_master_host            => $primary_master_host,
-      primary_master_replica_host    => $primary_master_replica_host,
-      puppetdb_database_host         => $puppetdb_database_host,
-      puppetdb_database_replica_host => $puppetdb_database_replica_host,
-      compile_master_pool_address    => $compile_master_pool_address,
-    }
-  }
+  run_task('pe_xl::configure_node_groups', $primary_master_host,
+    primary_master_host            => $primary_master_host,
+    primary_master_replica_host    => $primary_master_replica_host,
+    puppetdb_database_host         => $puppetdb_database_host,
+    puppetdb_database_replica_host => $puppetdb_database_replica_host,
+    compile_master_pool_address    => $compile_master_pool_address,
+  )
 
   # Run Puppet in no-op on the compile masters so that their status in PuppetDB
   # is updated and they can be identified by the puppet_enterprise module as
