@@ -20,6 +20,10 @@
     "compile_master_pool_address": {
       "type": "String",
       "description": "The service name to use for the compile master pool"
+    },
+    "manage_environment_groups": {
+      "type": "Boolean",
+      "description": "This will regroup the production and additional PE Environment groups"
     }
   },
   "input_method": "environment",
