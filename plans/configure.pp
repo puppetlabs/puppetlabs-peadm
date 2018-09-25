@@ -6,6 +6,7 @@ plan pe_xl::configure (
   Array[String[1]]    $compile_master_hosts = [ ],
 
   String[1]           $compile_master_pool_address = $primary_master_host,
+  Boolean             $manage_environment_groups = true,
   Optional[String[1]] $deploy_environment = undef,
 
   String[1]           $stagingdir = '/tmp',
@@ -24,6 +25,7 @@ plan pe_xl::configure (
     puppetdb_database_host         => $puppetdb_database_host,
     puppetdb_database_replica_host => $puppetdb_database_replica_host,
     compile_master_pool_address    => $compile_master_pool_address,
+    manage_environment_groups      => $manage_environment_groups,
   )
 
   # Run Puppet in no-op on the compile masters so that their status in PuppetDB
