@@ -18,6 +18,8 @@ plan pe_xl (
   Optional[String[1]]        $version = undef,
   Optional[Hash]             $r10k_sources = undef,
   Optional[Array[String[1]]] $dns_alt_names = undef,
+  Optional[Boolean]          $executing_on_primary_master = undef,
+  Optional[Boolean]          $manage_environment_groups = undef,
 
   Optional[String[1]]        $compile_master_pool_address = undef,
   Optional[String[1]]        $deploy_environment = undef,
@@ -50,7 +52,9 @@ plan pe_xl (
       puppetdb_database_replica_host => $puppetdb_database_replica_host,
       compile_master_hosts           => $compile_master_hosts,
 
+      executing_on_primary_master    => $executing_on_primary_master,
       compile_master_pool_address    => $compile_master_pool_address,
+      manage_environment_groups      => $manage_environment_groups,
       deploy_environment             => $deploy_environment,
 
       stagingdir                     => $stagingdir,

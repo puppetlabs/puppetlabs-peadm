@@ -28,6 +28,16 @@ plan pe_xl::misc::divert_code_manager (
       Pe_hocon_setting <| title == 'file-sync.repos.puppet-code.live-dir' |> {
         value => '/etc/puppetlabs/code-synchronized',
       }
+
+    Remember also to disable static catalogs or configure static catalogs for
+    use without file-sync. This can be done with a Hiera setting in pe.conf or
+    the console:
+
+      puppet_enterprise::master::static_catalogs: false
+
+    Further documentation on static catalogs:
+      https://puppet.com/docs/pe/2018.1/static_catalogs.html
+
     | HEREDOC
 
   return("Plan completed successfully")

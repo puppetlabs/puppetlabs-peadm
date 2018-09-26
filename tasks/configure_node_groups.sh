@@ -1,7 +1,6 @@
 #!/bin/bash
 
 /opt/puppetlabs/bin/puppet apply --environment production <<EOF
-
 class configure_node_groups (
   String[1]                        \$primary_master_host            = "${PT_primary_master_host}",
   String[1]                        \$primary_master_replica_host    = "${PT_primary_master_replica_host}",
@@ -12,17 +11,14 @@ class configure_node_groups (
   Pattern[/\A[a-z0-9_]+\Z/]        \$default_environment            = 'production',
   Array[Pattern[/\A[a-z0-9_]+\Z/]] \$environments                   = ['production'],
 ) {
-
   ##################################################
   # PE INFRASTRUCTURE GROUPS
   ##################################################
-
   # We modify this group's rule such that all PE infrastructure nodes will be
   # members.
   node_group { 'PE Infrastructure Agent':
     rule => ['and', ['~', ['trusted', 'extensions', 'pp_role'], '^pe_xl::']],
   }
-
   # We modify this group to add, as data, the compile_master_pool_address only.
   # Because the group does not have any data by default this does not impact
   # out-of-box configuration of the group.
@@ -35,7 +31,6 @@ class configure_node_groups (
       'pe_repo' => { 'compile_master_pool_address' => \$compile_master_pool_address },
     },
   }
-
   # We need to pre-create this group so that the primary master replica can be
   # identified as running PuppetDB, so that Puppet will create a pg_ident
   # authorization rule for it on the PostgreSQL nodes.
@@ -47,7 +42,6 @@ class configure_node_groups (
       'puppet_enterprise::profile::primary_master_replica' => { }
     },
   }
-
   # Create data-only groups to store PuppetDB PostgreSQL database configuration
   # information specific to the primary master and primary master replica nodes.
   node_group { 'PE Master A':
@@ -66,7 +60,6 @@ class configure_node_groups (
       },
     },
   }
-
   node_group { 'PE Master B':
     ensure  => present,
     parent  => 'PE Infrastructure',
@@ -83,7 +76,6 @@ class configure_node_groups (
       },
     },
   }
-
   # Configure the compile masters for HA, grouped into two pools, each pool
   # having an affinity for one "availability zone" or the other. Even with an
   # affinity, note that data from each compile master is replicated to both
@@ -105,7 +97,6 @@ class configure_node_groups (
       }
     },
   }
-
   node_group { 'PE Compile Master Group B':
     ensure  => 'present',
     parent  => 'PE Master',
@@ -123,7 +114,6 @@ class configure_node_groups (
       }
     },
   }
-
   # This class has to be included here because puppet_enterprise is declared
   # in the console with parameters. It is therefore not possible to include
   # puppet_enterprise::profile::database in code without causing a conflict.
@@ -137,7 +127,6 @@ class configure_node_groups (
       'puppet_enterprise::profile::database' => { },
     },
   }
-
   if \$manage_environment_groups {
     ##################################################
     # ENVIRONMENT GROUPS
@@ -185,5 +174,4 @@ class configure_node_groups (
   }
 }  
 include configure_node_groups
-
 EOF
