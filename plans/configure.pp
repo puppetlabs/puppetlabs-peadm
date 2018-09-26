@@ -1,15 +1,15 @@
 plan pe_xl::configure (
-  String[1]             $primary_master_host,
-  String[1]             $puppetdb_database_host,
-  String[1]             $primary_master_replica_host,
-  String[1]             $puppetdb_database_replica_host,
-  Array[String[1]]      $compile_master_hosts = [ ],
+  String[1]           $primary_master_host,
+  String[1]           $puppetdb_database_host,
+  String[1]           $primary_master_replica_host,
+  String[1]           $puppetdb_database_replica_host,
+  Array[String[1]]    $compile_master_hosts = [ ],
 
-  String[1]             $compile_master_pool_address = $primary_master_host,
-  Enum['true', 'false'] $manage_environment_groups = true,
-  Optional[String[1]]   $deploy_environment = undef,
+  String[1]           $compile_master_pool_address = $primary_master_host,
+  Boolean             $manage_environment_groups = true,
+  Optional[String[1]] $deploy_environment = undef,
 
-  String[1]             $stagingdir = '/tmp',
+  String[1]           $stagingdir = '/tmp',
 ) {
 
   # Retrieve and deploy Puppet modules from the Forge so that they can be used
