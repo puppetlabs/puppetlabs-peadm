@@ -24,6 +24,10 @@
     "manage_environment_groups": {
       "type": "Boolean",
       "description": "This will regroup the production and additional PE Environment groups"
+    },
+    "manage_environment_groups": {
+      "type": "Enum['true', 'false']",
+      "description": "This will regroup the production and additional PE Environment groups"
     }
   },
   "input_method": "environment",
