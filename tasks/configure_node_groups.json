@@ -22,7 +22,7 @@
       "description": "The service name to use for the compile master pool"
     },
     "manage_environment_groups": {
-      "type": "Boolean",
+      "type": "Optional['Boolean']",
       "description": "This will regroup the production and additional PE Environment groups"
     }
   },
