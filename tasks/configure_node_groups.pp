@@ -7,7 +7,7 @@ class configure_node_groups (
   String[1]                        $puppetdb_database_host         = param('puppetdb_database_host'),
   String[1]                        $puppetdb_database_replica_host = param('puppetdb_database_replica_host'),
   String[1]                        $compile_master_pool_address    = param('compile_master_pool_address'),
-  Boolean                          $manage_environment_groups      = true,
+  Enum['true', 'false']            $manage_environment_groups      = param('manage_environment_groups'),
   Pattern[/\A[a-z0-9_]+\Z/]        $default_environment            = 'production',
   Array[Pattern[/\A[a-z0-9_]+\Z/]] $environments                   = ['production'],
 ) {
@@ -137,11 +137,13 @@ class configure_node_groups (
     },
   }
 
-  if str2bool("$manage_environment_groups") {
+
+  if ($manage_environment_groups == 'true') {
+
     ##################################################
     # ENVIRONMENT GROUPS
     ##################################################
-  
+
     node_group { 'All Environments':
       ensure               => present,
       description          => 'Environment group parent and default',
@@ -150,7 +152,7 @@ class configure_node_groups (
       parent               => 'All Nodes',
       rule                 => ['and', ['~', 'name', '.*']],
     }
-  
+
     node_group { 'Agent-specified environment':
       ensure               => present,
       description          => 'This environment group exists for unusual testing and development only. Expect it to be empty',
@@ -159,10 +161,10 @@ class configure_node_groups (
       parent               => 'All Environments',
       rule                 => [ ],
     }
-  
+
     $environments.each |$env| {
       $title_env = capitalize($env)
-  
+
       node_group { "${title_env} environment":
         ensure               => present,
         environment          => $env,
@@ -170,7 +172,7 @@ class configure_node_groups (
         parent               => 'All Environments',
         rule                 => ['and', ['=', ['trusted', 'extensions', 'pp_environment'], $env]],
       }
-  
+
       node_group { "${title_env} one-time run exception":
         ensure               => present,
         description          => "Allow ${env} nodes to request a different puppet environment for a one-time run",
@@ -180,7 +182,7 @@ class configure_node_groups (
         rule                 => ['and', ['~', ['fact', 'agent_specified_environment'], '.+']],
       }
     }
-  
+
   }
 }  
 include configure_node_groups
