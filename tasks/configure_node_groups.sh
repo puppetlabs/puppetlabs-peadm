@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 /opt/puppetlabs/bin/puppet apply --environment production <<'EOF'
 
 function param($name) { inline_template("<%= ENV['PT_${name}'] %>") }
@@ -10,7 +11,12 @@ class configure_node_groups (
   String[1]                        $puppetdb_database_host         = param('puppetdb_database_host'),
   String[1]                        $puppetdb_database_replica_host = param('puppetdb_database_replica_host'),
   String[1]                        $compile_master_pool_address    = param('compile_master_pool_address'),
+
+  # Note: the task accepts a Boolean for manage_environment_groups. Passed in
+  # as an environment variable, this will be cast to the string "true" or the
+  # string "false". Thus, the Puppet class type is Enum, rather than Boolean.
   Enum['true', 'false']            $manage_environment_groups      = param('manage_environment_groups'),
+
   Pattern[/\A[a-z0-9_]+\Z/]        $default_environment            = 'production',
   Array[Pattern[/\A[a-z0-9_]+\Z/]] $environments                   = ['production'],
 ) {

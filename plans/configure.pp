@@ -13,7 +13,7 @@ plan pe_xl::configure (
   Boolean             $executing_on_primary_master = false,
 
   String[1]           $compile_master_pool_address = $primary_master_host,
-  String[1]           $manage_environment_groups = 'true',
+  Boolean             $manage_environment_groups = true,
   Optional[String[1]] $deploy_environment = undef,
 
   String[1]           $stagingdir = '/tmp',
