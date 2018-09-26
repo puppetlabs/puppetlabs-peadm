@@ -1,15 +1,16 @@
-#!/opt/puppetlabs/bin/puppet apply 
-function param($name) { inline_template("<%= ENV['PT_${name}'] %>") }
+#!/bin/bash
+
+/opt/puppetlabs/bin/puppet apply --environment production <<EOF
 
 class configure_node_groups (
-  String[1]                        $primary_master_host            = param('primary_master_host'),
-  String[1]                        $primary_master_replica_host    = param('primary_master_replica_host'),
-  String[1]                        $puppetdb_database_host         = param('puppetdb_database_host'),
-  String[1]                        $puppetdb_database_replica_host = param('puppetdb_database_replica_host'),
-  String[1]                        $compile_master_pool_address    = param('compile_master_pool_address'),
-  Boolean                          $manage_environment_groups      = true,
-  Pattern[/\A[a-z0-9_]+\Z/]        $default_environment            = 'production',
-  Array[Pattern[/\A[a-z0-9_]+\Z/]] $environments                   = ['production'],
+  String[1]                        \$primary_master_host            = "${PT_primary_master_host}",
+  String[1]                        \$primary_master_replica_host    = "${PT_primary_master_replica_host}",
+  String[1]                        \$puppetdb_database_host         = "${PT_puppetdb_database_host}",
+  String[1]                        \$puppetdb_database_replica_host = "${PT_puppetdb_database_replica_host}",
+  String[1]                        \$compile_master_pool_address    = "${PT_compile_master_pool_address}",
+  Boolean                          \$manage_environment_groups      = true,
+  Pattern[/\A[a-z0-9_]+\Z/]        \$default_environment            = 'production',
+  Array[Pattern[/\A[a-z0-9_]+\Z/]] \$environments                   = ['production'],
 ) {
 
   ##################################################
@@ -28,10 +29,10 @@ class configure_node_groups (
   node_group { 'PE Master':
     rule => ['or',
       ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master']],
-      ['=', 'name', $primary_master_host],
+      ['=', 'name', \$primary_master_host],
     ],
     data => {
-      'pe_repo' => { 'compile_master_pool_address' => $compile_master_pool_address },
+      'pe_repo' => { 'compile_master_pool_address' => \$compile_master_pool_address },
     },
   }
 
@@ -41,7 +42,7 @@ class configure_node_groups (
   node_group { 'PE HA Replica':
     ensure  => 'present',
     parent  => 'PE Infrastructure',
-    rule => ['or', ['=', 'name', $primary_master_replica_host]],
+    rule => ['or', ['=', 'name', \$primary_master_replica_host]],
     classes => {
       'puppet_enterprise::profile::primary_master_replica' => { }
     },
@@ -58,10 +59,10 @@ class configure_node_groups (
     ], 
     data => {
       'puppet_enterprise::profile::primary_master_replica' => {
-        'database_host_puppetdb' => $puppetdb_database_host,
+        'database_host_puppetdb' => \$puppetdb_database_host,
       },
       'puppet_enterprise::profile::puppetdb' => {
-        'database_host' => $puppetdb_database_host,
+        'database_host' => \$puppetdb_database_host,
       },
     },
   }
@@ -75,10 +76,10 @@ class configure_node_groups (
     ], 
     data => {
       'puppet_enterprise::profile::primary_master_replica' => {
-        'database_host_puppetdb' => $puppetdb_database_replica_host,
+        'database_host_puppetdb' => \$puppetdb_database_replica_host,
       },
       'puppet_enterprise::profile::puppetdb' => {
-        'database_host' => $puppetdb_database_replica_host,
+        'database_host' => \$puppetdb_database_replica_host,
       },
     },
   }
@@ -96,10 +97,10 @@ class configure_node_groups (
     ], 
     classes => {
       'puppet_enterprise::profile::puppetdb' => {
-        'database_host' => $puppetdb_database_host,
+        'database_host' => \$puppetdb_database_host,
       },
       'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => ['${clientcert}', $primary_master_replica_host],
+        'puppetdb_host' => ['\${clientcert}', \$primary_master_replica_host],
         'puppetdb_port' => [8081],
       }
     },
@@ -114,10 +115,10 @@ class configure_node_groups (
     ], 
     classes => {
       'puppet_enterprise::profile::puppetdb' => {
-        'database_host' => $puppetdb_database_replica_host,
+        'database_host' => \$puppetdb_database_replica_host,
       },
       'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => ['${clientcert}', $primary_master_host],
+        'puppetdb_host' => ['\${clientcert}', \$primary_master_host],
         'puppetdb_port' => [8081],
       }
     },
@@ -137,7 +138,7 @@ class configure_node_groups (
     },
   }
 
-  if $manage_environment_groups {
+  if \$manage_environment_groups {
     ##################################################
     # ENVIRONMENT GROUPS
     ##################################################
@@ -145,7 +146,7 @@ class configure_node_groups (
     node_group { 'All Environments':
       ensure               => present,
       description          => 'Environment group parent and default',
-      environment          => $default_environment,
+      environment          => \$default_environment,
       override_environment => true,
       parent               => 'All Nodes',
       rule                 => ['and', ['~', 'name', '.*']],
@@ -160,23 +161,23 @@ class configure_node_groups (
       rule                 => [ ],
     }
   
-    $environments.each |$env| {
-      $title_env = capitalize($env)
+    \$environments.each |\$env| {
+      \$title_env = capitalize(\$env)
   
-      node_group { "${title_env} environment":
+      node_group { "\${title_env} environment":
         ensure               => present,
-        environment          => $env,
+        environment          => \$env,
         override_environment => true,
         parent               => 'All Environments',
-        rule                 => ['and', ['=', ['trusted', 'extensions', 'pp_environment'], $env]],
+        rule                 => ['and', ['=', ['trusted', 'extensions', 'pp_environment'], \$env]],
       }
   
-      node_group { "${title_env} one-time run exception":
+      node_group { "\${title_env} one-time run exception":
         ensure               => present,
-        description          => "Allow ${env} nodes to request a different puppet environment for a one-time run",
+        description          => "Allow \${env} nodes to request a different puppet environment for a one-time run",
         environment          => 'agent-specified',
         override_environment => true,
-        parent               => "${title_env} environment",
+        parent               => "\${title_env} environment",
         rule                 => ['and', ['~', ['fact', 'agent_specified_environment'], '.+']],
       }
     }
@@ -184,3 +185,5 @@ class configure_node_groups (
   }
 }  
 include configure_node_groups
+
+EOF
