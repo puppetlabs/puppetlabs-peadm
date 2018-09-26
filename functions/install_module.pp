@@ -23,7 +23,7 @@ function pe_xl::install_module(
 
   run_command('chown -R pe-puppet:pe-puppet /etc/puppetlabs/code-staging', $target)
   run_task('pe_xl::code_manager', $target,
-    action => 'file-sync commit',
+    action => 'commit',
   )
 
 }
