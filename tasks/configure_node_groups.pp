@@ -1,4 +1,4 @@
-#!/opt/puppetlabs/bin/puppet apply --environment=production
+#!/opt/puppetlabs/bin/puppet apply 
 function param($name) { inline_template("<%= ENV['PT_${name}'] %>") }
 
 class configure_node_groups (
