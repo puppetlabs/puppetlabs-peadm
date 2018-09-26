@@ -28,6 +28,6 @@
   },
   "input_method": "environment",
   "implementations": [
-    {"name": "configure_node_groups.pp"}
+    {"name": "configure_node_groups.sh"}
   ]
 }
