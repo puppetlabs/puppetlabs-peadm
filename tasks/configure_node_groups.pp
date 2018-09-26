@@ -137,7 +137,7 @@ class configure_node_groups (
     },
   }
 
-  if $manage_environment_groups {
+  if str2bool("$manage_environment_groups") {
     ##################################################
     # ENVIRONMENT GROUPS
     ##################################################
