@@ -137,7 +137,9 @@ class configure_node_groups (
     },
   }
 
+
   if ($manage_environment_groups == 'true') {
+
     ##################################################
     # ENVIRONMENT GROUPS
     ##################################################
