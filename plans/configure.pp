@@ -14,6 +14,7 @@ plan pe_xl::configure (
 
   String[1]           $compile_master_pool_address = $primary_master_host,
   Boolean             $manage_environment_groups = true,
+  String[1]           $token_file = '${HOME}/.puppetlabs/token',
   Optional[String[1]] $deploy_environment = undef,
 
   String[1]           $stagingdir = '/tmp',
@@ -64,11 +65,13 @@ plan pe_xl::configure (
   # Run the PE Replica Provision
   run_task('pe_xl::provision_replica', $primary_master_target,
     primary_master_replica => $primary_master_replica_host,
+    token_file => $token_file,
   )
 
   # Run the PE Replica Enable
   run_task('pe_xl::enable_replica', $primary_master_target,
     primary_master_replica => $primary_master_replica_host,
+    token_file => $token_file,
   )
 
   # Run Puppet everywhere to pick up last remaining config tweaks

@@ -4,6 +4,10 @@
     "primary_master_replica": {
       "type": "String",
       "description": "The name of the replica to enable"
+    },
+    "token_file": {
+      "type": "Optional[String]",
+      "description": "The name of the token file to use for auth"
     }
   },
   "input_method": "environment",
