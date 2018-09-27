@@ -6,7 +6,7 @@
       "description": "The name of the replica to provision"
     },
     "token_file": {
-      "type": "Optional['String']",
+      "type": "Optional[String]",
       "description": "The name of the token-file for auth"
     }
   },

@@ -6,7 +6,7 @@
       "description": "The name of the replica to enable"
     },
     "token_file": {
-      "type": "Optional['String']",
+      "type": "Optional[String]",
       "description": "The name of the token file to use for auth"
     }
   },
