@@ -14,7 +14,7 @@ plan pe_xl::configure (
 
   String[1]           $compile_master_pool_address = $primary_master_host,
   Boolean             $manage_environment_groups = true,
-  String[1]           $token_file = '${HOME}/.puppetlabs/token',
+  String[1]           $token_file = '/root/.puppetlabs/token',
   Optional[String[1]] $deploy_environment = undef,
 
   String[1]           $stagingdir = '/tmp',
