@@ -67,14 +67,14 @@ plan pe_xl::upgrade (
     name   => 'pe-puppetdb',
   )
 
-  # Shut down pe-* services on the primary master. Only shutting down the ones
-  # that have failover pairs on the replica.
-  ['pe-console-services', 'pe-nginx', 'pe-puppetserver', 'pe-puppetdb', 'pe-postgresql'].each |$service| {
-    run_task('service', $primary_master_local,
-      action => 'stop',
-      name   => $service,
-    )
-  }
+#  # Shut down pe-* services on the primary master. Only shutting down the ones
+#  # that have failover pairs on the replica.
+#  ['pe-console-services', 'pe-nginx', 'pe-puppetserver', 'pe-puppetdb', 'pe-postgresql'].each |$service| {
+#    run_task('service', $primary_master_local,
+#      action => 'stop',
+#      name   => $service,
+#    )
+#  }
 
   # TODO: Firewall up the primary master
 
@@ -83,6 +83,11 @@ plan pe_xl::upgrade (
   run_task('pe_xl::pe_install', $primary_master_local,
     tarball => $upload_tarball_path,
   )
+
+
+  # Check and wait for the Orchestration service to be up and responding 
+  # prior to continuing the plan.
+  run_task('pe_xl::orchestrator_healthcheck', $primary_master_local)
 
   # Upgrade the primary PuppetDB PostgreSQL host. Note that installer-driven
   # upgrade will de-configure auth access for compile masters. Re-run Puppet
