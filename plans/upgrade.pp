@@ -6,6 +6,7 @@ plan pe_xl::upgrade (
 
 #  String[1]        $console_password,
   String[1]        $version = '2018.1.3',
+  Boolean          $executing_on_primary_master = false,
 
   String[1]        $stagingdir = '/tmp',
   String[1]        $pe_source  = "https://s3.amazonaws.com/pe-builds/released/${version}/puppet-enterprise-${version}-el-7-x86_64.tar.gz",
@@ -39,7 +40,11 @@ plan pe_xl::upgrade (
     $cm_cluster_replica_hosts,
   ].pe_xl::flatten_compact()
 
-  $primary_master_local = "local://$primary_master_host"
+  # Allow for the configure task to be run local to the primary master.
+  $primary_master_target = $executing_on_primary_master ? {
+    true  => "local://${primary_master_host}",
+    false => $primary_master_host,
+  }
 
   # TODO: Do we need to update the pe.conf(s) with a console password?
 
@@ -67,14 +72,14 @@ plan pe_xl::upgrade (
     name   => 'pe-puppetdb',
   )
 
-#  # Shut down pe-* services on the primary master. Only shutting down the ones
-#  # that have failover pairs on the replica.
-#  ['pe-console-services', 'pe-nginx', 'pe-puppetserver', 'pe-puppetdb', 'pe-postgresql'].each |$service| {
-#    run_task('service', $primary_master_local,
-#      action => 'stop',
-#      name   => $service,
-#    )
-#  }
+  # Shut down pe-* services on the primary master. Only shutting down the ones
+  # that have failover pairs on the replica.
+  ['pe-console-services', 'pe-nginx', 'pe-puppetserver', 'pe-puppetdb', 'pe-postgresql'].each |$service| {
+    run_task('service', $primary_master_local,
+      action => 'stop',
+      name   => $service,
+    )
+  }
 
   # TODO: Firewall up the primary master
 
