@@ -1,13 +1,8 @@
 #!/bin/bash
 
-USER="${USER:=$(id -un)}"
-HOME="${HOME:=$(getent passwd "$USER" | cut -d : -f 6)}"
-
-if [[ "${PT_token_file}x" != 'x' ]] ; then
-  TOKEN_FILE="$PT_token_file"
-else
-  TOKEN_FILE="${HOME}/.puppetlabs/token"
-fi
+USER="${USER:-$(id -un)}"
+HOME="${HOME:-$(getent passwd "$USER" | cut -d : -f 6)}"
+TOKEN_FILE="${PT_token_file:-"${HOME}/.puppetlabs/token"}"
 
 set -e
 
