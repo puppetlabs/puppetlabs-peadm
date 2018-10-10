@@ -92,6 +92,18 @@ class configure_node_groups (
     },
   }
 
+  # Hiera data tuning for compilers
+  $compiler_data = {
+    'puppet_enterprise::profile::puppetdb' => {
+      'gc_interval' => '0',
+    },
+    'puppet_enterprise::puppetdb' => {
+      'command_processing_threads' => 2,
+      'write_maximum_pool_size'    => 4,
+      'read_maximum_pool_size'     => 10,
+    },
+  }
+
   # Configure the compile masters for HA, grouped into two pools, each pool
   # having an affinity for one "availability zone" or the other. Even with an
   # affinity, note that data from each compile master is replicated to both
@@ -112,6 +124,7 @@ class configure_node_groups (
         'puppetdb_port' => [8081],
       }
     },
+    data    => $compiler_data,
   }
 
   node_group { 'PE Compile Master Group B':
@@ -130,6 +143,7 @@ class configure_node_groups (
         'puppetdb_port' => [8081],
       }
     },
+    data    => $compiler_data,
   }
 
   # This class has to be included here because puppet_enterprise is declared
