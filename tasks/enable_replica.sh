@@ -2,7 +2,12 @@
 
 USER="${USER:-$(id -un)}"
 HOME="${HOME:-$(getent passwd "$USER" | cut -d : -f 6)}"
-TOKEN_FILE="${PT_token_file:-"${HOME}/.puppetlabs/token"}"
+
+if [ -z "$PT_token_file" -o "$PT_token_file" = "null" ]; then
+  TOKEN_FILE="${HOME}/.puppetlabs/token"
+else
+  TOKEN_FILE="$PT_token_file"
+fi
 
 set -e
 
