@@ -54,6 +54,7 @@ class configure_node_groups (
     classes => {
       'puppet_enterprise::profile::primary_master_replica' => { }
     },
+    variables => { "pe_xl_replica" => true },
   }
 
   # Create data-only groups to store PuppetDB PostgreSQL database configuration
