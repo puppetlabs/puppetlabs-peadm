@@ -12,11 +12,11 @@ Note pending more detailed instructions:
 
 ## Documentation
 
-See this README file and any documents in the [docs](docs) directory.
+See this README file and any documents in the [documentation](documentation) directory.
 
 ## Architecture
 
-![architecture](docs/images/architecture.png)
+![architecture](documentation/images/architecture.png)
 
 ## Installation
 
