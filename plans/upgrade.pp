@@ -1,13 +1,13 @@
 plan pe_xl::upgrade (
-  String[1]        $master_host,
-  String[1]        $puppetdb_database_host,
-  String[1]        $master_replica_host,
-  String[1]        $puppetdb_database_replica_host,
+  String[1] $master_host,
+  String[1] $puppetdb_database_host,
+  String[1] $master_replica_host,
+  String[1] $puppetdb_database_replica_host,
 
-  String[1]        $version = '2018.1.3',
+  String[1] $version = '2018.1.4',
 
-  String[1]        $stagingdir = '/tmp',
-  String[1]        $pe_source  = "https://s3.amazonaws.com/pe-builds/released/${version}/puppet-enterprise-${version}-el-7-x86_64.tar.gz",
+  String[1] $stagingdir = '/tmp',
+  String[1] $pe_source  = "https://s3.amazonaws.com/pe-builds/released/${version}/puppet-enterprise-${version}-el-7-x86_64.tar.gz",
 ) {
 
   # Look up which hosts are compilers in the stack
