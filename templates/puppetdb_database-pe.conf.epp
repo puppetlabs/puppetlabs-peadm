@@ -1,4 +1,4 @@
-<%- | String[1] $primary_master_host,
+<%- | String[1] $master_host,
       String[1] $puppetdb_database_host,
 | -%>
 #----------------------------------------------------------------------------
@@ -15,7 +15,7 @@
   "console_admin_password": "not used"
 
   # Basic Puppet Enterprise configuration
-  "puppet_enterprise::puppet_master_host": "<%= $primary_master_host %>"
+  "puppet_enterprise::puppet_master_host": "<%= $master_host %>"
 
   # This parameter changes the role of this host so that it considers itself a
   # database host. It will therefore install and configure PostgreSQL.

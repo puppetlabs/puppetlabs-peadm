@@ -1,8 +1,8 @@
 class pe_xl::role {
 
   $valid_roles = [
-    'pe_xl::primary_master',
-    'pe_xl::compile_master',
+    'pe_xl::master',
+    'pe_xl::compiler',
     'pe_xl::puppetdb_database',
     'pe_xl::load_balancer',
   ]

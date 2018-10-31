@@ -26,11 +26,11 @@ These are just sketched out instructions right now. It's likely there are big ga
 
 You'll need two control repositories configured. One dedicated to managing Puppet Enterprise nodes (consider it kinda like an appliance), and another for your regular Puppet code used to manage your infrastructure.
 
-### Installing the Primary Master
+### Installing the Master
 
 1. Download and extract the Puppet Enterprise installer
-2. Place the csr\_attributes.yaml file from installer/primary-master in /etc/puppetlabs/puppet/csr\_attributes.yaml
-3. Place the pe.conf file from installer/primary-master in the working directory, and edit it to fill in required values
+2. Place the csr\_attributes.yaml file from installer/master in /etc/puppetlabs/puppet/csr\_attributes.yaml
+3. Place the pe.conf file from installer/master in the working directory, and edit it to fill in required values
 4. Run the installer, passing the appropriate flags to use the prepared pe.conf file
 5. Set up the ssh private keys needed to access the configured control repositories
 6. For each environment configured (however many you want to initially deploy), run e.g.
@@ -55,14 +55,14 @@ You'll need two control repositories configured. One dedicated to managing Puppe
 2. Place the csr\_attributes.yaml file from installer/puppetdb-database in /etc/puppetlabs/puppet/csr\_attributes.yaml
 3. Place the pe.conf file from installer/puppetdb-database in the working directory, and edit it to fill in required values
 4. Run the installer, passing the appropriate flags to use the prepared pe.conf file
-5. Finish the Primary Master installation (described above)
+5. Finish the Master installation (described above)
 6. Run `puppet agent -t`
 
-### Installing a Compile Master
+### Installing a Compiler
 
 ```
-curl -k https://primary-master.example.com:8140/packages/current/install.bash | sudo bash -s \
+curl -k https://master.example.com:8140/packages/current/install.bash | sudo bash -s \
   main:certname=<certname> \
-  extension_requests:pp_role="pe_xl::compile_master" \
+  extension_requests:pp_role="pe_xl::compiler" \
   extension_requests:pp_environment="pe_production"
 ```

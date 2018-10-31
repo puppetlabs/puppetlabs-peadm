@@ -1,13 +1,13 @@
 {
   "description": "Configure console node groups for a new install",
   "parameters": {
-    "primary_master_host": {
+    "master_host": {
       "type": "String",
-      "description": "The certname of the primary master"
+      "description": "The certname of the master"
     },
-    "primary_master_replica_host": {
+    "master_replica_host": {
       "type": "String",
-      "description": "The certname of the primary master replica"
+      "description": "The certname of the master replica"
     },
     "puppetdb_database_host": {
       "type": "String",
@@ -17,9 +17,9 @@
       "type": "String",
       "description": "The certname of the PuppetDB database replica"
     },
-    "compile_master_pool_address": {
+    "compiler_pool_address": {
       "type": "String",
-      "description": "The service name to use for the compile master pool"
+      "description": "The service name to use for the compiler pool"
     },
     "manage_environment_groups": {
       "type": "Boolean",

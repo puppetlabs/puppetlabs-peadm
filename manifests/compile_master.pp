@@ -1,4 +1,4 @@
-class pe_xl::compile_master {
+class pe_xl::compiler {
   include pe_xl::agent
 
   @@haproxy::balancermember { "${::clientcert}_puppetserver_listener":

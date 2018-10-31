@@ -15,4 +15,4 @@ env PATH="/opt/puppetlabs/bin:${PATH}" \
     USER="$USER" \
     HOME="$HOME" \
     puppet infrastructure provision replica --token-file "$TOKEN_FILE" \
-    "$PT_primary_master_replica"
+    "$PT_master_replica"

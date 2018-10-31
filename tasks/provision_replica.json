@@ -1,7 +1,7 @@
 {
   "description": "Execute the replica provision puppet command ",
   "parameters": {
-    "primary_master_replica": {
+    "master_replica": {
       "type": "String",
       "description": "The name of the replica to provision"
     },

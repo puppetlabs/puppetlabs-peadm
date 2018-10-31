@@ -4,7 +4,7 @@
 # Importantly, this includes assigning nodes to an environment matching thier
 # trusted.extensions.pp_environment value by default.
 #
-# This class will be applied during primary master bootstrap using e.g.
+# This class will be applied during master bootstrap using e.g.
 #
 #     puppet apply \
 #       --exec 'class { "pe_xl::node_manager":
@@ -12,11 +12,11 @@
 #               }'
 #
 class pe_xl::node_manager (
-  String[1]                        $primary_master_host,
-  String[1]                        $primary_master_replica_host,
+  String[1]                        $master_host,
+  String[1]                        $master_replica_host,
   String[1]                        $puppetdb_database_host,
   String[1]                        $puppetdb_database_replica_host,
-  String[1]                        $compile_master_pool_address,
+  String[1]                        $compiler_pool_address,
   Pattern[/\A[a-z0-9_]+\Z/]        $default_environment         = 'production',
   Array[Pattern[/\A[a-z0-9_]+\Z/]] $environments                = ['production'],
 ) {
@@ -31,42 +31,42 @@ class pe_xl::node_manager (
 
   node_group { 'PE Master':
     rule   => ['or',
-      ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master']],
-      ['=', 'name', $primary_master_host],
+      ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compiler']],
+      ['=', 'name', $master_host],
     ],
     data   => {
-      'pe_repo' => { 'compile_master_pool_address' => $compile_master_pool_address },
+      'pe_repo' => { 'compile_master_pool_address' => $compiler_pool_address },
     },
   }
 
-  node_group { 'PE Compile Master Group A':
+  node_group { 'PE Compiler Group A':
     ensure  => 'present',
     parent  => 'PE Master',
     rule    => ['and',
-      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master'],
+      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compiler'],
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'A'],
     ], 
     data    => {
-      'puppet_enterprise::profile::primary_master_replica' => {'database_host_puppetdb' => $puppetdb_database_host }
+      'puppet_enterprise::profile::master_replica' => {'database_host_puppetdb' => $puppetdb_database_host }
     },
   }
 
-  node_group { 'PE Compile Master Group B':
+  node_group { 'PE Compiler Group B':
     ensure  => 'present',
     parent  => 'PE Master',
     rule    => ['and',
-      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master'],
+      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compiler'],
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
     ], 
     data    => {
-      'puppet_enterprise::profile::primary_master_replica' => {'database_host_puppetdb' => $puppetdb_database_replica_host }
+      'puppet_enterprise::profile::master_replica' => {'database_host_puppetdb' => $puppetdb_database_replica_host }
     },
   }
 
   node_group { 'PE PuppetDB':
     rule   => ['or',
-      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::primary_master'],
-      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master'],
+      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::master'],
+      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compiler'],
     ],
   }
 

@@ -17,12 +17,12 @@ Besides getting everything installed the key configuration that makes this work 
 * [classification.md](https://github.com/reidmv/reidmv-pe_xl/blob/master/docs/classification.md)
 * [configure\_node\_groups.pp](https://github.com/reidmv/reidmv-pe_xl/blob/master/tasks/configure_node_groups.pp)
 
-The reference implementation uses trusted facts to put nodes in the right groups. Because the important puppet\_enterprise::\* class parameters and data are specified in the console, it should also be safe to have a pe.conf present on both the primary master, and the primary master replica nodes.
+The reference implementation uses trusted facts to put nodes in the right groups. Because the important puppet\_enterprise::\* class parameters and data are specified in the console, it should also be safe to have a pe.conf present on both the master, and the master replica nodes.
 
 ## Basic usage instructions
 
 1. Ensure the hostname of each system is set correctly, to the same value that will be used to connect to the system, and refer to the system as. If the hostname is not set as expected the installation plan will refuse to continue.
-2. Install Bolt on a jumphost. This can be the primary master, or any other system.
+2. Install Bolt on a jumphost. This can be the master, or any other system.
 3. Download or git clone the pe\_xl module and put it somewhere on the jumphost, e.g. ~/modules/pe\_xl.
 4. Create an inventory file with connection information. Example included below. Available Bolt configuration options are documented here.
 5. Create a parameters file. Example included below. Note at the top of the file are arguments which dictate which plans should be run, such as install+configure.
@@ -51,8 +51,8 @@ groups:
       - pe-xl-core-1.lab1.puppet.vm
       - pe-xl-core-2.lab1.puppet.vm
       - pe-xl-core-3.lab1.puppet.vm
-      - pe-xl-compilemaster-0.lab1.puppet.vm
-      - pe-xl-compilemaster-1.lab1.puppet.vm
+      - pe-xl-compiler-0.lab1.puppet.vm
+      - pe-xl-compiler-1.lab1.puppet.vm
 ```
 
 Example params.json Bolt parameters file:
@@ -63,18 +63,18 @@ Example params.json Bolt parameters file:
   "configure": true,
   "upgrade": false,
 
-  "primary_master_host": "pe-xl-core-0.lab1.puppet.vm",
+  "master_host": "pe-xl-core-0.lab1.puppet.vm",
   "puppetdb_database_host": "pe-xl-core-1.lab1.puppet.vm",
-  "primary_master_replica_host": "pe-xl-core-2.lab1.puppet.vm",
+  "master_replica_host": "pe-xl-core-2.lab1.puppet.vm",
   "puppetdb_database_replica_host": "pe-xl-core-3.lab1.puppet.vm",
-  "compile_master_hosts": [
-    "pe-xl-compilemaster-0.lab1.puppet.vm",
-    "pe-xl-compilemaster-1.lab1.puppet.vm"
+  "compiler_hosts": [
+    "pe-xl-compiler-0.lab1.puppet.vm",
+    "pe-xl-compiler-1.lab1.puppet.vm"
   ],
 
   "console_password": "puppetlabs",
   "dns_alt_names": [ "puppet", "puppet.lab1.puppet.vm" ],
-  "compile_master_pool_address": "puppet.lab1.puppet.vm",
+  "compiler_pool_address": "puppet.lab1.puppet.vm",
   "version": "2018.1.4"
 }
 ```

@@ -10,7 +10,7 @@
 #
 # This is a stop-gap at best. This should not be attempted without advisement.
 plan pe_xl::misc::divert_code_manager (
-  $primary_master_host,
+  $master_host,
 ) {
 
   notice(@(HEREDOC))
@@ -20,7 +20,7 @@ plan pe_xl::misc::divert_code_manager (
     This will allow /etc/puppetlabs/code to be managed manually
     | HEREDOC
 
-  run_task('pe_xl::divert_code_manager', $primary_master_host)
+  run_task('pe_xl::divert_code_manager', $master_host)
 
   notice(@(HEREDOC))
     Remember to enforce this configuration in your Puppet code with a Collector Override. E.g.

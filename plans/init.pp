@@ -8,20 +8,20 @@ plan pe_xl (
   Boolean $configure = false,
   Boolean $upgrade   = false,
 
-  Optional[String[1]]        $primary_master_host = undef,
+  Optional[String[1]]        $master_host = undef,
   Optional[String[1]]        $puppetdb_database_host = undef,
-  Optional[String[1]]        $primary_master_replica_host = undef,
+  Optional[String[1]]        $master_replica_host = undef,
   Optional[String[1]]        $puppetdb_database_replica_host = undef,
-  Optional[Array[String[1]]] $compile_master_hosts = undef,
+  Optional[Array[String[1]]] $compiler_hosts = undef,
 
   Optional[String[1]]        $console_password = undef,
   Optional[String[1]]        $version = undef,
   Optional[Hash]             $r10k_sources = undef,
   Optional[Array[String[1]]] $dns_alt_names = undef,
-  Optional[Boolean]          $executing_on_primary_master = undef,
+  Optional[Boolean]          $executing_on_master = undef,
   Optional[Boolean]          $manage_environment_groups = undef,
 
-  Optional[String[1]]        $compile_master_pool_address = undef,
+  Optional[String[1]]        $compiler_pool_address = undef,
   Optional[String[1]]        $deploy_environment = undef,
 
   Optional[String[1]]        $stagingdir = undef,
@@ -29,11 +29,11 @@ plan pe_xl (
 
   if $install {
     run_plan('pe_xl::install',
-      primary_master_host            => $primary_master_host,
+      master_host                    => $master_host,
       puppetdb_database_host         => $puppetdb_database_host,
-      primary_master_replica_host    => $primary_master_replica_host,
+      master_replica_host            => $master_replica_host,
       puppetdb_database_replica_host => $puppetdb_database_replica_host,
-      compile_master_hosts           => $compile_master_hosts,
+      compiler_hosts                 => $compiler_hosts,
 
       console_password               => $console_password,
       version                        => $version,
@@ -46,14 +46,14 @@ plan pe_xl (
 
   if $configure {
     run_plan('pe_xl::configure',
-      primary_master_host            => $primary_master_host,
+      master_host                    => $master_host,
       puppetdb_database_host         => $puppetdb_database_host,
-      primary_master_replica_host    => $primary_master_replica_host,
+      master_replica_host            => $master_replica_host,
       puppetdb_database_replica_host => $puppetdb_database_replica_host,
-      compile_master_hosts           => $compile_master_hosts,
+      compiler_hosts                 => $compiler_hosts,
 
-      executing_on_primary_master    => $executing_on_primary_master,
-      compile_master_pool_address    => $compile_master_pool_address,
+      executing_on_master            => $executing_on_master,
+      compiler_pool_address          => $compiler_pool_address,
       manage_environment_groups      => $manage_environment_groups,
       deploy_environment             => $deploy_environment,
 
@@ -63,9 +63,9 @@ plan pe_xl (
 
   if $upgrade {
     run_plan('pe_xl::upgrade',
-      primary_master_host            => $primary_master_host,
+      master_host                    => $master_host,
       puppetdb_database_host         => $puppetdb_database_host,
-      primary_master_replica_host    => $primary_master_replica_host,
+      master_replica_host            => $master_replica_host,
       puppetdb_database_replica_host => $puppetdb_database_replica_host,
 
       version                        => $version,

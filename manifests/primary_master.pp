@@ -1,4 +1,4 @@
-class pe_xl::primary_master {
+class pe_xl::master {
   include pe_xl::agent
 
 }

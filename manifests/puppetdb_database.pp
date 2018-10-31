@@ -7,10 +7,10 @@ class pe_xl::puppetdb_database {
   $pe_datadir = '/opt/puppetlabs/server/data'
   $pg_version = $puppet_enterprise::params::postgres_version
 
-  $cm_query = 'nodes[certname] { resources { type = "Class" and title = "Pe_xl::Compile_master" } }'
-  $compile_masters = puppetdb_query($cm_query).map |$result| { $result['certname'] }
+  $cm_query = 'nodes[certname] { resources { type = "Class" and title = "Pe_xl::Compiler" } }'
+  $compilers = puppetdb_query($cm_query).map |$result| { $result['certname'] }
 
-  $compile_masters.each |$cm| {
+  $compilers.each |$cm| {
     puppet_enterprise::pg::ident_entry { "PuppetDB for ${cm}":
       client_certname    => $cm,
       user               => 'pe-puppetdb',

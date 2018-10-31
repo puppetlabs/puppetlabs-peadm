@@ -1,4 +1,4 @@
 ---
 extension_requests:
-  pp_role: "pe_xl::primary_master"
+  pp_role: "pe_xl::master"
   pp_environment: "pe_production"

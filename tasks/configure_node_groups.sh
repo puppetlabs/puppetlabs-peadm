@@ -6,11 +6,11 @@
 function param($name) { inline_template("<%= ENV['PT_${name}'] %>") }
 
 class configure_node_groups (
-  String[1]                        $primary_master_host            = param('primary_master_host'),
-  String[1]                        $primary_master_replica_host    = param('primary_master_replica_host'),
+  String[1]                        $master_host            = param('master_host'),
+  String[1]                        $master_replica_host    = param('master_replica_host'),
   String[1]                        $puppetdb_database_host         = param('puppetdb_database_host'),
   String[1]                        $puppetdb_database_replica_host = param('puppetdb_database_replica_host'),
-  String[1]                        $compile_master_pool_address    = param('compile_master_pool_address'),
+  String[1]                        $compiler_pool_address          = param('compiler_pool_address'),
 
   # Note: the task accepts a Boolean for manage_environment_groups. Passed in
   # as an environment variable, this will be cast to the string "true" or the
@@ -31,43 +31,43 @@ class configure_node_groups (
     rule => ['and', ['~', ['trusted', 'extensions', 'pp_role'], '^pe_xl::']],
   }
 
-  # We modify this group to add, as data, the compile_master_pool_address only.
+  # We modify this group to add, as data, the compiler_pool_address only.
   # Because the group does not have any data by default this does not impact
   # out-of-box configuration of the group.
   node_group { 'PE Master':
     rule => ['or',
-      ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master']],
-      ['=', 'name', $primary_master_host],
+      ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compiler']],
+      ['=', 'name', $master_host],
     ],
     data => {
-      'pe_repo' => { 'compile_master_pool_address' => $compile_master_pool_address },
+      'pe_repo' => { 'compile_master_pool_address' => $compiler_pool_address },
     },
   }
 
-  # We need to pre-create this group so that the primary master replica can be
+  # We need to pre-create this group so that the master replica can be
   # identified as running PuppetDB, so that Puppet will create a pg_ident
   # authorization rule for it on the PostgreSQL nodes.
   node_group { 'PE HA Replica':
     ensure  => 'present',
     parent  => 'PE Infrastructure',
-    rule => ['or', ['=', 'name', $primary_master_replica_host]],
+    rule => ['or', ['=', 'name', $master_replica_host]],
     classes => {
-      'puppet_enterprise::profile::primary_master_replica' => { }
+      'puppet_enterprise::profile::master_replica' => { }
     },
     variables => { "pe_xl_replica" => true },
   }
 
   # Create data-only groups to store PuppetDB PostgreSQL database configuration
-  # information specific to the primary master and primary master replica nodes.
+  # information specific to the master and master replica nodes.
   node_group { 'PE Master A':
     ensure  => present,
     parent  => 'PE Infrastructure',
     rule    => ['and',
-      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::primary_master'],
+      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::master'],
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'A'],
     ], 
     data => {
-      'puppet_enterprise::profile::primary_master_replica' => {
+      'puppet_enterprise::profile::master_replica' => {
         'database_host_puppetdb' => $puppetdb_database_host,
       },
       'puppet_enterprise::profile::puppetdb' => {
@@ -80,11 +80,11 @@ class configure_node_groups (
     ensure  => present,
     parent  => 'PE Infrastructure',
     rule    => ['and',
-      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::primary_master'],
+      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::master'],
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
     ], 
     data => {
-      'puppet_enterprise::profile::primary_master_replica' => {
+      'puppet_enterprise::profile::master_replica' => {
         'database_host_puppetdb' => $puppetdb_database_replica_host,
       },
       'puppet_enterprise::profile::puppetdb' => {
@@ -105,15 +105,15 @@ class configure_node_groups (
     },
   }
 
-  # Configure the compile masters for HA, grouped into two pools, each pool
+  # Configure the compilers for HA, grouped into two pools, each pool
   # having an affinity for one "availability zone" or the other. Even with an
-  # affinity, note that data from each compile master is replicated to both
+  # affinity, note that data from each compiler is replicated to both
   # "availability zones".
-  node_group { 'PE Compile Master Group A':
+  node_group { 'PE Compiler Group A':
     ensure  => 'present',
     parent  => 'PE Master',
     rule    => ['and',
-      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master'],
+      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compiler'],
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'A'],
     ], 
     classes => {
@@ -121,18 +121,18 @@ class configure_node_groups (
         'database_host' => $puppetdb_database_host,
       },
       'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => ['${clientcert}', $primary_master_replica_host],
+        'puppetdb_host' => ['${clientcert}', $master_replica_host],
         'puppetdb_port' => [8081],
       }
     },
     data    => $compiler_data,
   }
 
-  node_group { 'PE Compile Master Group B':
+  node_group { 'PE Compiler Group B':
     ensure  => 'present',
     parent  => 'PE Master',
     rule    => ['and',
-      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master'],
+      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compiler'],
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
     ], 
     classes => {
@@ -140,7 +140,7 @@ class configure_node_groups (
         'database_host' => $puppetdb_database_replica_host,
       },
       'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => ['${clientcert}', $primary_master_host],
+        'puppetdb_host' => ['${clientcert}', $master_host],
         'puppetdb_port' => [8081],
       }
     },
