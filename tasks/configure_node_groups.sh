@@ -35,11 +35,12 @@ class configure_node_groups (
   # Because the group does not have any data by default this does not impact
   # out-of-box configuration of the group.
   node_group { 'PE Master':
-    rule => ['or',
+    parent  => 'PE Infrastructure',
+    rule    => ['or',
       ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compile_master']],
       ['=', 'name', $primary_master_host],
     ],
-    data => {
+    data    => {
       'pe_repo' => { 'compile_master_pool_address' => $compile_master_pool_address },
     },
   }
