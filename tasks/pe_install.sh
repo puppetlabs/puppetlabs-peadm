@@ -20,9 +20,9 @@ pedir=$(tar -tf "$PT_tarball" | head -n 1 | xargs dirname)
 tar -C "$tgzdir" -xzf "$PT_tarball"
 
 if [ ! -z "$PT_peconf" ]; then
-	"${tgzdir}/${pedir}/puppet-enterprise-installer" -y -c "$PT_peconf"
+	/bin/bash "${tgzdir}/${pedir}/puppet-enterprise-installer" -y -c "$PT_peconf"
 else
-	"${tgzdir}/${pedir}/puppet-enterprise-installer" -y
+	/bin/bash "${tgzdir}/${pedir}/puppet-enterprise-installer" -y
 fi
 
 if [ "$PT_shortcircuit_puppetdb" = "true" ]; then
