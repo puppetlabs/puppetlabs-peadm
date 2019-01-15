@@ -53,7 +53,7 @@ class configure_node_groups (
     parent  => 'PE Infrastructure',
     rule => ['or', ['=', 'name', $master_replica_host]],
     classes => {
-      'puppet_enterprise::profile::master_replica' => { }
+      'puppet_enterprise::profile::primary_master_replica' => { }
     },
     variables => { "pe_xl_replica" => true },
   }
@@ -68,7 +68,7 @@ class configure_node_groups (
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'A'],
     ], 
     data => {
-      'puppet_enterprise::profile::master_replica' => {
+      'puppet_enterprise::profile::primary_master_replica' => {
         'database_host_puppetdb' => $puppetdb_database_host,
       },
       'puppet_enterprise::profile::puppetdb' => {
@@ -85,7 +85,7 @@ class configure_node_groups (
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
     ], 
     data => {
-      'puppet_enterprise::profile::master_replica' => {
+      'puppet_enterprise::profile::primary_master_replica' => {
         'database_host_puppetdb' => $puppetdb_database_replica_host,
       },
       'puppet_enterprise::profile::puppetdb' => {
