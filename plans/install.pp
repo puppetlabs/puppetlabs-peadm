@@ -34,6 +34,12 @@ plan pe_xl::install (
     $master_replica_host,
   ].pe_xl::flatten_compact()
 
+  # There is currently a problem with OID names in csr_attributes.yaml for some
+  # installs. Use the raw OIDs for now.
+  $pp_application = '1.3.6.1.4.1.34380.1.1.8'
+  $pp_cluster     = '1.3.6.1.4.1.34380.1.1.16'
+  $pp_role        = '1.3.6.1.4.1.34380.1.1.13'
+
   # Clusters A and B are used to divide PuppetDB availability for compilers
   $cm_cluster_a = $compiler_hosts.filter |$index,$cm| { $index % 2 == 0 }
   $cm_cluster_b = $compiler_hosts.filter |$index,$cm| { $index % 2 != 0 }
@@ -90,9 +96,9 @@ plan pe_xl::install (
     content => @("HEREDOC"),
       ---
       extension_requests:
-        pp_application: "puppet"
-        pp_role: "pe_xl::master"
-        pp_cluster: "A"
+        ${pp_application}: "puppet"
+        ${pp_role}: "pe_xl::master"
+        ${pp_cluster}: "A"
       | HEREDOC
   )
 
@@ -101,9 +107,9 @@ plan pe_xl::install (
     content => @("HEREDOC"),
       ---
       extension_requests:
-        pp_application: "puppet"
-        pp_role: "pe_xl::puppetdb_database"
-        pp_cluster: "A"
+        ${pp_application}: "puppet"
+        ${pp_role}: "pe_xl::puppetdb_database"
+        ${pp_cluster}: "A"
       | HEREDOC
   )
 
@@ -112,9 +118,9 @@ plan pe_xl::install (
     content => @("HEREDOC"),
       ---
       extension_requests:
-        pp_application: "puppet"
-        pp_role: "pe_xl::puppetdb_database"
-        pp_cluster: "B"
+        ${pp_application}: "puppet"
+        ${pp_role}: "pe_xl::puppetdb_database"
+        ${pp_cluster}: "B"
       | HEREDOC
   )
 
