@@ -7,8 +7,10 @@
   "source": "https://github.com/reidmv/reidmv-pe_xl",
   "project_page": "https://github.com/reidmv/reidmv-pe_xl",
   "dependencies": [
-    { "name":"puppetlabs/stdlib","version_requirement":">= 4.20.0 < 6.0.0" },
-    { "name":"WhatsARanjit/node_manager","version_requirement":">= 0.6.1 < 2.0.0" }
+    { "name": "puppetlabs/stdlib", "version_requirement": ">= 4.20.0 < 6.0.0" },
+    { "name": "WhatsARanjit/node_manager", "version_requirement": ">= 0.6.1 < 2.0.0" },
+    { "name": "puppetlabs/bolt_shim", "version_requirement": ">= 0.2.1 < 2.0.0" },
+    { "name": "puppetlabs/apply_helpers", "version_requirement": ">= 0.1.0 < 2.0.0" }
   ],
   "requirements": [
     {
