@@ -224,11 +224,7 @@ plan pe_xl::install (
   }
 
   run_command(inline_epp(@(HEREDOC)), $master_host)
-    /opt/puppetlabs/bin/puppet cert sign \
-      <% $agent_installer_hosts.each |$host| { -%>
-      <%= $host %> \
-      <% } -%>
-      --allow-dns-alt-names
+    /opt/puppetlabs/bin/puppetserver ca sign --certname <%= $agent_installer_hosts.join(',') -%>
     | HEREDOC
 
   run_task('pe_xl::puppet_runonce', $master_host)
