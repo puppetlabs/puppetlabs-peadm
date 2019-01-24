@@ -37,6 +37,8 @@ plan pe_xl::configure (
       compiler_pool_address          => $compiler_pool_address,
       manage_environment_groups      => $manage_environment_groups,
     }
+  }.each |$result| {
+    pe_xl::print_apply_result($result)
   }
 
   # Run Puppet in no-op on the compilers so that their status in PuppetDB
