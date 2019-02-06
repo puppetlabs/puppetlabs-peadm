@@ -10,6 +10,7 @@ if [ "$PT_shortcircuit_puppetdb" = "true" ]; then
 		[Service]
 		TimeoutStartSec=1
 		TimeoutStopSec=1
+		Restart=no
 	EOF
 	systemctl daemon-reload
 fi
@@ -26,6 +27,7 @@ else
 fi
 
 if [ "$PT_shortcircuit_puppetdb" = "true" ]; then
+	systemctl stop pe-puppetdb.service
 	rm /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf
 	systemctl daemon-reload
 fi

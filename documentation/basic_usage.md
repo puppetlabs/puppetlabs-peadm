@@ -15,7 +15,7 @@ These are still a work in progress and lack documentation. Reading through them 
 Besides getting everything installed the key configuration that makes this work is laid out in four classification groups. Links provided below to a Markdown document that describes the groups, and also to the Puppet manifest that actually configures them:
 
 * [classification.md](https://github.com/reidmv/reidmv-pe_xl/blob/master/docs/classification.md)
-* [configure\_node\_groups.pp](https://github.com/reidmv/reidmv-pe_xl/blob/master/tasks/configure_node_groups.pp)
+* [pe\_xl::node\_manager class](https://github.com/reidmv/reidmv-pe_xl/blob/master/manifests/node_manager.pp)
 
 The reference implementation uses trusted facts to put nodes in the right groups. Because the important puppet\_enterprise::\* class parameters and data are specified in the console, it should also be safe to have a pe.conf present on both the master, and the master replica nodes.
 
