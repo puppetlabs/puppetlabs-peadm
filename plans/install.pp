@@ -224,7 +224,7 @@ plan pe_xl::install (
   }
 
   # Ensure some basic configuration on the master needed at install time.
-  if ($version.versioncmp('2018.1') < 1) {
+  if ($version.versioncmp('2019.0') < 0) {
     apply($master_host) { include pe_xl::setup::master }.pe_xl::print_apply_result
   }
 
