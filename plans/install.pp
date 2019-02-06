@@ -223,6 +223,11 @@ plan pe_xl::install (
     notice("Finished: task pe_xl::puppet_runonce on ${agent_installer_hosts}")
   }
 
+  # Ensure some basic configuration on the master needed at install time.
+  if ($version.versioncmp('2018.1') < 1) {
+    apply($master_host) { include pe_xl::setup::master }.pe_xl::print_apply_result
+  }
+
   run_command(inline_epp(@(HEREDOC)), $master_host)
     /opt/puppetlabs/bin/puppetserver ca sign --certname <%= $agent_installer_hosts.join(',') -%>
     | HEREDOC
