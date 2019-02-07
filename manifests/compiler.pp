@@ -1,5 +1,6 @@
+# @summary Example class for PE compiler load balancing
+#
 class pe_xl::compiler {
-  include pe_xl::agent
 
   @@haproxy::balancermember { "${::clientcert}_puppetserver_listener":
     listening_service => 'puppetserver',

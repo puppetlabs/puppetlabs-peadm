@@ -16,7 +16,7 @@ plan pe_xl::install (
   # Define a number of host groupings for use later in the plan
 
   $all_hosts = [
-    $master_host, 
+    $master_host,
     $puppetdb_database_host,
     $compiler_hosts,
     $master_replica_host,
@@ -24,7 +24,7 @@ plan pe_xl::install (
   ].pe_xl::flatten_compact()
 
   $pe_installer_hosts = [
-    $master_host, 
+    $master_host,
     $puppetdb_database_host,
     $master_replica_host,
   ].pe_xl::flatten_compact()
@@ -144,8 +144,8 @@ plan pe_xl::install (
     group   => 'pe-puppet',
     mode    => '0644',
     content => @("HEREDOC"),
-      $puppetdb_database_host
-      $puppetdb_database_replica_host
+      ${puppetdb_database_host}
+      ${puppetdb_database_replica_host}
       | HEREDOC
   )
 

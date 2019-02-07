@@ -1,4 +1,6 @@
 #!/opt/puppetlabs/puppet/bin/ruby
+#
+# rubocop:disable Style/GlobalVars
 require 'json'
 require 'logger'
 require 'open3'
@@ -11,10 +13,9 @@ require 'open3'
 $params = JSON.parse(STDIN.read)
 
 $logger = Logger.new(STDOUT)
-$logger.level = $params['debug'] ? Logger::DEBUG : Logger::INFO
+$logger.level = ($params['debug']) ? Logger::DEBUG : Logger::INFO
 
-def main
-end
+def main; end
 
 def run_command(*command)
   stdout, status = Open3.capture2(*command)

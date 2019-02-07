@@ -11,7 +11,7 @@
 #                 environments => ["production", "staging", "development"],
 #               }'
 #
-class pe_xl::node_manager (
+class pe_xl::setup::node_manager (
   String[1]                        $master_host,
   String[1]                        $master_replica_host,
   String[1]                        $puppetdb_database_host,
@@ -36,12 +36,12 @@ class pe_xl::node_manager (
   # Because the group does not have any data by default this does not impact
   # out-of-box configuration of the group.
   node_group { 'PE Master':
-    parent  => 'PE Infrastructure',
-    rule    => ['or',
+    parent => 'PE Infrastructure',
+    rule   => ['or',
       ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compiler']],
       ['=', 'name', $master_host],
     ],
-    data    => {
+    data   => {
       'pe_repo' => { 'compile_master_pool_address' => $compiler_pool_address },
     },
   }
@@ -50,46 +50,46 @@ class pe_xl::node_manager (
   # identified as running PuppetDB, so that Puppet will create a pg_ident
   # authorization rule for it on the PostgreSQL nodes.
   node_group { 'PE HA Replica':
-    ensure  => 'present',
-    parent  => 'PE Infrastructure',
-    rule => ['or', ['=', 'name', $master_replica_host]],
-    classes => {
+    ensure    => 'present',
+    parent    => 'PE Infrastructure',
+    rule      => ['or', ['=', 'name', $master_replica_host]],
+    classes   => {
       'puppet_enterprise::profile::primary_master_replica' => { }
     },
-    variables => { "pe_xl_replica" => true },
+    variables => { 'pe_xl_replica' => true },
   }
 
   # Create data-only groups to store PuppetDB PostgreSQL database configuration
   # information specific to the master and master replica nodes.
   node_group { 'PE Master A':
-    ensure  => present,
-    parent  => 'PE Infrastructure',
-    rule    => ['and',
+    ensure => present,
+    parent => 'PE Infrastructure',
+    rule   => ['and',
       ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::master'],
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'A'],
-    ], 
-    data => {
+    ],
+    data   => {
       'puppet_enterprise::profile::primary_master_replica' => {
         'database_host_puppetdb' => $puppetdb_database_host,
       },
-      'puppet_enterprise::profile::puppetdb' => {
+      'puppet_enterprise::profile::puppetdb'               => {
         'database_host' => $puppetdb_database_host,
       },
     },
   }
 
   node_group { 'PE Master B':
-    ensure  => present,
-    parent  => 'PE Infrastructure',
-    rule    => ['and',
+    ensure => present,
+    parent => 'PE Infrastructure',
+    rule   => ['and',
       ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::master'],
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
-    ], 
-    data => {
+    ],
+    data   => {
       'puppet_enterprise::profile::primary_master_replica' => {
         'database_host_puppetdb' => $puppetdb_database_replica_host,
       },
-      'puppet_enterprise::profile::puppetdb' => {
+      'puppet_enterprise::profile::puppetdb'               => {
         'database_host' => $puppetdb_database_replica_host,
       },
     },
@@ -117,13 +117,13 @@ class pe_xl::node_manager (
     rule    => ['and',
       ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compiler'],
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'A'],
-    ], 
+    ],
     classes => {
       'puppet_enterprise::profile::puppetdb' => {
         'database_host' => $puppetdb_database_host,
       },
       'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => ['${clientcert}', $master_replica_host],
+        'puppetdb_host' => ['${clientcert}', $master_replica_host], # lint:ignore:single_quote_string_with_variables
         'puppetdb_port' => [8081],
       }
     },
@@ -136,13 +136,13 @@ class pe_xl::node_manager (
     rule    => ['and',
       ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compiler'],
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
-    ], 
+    ],
     classes => {
       'puppet_enterprise::profile::puppetdb' => {
         'database_host' => $puppetdb_database_replica_host,
       },
       'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => ['${clientcert}', $master_host],
+        'puppetdb_host' => ['${clientcert}', $master_host], # lint:ignore:single_quote_string_with_variables
         'puppetdb_port' => [8081],
       }
     },
@@ -164,7 +164,7 @@ class pe_xl::node_manager (
   }
 
 
-  if ($manage_environment_groups == 'true') {
+  if ($manage_environment_groups) {
 
     ##################################################
     # ENVIRONMENT GROUPS

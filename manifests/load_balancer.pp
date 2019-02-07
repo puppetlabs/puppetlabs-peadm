@@ -1,5 +1,6 @@
+# @summary Example class for PE compiler load balancer
+#
 class pe_xl::load_balancer {
-  include pe_xl::agent
 
   class { 'haproxy':
     global_options   => {
@@ -21,7 +22,7 @@ class pe_xl::load_balancer {
         'http-request 120s',
       ]
     }
-  } 
+  }
 
   haproxy::listen { 'puppetserver':
     collect_exported => true,
@@ -49,6 +50,7 @@ class pe_xl::load_balancer {
     },
   }
 
+  # TODO: split load balancing into two pools, A and B
   haproxy::listen { 'puppetdb':
     collect_exported => true,
     ipaddress        => $::ipaddress,

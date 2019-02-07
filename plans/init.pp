@@ -87,5 +87,5 @@ plan pe_xl (
     "${actionlist}, ${action}"
   }
 
-  return("Performed action(s): $actions")
+  return("Performed action(s): ${actions}")
 }
