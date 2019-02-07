@@ -1,11 +1,12 @@
 {
   "name": "reidmv-pe_xl",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": "Reid Vandewiele",
   "summary": "Profile classes used to deploy an at-scale Puppet Enterprise architecture",
   "license": "Apache-2.0",
   "source": "https://github.com/reidmv/reidmv-pe_xl",
   "project_page": "https://github.com/reidmv/reidmv-pe_xl",
+  "issues_url": "https://github.com/reidmv/reidmv-pe_xl/issues",
   "dependencies": [
     {
       "name": "puppetlabs/stdlib",
