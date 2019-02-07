@@ -18,7 +18,7 @@ function pe_xl::install_module(
     /opt/puppetlabs/bin/puppet module install \
       --modulepath /etc/puppetlabs/code-staging/environments/production/modules \
       --ignore-dependencies \
-      /tmp/$module_tarball
+      /tmp/${module_tarball}
     | HEREDOC
 
   run_command('chown -R pe-puppet:pe-puppet /etc/puppetlabs/code-staging', $target)

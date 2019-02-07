@@ -40,5 +40,5 @@ plan pe_xl::misc::divert_code_manager (
 
     | HEREDOC
 
-  return("Plan completed successfully")
+  return('Plan completed successfully')
 }
