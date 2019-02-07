@@ -1,3 +1,5 @@
+# @summary Perform initial installation of Puppet Enterprise Extra Large
+#
 plan pe_xl::install (
   String[1]           $master_host,
   String[1]           $puppetdb_database_host,

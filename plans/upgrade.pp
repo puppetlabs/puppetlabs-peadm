@@ -1,3 +1,5 @@
+# @summary Upgrade an Extra Large stack from one .z to the next
+#
 plan pe_xl::upgrade (
   String[1] $master_host,
   String[1] $puppetdb_database_host,

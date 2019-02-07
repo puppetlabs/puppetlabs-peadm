@@ -1,8 +1,9 @@
-# This plan exists as a single entry point which accepts all possible
-# parameters and can call sub-plans using them. This is useful so that a single
-# params.json file can be used which contains all possible parameters for
-# different actions, rather than needing multiple params.json files with
-# different combinations of the possible inputs.
+# @summary Single-entry-point plan for install, configure, and/or upgrade.
+# This plan accepts all possible parameters and can call sub-plans using them.
+# This is useful so that a single params.json file can be used which contains
+# all possible parameters for different actions, rather than needing multiple
+# params.json files with different combinations of the possible inputs.
+#
 plan pe_xl (
   Boolean $install   = false,
   Boolean $configure = false,

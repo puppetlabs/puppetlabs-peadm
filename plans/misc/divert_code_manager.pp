@@ -1,5 +1,5 @@
-# This plan exists to account for a scenario where a PE XL architecture is in
-# use, but code manager is not.
+# @summary This plan exists to account for a scenario where a PE XL
+# architecture is in use, but code manager is not.
 #
 # The PE HA solution technically requires code manager be enabled and running.
 # However, in unusual circumstances, it may not be possible for a customer to
@@ -9,6 +9,7 @@
 # management via an alternative means.
 #
 # This is a stop-gap at best. This should not be attempted without advisement.
+#
 plan pe_xl::misc::divert_code_manager (
   $master_host,
 ) {
