@@ -85,11 +85,11 @@ plan pe_xl::install (
   $local_tarball_path  = "${stagingdir}/${pe_tarball_name}"
   $upload_tarball_path = "/tmp/${pe_tarball_name}"
 
-  pe_xl::retrieve_and_upload(
-    "https://s3.amazonaws.com/pe-builds/released/${version}/puppet-enterprise-${version}-el-7-x86_64.tar.gz",
-    $local_tarball_path,
-    $upload_tarball_path,
-    [$master_host, $puppetdb_database_host, $puppetdb_database_replica_host]
+  run_plan('pe_xl::util::retrieve_and_upload',
+    nodes       => [$master_host, $puppetdb_database_host, $puppetdb_database_replica_host],
+    source      => "https://s3.amazonaws.com/pe-builds/released/${version}/puppet-enterprise-${version}-el-7-x86_64.tar.gz",
+    local_path  => $local_tarball_path,
+    upload_path => $upload_tarball_path,
   )
 
   # Create csr_attributes.yaml files for the nodes that need them

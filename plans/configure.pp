@@ -30,8 +30,16 @@ plan pe_xl::configure (
 
   # Retrieve and deploy Puppet modules from the Forge so that they can be used
   # for ensuring some configuration (node groups)
-  pe_xl::install_module($master_target, 'WhatsARanjit-node_manager', '0.7.1', $stagingdir)
-  pe_xl::install_module($master_target, 'puppetlabs-stdlib', '5.0.0', $stagingdir)
+  [ ['WhatsARanjit-node_manager', '0.7.1'],
+    ['puppetlabs-stdlib',         '5.0.0'],
+  ].each |$tuple| {
+    run_plan('pe_xl::util::install_module',
+      nodes      => $master_target,
+      module     => $tuple[0],
+      version    => $tuple[1],
+      stagingdir => $stagingdir,
+    )
+  }
 
   # Set up the console node groups to configure the various hosts in their
   # roles

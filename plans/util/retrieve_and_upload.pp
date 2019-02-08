@@ -1,8 +1,8 @@
-function pe_xl::retrieve_and_upload(
-  $source,
-  $local_path,
-  $upload_path,
-  $target,
+plan pe_xl::util::retrieve_and_upload(
+  TargetSpec $nodes,
+  String[1]  $source,
+  String[1]  $local_path,
+  String[1]  $upload_path,
 ) {
   $exists = without_default_logging() || {
     run_command("test -e '${local_path}'", 'local://localhost',
@@ -21,7 +21,7 @@ function pe_xl::retrieve_and_upload(
     path => $local_path,
   ).first['size']
 
-  $targets_needing_file = run_task('pe_xl::filesize', $target,
+  $targets_needing_file = run_task('pe_xl::filesize', $nodes,
     path => $upload_path,
   ).filter |$result| {
     $result['size'] != $local_size
