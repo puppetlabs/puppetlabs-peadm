@@ -1,6 +1,6 @@
 {
   "name": "reidmv-pe_xl",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "author": "Reid Vandewiele",
   "summary": "Profile classes used to deploy an at-scale Puppet Enterprise architecture",
   "license": "Apache-2.0",
