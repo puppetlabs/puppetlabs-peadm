@@ -2,28 +2,24 @@
   "description": "Configure console node groups for a new install",
   "parameters": {
     "master_host": {
-      "type": "String",
+      "type": "String[1]",
       "description": "The certname of the master"
     },
-    "master_replica_host": {
-      "type": "String",
-      "description": "The certname of the master replica"
-    },
     "puppetdb_database_host": {
-      "type": "String",
+      "type": "String[1]",
       "description": "The certname of the PuppetDB database"
     },
-    "puppetdb_database_replica_host": {
-      "type": "String",
-      "description": "The certname of the PuppetDB database replica"
-    },
     "compiler_pool_address": {
-      "type": "String",
+      "type": "String[1]",
       "description": "The service name to use for the compiler pool"
     },
-    "manage_environment_groups": {
-      "type": "Boolean",
-      "description": "This will regroup the production and additional PE Environment groups"
+    "master_replica_host": {
+      "type": "Optional[String[1]]",
+      "description": "The certname of the master replica"
+    },
+    "puppetdb_database_replica_host": {
+      "type": "Optional[String[1]]",
+      "description": "The certname of the PuppetDB database replica"
     }
   },
   "input_method": "environment",

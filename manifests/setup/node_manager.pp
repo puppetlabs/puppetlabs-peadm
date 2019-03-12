@@ -12,19 +12,33 @@
 #               }'
 #
 class pe_xl::setup::node_manager (
-  String[1]                        $master_host,
-  String[1]                        $master_replica_host,
-  String[1]                        $puppetdb_database_host,
-  String[1]                        $puppetdb_database_replica_host,
-  String[1]                        $compiler_pool_address,
-  Boolean                          $manage_environment_groups = true,
-  Pattern[/\A[a-z0-9_]+\Z/]        $default_environment       = 'production',
-  Array[Pattern[/\A[a-z0-9_]+\Z/]] $environments              = ['production'],
+  String[1] $master_host,
+  String[1] $puppetdb_database_host,
+  String[1] $compiler_pool_address,
+
+  Optional[String[1]] $master_replica_host            = undef,
+  Optional[String[1]] $puppetdb_database_replica_host = undef,
 ) {
+
+  if ([$master_replica_host, $puppetdb_database_replica_host].filter |$_| { $_ }.size == 1) {
+    fail('Must pass both master_replica_host and puppetdb_database_replica_host, or neither')
+  }
 
   ##################################################
   # PE INFRASTRUCTURE GROUPS
   ##################################################
+
+  # Hiera data tuning for compilers
+  $compiler_data = {
+    'puppet_enterprise::profile::puppetdb' => {
+      'gc_interval' => '0',
+    },
+    'puppet_enterprise::puppetdb' => {
+      'command_processing_threads' => 2,
+      'write_maximum_pool_size'    => 4,
+      'read_maximum_pool_size'     => 10,
+    },
+  }
 
   # We modify this group's rule such that all PE infrastructure nodes will be
   # members.
@@ -46,17 +60,18 @@ class pe_xl::setup::node_manager (
     },
   }
 
-  # We need to pre-create this group so that the master replica can be
-  # identified as running PuppetDB, so that Puppet will create a pg_ident
-  # authorization rule for it on the PostgreSQL nodes.
-  node_group { 'PE HA Replica':
-    ensure    => 'present',
-    parent    => 'PE Infrastructure',
-    rule      => ['or', ['=', 'name', $master_replica_host]],
-    classes   => {
-      'puppet_enterprise::profile::primary_master_replica' => { }
+  # This class has to be included here because puppet_enterprise is declared
+  # in the console with parameters. It is therefore not possible to include
+  # puppet_enterprise::profile::database in code without causing a conflict.
+  node_group { 'PE Database':
+    ensure               => present,
+    parent               => 'PE Infrastructure',
+    environment          => 'production',
+    override_environment => false,
+    rule                 => ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::puppetdb_database']],
+    classes              => {
+      'puppet_enterprise::profile::database' => { },
     },
-    variables => { 'pe_xl_replica' => true },
   }
 
   # Create data-only groups to store PuppetDB PostgreSQL database configuration
@@ -78,39 +93,8 @@ class pe_xl::setup::node_manager (
     },
   }
 
-  node_group { 'PE Master B':
-    ensure => present,
-    parent => 'PE Infrastructure',
-    rule   => ['and',
-      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::master'],
-      ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
-    ],
-    data   => {
-      'puppet_enterprise::profile::primary_master_replica' => {
-        'database_host_puppetdb' => $puppetdb_database_replica_host,
-      },
-      'puppet_enterprise::profile::puppetdb'               => {
-        'database_host' => $puppetdb_database_replica_host,
-      },
-    },
-  }
-
-  # Hiera data tuning for compilers
-  $compiler_data = {
-    'puppet_enterprise::profile::puppetdb' => {
-      'gc_interval' => '0',
-    },
-    'puppet_enterprise::puppetdb' => {
-      'command_processing_threads' => 2,
-      'write_maximum_pool_size'    => 4,
-      'read_maximum_pool_size'     => 10,
-    },
-  }
-
-  # Configure the compilers for HA, grouped into two pools, each pool
-  # having an affinity for one "availability zone" or the other. Even with an
-  # affinity, note that data from each compiler is replicated to both
-  # "availability zones".
+  # Configure the A pool for compilers. There are up to two pools for HA, each
+  # having an affinity for one "availability zone" or the other.
   node_group { 'PE Compiler Group A':
     ensure  => 'present',
     parent  => 'PE Master',
@@ -123,91 +107,64 @@ class pe_xl::setup::node_manager (
         'database_host' => $puppetdb_database_host,
       },
       'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => ['${clientcert}', $master_replica_host], # lint:ignore:single_quote_string_with_variables
+        'puppetdb_host' => ['${clientcert}', $master_replica_host].filter |$_| { $_ }, # lint:ignore:single_quote_string_with_variables
         'puppetdb_port' => [8081],
       }
     },
     data    => $compiler_data,
   }
 
-  node_group { 'PE Compiler Group B':
-    ensure  => 'present',
-    parent  => 'PE Master',
-    rule    => ['and',
-      ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compiler'],
-      ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
-    ],
-    classes => {
-      'puppet_enterprise::profile::puppetdb' => {
-        'database_host' => $puppetdb_database_replica_host,
+  # Create the replica and B groups if a replica master and database host are
+  # supplied
+  if ($master_replica_host and $puppetdb_database_replica_host) {
+    # We need to pre-create this group so that the master replica can be
+    # identified as running PuppetDB, so that Puppet will create a pg_ident
+    # authorization rule for it on the PostgreSQL nodes.
+    node_group { 'PE HA Replica':
+      ensure    => 'present',
+      parent    => 'PE Infrastructure',
+      rule      => ['or', ['=', 'name', $master_replica_host]],
+      classes   => {
+        'puppet_enterprise::profile::primary_master_replica' => { }
       },
-      'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => ['${clientcert}', $master_host], # lint:ignore:single_quote_string_with_variables
-        'puppetdb_port' => [8081],
-      }
-    },
-    data    => $compiler_data,
-  }
-
-  # This class has to be included here because puppet_enterprise is declared
-  # in the console with parameters. It is therefore not possible to include
-  # puppet_enterprise::profile::database in code without causing a conflict.
-  node_group { 'PE Database':
-    ensure               => present,
-    parent               => 'PE Infrastructure',
-    environment          => 'production',
-    override_environment => false,
-    rule                 => ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::puppetdb_database']],
-    classes              => {
-      'puppet_enterprise::profile::database' => { },
-    },
-  }
-
-
-  if ($manage_environment_groups) {
-
-    ##################################################
-    # ENVIRONMENT GROUPS
-    ##################################################
-
-    node_group { 'All Environments':
-      ensure               => present,
-      description          => 'Environment group parent and default',
-      environment          => $default_environment,
-      override_environment => true,
-      parent               => 'All Nodes',
-      rule                 => ['and', ['~', 'name', '.*']],
+      variables => { 'pe_xl_replica' => true },
     }
 
-    node_group { 'Agent-specified environment':
-      ensure               => present,
-      description          => 'This environment group exists for unusual testing and development only. Expect it to be empty',
-      environment          => 'agent-specified',
-      override_environment => true,
-      parent               => 'All Environments',
-      rule                 => [ ],
+    node_group { 'PE Master B':
+      ensure => present,
+      parent => 'PE Infrastructure',
+      rule   => ['and',
+        ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::master'],
+        ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
+      ],
+      data   => {
+        'puppet_enterprise::profile::primary_master_replica' => {
+          'database_host_puppetdb' => $puppetdb_database_replica_host,
+        },
+        'puppet_enterprise::profile::puppetdb'               => {
+          'database_host' => $puppetdb_database_replica_host,
+        },
+      },
     }
 
-    $environments.each |$env| {
-      $title_env = capitalize($env)
-
-      node_group { "${title_env} environment":
-        ensure               => present,
-        environment          => $env,
-        override_environment => true,
-        parent               => 'All Environments',
-        rule                 => ['and', ['=', ['trusted', 'extensions', 'pp_environment'], $env]],
-      }
-
-      node_group { "${title_env} one-time run exception":
-        ensure               => present,
-        description          => "Allow ${env} nodes to request a different puppet environment for a one-time run",
-        environment          => 'agent-specified',
-        override_environment => true,
-        parent               => "${title_env} environment",
-        rule                 => ['and', ['~', ['fact', 'agent_specified_environment'], '.+']],
-      }
+    node_group { 'PE Compiler Group B':
+      ensure  => 'present',
+      parent  => 'PE Master',
+      rule    => ['and',
+        ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compiler'],
+        ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
+      ],
+      classes => {
+        'puppet_enterprise::profile::puppetdb' => {
+          'database_host' => $puppetdb_database_replica_host,
+        },
+        'puppet_enterprise::profile::master'   => {
+          'puppetdb_host' => ['${clientcert}', $master_host], # lint:ignore:single_quote_string_with_variables
+          'puppetdb_port' => [8081],
+        }
+      },
+      data    => $compiler_data,
     }
-
   }
+
 }
