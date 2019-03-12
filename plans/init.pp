@@ -20,7 +20,6 @@ plan pe_xl (
   Optional[Hash]             $r10k_sources = undef,
   Optional[Array[String[1]]] $dns_alt_names = undef,
   Optional[Boolean]          $executing_on_master = undef,
-  Optional[Boolean]          $manage_environment_groups = undef,
 
   Optional[String[1]]        $compiler_pool_address = undef,
   Optional[String[1]]        $deploy_environment = undef,
@@ -55,7 +54,6 @@ plan pe_xl (
 
       executing_on_master            => $executing_on_master,
       compiler_pool_address          => $compiler_pool_address,
-      manage_environment_groups      => $manage_environment_groups,
       deploy_environment             => $deploy_environment,
 
       stagingdir                     => $stagingdir,

@@ -6,19 +6,12 @@
 function param($name) { inline_template("<%= ENV['PT_${name}'] %>") }
 
 class configure_node_groups (
-  String[1]                        $master_host            = param('master_host'),
-  String[1]                        $master_replica_host    = param('master_replica_host'),
-  String[1]                        $puppetdb_database_host         = param('puppetdb_database_host'),
-  String[1]                        $puppetdb_database_replica_host = param('puppetdb_database_replica_host'),
-  String[1]                        $compiler_pool_address          = param('compiler_pool_address'),
+  String[1] $master_host            = param('master_host'),
+  String[1] $puppetdb_database_host = param('puppetdb_database_host'),
+  String[1] $compiler_pool_address  = param('compiler_pool_address'),
 
-  # Note: the task accepts a Boolean for manage_environment_groups. Passed in
-  # as an environment variable, this will be cast to the string "true" or the
-  # string "false". Thus, the Puppet class type is Enum, rather than Boolean.
-  Enum['true', 'false']            $manage_environment_groups      = param('manage_environment_groups'),
-
-  Pattern[/\A[a-z0-9_]+\Z/]        $default_environment            = 'production',
-  Array[Pattern[/\A[a-z0-9_]+\Z/]] $environments                   = ['production'],
+  Optional[String[1]] $master_replica_host            = param('master_replica_host'),
+  Optional[String[1]] $puppetdb_database_replica_host = param('puppetdb_database_replica_host'),
 ) {
 
   ##################################################
@@ -162,53 +155,6 @@ class configure_node_groups (
     },
   }
 
-
-  if ($manage_environment_groups == 'true') {
-
-    ##################################################
-    # ENVIRONMENT GROUPS
-    ##################################################
-
-    node_group { 'All Environments':
-      ensure               => present,
-      description          => 'Environment group parent and default',
-      environment          => $default_environment,
-      override_environment => true,
-      parent               => 'All Nodes',
-      rule                 => ['and', ['~', 'name', '.*']],
-    }
-
-    node_group { 'Agent-specified environment':
-      ensure               => present,
-      description          => 'This environment group exists for unusual testing and development only. Expect it to be empty',
-      environment          => 'agent-specified',
-      override_environment => true,
-      parent               => 'All Environments',
-      rule                 => [ ],
-    }
-
-    $environments.each |$env| {
-      $title_env = capitalize($env)
-
-      node_group { "${title_env} environment":
-        ensure               => present,
-        environment          => $env,
-        override_environment => true,
-        parent               => 'All Environments',
-        rule                 => ['and', ['=', ['trusted', 'extensions', 'pp_environment'], $env]],
-      }
-
-      node_group { "${title_env} one-time run exception":
-        ensure               => present,
-        description          => "Allow ${env} nodes to request a different puppet environment for a one-time run",
-        environment          => 'agent-specified',
-        override_environment => true,
-        parent               => "${title_env} environment",
-        rule                 => ['and', ['~', ['fact', 'agent_specified_environment'], '.+']],
-      }
-    }
-
-  }
 }
 
 include configure_node_groups
