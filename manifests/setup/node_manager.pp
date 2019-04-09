@@ -36,7 +36,7 @@ class pe_xl::setup::node_manager (
     'puppet_enterprise::puppetdb' => {
       'command_processing_threads' => 2,
       'write_maximum_pool_size'    => 4,
-      'read_maximum_pool_size'     => 10,
+      'read_maximum_pool_size'     => 8,
     },
   }
 
