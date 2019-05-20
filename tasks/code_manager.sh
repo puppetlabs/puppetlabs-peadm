@@ -30,32 +30,32 @@ function main()
       ;;
     *)
       cat <<-EOF
-				
+
 				Usage: $(basename $0) [-v] <subcommand>
-				
+
 				Available subcommands:
-				
+
 				  deploy <environment>
 				    Roughly equivalent to "puppet code deploy <env>". Invokes r10k to
 				    deploy the environment to the staging-dir, invokes file-sync to
 				    commit and sync the files, then flushes puppetserver's environment
 				    cache.
-				
+
 				  commit
 				    Commits all files in code-staging and deploys them.
-				
+
 				  r10k <arguments>
 				    Invokes r10k in the context of code manager. Normal r10k arguments
 				    should be provided.
-				
+
 				  file-sync <subcommand>
 				    Run the file-sync subcommand with no other options for further
 				    usage instructions.
-				
+
 				  flush-environment-cache
 				    Flush the puppetserver environment cache, causing it to re-read code
 				    from the code-dir.
-				
+
 				EOF
       exit 1
       ;;
@@ -69,8 +69,8 @@ function main()
 
 function deploy()
 {
-  [ "$#" = 1 ] || { echo "specify an environment to deploy"; exit 1; }
-  cm_r10k deploy environment "$1" && commit
+  [[ ! -z "$PT_environment" ]] || { echo "specify an environment to deploy"; exit 1; }
+  cm_r10k deploy environment "$PT_environment" && commit
 }
 
 function commit()
@@ -101,21 +101,21 @@ function file_sync()
       ;;
     *)
       cat <<-EOF
-				
+
 				Usage: $(basename $0) [-v] file-sync <subcommand>
-				
+
 				Available subcommands:
-				
+
 				  commit
 				    Calls the file-sync storage API to read and commit all code in
 				    the staging-dir. Does not force the client to sync or flush
 				    the puppetserver environment cache.
-				
+
 				  force-sync
 				    Calls the file-sync client API to force the code-dir to be updated
-				    with the latest available code from the storage service. Does not 
+				    with the latest available code from the storage service. Does not
 				    flush the puppetserver environment cache.
-				
+
 				EOF
       exit 1
       ;;
