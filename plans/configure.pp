@@ -45,16 +45,6 @@ plan pe_xl::configure (
 
   # Set up the console node groups to configure the various hosts in their
   # roles
-
-  # SLV-365
-  # run_task('pe_xl::configure_node_groups', $master_target,
-  #   master_host                    => $master_host,
-  #   master_replica_host            => $master_replica_host,
-  #   puppetdb_database_host         => $puppetdb_database_host,
-  #   puppetdb_database_replica_host => $puppetdb_database_replica_host,
-  #   compiler_pool_address          => $compiler_pool_address,
-  # )
-
   if $ha {
     run_task('pe_xl::configure_node_groups', $master_target,
       master_host                    => $master_host,
@@ -74,22 +64,6 @@ plan pe_xl::configure (
   # Run Puppet in no-op on the compilers so that their status in PuppetDB
   # is updated and they can be identified by the puppet_enterprise module as
   # CMs
-
-  # SLV-365
-  # run_task('pe_xl::puppet_runonce', [$compiler_hosts, $master_replica_host],
-  #   noop => true,
-  # )
-
-  # in this case assigning a variable seems less efficient...
-  # if $ha {
-  #   $runonce_hosts = [$compiler_hosts, $master_replica_host]
-  # }
-  # else {
-  #   $runonce_hosts = $compiler_hosts
-  # }
-  # 
-  # run_task('pe_xl::puppet_runonce', $runonce_hosts, noop => true)
-
   if $ha {
     run_task('pe_xl::puppet_runonce', [$compiler_hosts, $master_replica_host],
       noop => true,
@@ -100,13 +74,6 @@ plan pe_xl::configure (
 
   # Run Puppet on the PuppetDB Database hosts to update their auth
   # configuration to allow the compilers to connect
-
-  # SLV-365
-  # run_task('pe_xl::puppet_runonce', [
-  #   $puppetdb_database_host,
-  #   $puppetdb_database_replica_host,
-  # ])
-
   if $ha {
     run_task('pe_xl::puppet_runonce', [
       $puppetdb_database_host,
@@ -121,19 +88,6 @@ plan pe_xl::configure (
   # that a service restart of pe-puppetserver doesn't cause Puppet runs on
   # other nodes to fail.
   run_task('pe_xl::puppet_runonce', $master_target)
-
-  # SLV-365 
-  # Run the PE Replica Provision
-  # run_task('pe_xl::provision_replica', $master_target,
-  #   master_replica         => $master_replica_host,
-  #   token_file             => $token_file,
-  # )
-
-  # # Run the PE Replica Enable
-  # run_task('pe_xl::enable_replica', $master_target,
-  #   master_replica         => $master_replica_host,
-  #   token_file             => $token_file,
-  # )
 
   if $ha {
     # Run the PE Replica Provision
@@ -151,14 +105,6 @@ plan pe_xl::configure (
   }
 
   # Run Puppet everywhere to pick up last remaining config tweaks
-
-  # SLV-365
-  # run_task('pe_xl::puppet_runonce', [
-  #   $master_target, $master_replica_host,
-  #   $puppetdb_database_host, $puppetdb_database_replica_host,
-  #   $compiler_hosts,
-  # ].pe_xl::flatten_compact())
-
   if $ha {
     $all_hosts = [
       $master_target,
