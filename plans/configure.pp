@@ -22,8 +22,6 @@ plan pe_xl::configure (
   String[1]           $stagingdir = '/tmp',
 ) {
 
-  # TODO: remove 'SLV-365' comments
-
   # Allow for the configure task to be run local to the master.
   $master_target = $executing_on_master ? {
     true  => "local://${master_host}",
