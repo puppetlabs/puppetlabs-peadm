@@ -1,7 +1,7 @@
 # @summary Perform initial installation of Puppet Enterprise Extra Large
 #
 plan pe_xl::install (
-  Boolean             $ha,
+  Boolean             $ha = true,
   String[1]           $master_host,
   String[1]           $puppetdb_database_host,
   String[1]           $master_replica_host,

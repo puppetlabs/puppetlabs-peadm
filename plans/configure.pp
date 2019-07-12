@@ -1,7 +1,7 @@
 # @summary Configure first-time classification and HA setup
 #
 plan pe_xl::configure (
-  Boolean             $ha,
+  Boolean             $ha = true,
   String[1]           $master_host,
   String[1]           $puppetdb_database_host,
   String[1]           $master_replica_host,
