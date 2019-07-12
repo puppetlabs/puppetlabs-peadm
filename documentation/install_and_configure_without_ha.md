@@ -3,7 +3,7 @@
 * TODO: add this doc as a section to basic_usage.md instead?
 
 Please see the [basic_usage.md](basic_usage.md) document for reference; this document will avoid repeating the information covered there.
-The plans covered in this document can also set up the Extra Large environment without HA by setting the optional `ha` parameter to `false` in the params.json file.
+The install, configure, and upgrade plans covered in the [basic_usage.md](basic_usage.md) document can also set up the Extra Large environment without HA by setting the optional `ha` parameter to `false` in the params.json file (see the [example](#example-params.json-bolt-parameters-file) below).
 
 ## Basic usage instructions
 
@@ -20,7 +20,7 @@ The plans covered in this document can also set up the Extra Large environment w
           --params @params.json 
 ```
 
-Example nodes.yaml Bolt inventory file:
+### Example nodes.yaml Bolt inventory file
 
 ```yaml
 
@@ -41,7 +41,7 @@ groups:
       - pe-xl-compiler-1.lab1.puppet.vm
 ```
 
-Example params.json Bolt parameters file:
+### Example params.json Bolt parameters file
 
 ```json
 {
