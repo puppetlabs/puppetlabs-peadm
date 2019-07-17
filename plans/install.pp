@@ -159,12 +159,12 @@ plan pe_xl::install (
     run_task('pe_xl::mkdir_p_file', $puppetdb_database_replica_host,
       path    => '/etc/puppetlabs/puppet/csr_attributes.yaml',
       content => @("HEREDOC"),
-      ---
-      extension_requests:
-        ${pp_application}: "puppet"
-        ${pp_role}: "pe_xl::puppetdb_database"
-        ${pp_cluster}: "B"
-      | HEREDOC
+        ---
+        extension_requests:
+          ${pp_application}: "puppet"
+          ${pp_role}: "pe_xl::puppetdb_database"
+          ${pp_cluster}: "B"
+        | HEREDOC
     )
   }
 
@@ -248,44 +248,44 @@ plan pe_xl::install (
     run_task('pe_xl::agent_install', $master_replica_host,
       server        => $master_host,
       install_flags => [
-      '--puppet-service-ensure', 'stopped',
-      "main:dns_alt_names=${dns_alt_names_csv}",
-      'extension_requests:pp_application=puppet',
-      'extension_requests:pp_role=pe_xl::master',
-      'extension_requests:pp_cluster=B',
+        '--puppet-service-ensure', 'stopped',
+        "main:dns_alt_names=${dns_alt_names_csv}",
+        'extension_requests:pp_application=puppet',
+        'extension_requests:pp_role=pe_xl::master',
+        'extension_requests:pp_cluster=B',
       ],
     )
 
     run_task('pe_xl::agent_install', $cm_cluster_a,
       server        => $master_host,
       install_flags => [
-      '--puppet-service-ensure', 'stopped',
-      "main:dns_alt_names=${dns_alt_names_csv}",
-      'extension_requests:pp_application=puppet',
-      'extension_requests:pp_role=pe_xl::compiler',
-      'extension_requests:pp_cluster=A',
+        '--puppet-service-ensure', 'stopped',
+        "main:dns_alt_names=${dns_alt_names_csv}",
+        'extension_requests:pp_application=puppet',
+        'extension_requests:pp_role=pe_xl::compiler',
+        'extension_requests:pp_cluster=A',
       ],
     )
 
     run_task('pe_xl::agent_install', $cm_cluster_b,
       server        => $master_host,
       install_flags => [
-      '--puppet-service-ensure', 'stopped',
-      "main:dns_alt_names=${dns_alt_names_csv}",
-      'extension_requests:pp_application=puppet',
-      'extension_requests:pp_role=pe_xl::compiler',
-      'extension_requests:pp_cluster=B',
+        '--puppet-service-ensure', 'stopped',
+        "main:dns_alt_names=${dns_alt_names_csv}",
+        'extension_requests:pp_application=puppet',
+        'extension_requests:pp_role=pe_xl::compiler',
+        'extension_requests:pp_cluster=B',
       ],
     )
   } else {
     run_task('pe_xl::agent_install', $compiler_hosts,
       server        => $master_host,
       install_flags => [
-      '--puppet-service-ensure', 'stopped',
-      "main:dns_alt_names=${dns_alt_names_csv}",
-      'extension_requests:pp_application=puppet',
-      'extension_requests:pp_role=pe_xl::compiler',
-      'extension_requests:pp_cluster=A',
+        '--puppet-service-ensure', 'stopped',
+        "main:dns_alt_names=${dns_alt_names_csv}",
+        'extension_requests:pp_application=puppet',
+        'extension_requests:pp_role=pe_xl::compiler',
+        'extension_requests:pp_cluster=A',
       ],
     )
   }
