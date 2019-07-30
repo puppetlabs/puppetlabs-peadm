@@ -1,17 +1,24 @@
 # @summary Upgrade an Extra Large stack from one .z to the next
 #
 plan pe_xl::upgrade (
-  Boolean   $ha = true,
   String[1] $master_host,
   String[1] $puppetdb_database_host,
-  String[1] $master_replica_host,
-  String[1] $puppetdb_database_replica_host,
+  Optional[String[1]] $master_replica_host = undef,
+  Optional[String[1]] $puppetdb_database_replica_host = undef,
 
   String[1] $version = '2018.1.4',
 
   String[1] $stagingdir = '/tmp',
   String[1] $pe_source  = "https://s3.amazonaws.com/pe-builds/released/${version}/puppet-enterprise-${version}-el-7-x86_64.tar.gz",
 ) {
+
+  $ha_replica_target = [
+    $master_replica_host,
+  ].pe_xl::flatten_compact()
+
+  $ha_database_target = [
+    $puppetdb_database_replica_host,
+  ].pe_xl::flatten_compact()
 
   # Look up which hosts are compilers in the stack
   # We look up groups of CMs separately since when they are upgraded is determined
@@ -24,32 +31,22 @@ plan pe_xl::upgrade (
       !(certname = "${master_host}") }
     | PQL
 
-  if $ha {
-    $compiler_cluster_master_replica_hosts = puppetdb_query(@("PQL")).map |$node| { $node['certname'] }
-      resources[certname] { 
-        type = "Class" and
-        title = "Puppet_enterprise::Profile::Puppetdb" and
-        parameters.database_host = "${puppetdb_database_replica_host}" and
-        !(certname = "${master_replica_host}") }
-      | PQL
-  }
+  $compiler_cluster_master_replica_hosts = puppetdb_query(@("PQL")).map |$node| { $node['certname'] }
+    resources[certname] { 
+      type = "Class" and
+      title = "Puppet_enterprise::Profile::Puppetdb" and
+      parameters.database_host = "${puppetdb_database_replica_host}" and
+      !(certname = "${master_replica_host}") }
+    | PQL
 
-  if $ha {
-    $all_hosts = [
-      $master_host,
-      $puppetdb_database_host,
-      $master_replica_host,
-      $puppetdb_database_replica_host,
-      $compiler_cluster_master_hosts,
-      $compiler_cluster_master_replica_hosts,
-    ].pe_xl::flatten_compact()
-  } else {
-    $all_hosts = [
-      $master_host,
-      $puppetdb_database_host,
-      $compiler_cluster_master_hosts,
-    ].pe_xl::flatten_compact()
-  }
+  $all_hosts = [
+    $master_host,
+    $puppetdb_database_host,
+    $master_replica_host,
+    $puppetdb_database_replica_host,
+    $compiler_cluster_master_hosts,
+    $compiler_cluster_master_replica_hosts,
+  ].pe_xl::flatten_compact()
 
   $master_local = "local://${master_host}"
 
@@ -58,18 +55,11 @@ plan pe_xl::upgrade (
   # Download the PE tarball on the nodes that need it
   $upload_tarball_path = "/tmp/puppet-enterprise-${version}-el-7-x86_64.tar.gz"
 
-  if $ha {
-    $download_hosts = [
-      $master_host,
-      $puppetdb_database_host,
-      $puppetdb_database_replica_host,
-    ].pe_xl::flatten_compact()
-  } else {
-    $download_hosts = [
-      $master_host,
-      $puppetdb_database_host,
-    ].pe_xl::flatten_compact()
-  }
+  $download_hosts = [
+    $master_host,
+    $puppetdb_database_host,
+    $puppetdb_database_replica_host,
+  ].pe_xl::flatten_compact()
 
   run_task('pe_xl::download', $download_hosts,
     source => $pe_source,
@@ -137,29 +127,27 @@ plan pe_xl::upgrade (
     server => $master_host,
   )
 
-  if $ha {
-    # Shut down PuppetDB on CMs that use the PMR's PDB PG
-    run_task('service', $compiler_cluster_master_replica_hosts,
-      action => 'stop',
-      name   => 'pe-puppetdb',
-    )
+  # Shut down PuppetDB on CMs that use the PMR's PDB PG
+  run_task('service', $compiler_cluster_master_replica_hosts,
+    action => 'stop',
+    name   => 'pe-puppetdb',
+  )
 
-    # Run the upgrade.sh script on the master replica host
-    run_task('pe_xl::agent_upgrade', $master_replica_host,
-      server => $master_host,
-    )
+  # Run the upgrade.sh script on the master replica host
+  run_task('pe_xl::agent_upgrade', $ha_replica_target,
+    server => $master_host,
+  )
 
-    # Upgrade the master replica's PuppetDB PostgreSQL host
-    run_task('pe_xl::pe_install', $puppetdb_database_replica_host,
-      tarball => $upload_tarball_path,
-    )
-    run_task('pe_xl::puppet_runonce', $puppetdb_database_replica_host)
+  # Upgrade the master replica's PuppetDB PostgreSQL host
+  run_task('pe_xl::pe_install', $ha_database_target,
+    tarball => $upload_tarball_path,
+  )
+  run_task('pe_xl::puppet_runonce', $ha_database_target)
 
-    # Upgrade the compiler group B hosts
-    run_task('pe_xl::agent_upgrade', $compiler_cluster_master_replica_hosts,
-      server => $master_host,
-    )
-  }
+  # Upgrade the compiler group B hosts
+  run_task('pe_xl::agent_upgrade', $compiler_cluster_master_replica_hosts,
+    server => $master_host,
+  )
 
   # Ensure Puppet running on all infrastructure hosts
   run_task('service', $all_hosts,
