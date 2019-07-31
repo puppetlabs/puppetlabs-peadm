@@ -3,7 +3,12 @@
 
 /opt/puppetlabs/bin/puppet apply --environment production <<'EOF'
 
-function param($name) { inline_template("<%= ENV['PT_${name}'] %>") }
+function param($name) {
+  ($var = inline_template("<%= ENV['PT_${name}'] %>")) ? {
+    ''      => undef,
+    default => $var,
+  }
+}
 
 class configure_node_groups (
   String[1] $master_host            = param('master_host'),
