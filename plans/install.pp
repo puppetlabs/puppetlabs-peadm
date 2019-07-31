@@ -163,14 +163,14 @@ plan pe_xl::install (
   # Get the master installation up and running. The installer will
   # "fail" because PuppetDB can't start. That's expected.
   without_default_logging() || {
-    notice("Starting: task pe_xl::pe_install on ${master_host}")
+    out::message("Starting: task pe_xl::pe_install on ${master_host}")
     run_task('pe_xl::pe_install', $master_host,
       _catch_errors         => true,
       tarball               => $upload_tarball_path,
       peconf                => '/tmp/pe.conf',
       shortcircuit_puppetdb => true,
     )
-    notice("Finished: task pe_xl::pe_install on ${master_host}")
+    out::message("Finished: task pe_xl::pe_install on ${master_host}")
   }
 
   # Configure autosigning for the puppetdb database hosts 'cause they need it
@@ -251,9 +251,9 @@ plan pe_xl::install (
   # Do a Puppet agent run to ensure certificate requests have been submitted
   # These runs will "fail", and that's expected.
   without_default_logging() || {
-    notice("Starting: task pe_xl::puppet_runonce on ${agent_installer_hosts}")
+    out::message("Starting: task pe_xl::puppet_runonce on ${agent_installer_hosts}")
     run_task('pe_xl::puppet_runonce', $agent_installer_hosts, {_catch_errors => true})
-    notice("Finished: task pe_xl::puppet_runonce on ${agent_installer_hosts}")
+    out::message("Finished: task pe_xl::puppet_runonce on ${agent_installer_hosts}")
   }
 
   # Ensure some basic configuration on the master needed at install time.
