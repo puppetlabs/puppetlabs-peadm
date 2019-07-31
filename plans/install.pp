@@ -56,7 +56,7 @@ plan pe_xl::install (
   $pe_installer_hosts = [
     $master_host,
     $puppetdb_database_host,
-    $master_replica_host,
+    $puppetdb_database_replica_host,
   ].pe_xl::flatten_compact()
 
   $agent_installer_hosts = [
