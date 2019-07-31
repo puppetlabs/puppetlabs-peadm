@@ -167,4 +167,6 @@ class configure_node_groups (
   }
 
 }
+
+include configure_node_groups
 EOF
