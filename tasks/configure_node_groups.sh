@@ -167,3 +167,4 @@ class configure_node_groups (
   }
 
 }
+EOF
