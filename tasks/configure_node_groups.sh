@@ -49,14 +49,15 @@ class configure_node_groups (
   # Because the group does not have any data by default this does not impact
   # out-of-box configuration of the group.
   node_group { 'PE Master':
-    parent => 'PE Infrastructure',
-    rule   => ['or',
+    parent    => 'PE Infrastructure',
+    rule      => ['or',
       ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compiler']],
       ['=', 'name', $master_host],
     ],
-    data   => {
+    data      => {
       'pe_repo' => { 'compile_master_pool_address' => $compiler_pool_address },
     },
+    variables => { 'pe_master' => true },
   }
 
   # This class has to be included here because puppet_enterprise is declared
