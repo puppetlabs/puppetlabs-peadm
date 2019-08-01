@@ -3,7 +3,7 @@
 * TODO: add this doc as a section to basic_usage.md instead?
 
 Please see the [basic_usage.md](basic_usage.md) document for reference; this document will avoid repeating the information covered there.
-The install, configure, and upgrade plans covered in the [basic_usage.md](basic_usage.md) document can also set up the Extra Large environment without HA by setting the optional `ha` parameter to `false` in the params.json file (see the [example](#example-params.json-bolt-parameters-file) below).
+The install, configure, and upgrade plans covered in the [basic_usage.md](basic_usage.md) document can also set up the Extra Large environment without HA by omitting the optional settings `master_replica_host` and `puppetdb_database_replica_host` in the params.json file (see the [example](#example-params.json-bolt-parameters-file) below).
 
 ## Basic usage instructions
 
@@ -11,7 +11,7 @@ The install, configure, and upgrade plans covered in the [basic_usage.md](basic_
 2. Install Bolt on a jumphost. This can be the master, or any other system.
 3. Download or git clone the pe\_xl module and put it somewhere on the jumphost, e.g. ~/modules/pe\_xl.
 4. Create an inventory file with connection information. An example is included below.
-5. Create a parameters file. An example is included below. Note the addition of the "ha" parameter with a value of "false", and the omission of the "replica" roles.
+5. Create a parameters file. An example is included below. Note the omission of the `master_replica_host` and `puppetdb_database_replica_host` parameters.
 6. Run the pe\_xl plan with the inputs created. Example:
 ```
         bolt plan run pe_xl \
@@ -48,12 +48,9 @@ groups:
   "install": true,
   "configure": true,
   "upgrade": false,
-  "ha": false,
 
   "master_host": "pe-xl-core-0.lab1.puppet.vm",
   "puppetdb_database_host": "pe-xl-core-1.lab1.puppet.vm",
-  "master_replica_host": "",
-  "puppetdb_database_replica_host": "",
   "compiler_hosts": [
     "pe-xl-compiler-0.lab1.puppet.vm",
     "pe-xl-compiler-1.lab1.puppet.vm"
