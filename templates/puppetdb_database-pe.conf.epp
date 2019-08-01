@@ -1,5 +1,5 @@
 <%- | String[1] $master_host,
-      String[1] $puppetdb_database_host,
+      Optional[String[1]] $puppetdb_database_host,
 | -%>
 #----------------------------------------------------------------------------
 # Puppet Enterprise installer configuration file

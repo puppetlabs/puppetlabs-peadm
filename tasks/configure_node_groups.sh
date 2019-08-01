@@ -3,7 +3,12 @@
 
 /opt/puppetlabs/bin/puppet apply --environment production <<'EOF'
 
-function param($name) { inline_template("<%= ENV['PT_${name}'] %>") }
+function param($name) {
+  ($var = inline_template("<%= ENV['PT_${name}'] %>")) ? {
+    ''      => undef,
+    default => $var,
+  }
+}
 
 class configure_node_groups (
   String[1] $master_host            = param('master_host'),
@@ -44,14 +49,15 @@ class configure_node_groups (
   # Because the group does not have any data by default this does not impact
   # out-of-box configuration of the group.
   node_group { 'PE Master':
-    parent => 'PE Infrastructure',
-    rule   => ['or',
+    parent    => 'PE Infrastructure',
+    rule      => ['or',
       ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::compiler']],
       ['=', 'name', $master_host],
     ],
-    data   => {
+    data      => {
       'pe_repo' => { 'compile_master_pool_address' => $compiler_pool_address },
     },
+    variables => { 'pe_master' => true },
   }
 
   # This class has to be included here because puppet_enterprise is declared
@@ -162,3 +168,6 @@ class configure_node_groups (
   }
 
 }
+
+include configure_node_groups
+EOF

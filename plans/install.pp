@@ -3,9 +3,10 @@
 plan pe_xl::install (
   String[1]           $master_host,
   String[1]           $puppetdb_database_host,
-  String[1]           $master_replica_host,
-  String[1]           $puppetdb_database_replica_host,
   Array[String[1]]    $compiler_hosts = [ ],
+
+  Optional[String[1]] $master_replica_host = undef,
+  Optional[String[1]] $puppetdb_database_replica_host = undef,
 
   String[1]           $console_password,
   String[1]           $version = '2018.1.3',
@@ -16,19 +17,46 @@ plan pe_xl::install (
 ) {
 
   # Define a number of host groupings for use later in the plan
-
-  $all_hosts = [
+  $core_hosts = [
     $master_host,
     $puppetdb_database_host,
-    $compiler_hosts,
+  ].pe_xl::flatten_compact()
+
+  $ha_hosts = [
     $master_replica_host,
+    $puppetdb_database_replica_host,
+  ].pe_xl::flatten_compact()
+
+  $ha_replica_target = [
+    $master_replica_host,
+  ].pe_xl::flatten_compact()
+
+  $ha_database_target = [
+    $puppetdb_database_replica_host,
+  ].pe_xl::flatten_compact()
+
+  # Ensure valid input for HA
+  $ha = $ha_hosts.size ? {
+    0       => false,
+    2       => true,
+    default => fail("Must specify either both or neither of master_replica_host, puppetdb_database_replica_host"),
+  }
+
+  $all_hosts = [
+    $core_hosts,
+    $ha_hosts,
+    $compiler_hosts,
+  ].pe_xl::flatten_compact()
+
+  $database_hosts = [
+    $puppetdb_database_host,
     $puppetdb_database_replica_host,
   ].pe_xl::flatten_compact()
 
   $pe_installer_hosts = [
     $master_host,
     $puppetdb_database_host,
-    $master_replica_host,
+    $puppetdb_database_replica_host,
   ].pe_xl::flatten_compact()
 
   $agent_installer_hosts = [
@@ -43,8 +71,14 @@ plan pe_xl::install (
   $pp_role        = '1.3.6.1.4.1.34380.1.1.13'
 
   # Clusters A and B are used to divide PuppetDB availability for compilers
-  $cm_cluster_a = $compiler_hosts.filter |$index,$cm| { $index % 2 == 0 }
-  $cm_cluster_b = $compiler_hosts.filter |$index,$cm| { $index % 2 != 0 }
+  if $ha {
+    $cm_cluster_a = $compiler_hosts.filter |$index,$cm| { $index % 2 == 0 }
+    $cm_cluster_b = $compiler_hosts.filter |$index,$cm| { $index % 2 != 0 }
+  }
+  else {
+    $cm_cluster_a = $compiler_hosts
+    $cm_cluster_b = []
+  }
 
   $dns_alt_names_csv = $dns_alt_names.reduce |$csv,$x| { "${csv},${x}" }
 
@@ -78,7 +112,7 @@ plan pe_xl::install (
   # Upload the pe.conf files to the hosts that need them
   pe_xl::file_content_upload($master_pe_conf, '/tmp/pe.conf', $master_host)
   pe_xl::file_content_upload($puppetdb_database_pe_conf, '/tmp/pe.conf', $puppetdb_database_host)
-  pe_xl::file_content_upload($puppetdb_database_replica_pe_conf, '/tmp/pe.conf', $puppetdb_database_replica_host)
+  pe_xl::file_content_upload($puppetdb_database_replica_pe_conf, '/tmp/pe.conf', $ha_database_target)
 
   # Download the PE tarball and send it to the nodes that need it
   $pe_tarball_name     = "puppet-enterprise-${version}-el-7-x86_64.tar.gz"
@@ -86,7 +120,7 @@ plan pe_xl::install (
   $upload_tarball_path = "/tmp/${pe_tarball_name}"
 
   run_plan('pe_xl::util::retrieve_and_upload',
-    nodes       => [$master_host, $puppetdb_database_host, $puppetdb_database_replica_host],
+    nodes       => $pe_installer_hosts,
     source      => "https://s3.amazonaws.com/pe-builds/released/${version}/puppet-enterprise-${version}-el-7-x86_64.tar.gz",
     local_path  => $local_tarball_path,
     upload_path => $upload_tarball_path,
@@ -115,7 +149,7 @@ plan pe_xl::install (
       | HEREDOC
   )
 
-  run_task('pe_xl::mkdir_p_file', $puppetdb_database_replica_host,
+  run_task('pe_xl::mkdir_p_file', $ha_database_target,
     path    => '/etc/puppetlabs/puppet/csr_attributes.yaml',
     content => @("HEREDOC"),
       ---
@@ -129,14 +163,14 @@ plan pe_xl::install (
   # Get the master installation up and running. The installer will
   # "fail" because PuppetDB can't start. That's expected.
   without_default_logging() || {
-    notice("Starting: task pe_xl::pe_install on ${master_host}")
+    out::message("Starting: task pe_xl::pe_install on ${master_host}")
     run_task('pe_xl::pe_install', $master_host,
       _catch_errors         => true,
       tarball               => $upload_tarball_path,
       peconf                => '/tmp/pe.conf',
       shortcircuit_puppetdb => true,
     )
-    notice("Finished: task pe_xl::pe_install on ${master_host}")
+    out::message("Finished: task pe_xl::pe_install on ${master_host}")
   }
 
   # Configure autosigning for the puppetdb database hosts 'cause they need it
@@ -145,14 +179,11 @@ plan pe_xl::install (
     owner   => 'pe-puppet',
     group   => 'pe-puppet',
     mode    => '0644',
-    content => @("HEREDOC"),
-      ${puppetdb_database_host}
-      ${puppetdb_database_replica_host}
-      | HEREDOC
+    content => $database_hosts.reduce |$memo,$host| { "${host}\n${memo}" },
   )
 
   # Run the PE installer on the puppetdb database hosts
-  run_task('pe_xl::pe_install', [$puppetdb_database_host, $puppetdb_database_replica_host],
+  run_task('pe_xl::pe_install', $database_hosts,
     tarball => $upload_tarball_path,
     peconf  => '/tmp/pe.conf',
   )
@@ -184,7 +215,7 @@ plan pe_xl::install (
   )
 
   # Deploy the PE agent to all remaining hosts
-  run_task('pe_xl::agent_install', $master_replica_host,
+  run_task('pe_xl::agent_install', $ha_replica_target,
     server        => $master_host,
     install_flags => [
       '--puppet-service-ensure', 'stopped',
@@ -220,9 +251,9 @@ plan pe_xl::install (
   # Do a Puppet agent run to ensure certificate requests have been submitted
   # These runs will "fail", and that's expected.
   without_default_logging() || {
-    notice("Starting: task pe_xl::puppet_runonce on ${agent_installer_hosts}")
+    out::message("Starting: task pe_xl::puppet_runonce on ${agent_installer_hosts}")
     run_task('pe_xl::puppet_runonce', $agent_installer_hosts, {_catch_errors => true})
-    notice("Finished: task pe_xl::puppet_runonce on ${agent_installer_hosts}")
+    out::message("Finished: task pe_xl::puppet_runonce on ${agent_installer_hosts}")
   }
 
   # Ensure some basic configuration on the master needed at install time.

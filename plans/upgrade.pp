@@ -3,14 +3,22 @@
 plan pe_xl::upgrade (
   String[1] $master_host,
   String[1] $puppetdb_database_host,
-  String[1] $master_replica_host,
-  String[1] $puppetdb_database_replica_host,
+  Optional[String[1]] $master_replica_host = undef,
+  Optional[String[1]] $puppetdb_database_replica_host = undef,
 
   String[1] $version = '2018.1.4',
 
   String[1] $stagingdir = '/tmp',
   String[1] $pe_source  = "https://s3.amazonaws.com/pe-builds/released/${version}/puppet-enterprise-${version}-el-7-x86_64.tar.gz",
 ) {
+
+  $ha_replica_target = [
+    $master_replica_host,
+  ].pe_xl::flatten_compact()
+
+  $ha_database_target = [
+    $puppetdb_database_replica_host,
+  ].pe_xl::flatten_compact()
 
   # Look up which hosts are compilers in the stack
   # We look up groups of CMs separately since when they are upgraded is determined
@@ -47,11 +55,13 @@ plan pe_xl::upgrade (
   # Download the PE tarball on the nodes that need it
   $upload_tarball_path = "/tmp/puppet-enterprise-${version}-el-7-x86_64.tar.gz"
 
-  run_task('pe_xl::download', [
-      $master_host,
-      $puppetdb_database_host,
-      $puppetdb_database_replica_host
-    ],
+  $download_hosts = [
+    $master_host,
+    $puppetdb_database_host,
+    $puppetdb_database_replica_host,
+  ].pe_xl::flatten_compact()
+
+  run_task('pe_xl::download', $download_hosts,
     source => $pe_source,
     path   => $upload_tarball_path,
   )
@@ -124,15 +134,15 @@ plan pe_xl::upgrade (
   )
 
   # Run the upgrade.sh script on the master replica host
-  run_task('pe_xl::agent_upgrade', $master_replica_host,
+  run_task('pe_xl::agent_upgrade', $ha_replica_target,
     server => $master_host,
   )
 
   # Upgrade the master replica's PuppetDB PostgreSQL host
-  run_task('pe_xl::pe_install', $puppetdb_database_replica_host,
+  run_task('pe_xl::pe_install', $ha_database_target,
     tarball => $upload_tarball_path,
   )
-  run_task('pe_xl::puppet_runonce', $puppetdb_database_replica_host)
+  run_task('pe_xl::puppet_runonce', $ha_database_target)
 
   # Upgrade the compiler group B hosts
   run_task('pe_xl::agent_upgrade', $compiler_cluster_master_replica_hosts,

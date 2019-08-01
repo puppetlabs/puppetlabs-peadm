@@ -3,9 +3,10 @@
 plan pe_xl::configure (
   String[1]           $master_host,
   String[1]           $puppetdb_database_host,
-  String[1]           $master_replica_host,
-  String[1]           $puppetdb_database_replica_host,
   Array[String[1]]    $compiler_hosts = [ ],
+
+  Optional[String[1]] $master_replica_host = undef,
+  Optional[String[1]] $puppetdb_database_replica_host = undef,
 
   # This parameter exists primarily to enable the use case of running
   # pe_xl::configure over the PCP transport. An orchestrator restart happens
@@ -20,6 +21,18 @@ plan pe_xl::configure (
 
   String[1]           $stagingdir = '/tmp',
 ) {
+
+  $ha_hosts = [
+    $master_replica_host,
+    $puppetdb_database_replica_host,
+  ].pe_xl::flatten_compact()
+
+  # Ensure valid input for HA
+  $ha = $ha_hosts.size ? {
+    0       => false,
+    2       => true,
+    default => fail("Must specify either both or neither of master_replica_host, puppetdb_database_replica_host"),
+  }
 
   # Allow for the configure task to be run local to the master.
   $master_target = $executing_on_master ? {
@@ -53,7 +66,7 @@ plan pe_xl::configure (
   # Run Puppet in no-op on the compilers so that their status in PuppetDB
   # is updated and they can be identified by the puppet_enterprise module as
   # CMs
-  run_task('pe_xl::puppet_runonce', [$compiler_hosts, $master_replica_host],
+  run_task('pe_xl::puppet_runonce', [$compiler_hosts, $master_replica_host].pe_xl::flatten_compact,
     noop => true,
   )
 
@@ -62,7 +75,7 @@ plan pe_xl::configure (
   run_task('pe_xl::puppet_runonce', [
     $puppetdb_database_host,
     $puppetdb_database_replica_host,
-  ])
+  ].pe_xl::flatten_compact)
 
   # Run Puppet on the master to ensure all services configured and
   # running in prep for provisioning the replica. This is done separately so
@@ -70,24 +83,28 @@ plan pe_xl::configure (
   # other nodes to fail.
   run_task('pe_xl::puppet_runonce', $master_target)
 
-  # Run the PE Replica Provision
-  run_task('pe_xl::provision_replica', $master_target,
-    master_replica         => $master_replica_host,
-    token_file             => $token_file,
-  )
+  if $ha {
+    # Run the PE Replica Provision
+    run_task('pe_xl::provision_replica', $master_target,
+      master_replica         => $master_replica_host,
+      token_file             => $token_file,
+    )
 
-  # Run the PE Replica Enable
-  run_task('pe_xl::enable_replica', $master_target,
-    master_replica         => $master_replica_host,
-    token_file             => $token_file,
-  )
+    # Run the PE Replica Enable
+    run_task('pe_xl::enable_replica', $master_target,
+      master_replica         => $master_replica_host,
+      token_file             => $token_file,
+    )
+  }
 
   # Run Puppet everywhere to pick up last remaining config tweaks
   run_task('pe_xl::puppet_runonce', [
-    $master_target, $master_replica_host,
-    $puppetdb_database_host, $puppetdb_database_replica_host,
+    $master_target,
+    $puppetdb_database_host,
     $compiler_hosts,
-  ].pe_xl::flatten_compact())
+    $master_replica_host,
+    $puppetdb_database_replica_host,
+  ].pe_xl::flatten_compact)
 
   # Deploy an environment if a deploy environment is specified
   if $deploy_environment {
