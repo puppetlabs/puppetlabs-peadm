@@ -2,9 +2,9 @@
 #
 plan pe_xl::configure (
   String[1]           $master_host,
-  String[1]           $puppetdb_database_host,
   Array[String[1]]    $compiler_hosts = [ ],
 
+  Optional[String[1]] $puppetdb_database_host = undef,
   Optional[String[1]] $master_replica_host = undef,
   Optional[String[1]] $puppetdb_database_replica_host = undef,
 
@@ -34,10 +34,24 @@ plan pe_xl::configure (
     default => fail('Must specify either both or neither of master_replica_host, puppetdb_database_replica_host'),
   }
 
+  # Ensure primary external database host for HA
+  if $ha {
+    if ! $puppetdb_database_host {
+      fail("Must specify puppetdb_database_host for HA environment")
+    }
+  }
+
   # Allow for the configure task to be run local to the master.
   $master_target = $executing_on_master ? {
     true  => "local://${master_host}",
     false => $master_host,
+  }
+
+  if ($puppetdb_database_host == undef) {
+    $database_target = $master_host
+  }
+  else {
+    $database_target = $puppetdb_database_host
   }
 
   # Retrieve and deploy Puppet modules from the Forge so that they can be used
@@ -58,7 +72,7 @@ plan pe_xl::configure (
   run_task('pe_xl::configure_node_groups', $master_target,
     master_host                    => $master_host,
     master_replica_host            => $master_replica_host,
-    puppetdb_database_host         => $puppetdb_database_host,
+    puppetdb_database_host         => $database_target,
     puppetdb_database_replica_host => $puppetdb_database_replica_host,
     compiler_pool_address          => $compiler_pool_address,
   )
@@ -73,7 +87,7 @@ plan pe_xl::configure (
   # Run Puppet on the PuppetDB Database hosts to update their auth
   # configuration to allow the compilers to connect
   run_task('pe_xl::puppet_runonce', [
-    $puppetdb_database_host,
+    $database_target,
     $puppetdb_database_replica_host,
   ].pe_xl::flatten_compact)
 
@@ -100,7 +114,7 @@ plan pe_xl::configure (
   # Run Puppet everywhere to pick up last remaining config tweaks
   run_task('pe_xl::puppet_runonce', [
     $master_target,
-    $puppetdb_database_host,
+    $database_target,
     $compiler_hosts,
     $master_replica_host,
     $puppetdb_database_replica_host,

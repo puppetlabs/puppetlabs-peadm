@@ -2,9 +2,9 @@
 #
 plan pe_xl::install (
   String[1]           $master_host,
-  String[1]           $puppetdb_database_host,
   Array[String[1]]    $compiler_hosts = [ ],
 
+  Optional[String[1]] $puppetdb_database_host = undef,
   Optional[String[1]] $master_replica_host = undef,
   Optional[String[1]] $puppetdb_database_replica_host = undef,
 
@@ -31,6 +31,10 @@ plan pe_xl::install (
     $master_replica_host,
   ].pe_xl::flatten_compact()
 
+  $database_target = [
+    $puppetdb_database_host,
+  ].pe_xl::flatten_compact()
+
   $ha_database_target = [
     $puppetdb_database_replica_host,
   ].pe_xl::flatten_compact()
@@ -40,6 +44,13 @@ plan pe_xl::install (
     0       => false,
     2       => true,
     default => fail('Must specify either both or neither of master_replica_host, puppetdb_database_replica_host'),
+  }
+
+  # Ensure primary external database host for HA
+  if $ha {
+    if ! $puppetdb_database_host {
+      fail("Must specify puppetdb_database_host for HA environment")
+    }
   }
 
   $all_hosts = [
@@ -94,7 +105,8 @@ plan pe_xl::install (
   $master_pe_conf = epp('pe_xl/master-pe.conf.epp',
     console_password       => $console_password,
     master_host            => $master_host,
-    puppetdb_database_host => $puppetdb_database_host,
+    # This parameter is quoted to ensure it is a string even if it is Undef
+    puppetdb_database_host => "$puppetdb_database_host",
     dns_alt_names          => $dns_alt_names,
     r10k_sources           => $r10k_sources,
   )
@@ -111,7 +123,7 @@ plan pe_xl::install (
 
   # Upload the pe.conf files to the hosts that need them
   pe_xl::file_content_upload($master_pe_conf, '/tmp/pe.conf', $master_host)
-  pe_xl::file_content_upload($puppetdb_database_pe_conf, '/tmp/pe.conf', $puppetdb_database_host)
+  pe_xl::file_content_upload($puppetdb_database_pe_conf, '/tmp/pe.conf', $database_target)
   pe_xl::file_content_upload($puppetdb_database_replica_pe_conf, '/tmp/pe.conf', $ha_database_target)
 
   # Download the PE tarball and send it to the nodes that need it
@@ -138,7 +150,7 @@ plan pe_xl::install (
       | HEREDOC
   )
 
-  run_task('pe_xl::mkdir_p_file', $puppetdb_database_host,
+  run_task('pe_xl::mkdir_p_file', $database_target,
     path    => '/etc/puppetlabs/puppet/csr_attributes.yaml',
     content => @("HEREDOC"),
       ---
@@ -161,25 +173,33 @@ plan pe_xl::install (
   )
 
   # Get the master installation up and running. The installer will
-  # "fail" because PuppetDB can't start. That's expected.
+  # "fail" because PuppetDB can't start, if puppetdb_database_host
+  # is set. That's expected.
+  if $puppetdb_database_host {
+    $shortcircuit_puppetdb = true
+  }
+  else {
+    $shortcircuit_puppetdb = false
+  }
   without_default_logging() || {
     out::message("Starting: task pe_xl::pe_install on ${master_host}")
     run_task('pe_xl::pe_install', $master_host,
-      _catch_errors         => true,
+      _catch_errors         => $shortcircuit_puppetdb,
       tarball               => $upload_tarball_path,
       peconf                => '/tmp/pe.conf',
-      shortcircuit_puppetdb => true,
+      shortcircuit_puppetdb => $shortcircuit_puppetdb,
     )
     out::message("Finished: task pe_xl::pe_install on ${master_host}")
   }
 
   # Configure autosigning for the puppetdb database hosts 'cause they need it
+  $autosign_conf = $database_hosts.reduce |$memo,$host| { "${host}\n${memo}" }
   run_task('pe_xl::mkdir_p_file', $master_host,
     path    => '/etc/puppetlabs/puppet/autosign.conf',
     owner   => 'pe-puppet',
     group   => 'pe-puppet',
     mode    => '0644',
-    content => $database_hosts.reduce |$memo,$host| { "${host}\n${memo}" },
+    content => "$autosign_conf",
   )
 
   # Run the PE installer on the puppetdb database hosts

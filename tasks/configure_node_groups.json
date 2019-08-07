@@ -5,13 +5,13 @@
       "type": "String[1]",
       "description": "The certname of the master"
     },
-    "puppetdb_database_host": {
-      "type": "String[1]",
-      "description": "The certname of the PuppetDB database"
-    },
     "compiler_pool_address": {
       "type": "String[1]",
       "description": "The service name to use for the compiler pool"
+    },
+    "puppetdb_database_host": {
+      "type": "Optional[String[1]]",
+      "description": "The certname of the PuppetDB database"
     },
     "master_replica_host": {
       "type": "Optional[String[1]]",
