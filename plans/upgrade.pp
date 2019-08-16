@@ -48,7 +48,8 @@ plan pe_xl::upgrade (
     $compiler_cluster_master_replica_hosts,
   ].pe_xl::flatten_compact()
 
-  $master_local = "local://${master_host}"
+  # We need to make sure we aren't using PCP as this will go down during the upgrade
+  $all_hosts.pe_xl::fail_on_transport('pcp')
 
   # TODO: Do we need to update the pe.conf(s) with a console password?
 
@@ -81,7 +82,7 @@ plan pe_xl::upgrade (
   # Shut down pe-* services on the master. Only shutting down the ones
   # that have failover pairs on the master replica.
   ['pe-console-services', 'pe-nginx', 'pe-puppetserver', 'pe-puppetdb', 'pe-postgresql'].each |$service| {
-    run_task('service', $master_local,
+    run_task('service', $master_host,
       action => 'stop',
       name   => $service,
     )
@@ -89,9 +90,7 @@ plan pe_xl::upgrade (
 
   # TODO: Firewall up the master
 
-  # Upgrade the master using the local:// transport in anticipation of
-  # the orchestrator service being restarted during the upgrade.
-  run_task('pe_xl::pe_install', $master_local,
+  run_task('pe_xl::pe_install', $master_host,
     tarball => $upload_tarball_path,
   )
 
@@ -104,7 +103,7 @@ plan pe_xl::upgrade (
   run_task('pe_xl::puppet_runonce', $puppetdb_database_host)
 
   # Stop PuppetDB on the master
-  run_task('service', $master_local,
+  run_task('service', $master_host,
     action => 'stop',
     name   => 'pe-puppetdb',
   )
@@ -112,7 +111,7 @@ plan pe_xl::upgrade (
   # TODO: Unblock 8081 between the master and the master replica
 
   # Start PuppetDB on the master
-  run_task('service', $master_local,
+  run_task('service', $master_host,
     action => 'start',
     name   => 'pe-puppetdb',
   )
@@ -120,7 +119,7 @@ plan pe_xl::upgrade (
   # TODO: Remove remaining firewall blocks
 
   # Wait until orchestrator service is healthy to proceed
-  run_task('pe_xl::orchestrator_healthcheck', $master_local)
+  run_task('pe_xl::orchestrator_healthcheck', $master_host)
 
   # Upgrade the compiler group A hosts
   run_task('pe_xl::agent_upgrade', $compiler_cluster_master_hosts,
