@@ -47,11 +47,9 @@ plan pe_xl::configure (
     false => $master_host,
   }
 
-  if ($puppetdb_database_host == undef) {
-    $database_target = $master_host
-  }
-  else {
-    $database_target = $puppetdb_database_host
+  $puppetdb_database_target = $puppetdb_database_host ? {
+    undef   => $master_host,
+    default => $puppetdb_database_host,
   }
 
   # Retrieve and deploy Puppet modules from the Forge so that they can be used
@@ -72,7 +70,7 @@ plan pe_xl::configure (
   run_task('pe_xl::configure_node_groups', $master_target,
     master_host                    => $master_host,
     master_replica_host            => $master_replica_host,
-    puppetdb_database_host         => $database_target,
+    puppetdb_database_host         => $puppetdb_database_target,
     puppetdb_database_replica_host => $puppetdb_database_replica_host,
     compiler_pool_address          => $compiler_pool_address,
   )
@@ -87,7 +85,7 @@ plan pe_xl::configure (
   # Run Puppet on the PuppetDB Database hosts to update their auth
   # configuration to allow the compilers to connect
   run_task('pe_xl::puppet_runonce', [
-    $database_target,
+    $puppetdb_database_target,
     $puppetdb_database_replica_host,
   ].pe_xl::flatten_compact)
 
@@ -114,7 +112,7 @@ plan pe_xl::configure (
   # Run Puppet everywhere to pick up last remaining config tweaks
   run_task('pe_xl::puppet_runonce', [
     $master_target,
-    $database_target,
+    $puppetdb_database_target,
     $compiler_hosts,
     $master_replica_host,
     $puppetdb_database_replica_host,

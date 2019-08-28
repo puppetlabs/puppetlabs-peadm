@@ -1,8 +1,8 @@
-<%- | String[1] $console_password,
-      String[1] $master_host,
-      String    $puppetdb_database_host,
-      Array     $dns_alt_names,
-      Hash      $r10k_sources,
+<%- | String[1]        $console_password,
+      String[1]        $master_host,
+      Optional[String] $puppetdb_database_host,
+      Array            $dns_alt_names,
+      Hash             $r10k_sources,
 | -%>
 #----------------------------------------------------------------------------
 # Puppet Enterprise installer configuration file

@@ -31,11 +31,11 @@ plan pe_xl::install (
     $master_replica_host,
   ].pe_xl::flatten_compact()
 
-  $database_target = [
+  $puppetdb_database_target = [
     $puppetdb_database_host,
   ].pe_xl::flatten_compact()
 
-  $ha_database_target = [
+  $puppetdb_database_replica_target = [
     $puppetdb_database_replica_host,
   ].pe_xl::flatten_compact()
 
@@ -105,8 +105,7 @@ plan pe_xl::install (
   $master_pe_conf = epp('pe_xl/master-pe.conf.epp',
     console_password       => $console_password,
     master_host            => $master_host,
-    # This parameter is quoted to ensure it is a string even if it is Undef
-    puppetdb_database_host => "$puppetdb_database_host",
+    puppetdb_database_host => $puppetdb_database_host,
     dns_alt_names          => $dns_alt_names,
     r10k_sources           => $r10k_sources,
   )
@@ -123,8 +122,8 @@ plan pe_xl::install (
 
   # Upload the pe.conf files to the hosts that need them
   pe_xl::file_content_upload($master_pe_conf, '/tmp/pe.conf', $master_host)
-  pe_xl::file_content_upload($puppetdb_database_pe_conf, '/tmp/pe.conf', $database_target)
-  pe_xl::file_content_upload($puppetdb_database_replica_pe_conf, '/tmp/pe.conf', $ha_database_target)
+  pe_xl::file_content_upload($puppetdb_database_pe_conf, '/tmp/pe.conf', $puppetdb_database_target)
+  pe_xl::file_content_upload($puppetdb_database_replica_pe_conf, '/tmp/pe.conf', $puppetdb_database_replica_target)
 
   # Download the PE tarball and send it to the nodes that need it
   $pe_tarball_name     = "puppet-enterprise-${version}-el-7-x86_64.tar.gz"
@@ -150,7 +149,7 @@ plan pe_xl::install (
       | HEREDOC
   )
 
-  run_task('pe_xl::mkdir_p_file', $database_target,
+  run_task('pe_xl::mkdir_p_file', $puppetdb_database_target,
     path    => '/etc/puppetlabs/puppet/csr_attributes.yaml',
     content => @("HEREDOC"),
       ---
@@ -161,7 +160,7 @@ plan pe_xl::install (
       | HEREDOC
   )
 
-  run_task('pe_xl::mkdir_p_file', $ha_database_target,
+  run_task('pe_xl::mkdir_p_file', $puppetdb_database_replica_target,
     path    => '/etc/puppetlabs/puppet/csr_attributes.yaml',
     content => @("HEREDOC"),
       ---
@@ -175,11 +174,9 @@ plan pe_xl::install (
   # Get the master installation up and running. The installer will
   # "fail" because PuppetDB can't start, if puppetdb_database_host
   # is set. That's expected.
-  if $puppetdb_database_host {
-    $shortcircuit_puppetdb = true
-  }
-  else {
-    $shortcircuit_puppetdb = false
+  $shortcircuit_puppetdb = $puppetdb_database_host ? {
+    undef   => false,
+    default => true,
   }
   without_default_logging() || {
     out::message("Starting: task pe_xl::pe_install on ${master_host}")
