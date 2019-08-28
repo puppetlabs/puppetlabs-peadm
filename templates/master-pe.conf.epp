@@ -1,8 +1,8 @@
-<%- | String[1] $console_password,
-      String[1] $master_host,
-      String[1] $puppetdb_database_host,
-      Array     $dns_alt_names,
-      Hash      $r10k_sources,
+<%- | String[1]        $console_password,
+      String[1]        $master_host,
+      Optional[String] $puppetdb_database_host,
+      Array            $dns_alt_names,
+      Hash             $r10k_sources,
 | -%>
 #----------------------------------------------------------------------------
 # Puppet Enterprise installer configuration file
@@ -20,11 +20,13 @@
   "puppet_enterprise::puppet_master_host": "<%= $master_host %>"
   "pe_install::puppet_master_dnsaltnames": <%= $dns_alt_names %>
 
+  <% if $puppetdb_database_host =~ String[1] { -%>
   # PuppetDB Database configuration
   # This parameter does not change the "role" of the master; the
   # master still considers itself a database host. It will reconfigure
   # PuppetDB though to use a different PostgreSQL host for that database.
   "puppet_enterprise::profile::puppetdb::database_host": "<%= $puppetdb_database_host %>"
+  <% } -%>
 
   # Code Manager
   # An initial configuration for code manager is required in order to fully
