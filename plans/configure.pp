@@ -31,7 +31,7 @@ plan pe_xl::configure (
   $ha = $ha_hosts.size ? {
     0       => false,
     2       => true,
-    default => fail("Must specify either both or neither of master_replica_host, puppetdb_database_replica_host"),
+    default => fail('Must specify either both or neither of master_replica_host, puppetdb_database_replica_host'),
   }
 
   # Allow for the configure task to be run local to the master.

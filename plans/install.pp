@@ -39,7 +39,7 @@ plan pe_xl::install (
   $ha = $ha_hosts.size ? {
     0       => false,
     2       => true,
-    default => fail("Must specify either both or neither of master_replica_host, puppetdb_database_replica_host"),
+    default => fail('Must specify either both or neither of master_replica_host, puppetdb_database_replica_host'),
   }
 
   $all_hosts = [
