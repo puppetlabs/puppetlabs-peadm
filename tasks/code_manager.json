@@ -1,13 +1,9 @@
 {
   "description": "Perform various code manager actions",
   "parameters": {
-    "environment": {
-      "type": "Optional[String]",
-      "description": "Which environment should be deployed"
-    },
     "action": {
-      "type": "Enum['deploy','commit','flush-environment-cache','file-sync commit']",
-      "description": "Which code manager action to perform"
+      "type": "String",
+      "description": "What code manager action to perform. For example: 'deploy production'; 'flush-environment-cache'; 'file-sync commit'"
     }
   },
   "input_method": "environment",
