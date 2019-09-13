@@ -24,7 +24,8 @@ plan pe_xl (
   Optional[String[1]]        $compiler_pool_address = undef,
   Optional[String[1]]        $deploy_environment = undef,
 
-  Optional[String[1]]        $stagingdir = undef,
+  Optional[String[1]]        $stagingdir   = undef,
+  Optional[Hash]             $pe_conf_data = undef
 ) {
 
   if $install {
@@ -41,6 +42,7 @@ plan pe_xl (
       dns_alt_names                  => $dns_alt_names,
 
       stagingdir                     => $stagingdir,
+      pe_conf_data                   => $pe_conf_data,
     )
   }
 

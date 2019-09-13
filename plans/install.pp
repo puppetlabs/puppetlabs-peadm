@@ -1,19 +1,23 @@
 # @summary Perform initial installation of Puppet Enterprise Extra Large
 #
+# @param pe_conf_data
+#   Config data to plane into pe.conf when generated on all hosts, this can be
+#   used for tuning data etc.
+#
 plan pe_xl::install (
   String[1]           $master_host,
   Array[String[1]]    $compiler_hosts = [ ],
 
-  Optional[String[1]] $puppetdb_database_host = undef,
-  Optional[String[1]] $master_replica_host = undef,
+  Optional[String[1]] $puppetdb_database_host         = undef,
+  Optional[String[1]] $master_replica_host            = undef,
   Optional[String[1]] $puppetdb_database_replica_host = undef,
 
   String[1]           $console_password,
-  String[1]           $version = '2018.1.3',
-  Hash                $r10k_sources = { },
-  Array[String[1]]    $dns_alt_names = [ ],
+  String[1]           $version          = '2018.1.3',
+  Array[String[1]]    $dns_alt_names    = [ ],
 
-  String[1]           $stagingdir = '/tmp',
+  String[1]           $stagingdir   = '/tmp',
+  Hash                $pe_conf_data = {},
 ) {
 
   # Define a number of host groupings for use later in the plan
@@ -102,23 +106,24 @@ plan pe_xl::install (
   }
 
   # Generate all the needed pe.conf files
-  $master_pe_conf = epp('pe_xl/master-pe.conf.epp',
-    console_password       => $console_password,
-    master_host            => $master_host,
-    puppetdb_database_host => $puppetdb_database_host,
-    dns_alt_names          => $dns_alt_names,
-    r10k_sources           => $r10k_sources,
-  )
+  $master_pe_conf = pe_xl::generate_pe_conf({
+    'console_admin_password'                               => $console_password,
+    'puppet_enterprise::puppet_master_host'                => $master_host,
+    'pe_install::puppet_master_dnsaltnames'                => $dns_alt_names,
+    'puppet_enterprise::profile::puppetdb::database_host'  => $puppetdb_database_host,
+  } + $pe_conf_data)
 
-  $puppetdb_database_pe_conf = epp('pe_xl/puppetdb_database-pe.conf.epp',
-    master_host            => $master_host,
-    puppetdb_database_host => $puppetdb_database_host,
-  )
+  $puppetdb_database_pe_conf = pe_xl::generate_pe_conf({
+    'console_admin_password'                => 'not used',
+    'puppet_enterprise::puppet_master_host' => $master_host,
+    'puppet_enterprise::database_host'      => $puppetdb_database_host,
+  } + $pe_conf_data)
 
-  $puppetdb_database_replica_pe_conf = epp('pe_xl/puppetdb_database-pe.conf.epp',
-    master_host            => $master_host,
-    puppetdb_database_host => $puppetdb_database_replica_host,
-  )
+  $puppetdb_database_replica_pe_conf = pe_xl::generate_pe_conf({
+    'console_admin_password'                => 'not used',
+    'puppet_enterprise::puppet_master_host' => $master_host,
+    'puppet_enterprise::database_host'      => $puppetdb_database_replica_host,
+  } + $pe_conf_data)
 
   # Upload the pe.conf files to the hosts that need them
   pe_xl::file_content_upload($master_pe_conf, '/tmp/pe.conf', $master_host)
@@ -196,7 +201,7 @@ plan pe_xl::install (
     owner   => 'pe-puppet',
     group   => 'pe-puppet',
     mode    => '0644',
-    content => "$autosign_conf",
+    content => $autosign_conf,
   )
 
   # Run the PE installer on the puppetdb database hosts
