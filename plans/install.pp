@@ -1,5 +1,14 @@
 # @summary Perform initial installation of Puppet Enterprise Extra Large
 #
+# @param r10k_remote
+#   The clone URL of the controlrepo to use. This just uses the basic config
+#   from the documentaion https://puppet.com/docs/pe/2019.0/code_mgr_config.html
+#
+# @param r10k_private_key
+#   The private key to use for r10k. If this is a local file it will be copied
+#   over to the masters at /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa
+#   If the file does not exist the value will simply be supplied to the masters
+#
 # @param pe_conf_data
 #   Config data to plane into pe.conf when generated on all hosts, this can be
 #   used for tuning data etc.
@@ -14,6 +23,8 @@ plan pe_xl::install (
 
   String[1]           $console_password,
   String[1]           $version          = '2018.1.3',
+  Optional[String]    $r10k_remote      = undef,
+  Optional[String]    $r10k_private_key = undef,
   Array[String[1]]    $dns_alt_names    = [ ],
 
   String[1]           $stagingdir   = '/tmp',
@@ -105,12 +116,34 @@ plan pe_xl::install (
     }
   }
 
+  # Check if the r10k_private_key is a local file
+  if ($r10k_private_key and find_file($r10k_private_key)) {
+    # If the file exists then the config value should be the default path
+    $_r10k_private_key  = '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa'
+
+    # Set a flag for managing the content later
+    $manage_private_key = true
+  } else {
+    # Just use the config as a config value
+    $_r10k_private_key  = $r10k_private_key
+    $manage_private_key = false
+  }
+
+  # Only auto configure code manager if we have given an r10k_remote
+  $_code_manager_auto_configure = $r10k_remote ? {
+    undef   => undef, # If this is undef then it wont be passed
+    default => true,
+  }
+
   # Generate all the needed pe.conf files
   $master_pe_conf = pe_xl::generate_pe_conf({
-    'console_admin_password'                               => $console_password,
-    'puppet_enterprise::puppet_master_host'                => $master_host,
-    'pe_install::puppet_master_dnsaltnames'                => $dns_alt_names,
-    'puppet_enterprise::profile::puppetdb::database_host'  => $puppetdb_database_host,
+    'console_admin_password'                                          => $console_password,
+    'puppet_enterprise::puppet_master_host'                           => $master_host,
+    'pe_install::puppet_master_dnsaltnames'                           => $dns_alt_names,
+    'puppet_enterprise::profile::puppetdb::database_host'             => $puppetdb_database_host,
+    'puppet_enterprise::profile::master::r10k_remote'                 => $r10k_remote,
+    'puppet_enterprise::profile::master::code_manager_auto_configure' => $_code_manager_auto_configure,
+    'puppet_enterprise::profile::master::r10k_private_key'            => $_r10k_private_key,
   } + $pe_conf_data)
 
   $puppetdb_database_pe_conf = pe_xl::generate_pe_conf({
@@ -192,6 +225,14 @@ plan pe_xl::install (
       shortcircuit_puppetdb => $shortcircuit_puppetdb,
     )
     out::message("Finished: task pe_xl::pe_install on ${master_host}")
+  }
+
+  if $manage_private_key {
+    # Create the SSH private key
+    run_task('pe_xl::mkdir_p_file', [$master_host, $ha_replica_target],
+      path    => $_r10k_private_key,      # The configured path
+      content => file($r10k_private_key), # The local file
+    )
   }
 
   # Configure autosigning for the puppetdb database hosts 'cause they need it

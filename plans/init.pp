@@ -9,20 +9,21 @@ plan pe_xl (
   Boolean $configure = false,
   Boolean $upgrade   = false,
 
-  Optional[String[1]]        $master_host = undef,
-  Optional[String[1]]        $puppetdb_database_host = undef,
-  Optional[String[1]]        $master_replica_host = undef,
+  Optional[String[1]]        $master_host                    = undef,
+  Optional[String[1]]        $puppetdb_database_host         = undef,
+  Optional[String[1]]        $master_replica_host            = undef,
   Optional[String[1]]        $puppetdb_database_replica_host = undef,
-  Optional[Array[String[1]]] $compiler_hosts = undef,
+  Optional[Array[String[1]]] $compiler_hosts                 = undef,
 
-  Optional[String[1]]        $console_password = undef,
-  Optional[String[1]]        $version = undef,
-  Optional[Hash]             $r10k_sources = undef,
-  Optional[Array[String[1]]] $dns_alt_names = undef,
+  Optional[String[1]]        $console_password    = undef,
+  Optional[String[1]]        $version             = undef,
+  Optional[String]           $r10k_remote         = undef,
+  Optional[String]           $r10k_private_key    = undef,
+  Optional[Array[String[1]]] $dns_alt_names       = undef,
   Optional[Boolean]          $executing_on_master = undef,
 
   Optional[String[1]]        $compiler_pool_address = undef,
-  Optional[String[1]]        $deploy_environment = undef,
+  Optional[String[1]]        $deploy_environment    = undef,
 
   Optional[String[1]]        $stagingdir   = undef,
   Optional[Hash]             $pe_conf_data = undef
@@ -38,7 +39,8 @@ plan pe_xl (
 
       console_password               => $console_password,
       version                        => $version,
-      r10k_sources                   => $r10k_sources,
+      r10k_remote                    => $r10k_remote,
+      r10k_private_key               => $r10k_private_key,
       dns_alt_names                  => $dns_alt_names,
 
       stagingdir                     => $stagingdir,
