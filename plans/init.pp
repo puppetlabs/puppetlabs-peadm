@@ -17,10 +17,12 @@ plan pe_xl (
 
   Optional[String[1]]        $console_password    = undef,
   Optional[String[1]]        $version             = undef,
-  Optional[String]           $r10k_remote         = undef,
-  Optional[String]           $r10k_private_key    = undef,
   Optional[Array[String[1]]] $dns_alt_names       = undef,
   Optional[Boolean]          $executing_on_master = undef,
+
+  Optional[String]           $r10k_remote              = undef,
+  Optional[String]           $r10k_private_key_file    = undef,
+  Optional[Pe_xl::Pem]       $r10k_private_key_content = undef,
 
   Optional[String[1]]        $compiler_pool_address = undef,
   Optional[String[1]]        $deploy_environment    = undef,
@@ -31,20 +33,28 @@ plan pe_xl (
 
   if $install {
     run_plan('pe_xl::install',
+      # Large
       master_host                    => $master_host,
-      puppetdb_database_host         => $puppetdb_database_host,
-      master_replica_host            => $master_replica_host,
-      puppetdb_database_replica_host => $puppetdb_database_replica_host,
       compiler_hosts                 => $compiler_hosts,
+      master_replica_host            => $master_replica_host,
 
+      # Extra Large
+      puppetdb_database_host         => $puppetdb_database_host,
+      puppetdb_database_replica_host => $puppetdb_database_replica_host,
+
+      # Common Configuration
       console_password               => $console_password,
       version                        => $version,
-      r10k_remote                    => $r10k_remote,
-      r10k_private_key               => $r10k_private_key,
       dns_alt_names                  => $dns_alt_names,
-
-      stagingdir                     => $stagingdir,
       pe_conf_data                   => $pe_conf_data,
+
+      # Code Manager
+      r10k_remote                    => $r10k_remote,
+      r10k_private_key_file          => $r10k_private_key_file,
+      r10k_private_key_content       => $r10k_private_key_content,
+
+      # Other
+      stagingdir                     => $stagingdir,
     )
   }
 
