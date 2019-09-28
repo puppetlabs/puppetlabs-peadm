@@ -1,12 +1,12 @@
 {
-  "name": "reidmv-pe_xl",
+  "name": "puppetlabs-pe_xl",
   "version": "0.3.0",
   "author": "Reid Vandewiele",
   "summary": "Bolt plans used to deploy an at-scale Puppet Enterprise architecture",
   "license": "Apache-2.0",
-  "source": "https://github.com/reidmv/reidmv-pe_xl",
-  "project_page": "https://github.com/reidmv/reidmv-pe_xl",
-  "issues_url": "https://github.com/reidmv/reidmv-pe_xl/issues",
+  "source": "https://github.com/puppetlabs/puppetlabs-pe_xl",
+  "project_page": "https://github.com/puppetlabs/puppetlabs-pe_xl",
+  "issues_url": "https://github.com/puppetlabs/puppetlabs-pe_xl/issues",
   "dependencies": [
     {
       "name": "puppetlabs/stdlib",
@@ -49,7 +49,7 @@
       "version_requirement": ">= 6.0.0 < 7.0.0"
     }
   ],
-  "pdk-version": "1.12.0",
-  "template-url": "https://github.com/puppetlabs/pdk-templates.git#1.12.0",
-  "template-ref": "1.12.0-0-g55d9ae2"
+  "pdk-version": "1.13.0",
+  "template-url": "https://github.com/puppetlabs/pdk-templates.git#1.13.0",
+  "template-ref": "1.13.0-0-g66e1443"
 }

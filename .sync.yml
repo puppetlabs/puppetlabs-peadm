@@ -1,0 +1,4 @@
+---
+Rakefile:
+  extras:
+    - 'PuppetSyntax.exclude_paths = ["plans/**/*.pp"]'
