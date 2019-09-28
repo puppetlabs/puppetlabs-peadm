@@ -84,4 +84,4 @@ EOM
   end
 end
 
-PuppetSyntax.exclude_paths = ["plans/**/*.pp"]
+PuppetSyntax.exclude_paths = ["plans/**/*.pp", "vendor/**/*"]

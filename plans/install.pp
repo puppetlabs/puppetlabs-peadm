@@ -49,7 +49,7 @@ plan pe_xl::install (
   # Ensure primary external database host for HA
   if $ha {
     if ! $puppetdb_database_host {
-      fail("Must specify puppetdb_database_host for HA environment")
+      fail('Must specify puppetdb_database_host for HA environment')
     }
   }
 
