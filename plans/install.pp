@@ -27,7 +27,7 @@ plan pe_xl::install (
   String[1]           $console_password,
   String[1]           $version       = '2019.1.1',
   Array[String[1]]    $dns_alt_names = [ ],
-  Hash                $pe_conf_data = { },
+  Hash                $pe_conf_data  = { },
 
   # Code Manager
   Optional[String]     $r10k_remote              = undef,
