@@ -1,19 +1,41 @@
 # @summary Perform initial installation of Puppet Enterprise Extra Large
 #
+# @param r10k_remote
+#   The clone URL of the controlrepo to use. This just uses the basic config
+#   from the documentaion https://puppet.com/docs/pe/2019.0/code_mgr_config.html
+#
+# @param r10k_private_key
+#   The private key to use for r10k. If this is a local file it will be copied
+#   over to the masters at /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa
+#   If the file does not exist the value will simply be supplied to the masters
+#
+# @param pe_conf_data
+#   Config data to plane into pe.conf when generated on all hosts, this can be
+#   used for tuning data etc.
+#
 plan pe_xl::install (
+  # Large
   String[1]           $master_host,
-  Array[String[1]]    $compiler_hosts = [ ],
-
-  Optional[String[1]] $puppetdb_database_host = undef,
+  Array[String[1]]    $compiler_hosts      = [ ],
   Optional[String[1]] $master_replica_host = undef,
+
+  # Extra Large
+  Optional[String[1]] $puppetdb_database_host         = undef,
   Optional[String[1]] $puppetdb_database_replica_host = undef,
 
+  # Common Configuration
   String[1]           $console_password,
-  String[1]           $version = '2018.1.3',
-  Hash                $r10k_sources = { },
+  String[1]           $version       = '2019.1.1',
   Array[String[1]]    $dns_alt_names = [ ],
+  Hash                $pe_conf_data = { },
 
-  String[1]           $stagingdir = '/tmp',
+  # Code Manager
+  Optional[String]     $r10k_remote              = undef,
+  Optional[String]     $r10k_private_key_file    = undef,
+  Optional[Pe_xl::Pem] $r10k_private_key_content = undef,
+
+  # Other
+  String[1]           $stagingdir   = '/tmp',
 ) {
 
   # Define a number of host groupings for use later in the plan
@@ -93,6 +115,21 @@ plan pe_xl::install (
 
   $dns_alt_names_csv = $dns_alt_names.reduce |$csv,$x| { "${csv},${x}" }
 
+  # Process user input for r10k private key (content or file) and set
+  # appropriate value in $r10k_private_key. The value of this variable should
+  # either be undef or else the key content to write.
+  $r10k_private_key = [
+    $r10k_private_key_file,
+    $r10k_private_key_content,
+  ].pe_xl::flatten_compact.size ? {
+    0 => undef, # no key data supplied
+    2 => fail('Must specify either one or neither of r10k_private_key_file and r10k_private_key_content; not both'),
+    1 => $r10k_private_key_file ? {
+      String => file($r10k_private_key_file), # key file path supplied, read data from file
+      undef  => $r10k_private_key_content,    # key content supplied directly, use as-is
+    },
+  }
+
   # Validate that the name given for each system is both a resolvable name AND
   # the configured hostname.
   run_task('pe_xl::hostname', $all_hosts).each |$result| {
@@ -102,23 +139,27 @@ plan pe_xl::install (
   }
 
   # Generate all the needed pe.conf files
-  $master_pe_conf = epp('pe_xl/master-pe.conf.epp',
-    console_password       => $console_password,
-    master_host            => $master_host,
-    puppetdb_database_host => $puppetdb_database_host,
-    dns_alt_names          => $dns_alt_names,
-    r10k_sources           => $r10k_sources,
-  )
+  $master_pe_conf = pe_xl::generate_pe_conf({
+    'console_admin_password'                                          => $console_password,
+    'puppet_enterprise::puppet_master_host'                           => $master_host,
+    'pe_install::puppet_master_dnsaltnames'                           => $dns_alt_names,
+    'puppet_enterprise::profile::puppetdb::database_host'             => $puppetdb_database_host,
+    'puppet_enterprise::profile::master::code_manager_auto_configure' => true,
+    'puppet_enterprise::profile::master::r10k_private_key'            => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
+    'puppet_enterprise::profile::master::r10k_remote'                 => $r10k_remote,
+  } + $pe_conf_data)
 
-  $puppetdb_database_pe_conf = epp('pe_xl/puppetdb_database-pe.conf.epp',
-    master_host            => $master_host,
-    puppetdb_database_host => $puppetdb_database_host,
-  )
+  $puppetdb_database_pe_conf = pe_xl::generate_pe_conf({
+    'console_admin_password'                => 'not used',
+    'puppet_enterprise::puppet_master_host' => $master_host,
+    'puppet_enterprise::database_host'      => $puppetdb_database_host,
+  } + $pe_conf_data)
 
-  $puppetdb_database_replica_pe_conf = epp('pe_xl/puppetdb_database-pe.conf.epp',
-    master_host            => $master_host,
-    puppetdb_database_host => $puppetdb_database_replica_host,
-  )
+  $puppetdb_database_replica_pe_conf = pe_xl::generate_pe_conf({
+    'console_admin_password'                => 'not used',
+    'puppet_enterprise::puppet_master_host' => $master_host,
+    'puppet_enterprise::database_host'      => $puppetdb_database_replica_host,
+  } + $pe_conf_data)
 
   # Upload the pe.conf files to the hosts that need them
   pe_xl::file_content_upload($master_pe_conf, '/tmp/pe.conf', $master_host)
@@ -189,6 +230,16 @@ plan pe_xl::install (
     out::message("Finished: task pe_xl::pe_install on ${master_host}")
   }
 
+  if $r10k_private_key {
+    run_task('pe_xl::mkdir_p_file', [$master_host, $ha_replica_target],
+      path    => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
+      owner   => 'pe-puppet',
+      group   => 'pe-puppet',
+      mode    => '0400',
+      content => $r10k_private_key,
+    )
+  }
+
   # Configure autosigning for the puppetdb database hosts 'cause they need it
   $autosign_conf = $database_hosts.reduce |$memo,$host| { "${host}\n${memo}" }
   run_task('pe_xl::mkdir_p_file', $master_host,
@@ -196,7 +247,7 @@ plan pe_xl::install (
     owner   => 'pe-puppet',
     group   => 'pe-puppet',
     mode    => '0644',
-    content => "$autosign_conf",
+    content => $autosign_conf,
   )
 
   # Run the PE installer on the puppetdb database hosts
