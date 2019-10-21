@@ -24,7 +24,7 @@ plan pe_xl::provision (
   Optional[Boolean]          $executing_on_master = undef,
 ) {
 
-  run_plan('pe_xl::install',
+  run_plan('pe_xl::unit::install',
     # Large
     master_host                    => $master_host,
     compiler_hosts                 => $compiler_hosts,
@@ -49,7 +49,7 @@ plan pe_xl::provision (
     stagingdir                     => $stagingdir,
   )
 
-  run_plan('pe_xl::configure',
+  run_plan('pe_xl::unit::configure',
     # Large
     master_host                    => $master_host,
     compiler_hosts                 => $compiler_hosts,

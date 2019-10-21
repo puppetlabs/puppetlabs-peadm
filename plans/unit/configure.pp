@@ -1,6 +1,6 @@
 # @summary Configure first-time classification and HA setup
 #
-plan pe_xl::configure (
+plan pe_xl::unit::configure (
   String[1]           $master_host,
   Array[String[1]]    $compiler_hosts = [ ],
 

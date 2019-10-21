@@ -13,7 +13,7 @@
 #   Config data to plane into pe.conf when generated on all hosts, this can be
 #   used for tuning data etc.
 #
-plan pe_xl::install (
+plan pe_xl::unit::install (
   # Large
   String[1]           $master_host,
   Array[String[1]]    $compiler_hosts      = [ ],
