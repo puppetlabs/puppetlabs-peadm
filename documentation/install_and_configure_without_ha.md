@@ -14,7 +14,7 @@ The install, configure, and upgrade plans covered in the [basic_usage.md](basic_
 5. Create a parameters file. An example is included below. Note the omission of the `master_replica_host` and `puppetdb_database_replica_host` parameters.
 6. Run the pe\_xl plan with the inputs created. Example:
 ```
-        bolt plan run pe_xl \
+        bolt plan run pe_xl::provision \
           --inventory nodes.yaml \
           --modulepath ~/modules \
           --params @params.json 
@@ -45,10 +45,6 @@ groups:
 
 ```json
 {
-  "install": true,
-  "configure": true,
-  "upgrade": false,
-
   "master_host": "pe-xl-core-0.lab1.puppet.vm",
   "puppetdb_database_host": "pe-xl-core-1.lab1.puppet.vm",
   "compiler_hosts": [
@@ -59,6 +55,6 @@ groups:
   "console_password": "puppetlabs",
   "dns_alt_names": [ "puppet", "puppet.lab1.puppet.vm" ],
   "compiler_pool_address": "puppet.lab1.puppet.vm",
-  "version": "2019.1.0"
+  "version": "2019.1.1"
 }
 ```

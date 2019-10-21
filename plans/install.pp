@@ -316,18 +316,15 @@ plan pe_xl::install (
     ],
   )
 
-  # Do a Puppet agent run to ensure certificate requests have been submitted
-  # These runs will "fail", and that's expected.
-  without_default_logging() || {
-    out::message("Starting: task pe_xl::puppet_runonce on ${agent_installer_hosts}")
-    run_task('pe_xl::puppet_runonce', $agent_installer_hosts, {_catch_errors => true})
-    out::message("Finished: task pe_xl::puppet_runonce on ${agent_installer_hosts}")
-  }
+  # Ensure certificate requests have been submitted
+  run_command(@(HEREDOC), $agent_installer_hosts)
+    /opt/puppetlabs/bin/puppet ssl submit_request
+    | HEREDOC
 
-  # Ensure some basic configuration on the master needed at install time.
-  if ($version.versioncmp('2019.0') < 0) {
-    apply($master_host) { include pe_xl::setup::master }.pe_xl::print_apply_result
-  }
+  # TODO: come up with an intelligent way to validate that the expected CSRs
+  # have been submitted and are available for signing, prior to signing them.
+  # For now, waiting a short period of time is necessary to avoid a small race.
+  ctrl::sleep(15)
 
   run_command(inline_epp(@(HEREDOC)), $master_host)
     /opt/puppetlabs/bin/puppetserver ca sign --certname <%= $agent_installer_hosts.join(',') -%>

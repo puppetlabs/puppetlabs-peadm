@@ -28,7 +28,7 @@ The reference implementation uses trusted facts to put nodes in the right groups
 5. Create a parameters file. Example included below. Note at the top of the file are arguments which dictate which plans should be run, such as install+configure.
 6. Run the pe\_xl plan with the inputs created. Example:
 
-        bolt plan run pe_xl \
+        bolt plan run pe_xl::provision \
           --inventory nodes.yaml \
           --modulepath ~/modules \
           --params @params.json 
@@ -59,10 +59,6 @@ Example params.json Bolt parameters file:
 
 ```json
 {
-  "install": true,
-  "configure": true,
-  "upgrade": false,
-
   "master_host": "pe-xl-core-0.lab1.puppet.vm",
   "puppetdb_database_host": "pe-xl-core-1.lab1.puppet.vm",
   "master_replica_host": "pe-xl-core-2.lab1.puppet.vm",
@@ -75,6 +71,6 @@ Example params.json Bolt parameters file:
   "console_password": "puppetlabs",
   "dns_alt_names": [ "puppet", "puppet.lab1.puppet.vm" ],
   "compiler_pool_address": "puppet.lab1.puppet.vm",
-  "version": "2018.1.4"
+  "version": "2019.1.1"
 }
 ```
