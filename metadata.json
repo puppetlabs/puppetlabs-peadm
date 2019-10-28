@@ -1,6 +1,6 @@
 {
   "name": "puppetlabs-pe_xl",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "author": "Reid Vandewiele",
   "summary": "Bolt plans used to deploy an at-scale Puppet Enterprise architecture",
   "license": "Apache-2.0",
@@ -46,7 +46,7 @@
   "requirements": [
     {
       "name": "puppet",
-      "version_requirement": ">= 6.0.0 < 7.0.0"
+      "version_requirement": ">= 6.0.2 < 7.0.0"
     }
   ],
   "pdk-version": "1.13.0",

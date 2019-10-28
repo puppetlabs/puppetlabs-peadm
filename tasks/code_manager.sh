@@ -70,7 +70,7 @@ function main()
 function deploy()
 {
   [ "$#" = 1 ] || { echo "specify an environment to deploy"; exit 1; }
-  cm_r10k deploy environment "$1" && commit
+  cm_r10k deploy environment "$1" -p && commit
 }
 
 function commit()
