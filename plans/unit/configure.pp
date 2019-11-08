@@ -1,56 +1,41 @@
 # @summary Configure first-time classification and HA setup
 #
 plan pe_xl::unit::configure (
-  String[1]           $master_host,
-  Array[String[1]]    $compiler_hosts = [ ],
+  # Large
+  Pe_xl::SingleTargetSpec           $master_host,
+  Optional[TargetSpec]              $compiler_hosts = undef,
+  Optional[Pe_xl::SingleTargetSpec] $master_replica_host = undef,
 
-  Optional[String[1]] $puppetdb_database_host = undef,
-  Optional[String[1]] $master_replica_host = undef,
-  Optional[String[1]] $puppetdb_database_replica_host = undef,
+  # Extra Large
+  Optional[Pe_xl::SingleTargetSpec] $puppetdb_database_host         = undef,
+  Optional[Pe_xl::SingleTargetSpec] $puppetdb_database_replica_host = undef,
 
-  # This parameter exists primarily to enable the use case of running
-  # pe_xl::configure over the PCP transport. An orchestrator restart happens
-  # during provision replica. Running `bolt plan run` directly on the master
-  # and using local transport for that node will let the plan to run to
-  # completion without failing due to being disconnected from the orchestrator.
-  Boolean             $executing_on_master = false,
+  # Common Configuration
+  String           $compiler_pool_address = $master_host,
+  Optional[String] $token_file = undef,
+  Optional[String] $deploy_environment = undef,
 
-  String[1]           $compiler_pool_address = $master_host,
-  Optional[String[1]] $token_file = undef,
-  Optional[String[1]] $deploy_environment = undef,
-
-  String[1]           $stagingdir = '/tmp',
+  # Other
+  String           $stagingdir = '/tmp',
 ) {
+  # Convert inputs into targets.
+  $master_target                    = pe_xl::get_targets($master_host, 1)
+  $master_replica_target            = pe_xl::get_targets($master_replica_host, 1)
+  $puppetdb_database_replica_target = pe_xl::get_targets($puppetdb_database_replica_host, 1)
+  $compiler_targets                 = pe_xl::get_targets($compiler_hosts)
+  $puppetdb_database_target         = $puppetdb_database_host ? {
+    undef   => $master_target,
+    default => pe_xl::get_targets($puppetdb_database_host, 1)
+  }
 
-  $ha_hosts = [
+  # Ensure input valid for a supported architecture
+  $arch = pe_xl::validate_architecture(
+    $master_host,
     $master_replica_host,
+    $puppetdb_database_host,
     $puppetdb_database_replica_host,
-  ].pe_xl::flatten_compact()
-
-  # Ensure valid input for HA
-  $ha = $ha_hosts.size ? {
-    0       => false,
-    2       => true,
-    default => fail('Must specify either both or neither of master_replica_host, puppetdb_database_replica_host'),
-  }
-
-  # Ensure primary external database host for HA
-  if $ha {
-    if ! $puppetdb_database_host {
-      fail('Must specify puppetdb_database_host for HA environment')
-    }
-  }
-
-  # Allow for the configure task to be run local to the master.
-  $master_target = $executing_on_master ? {
-    true  => "local://${master_host}",
-    false => $master_host,
-  }
-
-  $puppetdb_database_target = $puppetdb_database_host ? {
-    undef   => $master_host,
-    default => $puppetdb_database_host,
-  }
+    $compiler_hosts,
+  )
 
   # Retrieve and deploy Puppet modules from the Forge so that they can be used
   # for ensuring some configuration (node groups)
@@ -68,26 +53,29 @@ plan pe_xl::unit::configure (
   # Set up the console node groups to configure the various hosts in their
   # roles
   run_task('pe_xl::configure_node_groups', $master_target,
-    master_host                    => $master_host,
-    master_replica_host            => $master_replica_host,
-    puppetdb_database_host         => $puppetdb_database_target,
-    puppetdb_database_replica_host => $puppetdb_database_replica_host,
+    master_host                    => $master_target.pe_xl::target_host(),
+    master_replica_host            => $master_replica_target.pe_xl::target_host(),
+    puppetdb_database_host         => $puppetdb_database_target.pe_xl::target_host(),
+    puppetdb_database_replica_host => $puppetdb_database_replica_target.pe_xl::target_host(),
     compiler_pool_address          => $compiler_pool_address,
   )
 
   # Run Puppet in no-op on the compilers so that their status in PuppetDB
   # is updated and they can be identified by the puppet_enterprise module as
   # CMs
-  run_task('pe_xl::puppet_runonce', [$compiler_hosts, $master_replica_host].pe_xl::flatten_compact,
+  run_task('pe_xl::puppet_runonce', pe_xl::flatten_compact([
+    $compiler_targets,
+    $master_replica_target,
+  ]),
     noop => true,
   )
 
   # Run Puppet on the PuppetDB Database hosts to update their auth
   # configuration to allow the compilers to connect
-  run_task('pe_xl::puppet_runonce', [
+  run_task('pe_xl::puppet_runonce', pe_xl::flatten_compact([
     $puppetdb_database_target,
-    $puppetdb_database_replica_host,
-  ].pe_xl::flatten_compact)
+    $puppetdb_database_replica_target,
+  ]))
 
   # Run Puppet on the master to ensure all services configured and
   # running in prep for provisioning the replica. This is done separately so
@@ -95,28 +83,28 @@ plan pe_xl::unit::configure (
   # other nodes to fail.
   run_task('pe_xl::puppet_runonce', $master_target)
 
-  if $ha {
+  if $arch['high-availability'] {
     # Run the PE Replica Provision
     run_task('pe_xl::provision_replica', $master_target,
-      master_replica         => $master_replica_host,
-      token_file             => $token_file,
+      master_replica => $master_replica_target.pe_xl::target_host(),
+      token_file     => $token_file,
     )
 
     # Run the PE Replica Enable
     run_task('pe_xl::enable_replica', $master_target,
-      master_replica         => $master_replica_host,
-      token_file             => $token_file,
+      master_replica => $master_replica_target.pe_xl::target_host(),
+      token_file     => $token_file,
     )
   }
 
   # Run Puppet everywhere to pick up last remaining config tweaks
-  run_task('pe_xl::puppet_runonce', [
+  run_task('pe_xl::puppet_runonce', pe_xl::flatten_compact([
     $master_target,
     $puppetdb_database_target,
-    $compiler_hosts,
-    $master_replica_host,
-    $puppetdb_database_replica_host,
-  ].pe_xl::flatten_compact)
+    $compiler_targets,
+    $master_replica_target,
+    $puppetdb_database_replica_target,
+  ]))
 
   # Deploy an environment if a deploy environment is specified
   if $deploy_environment {
@@ -125,5 +113,5 @@ plan pe_xl::unit::configure (
     )
   }
 
-  return('Configuration of Puppet Enterprise with replica succeeded.')
+  return("Configuration of Puppet Enterprise ${arch['architecture']} succeeded.")
 }

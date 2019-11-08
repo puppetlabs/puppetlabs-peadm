@@ -3,32 +3,41 @@
 #   used by its sub-plans, and invokes them in order.
 #
 plan pe_xl::provision (
-  String[1]                  $master_host,
-  Optional[String[1]]        $puppetdb_database_host         = undef,
-  Optional[String[1]]        $master_replica_host            = undef,
-  Optional[String[1]]        $puppetdb_database_replica_host = undef,
-  Optional[Array[String[1]]] $compiler_hosts                 = undef,
+  # Standard
+  Pe_xl::SingleTargetSpec           $master_host,
+  Optional[Pe_xl::SingleTargetSpec] $master_replica_host = undef,
 
-  String[1]                  $version,
-  String[1]                  $console_password,
-  Optional[Array[String[1]]] $dns_alt_names         = undef,
-  Optional[String[1]]        $compiler_pool_address = undef,
-  Optional[Hash]             $pe_conf_data          = undef,
+  # Large
+  Optional[TargetSpec]              $compiler_hosts = undef,
 
-  Optional[String]           $r10k_remote              = undef,
-  Optional[String]           $r10k_private_key_file    = undef,
-  Optional[Pe_xl::Pem]       $r10k_private_key_content = undef,
-  Optional[String[1]]        $deploy_environment       = undef,
+  # Extra Large
+  Optional[Pe_xl::SingleTargetSpec] $puppetdb_database_host         = undef,
+  Optional[Pe_xl::SingleTargetSpec] $puppetdb_database_replica_host = undef,
 
-  Optional[String[1]]        $stagingdir          = undef,
-  Optional[Boolean]          $executing_on_master = undef,
+  # Common Configuration
+  String                            $console_password,
+  String                            $version               = '2019.1.1',
+  Optional[Array[String]]           $dns_alt_names         = undef,
+  Optional[String]                  $compiler_pool_address = undef,
+  Optional[Hash]                    $pe_conf_data          = { },
+
+  # Code Manager
+  Optional[String]                  $r10k_remote              = undef,
+  Optional[String]                  $r10k_private_key_file    = undef,
+  Optional[Pe_xl::Pem]              $r10k_private_key_content = undef,
+  Optional[String]                  $deploy_environment       = undef,
+
+  # Other
+  Optional[String]                  $stagingdir = undef,
 ) {
 
-  run_plan('pe_xl::unit::install',
-    # Large
+  $install_result = run_plan('pe_xl::unit::install',
+    # Standard
     master_host                    => $master_host,
-    compiler_hosts                 => $compiler_hosts,
     master_replica_host            => $master_replica_host,
+
+    # Large
+    compiler_hosts                 => $compiler_hosts,
 
     # Extra Large
     puppetdb_database_host         => $puppetdb_database_host,
@@ -49,11 +58,13 @@ plan pe_xl::provision (
     stagingdir                     => $stagingdir,
   )
 
-  run_plan('pe_xl::unit::configure',
-    # Large
+  $configure_result = run_plan('pe_xl::unit::configure',
+    # Standard
     master_host                    => $master_host,
-    compiler_hosts                 => $compiler_hosts,
     master_replica_host            => $master_replica_host,
+
+    # Large
+    compiler_hosts                 => $compiler_hosts,
 
     # Extra Large
     puppetdb_database_host         => $puppetdb_database_host,
@@ -65,9 +76,8 @@ plan pe_xl::provision (
 
     # Other
     stagingdir                     => $stagingdir,
-    executing_on_master            => $executing_on_master,
   )
 
   # Return a string banner reporting on what was done
-  return('Provisioned Puppet Enterprise Extra Large cluster')
+  return([$install_result, $configure_result])
 }
