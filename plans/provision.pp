@@ -8,7 +8,7 @@ plan pe_xl::provision (
   Optional[Pe_xl::SingleTargetSpec] $master_replica_host = undef,
 
   # Large
-  Optional[TargetSpec]              $compiler_hosts      = undef,
+  Optional[TargetSpec]              $compiler_hosts = undef,
 
   # Extra Large
   Optional[Pe_xl::SingleTargetSpec] $puppetdb_database_host         = undef,
@@ -22,14 +22,13 @@ plan pe_xl::provision (
   Optional[Hash]                    $pe_conf_data          = { },
 
   # Code Manager
-  Optional[String]           $r10k_remote              = undef,
-  Optional[String]           $r10k_private_key_file    = undef,
-  Optional[Pe_xl::Pem]       $r10k_private_key_content = undef,
-  Optional[String]           $deploy_environment       = undef,
+  Optional[String]                  $r10k_remote              = undef,
+  Optional[String]                  $r10k_private_key_file    = undef,
+  Optional[Pe_xl::Pem]              $r10k_private_key_content = undef,
+  Optional[String]                  $deploy_environment       = undef,
 
   # Other
-  Optional[String]           $stagingdir          = undef,
-  Optional[Boolean]          $executing_on_master = undef,
+  Optional[String]                  $stagingdir = undef,
 ) {
 
   $install_result = run_plan('pe_xl::unit::install',
@@ -77,7 +76,6 @@ plan pe_xl::provision (
 
     # Other
     stagingdir                     => $stagingdir,
-    executing_on_master            => $executing_on_master,
   )
 
   # Return a string banner reporting on what was done

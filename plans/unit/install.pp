@@ -117,9 +117,9 @@ plan pe_xl::unit::install (
   # Generate all the needed pe.conf files
   $master_pe_conf = pe_xl::generate_pe_conf({
     'console_admin_password'                                          => $console_password,
-    'puppet_enterprise::puppet_master_host'                           => $master_target[0].host,
+    'puppet_enterprise::puppet_master_host'                           => $master_target.pe_xl::target_host(),
     'pe_install::puppet_master_dnsaltnames'                           => $dns_alt_names,
-    'puppet_enterprise::profile::puppetdb::database_host'             => $puppetdb_database_target[0].host,
+    'puppet_enterprise::profile::puppetdb::database_host'             => $puppetdb_database_target.pe_xl::target_host(),
     'puppet_enterprise::profile::master::code_manager_auto_configure' => true,
     'puppet_enterprise::profile::master::r10k_private_key'            => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
     'puppet_enterprise::profile::master::r10k_remote'                 => $r10k_remote,
@@ -127,14 +127,14 @@ plan pe_xl::unit::install (
 
   $puppetdb_database_pe_conf = pe_xl::generate_pe_conf({
     'console_admin_password'                => 'not used',
-    'puppet_enterprise::puppet_master_host' => $master_target[0].host,
-    'puppet_enterprise::database_host'      => $puppetdb_database_target[0].host,
+    'puppet_enterprise::puppet_master_host' => $master_target.pe_xl::target_host(),
+    'puppet_enterprise::database_host'      => $puppetdb_database_target.pe_xl::target_host(),
   } + $pe_conf_data)
 
   $puppetdb_database_replica_pe_conf = pe_xl::generate_pe_conf({
     'console_admin_password'                => 'not used',
-    'puppet_enterprise::puppet_master_host' => $master_target[0].host,
-    'puppet_enterprise::database_host'      => $puppetdb_database_replica_target[0].host,
+    'puppet_enterprise::puppet_master_host' => $master_target.pe_xl::target_host(),
+    'puppet_enterprise::database_host'      => $puppetdb_database_replica_target.pe_xl::target_host(),
   } + $pe_conf_data)
 
   # Upload the pe.conf files to the hosts that need them
@@ -154,7 +154,7 @@ plan pe_xl::unit::install (
   )
 
   # Create csr_attributes.yaml files for the nodes that need them
-  run_task('pe_xl::mkdir_p_file', $master_target[0].host,
+  run_task('pe_xl::mkdir_p_file', $master_target,
     path    => '/etc/puppetlabs/puppet/csr_attributes.yaml',
     content => @(HEREDOC),
       ---
@@ -213,7 +213,7 @@ plan pe_xl::unit::install (
   }
 
   # Configure autosigning for the puppetdb database hosts 'cause they need it
-  $autosign_conf = $database_targets.reduce |$memo,$target| { "${target.host}\n${memo}" }
+  $autosign_conf = $database_targets.reduce('') |$memo,$target| { "${target.host}\n${memo}" }
   run_task('pe_xl::mkdir_p_file', $master_target,
     path    => '/etc/puppetlabs/puppet/autosign.conf',
     owner   => 'pe-puppet',
@@ -256,7 +256,7 @@ plan pe_xl::unit::install (
 
   # Deploy the PE agent to all remaining hosts
   run_task('pe_xl::agent_install', $master_replica_target,
-    server        => $master_target[0].host,
+    server        => $master_target.pe_xl::target_host(),
     install_flags => [
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
@@ -267,7 +267,7 @@ plan pe_xl::unit::install (
   )
 
   run_task('pe_xl::agent_install', $compiler_a_targets,
-    server        => $master_target[0].host,
+    server        => $master_target.pe_xl::target_host(),
     install_flags => [
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
@@ -278,7 +278,7 @@ plan pe_xl::unit::install (
   )
 
   run_task('pe_xl::agent_install', $compiler_b_targets,
-    server        => $master_target[0].host,
+    server        => $master_target.pe_xl::target_host(),
     install_flags => [
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
