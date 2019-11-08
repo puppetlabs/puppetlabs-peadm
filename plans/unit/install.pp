@@ -14,10 +14,12 @@
 #   used for tuning data etc.
 #
 plan pe_xl::unit::install (
-  # Large
+  # Standard
   Pe_xl::SingleTargetSpec           $master_host,
-  Optional[TargetSpec]              $compiler_hosts      = undef,
   Optional[Pe_xl::SingleTargetSpec] $master_replica_host = undef,
+
+  # Large
+  Optional[TargetSpec]              $compiler_hosts      = undef,
 
   # Extra Large
   Optional[Pe_xl::SingleTargetSpec] $puppetdb_database_host         = undef,
@@ -44,17 +46,14 @@ plan pe_xl::unit::install (
   $puppetdb_database_replica_target = pe_xl::get_targets($puppetdb_database_replica_host, 1)
   $compiler_targets                 = pe_xl::get_targets($compiler_hosts)
 
-  # Ensure valid input for HA
-  $ha = pe_xl::flatten_compact([$master_replica_target, $puppetdb_database_replica_target]).size ? {
-    0       => false,
-    2       => true,
-    default => fail('Must specify either both or neither of master_replica_host, puppetdb_database_replica_host'),
-  }
-
-  # Ensure primary external database host for HA
-  if ($ha and ($puppetdb_database_target.size == 0)) {
-    fail('Must specify puppetdb_database_host for HA environment')
-  }
+  # Ensure input valid for a supported architecture
+  $arch = pe_xl::validate_architecture(
+    $master_host,
+    $master_replica_host,
+    $puppetdb_database_host,
+    $puppetdb_database_replica_host,
+    $compiler_hosts,
+  )
 
   $all_targets = pe_xl::flatten_compact([
     $master_target,
@@ -81,7 +80,7 @@ plan pe_xl::unit::install (
   ])
 
   # Clusters A and B are used to divide PuppetDB availability for compilers
-  if $ha {
+  if $arch['high-availability'] {
     $compiler_a_targets = $compiler_targets.filter |$index,$target| { $index % 2 == 0 }
     $compiler_b_targets = $compiler_targets.filter |$index,$target| { $index % 2 != 0 }
   }
@@ -307,5 +306,5 @@ plan pe_xl::unit::install (
   run_task('pe_xl::puppet_runonce', $master_target)
   run_task('pe_xl::puppet_runonce', $all_targets - $master_target)
 
-  return('Installation succeeded')
+  return("Installation of Puppet Enterprise ${arch['architecture']} succeeded.")
 }
