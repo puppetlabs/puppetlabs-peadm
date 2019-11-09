@@ -37,28 +37,29 @@ plan pe_xl::unit::configure (
     $compiler_hosts,
   )
 
-  # Retrieve and deploy Puppet modules from the Forge so that they can be used
-  # for ensuring some configuration (node groups)
-  [ ['WhatsARanjit-node_manager', '0.7.1'],
-    ['puppetlabs-stdlib',         '5.0.0'],
-  ].each |$tuple| {
-    run_plan('pe_xl::util::install_module',
-      nodes      => $master_target,
-      module     => $tuple[0],
-      version    => $tuple[1],
-      stagingdir => $stagingdir,
-    )
-  }
-
   # Set up the console node groups to configure the various hosts in their
   # roles
-  run_task('pe_xl::configure_node_groups', $master_target,
-    master_host                    => $master_target.pe_xl::target_host(),
-    master_replica_host            => $master_replica_target.pe_xl::target_host(),
-    puppetdb_database_host         => $puppetdb_database_target.pe_xl::target_host(),
-    puppetdb_database_replica_host => $puppetdb_database_replica_target.pe_xl::target_host(),
-    compiler_pool_address          => $compiler_pool_address,
-  )
+  apply($master_target) {
+    # Necessary to give the sandboxed Puppet executor the configuration
+    # necessary to connect to the classifier`
+    file { 'node_manager.yaml':
+      ensure   => file,
+      mode     => '0644',
+      path     => Deferred('pe_xl::node_manager_yaml_location'),
+      content  => epp('pe_xl/node_manager.yaml.epp', {
+        server => $servername,
+      }),
+    }
+
+    class { 'pe_xl::setup::node_manager':
+      master_host                    => $master_target.pe_xl::target_host(),
+      master_replica_host            => $master_replica_target.pe_xl::target_host(),
+      puppetdb_database_host         => $puppetdb_database_target.pe_xl::target_host(),
+      puppetdb_database_replica_host => $puppetdb_database_replica_target.pe_xl::target_host(),
+      compiler_pool_address          => $compiler_pool_address,
+      require                        => File['node_manager.yaml'],
+    }
+  }
 
   # Run Puppet in no-op on the compilers so that their status in PuppetDB
   # is updated and they can be identified by the puppet_enterprise module as

@@ -61,18 +61,21 @@ class pe_xl::setup::node_manager (
     variables => { 'pe_master' => true },
   }
 
-  # This class has to be included here because puppet_enterprise is declared
-  # in the console with parameters. It is therefore not possible to include
-  # puppet_enterprise::profile::database in code without causing a conflict.
-  node_group { 'PE Database':
-    ensure               => present,
-    parent               => 'PE Infrastructure',
-    environment          => 'production',
-    override_environment => false,
-    rule                 => ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::puppetdb_database']],
-    classes              => {
-      'puppet_enterprise::profile::database' => { },
-    },
+  # Create the database group if a database host is external
+  if ($puppetdb_database_host != $master_host) {
+    # This class has to be included here because puppet_enterprise is declared
+    # in the console with parameters. It is therefore not possible to include
+    # puppet_enterprise::profile::database in code without causing a conflict.
+    node_group { 'PE Database':
+      ensure               => present,
+      parent               => 'PE Infrastructure',
+      environment          => 'production',
+      override_environment => false,
+      rule                 => ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'pe_xl::puppetdb_database']],
+      classes              => {
+        'puppet_enterprise::profile::database' => { },
+      },
+    }
   }
 
   # Create data-only groups to store PuppetDB PostgreSQL database configuration
