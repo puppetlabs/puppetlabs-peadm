@@ -28,7 +28,6 @@ group :development do
   gem "puppet-module-posix-dev-r#{minor_version}", '~> 0.3',     require: false, platforms: [:ruby]
   gem "puppet-module-win-default-r#{minor_version}", '~> 0.3',   require: false, platforms: [:mswin, :mingw, :x64_mingw]
   gem "puppet-module-win-dev-r#{minor_version}", '~> 0.3',       require: false, platforms: [:mswin, :mingw, :x64_mingw]
-  gem "puppetfile-updater", '~> 0.5.0',                          require: false
   gem "generate-puppetfile", '~> 1.0',                           require: false
 end
 
