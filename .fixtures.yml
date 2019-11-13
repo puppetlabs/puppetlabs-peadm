@@ -1,0 +1,14 @@
+fixtures:
+  symlinks:
+    puppetlabs-pe_xl: "#{source_dir}"
+  forge_modules:
+    apply_helpers:
+      repo: "puppetlabs/apply_helpers"
+      ref: "0.1.0"
+    bolt_shim:
+      repo: "puppetlabs/bolt_shim"
+      ref: "0.3.0"
+    stdlib:
+      repo: "puppetlabs/stdlib"
+      ref: "5.2.0"
+

@@ -5,7 +5,5 @@ Rakefile:
 Gemfile:
   optional:
     ':development':
-      - gem: 'puppetfile-updater'
-        version: '~> 0.5.0'
       - gem: 'generate-puppetfile'
         version: '~> 1.0'

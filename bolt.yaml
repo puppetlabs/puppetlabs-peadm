@@ -1,0 +1,15 @@
+modulepath: "./bolt-modules/:~/.puppetlabs/bolt-code/modules:~/.puppetlabs/bolt-code/site-modules"
+#inventoryfile: "./inventory.yaml"
+concurrency: 10
+format: human
+winrm:
+  user: Administrator
+  # password: 
+  ssl-verify: false
+  # tmpdir:
+  ssl: false
+  # realm:
+  # port: 5986
+  ## if ssl: false
+  port: 5985 
+   
