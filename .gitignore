@@ -24,10 +24,5 @@
 .DS_Store
 .project
 .envrc
-#bolt project ignore for public modules
 /inventory.yaml
-#bolt project ignores
-/bolt-modules
-.resource_types
-#local env item
 .ruby-version

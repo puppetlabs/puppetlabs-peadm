@@ -7,3 +7,7 @@ Gemfile:
     ':development':
       - gem: 'generate-puppetfile'
         version: '~> 1.0'
+.gitignore:
+  paths:
+#local env item
+    - '.ruby-version'

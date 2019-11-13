@@ -1,4 +1,4 @@
-modulepath: "./bolt-modules/:~/.puppetlabs/bolt-code/modules:~/.puppetlabs/bolt-code/site-modules"
+#modulepath: "./bolt-modules/:~/.puppetlabs/bolt-code/modules:~/.puppetlabs/bolt-code/site-modules"
 #inventoryfile: "./inventory.yaml"
 concurrency: 10
 format: human
