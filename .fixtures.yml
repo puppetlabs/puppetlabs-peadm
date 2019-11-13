@@ -11,6 +11,4 @@ fixtures:
     stdlib:
       repo: "puppetlabs/stdlib"
       ref: "5.2.0"
-    pe_xl:
-      repo: "reidmv/pe_xl"
-      ref: "0.2.3"
+
