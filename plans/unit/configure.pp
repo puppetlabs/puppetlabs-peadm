@@ -39,6 +39,18 @@ plan pe_xl::unit::configure (
 
   # Set up the console node groups to configure the various hosts in their
   # roles
+
+  # Pending resolution of Bolt GH-1244, Target objects and their methods are
+  # not accessible inside apply() blocks. Work around the limitation for now
+  # by using string variables calculated outside the apply block. The
+  # commented-out values should be used once GH-1244 is resolved.
+
+  # WORKAROUND: GH-1244
+  $master_host_string = $master_target.pe_xl::target_host()
+  $master_replica_host_string = $master_replica_target.pe_xl::target_host()
+  $puppetdb_database_host_string = $puppetdb_database_target.pe_xl::target_host()
+  $puppetdb_database_replica_host_string = $puppetdb_database_replica_target.pe_xl::target_host()
+
   apply($master_target) {
     # Necessary to give the sandboxed Puppet executor the configuration
     # necessary to connect to the classifier`
@@ -47,15 +59,16 @@ plan pe_xl::unit::configure (
       mode     => '0644',
       path     => Deferred('pe_xl::node_manager_yaml_location'),
       content  => epp('pe_xl/node_manager.yaml.epp', {
-        server => $servername,
+        server => $master_host_string,
       }),
     }
 
     class { 'pe_xl::setup::node_manager':
-      master_host                    => $master_target.pe_xl::target_host(),
-      master_replica_host            => $master_replica_target.pe_xl::target_host(),
-      puppetdb_database_host         => $puppetdb_database_target.pe_xl::target_host(),
-      puppetdb_database_replica_host => $puppetdb_database_replica_target.pe_xl::target_host(),
+      # WORKAROUND: GH-1244
+      master_host                    => $master_host_string, # $master_target.pe_xl::target_host(),
+      master_replica_host            => $master_replica_host_string, # $master_replica_target.pe_xl::target_host(),
+      puppetdb_database_host         => $puppetdb_database_host_string, # $puppetdb_database_target.pe_xl::target_host(),
+      puppetdb_database_replica_host => $puppetdb_database_replica_host_string, # $puppetdb_database_replica_target.pe_xl::target_host(),
       compiler_pool_address          => $compiler_pool_address,
       require                        => File['node_manager.yaml'],
     }
