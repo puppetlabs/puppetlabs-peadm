@@ -25,6 +25,4 @@
 .project
 .envrc
 /inventory.yaml
-/bolt-modules
-.resource_types
 .ruby-version

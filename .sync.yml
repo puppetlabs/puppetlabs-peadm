@@ -9,10 +9,5 @@ Gemfile:
         version: '~> 1.0'
 .gitignore:
   paths:
-#bolt project ignore for public modules
-    - '/inventory.yaml'
-#bolt project ignores
-    - '/bolt-modules'
-    - '.resource_types'
 #local env item
     - '.ruby-version'
