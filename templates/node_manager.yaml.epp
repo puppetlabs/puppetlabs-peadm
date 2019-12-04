@@ -1,0 +1,8 @@
+<%- | String $server,
+| -%>
+---
+server: <%= $server %>
+port: 4433
+hostcert: /etc/puppetlabs/puppet/ssl/certs/<%= $server %>.pem
+hostprivkey: /etc/puppetlabs/puppet/ssl/private_keys/<%= $server %>.pem
+localcacert: /etc/puppetlabs/puppet/ssl/certs/ca.pem
