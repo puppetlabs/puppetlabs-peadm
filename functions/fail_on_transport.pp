@@ -2,7 +2,7 @@
 #
 # Useful for excluding PCP when it's not appopriate
 #
-function pe_xl::fail_on_transport (
+function peadm::fail_on_transport (
   TargetSpec $nodes,
   String     $transport,
 ) {

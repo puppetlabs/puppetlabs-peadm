@@ -1,4 +1,4 @@
-plan pe_xl::util::retrieve_and_upload(
+plan peadm::util::retrieve_and_upload(
   TargetSpec $nodes,
   String[1]  $source,
   String[1]  $local_path,
@@ -11,17 +11,17 @@ plan pe_xl::util::retrieve_and_upload(
   }
 
   unless $exists {
-    run_task('pe_xl::download', 'local://localhost',
+    run_task('peadm::download', 'local://localhost',
       source => $source,
       path   => $local_path,
     )
   }
 
-  $local_size = run_task('pe_xl::filesize', 'local://localhost',
+  $local_size = run_task('peadm::filesize', 'local://localhost',
     path => $local_path,
   ).first['size']
 
-  $targets_needing_file = run_task('pe_xl::filesize', $nodes,
+  $targets_needing_file = run_task('peadm::filesize', $nodes,
     path => $upload_path,
   ).filter |$result| {
     $result['size'] != $local_size

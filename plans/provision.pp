@@ -2,17 +2,17 @@
 #   Puppet Enterprise Extra Large cluster.  This plan accepts all parameters
 #   used by its sub-plans, and invokes them in order.
 #
-plan pe_xl::provision (
+plan peadm::provision (
   # Standard
-  Pe_xl::SingleTargetSpec           $master_host,
-  Optional[Pe_xl::SingleTargetSpec] $master_replica_host = undef,
+  Peadm::SingleTargetSpec           $master_host,
+  Optional[Peadm::SingleTargetSpec] $master_replica_host = undef,
 
   # Large
   Optional[TargetSpec]              $compiler_hosts = undef,
 
   # Extra Large
-  Optional[Pe_xl::SingleTargetSpec] $puppetdb_database_host         = undef,
-  Optional[Pe_xl::SingleTargetSpec] $puppetdb_database_replica_host = undef,
+  Optional[Peadm::SingleTargetSpec] $puppetdb_database_host         = undef,
+  Optional[Peadm::SingleTargetSpec] $puppetdb_database_replica_host = undef,
 
   # Common Configuration
   String                            $console_password,
@@ -24,14 +24,14 @@ plan pe_xl::provision (
   # Code Manager
   Optional[String]                  $r10k_remote              = undef,
   Optional[String]                  $r10k_private_key_file    = undef,
-  Optional[Pe_xl::Pem]              $r10k_private_key_content = undef,
+  Optional[Peadm::Pem]              $r10k_private_key_content = undef,
   Optional[String]                  $deploy_environment       = undef,
 
   # Other
   Optional[String]                  $stagingdir = undef,
 ) {
 
-  $install_result = run_plan('pe_xl::unit::install',
+  $install_result = run_plan('peadm::unit::install',
     # Standard
     master_host                    => $master_host,
     master_replica_host            => $master_replica_host,
@@ -58,7 +58,7 @@ plan pe_xl::provision (
     stagingdir                     => $stagingdir,
   )
 
-  $configure_result = run_plan('pe_xl::unit::configure',
+  $configure_result = run_plan('peadm::unit::configure',
     # Standard
     master_host                    => $master_host,
     master_replica_host            => $master_replica_host,

@@ -1,6 +1,6 @@
 # @summary Upgrade an Extra Large stack from one .z to the next
 #
-plan pe_xl::upgrade (
+plan peadm::upgrade (
   String[1] $master_host,
   String[1] $puppetdb_database_host,
   Optional[String[1]] $master_replica_host = undef,
@@ -8,7 +8,7 @@ plan pe_xl::upgrade (
 
   String[1] $version,
 
-  # This parameter exists to enable the use case of running pe_xl::upgrade over
+  # This parameter exists to enable the use case of running peadm::upgrade over
   # the PCP transport. An orchestrator restart happens during provision
   # replica. Running `bolt plan run` directly on the master and using local
   # transport for that node will let the plan to run to completion without
@@ -27,11 +27,11 @@ plan pe_xl::upgrade (
 
   $ha_replica_target = [
     $master_replica_host,
-  ].pe_xl::flatten_compact()
+  ].peadm::flatten_compact()
 
   $ha_database_target = [
     $puppetdb_database_replica_host,
-  ].pe_xl::flatten_compact()
+  ].peadm::flatten_compact()
 
   # Look up which hosts are compilers in the stack
   # We look up groups of CMs separately since when they are upgraded is determined
@@ -59,10 +59,10 @@ plan pe_xl::upgrade (
     $puppetdb_database_replica_host,
     $compiler_cluster_master_hosts,
     $compiler_cluster_master_replica_hosts,
-  ].pe_xl::flatten_compact()
+  ].peadm::flatten_compact()
 
   # We need to make sure we aren't using PCP as this will go down during the upgrade
-  $all_hosts.pe_xl::fail_on_transport('pcp')
+  $all_hosts.peadm::fail_on_transport('pcp')
 
   # TODO: Do we need to update the pe.conf(s) with a console password?
 
@@ -73,9 +73,9 @@ plan pe_xl::upgrade (
     $master_target,
     $puppetdb_database_host,
     $puppetdb_database_replica_host,
-  ].pe_xl::flatten_compact()
+  ].peadm::flatten_compact()
 
-  run_task('pe_xl::download', $download_hosts,
+  run_task('peadm::download', $download_hosts,
     source => $pe_source,
     path   => $upload_tarball_path,
   )
@@ -103,17 +103,17 @@ plan pe_xl::upgrade (
 
   # TODO: Firewall up the master
 
-  run_task('pe_xl::pe_install', $master_target,
+  run_task('peadm::pe_install', $master_target,
     tarball => $upload_tarball_path,
   )
 
   # Upgrade the master PuppetDB PostgreSQL host. Note that installer-driven
   # upgrade will de-configure auth access for compilers. Re-run Puppet
   # immediately to fully re-enable
-  run_task('pe_xl::pe_install', $puppetdb_database_host,
+  run_task('peadm::pe_install', $puppetdb_database_host,
     tarball => $upload_tarball_path,
   )
-  run_task('pe_xl::puppet_runonce', $puppetdb_database_host)
+  run_task('peadm::puppet_runonce', $puppetdb_database_host)
 
   # Stop PuppetDB on the master
   run_task('service', $master_target,
@@ -132,10 +132,10 @@ plan pe_xl::upgrade (
   # TODO: Remove remaining firewall blocks
 
   # Wait until orchestrator service is healthy to proceed
-  run_task('pe_xl::orchestrator_healthcheck', $master_target)
+  run_task('peadm::orchestrator_healthcheck', $master_target)
 
   # Upgrade the compiler group A hosts
-  run_task('pe_xl::agent_upgrade', $compiler_cluster_master_hosts,
+  run_task('peadm::agent_upgrade', $compiler_cluster_master_hosts,
     server => $master_host,
   )
 
@@ -146,18 +146,18 @@ plan pe_xl::upgrade (
   )
 
   # Run the upgrade.sh script on the master replica host
-  run_task('pe_xl::agent_upgrade', $ha_replica_target,
+  run_task('peadm::agent_upgrade', $ha_replica_target,
     server => $master_host,
   )
 
   # Upgrade the master replica's PuppetDB PostgreSQL host
-  run_task('pe_xl::pe_install', $ha_database_target,
+  run_task('peadm::pe_install', $ha_database_target,
     tarball => $upload_tarball_path,
   )
-  run_task('pe_xl::puppet_runonce', $ha_database_target)
+  run_task('peadm::puppet_runonce', $ha_database_target)
 
   # Upgrade the compiler group B hosts
-  run_task('pe_xl::agent_upgrade', $compiler_cluster_master_replica_hosts,
+  run_task('peadm::agent_upgrade', $compiler_cluster_master_replica_hosts,
     server => $master_host,
   )
 

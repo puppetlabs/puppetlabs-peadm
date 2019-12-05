@@ -1,6 +1,6 @@
 # @summary Example class for PE PuppetDB load balancing
 #
-class pe_xl::puppetdb {
+class peadm::puppetdb {
 
   # TODO: split load balancing into two pools, A and B
   @@haproxy::balancermember { "${::clientcert}_puppetdb_listener":

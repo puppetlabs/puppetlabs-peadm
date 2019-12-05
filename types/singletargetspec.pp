@@ -3,6 +3,6 @@
 # Array[Target, 1, 1]. This is a constrained type variant of
 # Boltlib::TargetSpec for use when a _single_ target is valid, but multiple
 # targets are not.
-type Pe_xl::SingleTargetSpec = Variant[Pattern[/\A[^[:space:],]+\z/],
+type Peadm::SingleTargetSpec = Variant[Pattern[/\A[^[:space:],]+\z/],
                                        Target,
                                        Array[Boltlib::SingleTargetSpec, 1, 1]]

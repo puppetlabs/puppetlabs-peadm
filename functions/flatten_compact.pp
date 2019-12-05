@@ -1,4 +1,4 @@
-function pe_xl::flatten_compact (
+function peadm::flatten_compact (
   Array $input,
 ) {
   $input.flatten.filter |$value| {

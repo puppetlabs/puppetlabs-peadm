@@ -2,7 +2,7 @@
 # This differs from get_target() in that:
 #   - It returns an Array[Target, 1, 0], rather than a Target
 #   - It will accept undef and return [ ].
-function pe_xl::get_targets(
+function peadm::get_targets(
   Variant[TargetSpec, Undef] $spec,
   Optional[Integer[1,1]]     $count = undef,
 ) {

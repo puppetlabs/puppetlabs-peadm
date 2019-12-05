@@ -1,4 +1,4 @@
-Puppet::Functions.create_function(:'pe_xl::node_manager_yaml_location') do
+Puppet::Functions.create_function(:'peadm::node_manager_yaml_location') do
   dispatch :nm_yaml_location do
   end
 
