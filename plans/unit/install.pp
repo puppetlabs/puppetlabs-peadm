@@ -298,10 +298,12 @@ plan pe_xl::unit::install (
   # For now, waiting a short period of time is necessary to avoid a small race.
   ctrl::sleep(15)
 
-  run_command(inline_epp(@(HEREDOC/L)), $master_target)
-    /opt/puppetlabs/bin/puppetserver ca sign --certname \
-      <%= $agent_installer_targets.map |$target| { $target.host }.join(',') -%>
-    | HEREDOC
+  if !empty($agent_installer_targets) {
+    run_command(inline_epp(@(HEREDOC/L)), $master_target)
+      /opt/puppetlabs/bin/puppetserver ca sign --certname \
+        <%= $agent_installer_targets.map |$target| { $target.host }.join(',') -%>
+      | HEREDOC
+  }
 
   run_task('pe_xl::puppet_runonce', $master_target)
   run_task('pe_xl::puppet_runonce', $all_targets - $master_target)
