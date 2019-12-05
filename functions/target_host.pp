@@ -11,5 +11,8 @@ function peadm::target_host(
     Array[Target,0,0]: {
       undef
     }
+    default: {
+      fail('Unexpected input type to peadm::target_host function')
+    }
   }
 }
