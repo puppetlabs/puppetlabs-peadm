@@ -1,8 +1,8 @@
-# Puppet Enterprise Extra Large
+# Puppet Enterprise (pe) Administration (adm) Module
 
-This Puppet module contains Puppet Task Plans used to deploy an at-scale Puppet Enterprise architecture.
+This Puppet module contains Puppet Task Plans used to deploy and manage at-scale Puppet Enterprise architecture.
 
-Use this module to deploy Puppet Enterprise 2019.0.x Extra Large architecture.
+Use this module to deploy Puppet Enterprise 2019.x Standard, Large, and Extra Large architecture.
 
 * This deployment depends on and assumes the use of trusted facts. Specifically, `pp_role` and `pp_environment`.
 * This deployment assumes that at least for PE infrastructure nodes, Puppet certnames are correct, resolvable FQDNs.

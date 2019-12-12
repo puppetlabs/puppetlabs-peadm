@@ -1,6 +1,6 @@
 require 'tempfile'
 
-Puppet::Functions.create_function(:'pe_xl::file_content_upload') do
+Puppet::Functions.create_function(:'peadm::file_content_upload') do
   local_types do
     type 'TargetOrTargets = Variant[String[1], Target, Array[TargetOrTargets]]'
   end
@@ -12,7 +12,7 @@ Puppet::Functions.create_function(:'pe_xl::file_content_upload') do
   end
 
   def file_content_upload(content, destination, *targets)
-    file = Tempfile.new('pe_xl')
+    file = Tempfile.new('peadm')
     file.write(content)
     file.flush
     result = call_function('upload_file', file.path, destination, *targets)

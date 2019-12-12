@@ -1,6 +1,6 @@
 # @summary Example class for PE compiler load balancer
 #
-class pe_xl::load_balancer {
+class peadm::load_balancer {
 
   class { 'haproxy':
     global_options   => {

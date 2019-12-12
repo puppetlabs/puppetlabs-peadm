@@ -9,12 +9,12 @@ The install, configure, and upgrade plans covered in the [basic_usage.md](basic_
 
 1. Ensure the hostname of each system is set correctly, to the same value that will be used to connect to the system, and refer to the system as. If the hostname is not set as expected the installation plan will refuse to continue.
 2. Install Bolt on a jumphost. This can be the master, or any other system.
-3. Download or git clone the pe\_xl module and put it somewhere on the jumphost, e.g. ~/modules/pe\_xl.
+3. Download or git clone the peadm module and put it somewhere on the jumphost, e.g. ~/modules/peadm.
 4. Create an inventory file with connection information. An example is included below.
 5. Create a parameters file. An example is included below. Note the omission of the `master_replica_host` and `puppetdb_database_replica_host` parameters.
-6. Run the pe\_xl plan with the inputs created. Example:
+6. Run the peadm plan with the inputs created. Example:
 ```
-        bolt plan run pe_xl::provision \
+        bolt plan run peadm::provision \
           --inventory nodes.yaml \
           --modulepath ~/modules \
           --params @params.json 
@@ -26,7 +26,7 @@ The install, configure, and upgrade plans covered in the [basic_usage.md](basic_
 
 ---
 groups:
-  - name: pe_xl_nodes
+  - name: peadm_nodes
     config:
       transport: ssh
       ssh:

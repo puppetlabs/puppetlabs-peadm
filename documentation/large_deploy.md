@@ -24,14 +24,14 @@ deploy a PE Large Architecture.
 
 Ensuring that the parameters above are omitted from the `params.json` file,
 the [basic usage instructions](basic_usage.md#basic-usage-instructions) can be
-used to run the `pe_xl` plan in order to install and configure the deployment.
+used to run the `peadm` plan in order to install and configure the deployment.
 
 Example nodes.yaml Bolt inventory file:
 
 ```yaml
 ---
 groups:
-  - name: pe_xl_nodes
+  - name: peadm_nodes
     config:
       transport: ssh
       ssh:

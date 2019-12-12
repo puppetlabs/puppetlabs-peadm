@@ -1,1 +1,1 @@
-type Pe_xl::Pem = Pattern[/^-----BEGIN/]
+type Peadm::Pem = Pattern[/^-----BEGIN/]

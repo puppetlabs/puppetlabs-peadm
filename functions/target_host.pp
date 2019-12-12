@@ -1,4 +1,4 @@
-function pe_xl::target_host(
+function peadm::target_host(
   Variant[Target, Array[Target,0,1]] $target,
 ) >> Variant[String, Undef] {
   case $target {
@@ -10,6 +10,9 @@ function pe_xl::target_host(
     }
     Array[Target,0,0]: {
       undef
+    }
+    default: {
+      fail('Unexpected input type to peadm::target_host function')
     }
   }
 }

@@ -5,7 +5,7 @@
 #   undef will not be included in the config file. This is done to reduce the
 #   amount of logic required within plans if parameters are not passed in.
 #
-function pe_xl::generate_pe_conf (
+function peadm::generate_pe_conf (
   Hash $settings,
 ) {
   # Check that console_admin_password is present

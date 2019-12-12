@@ -1,4 +1,4 @@
-function pe_xl::validate_architecture (
+function peadm::validate_architecture (
   TargetSpec                 $master_host,
   Variant[TargetSpec, Undef] $master_replica_host = undef,
   Variant[TargetSpec, Undef] $puppetdb_database_host = undef,
