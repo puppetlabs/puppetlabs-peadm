@@ -159,8 +159,7 @@ plan peadm::unit::install (
     content => @(HEREDOC),
       ---
       extension_requests:
-        pp_application: "puppet"
-        pp_role: "peadm::master"
+        pp_application: "puppet/master"
         pp_cluster: "A"
       | HEREDOC
   )
@@ -170,8 +169,7 @@ plan peadm::unit::install (
     content => @(HEREDOC),
       ---
       extension_requests:
-        pp_application: "puppet"
-        pp_role: "peadm::puppetdb_database"
+        pp_application: "puppet/puppetdb-database"
         pp_cluster: "A"
       | HEREDOC
   )
@@ -181,8 +179,7 @@ plan peadm::unit::install (
     content => @(HEREDOC),
       ---
       extension_requests:
-        pp_application: "puppet"
-        pp_role: "peadm::puppetdb_database"
+        pp_application: "puppet/puppetdb-database"
         pp_cluster: "B"
       | HEREDOC
   )
@@ -260,8 +257,7 @@ plan peadm::unit::install (
     install_flags => [
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
-      'extension_requests:pp_application=puppet',
-      'extension_requests:pp_role=peadm::master',
+      'extension_requests:pp_application=puppet/master',
       'extension_requests:pp_cluster=B',
     ],
   )
@@ -271,8 +267,7 @@ plan peadm::unit::install (
     install_flags => [
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
-      'extension_requests:pp_application=puppet',
-      'extension_requests:pp_role=peadm::compiler',
+      'extension_requests:pp_application=puppet/compiler',
       'extension_requests:pp_cluster=A',
     ],
   )
@@ -282,8 +277,7 @@ plan peadm::unit::install (
     install_flags => [
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
-      'extension_requests:pp_application=puppet',
-      'extension_requests:pp_role=peadm::compiler',
+      'extension_requests:pp_application=puppet/compiler',
       'extension_requests:pp_cluster=B',
     ],
   )

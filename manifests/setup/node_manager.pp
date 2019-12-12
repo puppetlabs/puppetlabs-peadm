@@ -7,7 +7,7 @@
 # This class will be applied during master bootstrap using e.g.
 #
 #     puppet apply \
-#       --exec 'class { "peadm::node_manager":
+#       --exec 'class { "peadm::setup::node_manager":
 #                 environments => ["production", "staging", "development"],
 #               }'
 #
@@ -43,7 +43,7 @@ class peadm::setup::node_manager (
   # We modify this group's rule such that all PE infrastructure nodes will be
   # members.
   node_group { 'PE Infrastructure Agent':
-    rule => ['and', ['~', ['trusted', 'extensions', 'pp_role'], '^peadm::']],
+    rule => ['and', ['~', ['trusted', 'extensions', 'pp_application'], '^puppet/']],
   }
 
   # We modify this group to add, as data, the compiler_pool_address only.
@@ -52,7 +52,7 @@ class peadm::setup::node_manager (
   node_group { 'PE Master':
     parent    => 'PE Infrastructure',
     rule      => ['or',
-      ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'peadm::compiler']],
+      ['and', ['=', ['trusted', 'extensions', 'pp_application'], 'puppet/compiler']],
       ['=', 'name', $master_host],
     ],
     data      => {
@@ -71,7 +71,7 @@ class peadm::setup::node_manager (
       parent               => 'PE Infrastructure',
       environment          => 'production',
       override_environment => false,
-      rule                 => ['and', ['=', ['trusted', 'extensions', 'pp_role'], 'peadm::puppetdb_database']],
+      rule                 => ['and', ['=', ['trusted', 'extensions', 'pp_application'], 'puppet/puppetdb-database']],
       classes              => {
         'puppet_enterprise::profile::database' => { },
       },
@@ -84,7 +84,7 @@ class peadm::setup::node_manager (
     ensure => present,
     parent => 'PE Infrastructure',
     rule   => ['and',
-      ['=', ['trusted', 'extensions', 'pp_role'], 'peadm::master'],
+      ['=', ['trusted', 'extensions', 'pp_application'], 'puppet/master'],
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'A'],
     ],
     data   => {
@@ -103,7 +103,7 @@ class peadm::setup::node_manager (
     ensure  => 'present',
     parent  => 'PE Master',
     rule    => ['and',
-      ['=', ['trusted', 'extensions', 'pp_role'], 'peadm::compiler'],
+      ['=', ['trusted', 'extensions', 'pp_application'], 'puppet/compiler'],
       ['=', ['trusted', 'extensions', 'pp_cluster'], 'A'],
     ],
     classes => {
@@ -138,7 +138,7 @@ class peadm::setup::node_manager (
       ensure => present,
       parent => 'PE Infrastructure',
       rule   => ['and',
-        ['=', ['trusted', 'extensions', 'pp_role'], 'peadm::master'],
+        ['=', ['trusted', 'extensions', 'pp_application'], 'puppet/master'],
         ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
       ],
       data   => {
@@ -155,7 +155,7 @@ class peadm::setup::node_manager (
       ensure  => 'present',
       parent  => 'PE Master',
       rule    => ['and',
-        ['=', ['trusted', 'extensions', 'pp_role'], 'peadm::compiler'],
+        ['=', ['trusted', 'extensions', 'pp_application'], 'puppet/compiler'],
         ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
       ],
       classes => {

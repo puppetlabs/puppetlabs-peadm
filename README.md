@@ -4,7 +4,7 @@ This Puppet module contains Puppet Task Plans used to deploy and manage at-scale
 
 Use this module to deploy Puppet Enterprise 2019.x Standard, Large, and Extra Large architecture.
 
-* This deployment depends on and assumes the use of trusted facts. Specifically, `pp_role` and `pp_environment`.
+* This deployment depends on and assumes the use of trusted facts. Specifically, `pp_application` and `pp_cluster`.
 * This deployment assumes that at least for PE infrastructure nodes, Puppet certnames are correct, resolvable FQDNs.
 
 ## Documentation
