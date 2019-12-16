@@ -1,6 +1,15 @@
 #!/bin/bash
 
-size=$(stat -c%s "$PT_path" 2>/dev/null || echo null)
+case $(uname) in
+Darwin)
+  options="-f%z"
+  ;;
+*)
+  options="-c%s"
+  ;;
+esac
+
+size=$(stat "$options" "$PT_path" 2>/dev/null || echo null)
 
 # Output a JSON result for ease of Task usage in Puppet Task Plans
 if [ "$size" = "null" ]; then

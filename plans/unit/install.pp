@@ -210,7 +210,7 @@ plan peadm::unit::install (
   }
 
   # Configure autosigning for the puppetdb database hosts 'cause they need it
-  $autosign_conf = $database_targets.reduce('') |$memo,$target| { "${target.host}\n${memo}" }
+  $autosign_conf = $database_targets.reduce('') |$memo,$target| { "${target.name}\n${memo}" }
   run_task('peadm::mkdir_p_file', $master_target,
     path    => '/etc/puppetlabs/puppet/autosign.conf',
     owner   => 'pe-puppet',
@@ -295,7 +295,7 @@ plan peadm::unit::install (
   if !empty($agent_installer_targets) {
     run_command(inline_epp(@(HEREDOC/L)), $master_target)
       /opt/puppetlabs/bin/puppetserver ca sign --certname \
-        <%= $agent_installer_targets.map |$target| { $target.host }.join(',') -%>
+        <%= $agent_installer_targets.map |$target| { $target.name }.join(',') -%>
       | HEREDOC
   }
 
