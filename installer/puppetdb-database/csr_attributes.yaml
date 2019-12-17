@@ -1,4 +1,3 @@
 ---
 extension_requests:
-  pp_role: "peadm::puppetdb_database"
-  pp_environment: "pe_production"
+  pp_application: "puppet/puppetdb-database"
