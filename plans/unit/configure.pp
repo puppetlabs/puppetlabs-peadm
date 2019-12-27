@@ -46,10 +46,10 @@ plan peadm::unit::configure (
   # commented-out values should be used once GH-1244 is resolved.
 
   # WORKAROUND: GH-1244
-  $master_host_string = $master_target.peadm::target_host()
-  $master_replica_host_string = $master_replica_target.peadm::target_host()
-  $puppetdb_database_host_string = $puppetdb_database_target.peadm::target_host()
-  $puppetdb_database_replica_host_string = $puppetdb_database_replica_target.peadm::target_host()
+  $master_host_string = $master_target.peadm::target_name()
+  $master_replica_host_string = $master_replica_target.peadm::target_name()
+  $puppetdb_database_host_string = $puppetdb_database_target.peadm::target_name()
+  $puppetdb_database_replica_host_string = $puppetdb_database_replica_target.peadm::target_name()
 
   apply($master_target) {
     # Necessary to give the sandboxed Puppet executor the configuration
@@ -65,10 +65,10 @@ plan peadm::unit::configure (
 
     class { 'peadm::setup::node_manager':
       # WORKAROUND: GH-1244
-      master_host                    => $master_host_string, # $master_target.peadm::target_host(),
-      master_replica_host            => $master_replica_host_string, # $master_replica_target.peadm::target_host(),
-      puppetdb_database_host         => $puppetdb_database_host_string, # $puppetdb_database_target.peadm::target_host(),
-      puppetdb_database_replica_host => $puppetdb_database_replica_host_string, # $puppetdb_database_replica_target.peadm::target_host(),
+      master_host                    => $master_host_string, # $master_target.peadm::target_name(),
+      master_replica_host            => $master_replica_host_string, # $master_replica_target.peadm::target_name(),
+      puppetdb_database_host         => $puppetdb_database_host_string, # $puppetdb_database_target.peadm::target_name(),
+      puppetdb_database_replica_host => $puppetdb_database_replica_host_string, # $puppetdb_database_replica_target.peadm::target_name(),
       compiler_pool_address          => $compiler_pool_address,
       require                        => File['node_manager.yaml'],
     }
@@ -100,13 +100,13 @@ plan peadm::unit::configure (
   if $arch['high-availability'] {
     # Run the PE Replica Provision
     run_task('peadm::provision_replica', $master_target,
-      master_replica => $master_replica_target.peadm::target_host(),
+      master_replica => $master_replica_target.peadm::target_name(),
       token_file     => $token_file,
     )
 
     # Run the PE Replica Enable
     run_task('peadm::enable_replica', $master_target,
-      master_replica => $master_replica_target.peadm::target_host(),
+      master_replica => $master_replica_target.peadm::target_name(),
       token_file     => $token_file,
     )
   }

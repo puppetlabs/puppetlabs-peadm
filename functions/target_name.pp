@@ -1,4 +1,4 @@
-function peadm::target_host(
+function peadm::target_name(
   Variant[Target, Array[Target,0,1]] $target,
 ) >> Variant[String, Undef] {
   case $target {
@@ -12,7 +12,7 @@ function peadm::target_host(
       undef
     }
     default: {
-      fail('Unexpected input type to peadm::target_host function')
+      fail('Unexpected input type to peadm::target_name function')
     }
   }
 }

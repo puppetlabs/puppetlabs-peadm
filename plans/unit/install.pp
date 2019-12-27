@@ -117,9 +117,9 @@ plan peadm::unit::install (
   # Generate all the needed pe.conf files
   $master_pe_conf = peadm::generate_pe_conf({
     'console_admin_password'                                          => $console_password,
-    'puppet_enterprise::puppet_master_host'                           => $master_target.peadm::target_host(),
+    'puppet_enterprise::puppet_master_host'                           => $master_target.peadm::target_name(),
     'pe_install::puppet_master_dnsaltnames'                           => $dns_alt_names,
-    'puppet_enterprise::profile::puppetdb::database_host'             => $puppetdb_database_target.peadm::target_host(),
+    'puppet_enterprise::profile::puppetdb::database_host'             => $puppetdb_database_target.peadm::target_name(),
     'puppet_enterprise::profile::master::code_manager_auto_configure' => true,
     'puppet_enterprise::profile::master::r10k_private_key'            => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
     'puppet_enterprise::profile::master::r10k_remote'                 => $r10k_remote,
@@ -127,14 +127,14 @@ plan peadm::unit::install (
 
   $puppetdb_database_pe_conf = peadm::generate_pe_conf({
     'console_admin_password'                => 'not used',
-    'puppet_enterprise::puppet_master_host' => $master_target.peadm::target_host(),
-    'puppet_enterprise::database_host'      => $puppetdb_database_target.peadm::target_host(),
+    'puppet_enterprise::puppet_master_host' => $master_target.peadm::target_name(),
+    'puppet_enterprise::database_host'      => $puppetdb_database_target.peadm::target_name(),
   } + $pe_conf_data)
 
   $puppetdb_database_replica_pe_conf = peadm::generate_pe_conf({
     'console_admin_password'                => 'not used',
-    'puppet_enterprise::puppet_master_host' => $master_target.peadm::target_host(),
-    'puppet_enterprise::database_host'      => $puppetdb_database_replica_target.peadm::target_host(),
+    'puppet_enterprise::puppet_master_host' => $master_target.peadm::target_name(),
+    'puppet_enterprise::database_host'      => $puppetdb_database_replica_target.peadm::target_name(),
   } + $pe_conf_data)
 
   # Upload the pe.conf files to the hosts that need them
@@ -253,7 +253,7 @@ plan peadm::unit::install (
 
   # Deploy the PE agent to all remaining hosts
   run_task('peadm::agent_install', $master_replica_target,
-    server        => $master_target.peadm::target_host(),
+    server        => $master_target.peadm::target_name(),
     install_flags => [
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
@@ -263,7 +263,7 @@ plan peadm::unit::install (
   )
 
   run_task('peadm::agent_install', $compiler_a_targets,
-    server        => $master_target.peadm::target_host(),
+    server        => $master_target.peadm::target_name(),
     install_flags => [
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
@@ -273,7 +273,7 @@ plan peadm::unit::install (
   )
 
   run_task('peadm::agent_install', $compiler_b_targets,
-    server        => $master_target.peadm::target_host(),
+    server        => $master_target.peadm::target_name(),
     install_flags => [
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
