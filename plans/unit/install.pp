@@ -119,7 +119,7 @@ plan peadm::unit::install (
     'console_admin_password'                                          => $console_password,
     'puppet_enterprise::puppet_master_host'                           => $master_target.peadm::target_name(),
     'pe_install::puppet_master_dnsaltnames'                           => $dns_alt_names,
-    'puppet_enterprise::profile::puppetdb::database_host'             => $puppetdb_database_target.peadm::target_name(),
+    'puppet_enterprise::puppetdb_database_host'                       => $puppetdb_database_target.peadm::target_name(),
     'puppet_enterprise::profile::master::code_manager_auto_configure' => true,
     'puppet_enterprise::profile::master::r10k_private_key'            => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
     'puppet_enterprise::profile::master::r10k_remote'                 => $r10k_remote,
