@@ -91,8 +91,8 @@ class peadm::setup::node_manager (
       'puppet_enterprise::profile::primary_master_replica' => {
         'database_host_puppetdb' => $puppetdb_database_host,
       },
-      'puppet_enterprise' => {
-        'puppetdb_database_host' => $puppetdb_database_host,
+      'puppet_enterprise::profile::puppetdb'               => {
+        'database_host' => $puppetdb_database_host,
       },
     },
   }
@@ -145,8 +145,8 @@ class peadm::setup::node_manager (
         'puppet_enterprise::profile::primary_master_replica' => {
           'database_host_puppetdb' => $puppetdb_database_replica_host,
         },
-        'puppet_enterprise' => {
-          'puppetdb_database_host' => $puppetdb_database_replica_host,
+        'puppet_enterprise::profile::puppetdb'               => {
+          'database_host' => $puppetdb_database_replica_host,
         },
       },
     }
