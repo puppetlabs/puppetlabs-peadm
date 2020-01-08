@@ -9,7 +9,7 @@ The current versions of those plans can be found at:
 * [provision.pp](../plans/provision.pp)
 * [upgrade.pp](../plans/upgrade.pp)
 
-Provisioning can be broken down into two actions: [install](../plans/unit/install.pp), and [configure](../plans/unit/configure.pp). Installation currently requires ssh access to the un-provisioned nodes, but configure can be performed using the Orchestrator transport if installation has already been completed.
+Provisioning can be broken down into two actions: [install](../plans/action/install.pp), and [configure](../plans/action/configure.pp). Installation currently requires ssh access to the un-provisioned nodes, but configure can be performed using the Orchestrator transport if installation has already been completed.
 
 Besides getting Puppet Enterprise installed, the key configuration supporting Large and Extra Large architectures is laid out in four classification groups. Links are provided below to a Markdown document that describes the groups, and also to the Puppet manifest that actually configures them:
 
