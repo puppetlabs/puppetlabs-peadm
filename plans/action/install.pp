@@ -262,8 +262,8 @@ plan peadm::action::install (
     install_flags => [
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
-      'extension_requests:pp_application=puppet/master',
-      'extension_requests:pp_cluster=B',
+      "extension_requests:${pp_application}=puppet/master",
+      "extension_requests:${pp_cluster}=B",
     ],
   )
 
@@ -272,8 +272,8 @@ plan peadm::action::install (
     install_flags => [
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
-      'extension_requests:pp_application=puppet/compiler',
-      'extension_requests:pp_cluster=A',
+      "extension_requests:${pp_application}=puppet/compiler",
+      "extension_requests:${pp_cluster}=A",
     ],
   )
 
@@ -282,8 +282,8 @@ plan peadm::action::install (
     install_flags => [
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
-      'extension_requests:pp_application=puppet/compiler',
-      'extension_requests:pp_cluster=B',
+      "extension_requests:${pp_application}=puppet/compiler",
+      "extension_requests:${pp_cluster}=B",
     ],
   )
 
