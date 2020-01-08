@@ -13,7 +13,7 @@
 #   Config data to plane into pe.conf when generated on all hosts, this can be
 #   used for tuning data etc.
 #
-plan peadm::unit::install (
+plan peadm::action::install (
   # Standard
   Peadm::SingleTargetSpec           $master_host,
   Optional[Peadm::SingleTargetSpec] $master_replica_host = undef,

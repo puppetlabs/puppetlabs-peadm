@@ -31,7 +31,7 @@ plan peadm::provision (
   Optional[String]                  $stagingdir = undef,
 ) {
 
-  $install_result = run_plan('peadm::unit::install',
+  $install_result = run_plan('peadm::action::install',
     # Standard
     master_host                    => $master_host,
     master_replica_host            => $master_replica_host,
@@ -58,7 +58,7 @@ plan peadm::provision (
     stagingdir                     => $stagingdir,
   )
 
-  $configure_result = run_plan('peadm::unit::configure',
+  $configure_result = run_plan('peadm::action::configure',
     # Standard
     master_host                    => $master_host,
     master_replica_host            => $master_replica_host,

@@ -1,6 +1,6 @@
 # @summary Configure first-time classification and HA setup
 #
-plan peadm::unit::configure (
+plan peadm::action::configure (
   # Large
   Peadm::SingleTargetSpec           $master_host,
   Optional[TargetSpec]              $compiler_hosts = undef,
