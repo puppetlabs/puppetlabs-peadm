@@ -154,33 +154,38 @@ plan peadm::action::install (
   )
 
   # Create csr_attributes.yaml files for the nodes that need them
+  # There is a problem with OID names in csr_attributes.yaml for some
+  # installs, e.g. PE 2019.0.1, PUP-9746. Use the raw OIDs for now.
+  $pp_application = '1.3.6.1.4.1.34380.1.1.8'
+  $pp_cluster     = '1.3.6.1.4.1.34380.1.1.16'
+
   run_task('peadm::mkdir_p_file', $master_target,
     path    => '/etc/puppetlabs/puppet/csr_attributes.yaml',
-    content => @(HEREDOC),
+    content => @("HEREDOC"),
       ---
       extension_requests:
-        pp_application: "puppet/master"
-        pp_cluster: "A"
+        ${pp_application}: "puppet/master"
+        ${pp_cluster}: "A"
       | HEREDOC
   )
 
   run_task('peadm::mkdir_p_file', $puppetdb_database_target,
     path    => '/etc/puppetlabs/puppet/csr_attributes.yaml',
-    content => @(HEREDOC),
+    content => @("HEREDOC"),
       ---
       extension_requests:
-        pp_application: "puppet/puppetdb-database"
-        pp_cluster: "A"
+        ${pp_application}: "puppet/puppetdb-database"
+        ${pp_cluster}: "A"
       | HEREDOC
   )
 
   run_task('peadm::mkdir_p_file', $puppetdb_database_replica_target,
     path    => '/etc/puppetlabs/puppet/csr_attributes.yaml',
-    content => @(HEREDOC),
+    content => @("HEREDOC"),
       ---
       extension_requests:
-        pp_application: "puppet/puppetdb-database"
-        pp_cluster: "B"
+        ${pp_application}: "puppet/puppetdb-database"
+        ${pp_cluster}: "B"
       | HEREDOC
   )
 
