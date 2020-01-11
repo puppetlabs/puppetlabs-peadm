@@ -5,8 +5,11 @@ plan peadm::upgrade (
   String[1] $puppetdb_database_host,
   Optional[String[1]] $master_replica_host = undef,
   Optional[String[1]] $puppetdb_database_replica_host = undef,
+  Optional[String[1]] $pe_source = undef,
 
   String[1] $version,
+  String[1] $os_family        = 'RedHat',
+  String[1] $os_release_major = '7',
 
   # This parameter exists to enable the use case of running peadm::upgrade over
   # the PCP transport. An orchestrator restart happens during provision
@@ -15,8 +18,7 @@ plan peadm::upgrade (
   # failing due to being disconnected from the orchestrator.
   Boolean $executing_on_master = false,
 
-  String[1] $stagingdir = '/tmp',
-  String[1] $pe_source  = "https://s3.amazonaws.com/pe-builds/released/${version}/puppet-enterprise-${version}-el-7-x86_64.tar.gz",
+  String[1] $stagingdir = '/tmp'
 ) {
 
   # Allow for the upgrade task to be run local to the master.
@@ -67,17 +69,37 @@ plan peadm::upgrade (
   # TODO: Do we need to update the pe.conf(s) with a console password?
 
   # Download the PE tarball on the nodes that need it
-  $upload_tarball_path = "/tmp/puppet-enterprise-${version}-el-7-x86_64.tar.gz"
 
-  $download_hosts = [
+  case $os_family {
+    'Debian', 'Ubuntu': {
+      $pe_tarball_name = "puppet-enterprise-${version}-ubuntu-${os_release_major}-amd64.tar.gz"
+    }
+    'RedHat', 'CentOS': {
+      $pe_tarball_name = "puppet-enterprise-${version}-el-${os_release_major}-x86_64.tar.gz"
+    }
+    default: {
+      fail_plan("Unsupported OS Family: '${os_family}'")
+    }
+  }
+
+  if $pe_source {
+    $_pe_source = $pe_source
+  } else {
+    $_pe_source = "https://s3.amazonaws.com/pe-builds/released/${version}/${$pe_tarball_name}"
+  }
+  $local_tarball_path  = "${stagingdir}/${pe_tarball_name}"
+  $upload_tarball_path = "/tmp/${pe_tarball_name}"
+
+  $pe_installer_targets = [
     $master_target,
     $puppetdb_database_host,
     $puppetdb_database_replica_host,
   ].peadm::flatten_compact()
 
-  run_task('peadm::download', $download_hosts,
-    source => $pe_source,
-    path   => $upload_tarball_path,
+  run_plan('peadm::util::retrieve_and_upload', $pe_installer_targets,
+    source      => $_pe_source,
+    local_path  => $local_tarball_path,
+    upload_path => $upload_tarball_path,
   )
 
   # Shut down Puppet on all infra hosts

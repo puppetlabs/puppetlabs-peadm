@@ -2,7 +2,7 @@
 #
 # @param r10k_remote
 #   The clone URL of the controlrepo to use. This just uses the basic config
-#   from the documentaion https://puppet.com/docs/pe/2019.0/code_mgr_config.html
+#   from the documentation https://puppet.com/docs/pe/latest/code_mgr_config.html
 #
 # @param r10k_private_key
 #   The private key to use for r10k. If this is a local file it will be copied
@@ -25,9 +25,13 @@ plan peadm::action::install (
   Optional[Peadm::SingleTargetSpec] $puppetdb_database_host         = undef,
   Optional[Peadm::SingleTargetSpec] $puppetdb_database_replica_host = undef,
 
+  # PE Version, OS Family and Version
+  String               $version          = '2019.3.0',
+  String               $os_family        = 'RedHat',
+  String               $os_release_major = '7',
+
   # Common Configuration
   String               $console_password,
-  String               $version       = '2019.1.1',
   Array[String]        $dns_alt_names = [ ],
   Hash                 $pe_conf_data  = { },
 
@@ -143,12 +147,25 @@ plan peadm::action::install (
   peadm::file_content_upload($puppetdb_database_replica_pe_conf, '/tmp/pe.conf', $puppetdb_database_replica_target)
 
   # Download the PE tarball and send it to the nodes that need it
-  $pe_tarball_name     = "puppet-enterprise-${version}-el-7-x86_64.tar.gz"
+
+  case $os_family {
+    'Debian', 'Ubuntu': {
+      $pe_tarball_name = "puppet-enterprise-${version}-ubuntu-${os_release_major}-amd64.tar.gz"
+    }
+    'RedHat', 'CentOS': {
+      $pe_tarball_name = "puppet-enterprise-${version}-el-${os_release_major}-x86_64.tar.gz"
+    }
+    default: {
+      fail_plan("Unsupported OS Family: '${os_family}'")
+    }
+  }
+
+  $pe_source = "https://s3.amazonaws.com/pe-builds/released/${version}/${$pe_tarball_name}"
   $local_tarball_path  = "${stagingdir}/${pe_tarball_name}"
   $upload_tarball_path = "/tmp/${pe_tarball_name}"
 
   run_plan('peadm::util::retrieve_and_upload', $pe_installer_targets,
-    source      => "https://s3.amazonaws.com/pe-builds/released/${version}/puppet-enterprise-${version}-el-7-x86_64.tar.gz",
+    source      => $pe_source,
     local_path  => $local_tarball_path,
     upload_path => $upload_tarball_path,
   )

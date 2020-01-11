@@ -14,9 +14,13 @@ plan peadm::provision (
   Optional[Peadm::SingleTargetSpec] $puppetdb_database_host         = undef,
   Optional[Peadm::SingleTargetSpec] $puppetdb_database_replica_host = undef,
 
+  # PE Version, OS Family and Version
+  String                            $version          = undef,
+  String                            $os_family        = undef,
+  String                            $os_release_major = undef,
+
   # Common Configuration
   String                            $console_password,
-  String                            $version               = '2019.1.1',
   Optional[Array[String]]           $dns_alt_names         = undef,
   Optional[String]                  $compiler_pool_address = undef,
   Optional[Hash]                    $pe_conf_data          = { },
@@ -43,8 +47,12 @@ plan peadm::provision (
     puppetdb_database_host         => $puppetdb_database_host,
     puppetdb_database_replica_host => $puppetdb_database_replica_host,
 
-    # Common Configuration
+    # PE Version, OS Family and Version
     version                        => $version,
+    os_family                      => $os_family,
+    os_release_major               => $os_release_major,
+
+    # Common Configuration
     console_password               => $console_password,
     dns_alt_names                  => $dns_alt_names,
     pe_conf_data                   => $pe_conf_data,
