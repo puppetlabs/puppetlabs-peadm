@@ -288,9 +288,7 @@ plan peadm::action::install (
   )
 
   # Ensure certificate requests have been submitted
-  run_command(@(HEREDOC), $agent_installer_targets)
-    /opt/puppetlabs/bin/puppet ssl submit_request
-    | HEREDOC
+  run_task('peadm::submit_csr', $agent_installer_targets)
 
   # TODO: come up with an intelligent way to validate that the expected CSRs
   # have been submitted and are available for signing, prior to signing them.

@@ -1,0 +1,8 @@
+{
+  "description": "Submit a certificate signing request",
+  "parameters": { },
+  "input_method": "stdin",
+  "implementations": [
+    {"name": "submit_csr.rb"}
+  ]
+}
