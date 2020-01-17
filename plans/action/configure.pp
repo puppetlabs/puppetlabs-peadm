@@ -67,7 +67,7 @@ plan peadm::action::configure (
       mode    => '0644',
       path    => Deferred('peadm::node_manager_yaml_location'),
       content => epp('peadm/node_manager.yaml.epp', {
-        server => $master_host_string,
+        server => $master_target.peadm::target_name(),
       }),
     }
 
