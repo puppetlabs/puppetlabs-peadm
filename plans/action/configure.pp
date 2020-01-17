@@ -41,25 +41,21 @@ plan peadm::action::configure (
 
   # Define the global hiera.yaml file on the Master; and syncronize to any Replica and Compilers.
   # This enables Data in the Classifier/Console, which is used/required by this architecture.
-  # Necessary, for example, when promoting the Replica.
-  $global_hiera_yaml = @("HEREDOC")
-      ---
-      version: 5
-      hierarchy:
-        - name: Classifier Configuration Data
-          data_hash: classifier_data
-      | HEREDOC
+  # Necessary, for example, when promoting the Replica due to PE-18400 (and others).
+  $global_hiera_yaml = run_task('peadm::read_file', $master_target,
+    path => '/etc/puppetlabs/puppet/hiera.yaml',
+  ).first['content']
 
-  $global_hiera_yaml_file = "/etc/puppetlabs/puppet/hiera.yaml"
-
-  $hiera_targets = peadm::flatten_compact([
-    $master_target,
+  run_task('peadm::mkdir_p_file', peadm::flatten_compact([
     $master_replica_target,
     $compiler_targets,
-  ])
-
-  peadm::file_content_upload($global_hiera_yaml, $global_hiera_yaml_file, $hiera_targets)
-  run_command("chmod 644 ${global_hiera_yaml_file}", $hiera_targets)
+  )],
+    path    => '/etc/puppetlabs/puppet/hiera.yaml',
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    content => $global_hiera_yaml,
+  )
 
   # Set up the console node groups to configure the various hosts in their roles
 
