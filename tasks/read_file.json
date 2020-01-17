@@ -1,0 +1,10 @@
+{
+  "description": "Read the contents of a file",
+  "parameters": {
+    "path": {
+      "type": "String",
+      "description": "Path to the file to read"
+    }
+  },
+  "input_method": "environment"
+}

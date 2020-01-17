@@ -1,10 +1,12 @@
 # @summary Configure first-time classification and HA setup
 #
 plan peadm::action::configure (
-  # Large
+  # Standard
   Peadm::SingleTargetSpec           $master_host,
-  Optional[TargetSpec]              $compiler_hosts = undef,
   Optional[Peadm::SingleTargetSpec] $master_replica_host = undef,
+
+  # Large
+  Optional[TargetSpec]              $compiler_hosts = undef,
 
   # Extra Large
   Optional[Peadm::SingleTargetSpec] $puppetdb_database_host         = undef,
@@ -37,8 +39,25 @@ plan peadm::action::configure (
     $compiler_hosts,
   )
 
-  # Set up the console node groups to configure the various hosts in their
-  # roles
+  # Define the global hiera.yaml file on the Master; and syncronize to any Replica and Compilers.
+  # This enables Data in the Classifier/Console, which is used/required by this architecture.
+  # Necessary, for example, when promoting the Replica due to PE-18400 (and others).
+  $global_hiera_yaml = run_task('peadm::read_file', $master_target,
+    path => '/etc/puppetlabs/puppet/hiera.yaml',
+  ).first['content']
+
+  run_task('peadm::mkdir_p_file', peadm::flatten_compact([
+    $master_replica_target,
+    $compiler_targets,
+  )],
+    path    => '/etc/puppetlabs/puppet/hiera.yaml',
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    content => $global_hiera_yaml,
+  )
+
+  # Set up the console node groups to configure the various hosts in their roles
 
   # Pending resolution of Bolt GH-1244, Target objects and their methods are
   # not accessible inside apply() blocks. Work around the limitation for now
