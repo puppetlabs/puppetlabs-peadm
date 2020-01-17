@@ -4,3 +4,9 @@ fixtures:
     facts: 'https://github.com/puppetlabs/puppetlabs-facts.git'
     puppet_agent: 'https://github.com/puppetlabs/puppetlabs-puppet_agent.git'
     provision: 'https://github.com/puppetlabs/provision.git'
+    stdlib: 'https://github.com/puppetlabs/puppetlabs-stdlib.git'
+    node_manager: 'https://github.com/WhatsARanjit/puppet-node_manager'
+    apply_helpers: 'https://github.com/puppetlabs/puppetlabs-apply_helpers'
+    bolt_shim: 'https://github.com/puppetlabs/puppetlabs-bolt_shim'
+  symlinks:
+    "peadm": "#{source_dir}"
