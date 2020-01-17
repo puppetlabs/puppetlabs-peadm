@@ -2,3 +2,6 @@
 Rakefile:
   extras:
     - 'PuppetSyntax.exclude_paths = ["plans/**/*.pp", "vendor/**/*"]'
+.gitignore:
+  paths:
+    - '.rerun.json'
