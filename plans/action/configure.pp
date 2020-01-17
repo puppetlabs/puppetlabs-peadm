@@ -49,7 +49,7 @@ plan peadm::action::configure (
   run_task('peadm::mkdir_p_file', peadm::flatten_compact([
     $master_replica_target,
     $compiler_targets,
-  )],
+  ]),
     path    => '/etc/puppetlabs/puppet/hiera.yaml',
     owner   => 'root',
     group   => 'root',
@@ -58,17 +58,6 @@ plan peadm::action::configure (
   )
 
   # Set up the console node groups to configure the various hosts in their roles
-
-  # Pending resolution of Bolt GH-1244, Target objects and their methods are
-  # not accessible inside apply() blocks. Work around the limitation for now
-  # by using string variables calculated outside the apply block. The
-  # commented-out values should be used once GH-1244 is resolved.
-
-  # WORKAROUND: GH-1244
-  $master_host_string = $master_target.peadm::target_name()
-  $master_replica_host_string = $master_replica_target.peadm::target_name()
-  $puppetdb_database_host_string = $puppetdb_database_target.peadm::target_name()
-  $puppetdb_database_replica_host_string = $puppetdb_database_replica_target.peadm::target_name()
 
   apply($master_target) {
     # Necessary to give the sandboxed Puppet executor the configuration
@@ -83,11 +72,10 @@ plan peadm::action::configure (
     }
 
     class { 'peadm::setup::node_manager':
-      # WORKAROUND: GH-1244
-      master_host                    => $master_host_string, # $master_target.peadm::target_name(),
-      master_replica_host            => $master_replica_host_string, # $master_replica_target.peadm::target_name(),
-      puppetdb_database_host         => $puppetdb_database_host_string, # $puppetdb_database_target.peadm::target_name(),
-      puppetdb_database_replica_host => $puppetdb_database_replica_host_string, # $puppetdb_database_replica_target.peadm::target_name(),
+      master_host                    => $master_target.peadm::target_name(),
+      master_replica_host            => $master_replica_target.peadm::target_name(),
+      puppetdb_database_host         => $puppetdb_database_target.peadm::target_name(),
+      puppetdb_database_replica_host => $puppetdb_database_replica_target.peadm::target_name(),
       compiler_pool_address          => $compiler_pool_address,
       require                        => File['node_manager.yaml'],
     }
