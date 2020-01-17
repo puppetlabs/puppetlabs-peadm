@@ -1,0 +1,1 @@
+# this file is here to make bolt behave as if this is a `bolt project` and respect the inventory.yaml you provide for litmus testing.
