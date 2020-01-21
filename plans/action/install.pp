@@ -149,12 +149,12 @@ plan peadm::action::install (
   peadm::file_content_upload($puppetdb_database_replica_pe_conf, '/tmp/pe.conf', $puppetdb_database_replica_target)
 
   # Download the PE tarball and send it to the nodes that need it
-  $pe_tarball_name     = "puppet-enterprise-${version}-${platform}-x86_64.tar.gz"
+  $pe_tarball_name     = "puppet-enterprise-${version}-${platform}.tar.gz"
   $local_tarball_path  = "${stagingdir}/${pe_tarball_name}"
   $upload_tarball_path = "/tmp/${pe_tarball_name}"
 
   run_plan('peadm::util::retrieve_and_upload', $pe_installer_targets,
-    source      => "https://s3.amazonaws.com/pe-builds/released/${version}/puppet-enterprise-${version}-${platform}-x86_64.tar.gz",
+    source      => "https://s3.amazonaws.com/pe-builds/released/${version}/puppet-enterprise-${version}-${platform}.tar.gz",
     local_path  => $local_tarball_path,
     upload_path => $upload_tarball_path,
   )
