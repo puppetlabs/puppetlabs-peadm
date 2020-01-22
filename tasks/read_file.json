@@ -6,5 +6,8 @@
       "description": "Path to the file to read"
     }
   },
-  "input_method": "environment"
+  "input_method": "stdin",
+  "implementations": [
+    {"name": "read_file.rb"}
+  ]
 }

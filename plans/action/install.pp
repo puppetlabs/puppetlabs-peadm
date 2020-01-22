@@ -106,11 +106,17 @@ plan peadm::action::install (
     },
   }
 
+  $precheck_results = run_task('peadm::precheck', $all_targets)
+  $platform = $precheck_results.first['platform'] # Assume the platform of the first result correct
+
   # Validate that the name given for each system is both a resolvable name AND
-  # the configured hostname.
-  run_task('peadm::hostname', $all_targets).each |$result| {
+  # the configured hostname, and that all systems return the same platform
+  $precheck_results.each |$result| {
     if $result.target.name != $result['hostname'] {
       fail_plan("Hostname / DNS name mismatch: target ${result.target.name} reports '${result['hostname']}'")
+    }
+    if $result['platform'] != $platform {
+      fail_plan("Platform mismatch: target ${result.target.name} reports '${result['platform']}; expected ${platform}'")
     }
   }
 
@@ -143,12 +149,12 @@ plan peadm::action::install (
   peadm::file_content_upload($puppetdb_database_replica_pe_conf, '/tmp/pe.conf', $puppetdb_database_replica_target)
 
   # Download the PE tarball and send it to the nodes that need it
-  $pe_tarball_name     = "puppet-enterprise-${version}-el-7-x86_64.tar.gz"
+  $pe_tarball_name     = "puppet-enterprise-${version}-${platform}.tar.gz"
   $local_tarball_path  = "${stagingdir}/${pe_tarball_name}"
   $upload_tarball_path = "/tmp/${pe_tarball_name}"
 
   run_plan('peadm::util::retrieve_and_upload', $pe_installer_targets,
-    source      => "https://s3.amazonaws.com/pe-builds/released/${version}/puppet-enterprise-${version}-el-7-x86_64.tar.gz",
+    source      => "https://s3.amazonaws.com/pe-builds/released/${version}/puppet-enterprise-${version}-${platform}.tar.gz",
     local_path  => $local_tarball_path,
     upload_path => $upload_tarball_path,
   )

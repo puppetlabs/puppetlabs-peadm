@@ -1,0 +1,8 @@
+{
+  "description": "Return pre-check information about a system",
+  "parameters": { },
+  "input_method": "environment",
+  "implementations": [
+    {"name": "precheck.sh"}
+  ]
+}
