@@ -31,3 +31,7 @@ if [ "$PT_shortcircuit_puppetdb" = "true" ]; then
 	rm /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf
 	systemctl daemon-reload
 fi
+
+if [ "$PT_puppet_service_ensure" = "stopped" ]; then
+	systemctl stop puppet.service
+fi
