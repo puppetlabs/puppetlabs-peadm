@@ -146,5 +146,14 @@ plan peadm::action::configure (
     )
   }
 
+  # Ensure Puppet agent service is running now that configuration is complete
+  run_command('systemctl start puppet', peadm::flatten_compact([
+    $master_target,
+    $master_replica_target,
+    $puppetdb_database_target,
+    $puppetdb_database_replica_target,
+    $compiler_targets,
+  ]))
+
   return("Configuration of Puppet Enterprise ${arch['architecture']} succeeded.")
 }

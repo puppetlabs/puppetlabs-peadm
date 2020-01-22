@@ -12,6 +12,10 @@
     "shortcircuit_puppetdb": {
       "type": "Optional[Boolean]",
       "description": "If true, during install, configure PuppetDB to short-circuit its startup"
+    },
+    "puppet_service_ensure": {
+      "type": "Optional[Enum['stopped']]",
+      "description": "If 'stopped', ensure the Puppet agent is not running when install completes"
     }
   },
   "input_method": "environment",

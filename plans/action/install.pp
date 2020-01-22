@@ -205,6 +205,7 @@ plan peadm::action::install (
       _catch_errors         => $shortcircuit_puppetdb,
       tarball               => $upload_tarball_path,
       peconf                => '/tmp/pe.conf',
+      puppet_service_ensure => 'stopped',
       shortcircuit_puppetdb => $shortcircuit_puppetdb,
     )
     out::message("Finished: task peadm::pe_install on ${master_target[0].name}")
@@ -232,8 +233,9 @@ plan peadm::action::install (
 
   # Run the PE installer on the puppetdb database hosts
   run_task('peadm::pe_install', $database_targets,
-    tarball => $upload_tarball_path,
-    peconf  => '/tmp/pe.conf',
+    tarball               => $upload_tarball_path,
+    peconf                => '/tmp/pe.conf',
+    puppet_service_ensure => 'stopped',
   )
 
   # Now that the main PuppetDB database node is ready, finish priming the
