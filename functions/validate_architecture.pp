@@ -18,7 +18,7 @@ function peadm::validate_architecture (
       }})
     }
     [true, true, false, false]: {  # Standard or Large, HA
-      ({ 'high-availability' => false, 'architecture' => $compiler_hosts ? {
+      ({ 'high-availability' => true, 'architecture' => $compiler_hosts ? {
         undef   => 'standard',
         default => 'large',
       }})
