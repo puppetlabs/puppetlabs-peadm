@@ -1,0 +1,8 @@
+{
+  "description": "Return the Puppet agent's trusted facts",
+  "parameters": { },
+  "input_method": "stdin",
+  "implementations": [
+    {"name": "trusted_facts.rb"}
+  ]
+}
