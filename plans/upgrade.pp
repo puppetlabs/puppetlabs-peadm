@@ -1,12 +1,18 @@
 # @summary Upgrade an Extra Large stack from one .z to the next
 #
 plan peadm::upgrade (
-  String[1] $master_host,
-  String[1] $puppetdb_database_host,
-  Optional[String[1]] $master_replica_host = undef,
-  Optional[String[1]] $puppetdb_database_replica_host = undef,
+  # Standard
+  Peadm::SingleTargetSpec           $master_host,
+  Optional[Peadm::SingleTargetSpec] $master_replica_host = undef,
 
-  String[1] $version,
+  # Large
+  Optional[TargetSpec]              $compiler_hosts      = undef,
+
+  # Extra Large
+  Optional[Peadm::SingleTargetSpec] $puppetdb_database_host         = undef,
+  Optional[Peadm::SingleTargetSpec] $puppetdb_database_replica_host = undef,
+
+  String $version,
 
   # This parameter exists to enable the use case of running peadm::upgrade over
   # the PCP transport. An orchestrator restart happens during provision
@@ -16,153 +22,147 @@ plan peadm::upgrade (
   Boolean $executing_on_master = false,
 
   String[1] $stagingdir = '/tmp',
-  String[1] $pe_source  = "https://s3.amazonaws.com/pe-builds/released/${version}/puppet-enterprise-${version}-el-7-x86_64.tar.gz",
 ) {
-
-  # Allow for the upgrade task to be run local to the master.
-  $master_target = $executing_on_master ? {
-    true  => "local://${master_host}",
-    false => $master_host,
-  }
-
-  $ha_replica_target = [
+  # Ensure input valid for a supported architecture
+  $arch = peadm::validate_architecture(
+    $master_host,
     $master_replica_host,
-  ].peadm::flatten_compact()
-
-  $ha_database_target = [
-    $puppetdb_database_replica_host,
-  ].peadm::flatten_compact()
-
-  # Look up which hosts are compilers in the stack
-  # We look up groups of CMs separately since when they are upgraded is determined
-  # by which PDB PG host they are affiliated with
-  $compiler_cluster_master_hosts = puppetdb_query(@("PQL")).map |$node| { $node['certname'] }
-    resources[certname] { 
-      type = "Class" and
-      title = "Puppet_enterprise::Profile::Puppetdb" and
-      parameters.database_host = "${puppetdb_database_host}" and
-      !(certname = "${master_host}") }
-    | PQL
-
-  $compiler_cluster_master_replica_hosts = puppetdb_query(@("PQL")).map |$node| { $node['certname'] }
-    resources[certname] { 
-      type = "Class" and
-      title = "Puppet_enterprise::Profile::Puppetdb" and
-      parameters.database_host = "${puppetdb_database_replica_host}" and
-      !(certname = "${master_replica_host}") }
-    | PQL
-
-  $all_hosts = [
-    $master_target,
-    $puppetdb_database_host,
-    $master_replica_host,
-    $puppetdb_database_replica_host,
-    $compiler_cluster_master_hosts,
-    $compiler_cluster_master_replica_hosts,
-  ].peadm::flatten_compact()
-
-  # We need to make sure we aren't using PCP as this will go down during the upgrade
-  $all_hosts.peadm::fail_on_transport('pcp')
-
-  # TODO: Do we need to update the pe.conf(s) with a console password?
-
-  # Download the PE tarball on the nodes that need it
-  $upload_tarball_path = "/tmp/puppet-enterprise-${version}-el-7-x86_64.tar.gz"
-
-  $download_hosts = [
-    $master_target,
     $puppetdb_database_host,
     $puppetdb_database_replica_host,
-  ].peadm::flatten_compact()
-
-  run_task('peadm::download', $download_hosts,
-    source => $pe_source,
-    path   => $upload_tarball_path,
+    $compiler_hosts,
   )
 
-  # Shut down Puppet on all infra hosts
-  run_task('service', $all_hosts,
+  # Convert inputs into targets.
+  $master_target                    = peadm::get_targets($master_host, 1)
+  $master_replica_target            = peadm::get_targets($master_replica_host, 1)
+  $puppetdb_database_target         = peadm::get_targets($puppetdb_database_host, 1)
+  $puppetdb_database_replica_target = peadm::get_targets($puppetdb_database_replica_host, 1)
+  $compiler_targets                 = peadm::get_targets($compiler_hosts)
+
+  $all_targets = peadm::flatten_compact([
+    $master_target,
+    $puppetdb_database_target,
+    $master_replica_target,
+    $puppetdb_database_replica_target,
+    $compiler_targets,
+  ])
+
+  $pe_installer_targets = peadm::flatten_compact([
+    $master_target,
+    $puppetdb_database_target,
+    $puppetdb_database_replica_target,
+  ])
+
+  # Gather trusted facts from all systems
+  $trusted_facts = run_task('peadm::trusted_facts', $all_targets).reduce({}) |$memo,$result| {
+    $memo + { $result.target => $result['extensions'] }
+  }
+
+  # Determine which compilers are associated with which HA group
+  $compiler_m1_targets = $compiler_targets.filter |$target| {
+    $trusted_facts[$target]['pp_cluster'] == $trusted_facts[$master_target[0]]['pp_cluster']
+  }
+
+  $compiler_m2_targets = $compiler_targets.filter |$target| {
+    $trusted_facts[$target]['pp_cluster'] == $trusted_facts[$master_replica_target[0]]['pp_cluster']
+  }
+
+  ###########################################################################
+  # PREPARATION
+  ###########################################################################
+
+  # Support for running over the orchestrator transport is still TODO. For now,
+  #fail the plan if the orchestrator is being used.
+  $all_targets.peadm::fail_on_transport('pcp')
+
+  # Download the PE tarball on the nodes that need it
+  $platform = run_task('peadm::precheck', $master_target).first['platform']
+  $tarball_filename = "puppet-enterprise-${version}-${platform}.tar.gz"
+  $upload_tarball_path = "/tmp/${tarball_filename}"
+
+  run_plan('peadm::util::retrieve_and_upload', $pe_installer_targets,
+    source      => "https://s3.amazonaws.com/pe-builds/released/${version}/${tarball_filename}",
+    local_path  => "${stagingdir}/${tarball_filename}",
+    upload_path => $upload_tarball_path,
+  )
+
+  # Shut down Puppet on all infra targets
+  run_task('service', $all_targets,
     action => 'stop',
     name   => 'puppet',
   )
 
+  ###########################################################################
+  # UPGRADE MASTER SIDE
+  ###########################################################################
+
   # Shut down PuppetDB on CMs that use the PM's PDB PG
-  run_task('service', $compiler_cluster_master_hosts,
+  run_task('service', peadm::flatten_compact([
+    $master_target,
+    $compiler_m1_targets,
+  ]),
     action => 'stop',
     name   => 'pe-puppetdb',
   )
 
-  # Shut down pe-* services on the master. Only shutting down the ones
-  # that have failover pairs on the master replica.
-  ['pe-console-services', 'pe-nginx', 'pe-puppetserver', 'pe-puppetdb', 'pe-postgresql'].each |$service| {
-    run_task('service', $master_target,
-      action => 'stop',
-      name   => $service,
-    )
-  }
-
-  # TODO: Firewall up the master
+  run_task('peadm::pe_install', $puppetdb_database_target,
+    tarball => $upload_tarball_path,
+  )
 
   run_task('peadm::pe_install', $master_target,
     tarball => $upload_tarball_path,
   )
 
-  # Upgrade the master PuppetDB PostgreSQL host. Note that installer-driven
-  # upgrade will de-configure auth access for compilers. Re-run Puppet
-  # immediately to fully re-enable
-  run_task('peadm::pe_install', $puppetdb_database_host,
-    tarball => $upload_tarball_path,
-  )
-  run_task('peadm::puppet_runonce', $puppetdb_database_host)
+  # Installer-driven upgrade will de-configure auth access for compilers.
+  # Re-run Puppet immediately to fully re-enable
+  run_task('peadm::puppet_runonce', $puppetdb_database_target)
 
-  # Stop PuppetDB on the master
-  run_task('service', $master_target,
-    action => 'stop',
-    name   => 'pe-puppetdb',
-  )
-
-  # TODO: Unblock 8081 between the master and the master replica
-
-  # Start PuppetDB on the master
-  run_task('service', $master_target,
-    action => 'start',
-    name   => 'pe-puppetdb',
-  )
-
-  # TODO: Remove remaining firewall blocks
 
   # Wait until orchestrator service is healthy to proceed
   run_task('peadm::orchestrator_healthcheck', $master_target)
 
-  # Upgrade the compiler group A hosts
-  run_task('peadm::agent_upgrade', $compiler_cluster_master_hosts,
-    server => $master_host,
+  # Upgrade the compiler group A targets
+  run_task('peadm::agent_upgrade', $compiler_m1_targets,
+    server => $master_target.peadm::target_name(),
   )
 
-  # Shut down PuppetDB on CMs that use the PMR's PDB PG
-  run_task('service', $compiler_cluster_master_replica_hosts,
+  ###########################################################################
+  # UPGRADE REPLICA SIDE
+  ###########################################################################
+
+  # Shut down PuppetDB on compilers that use the repica's PDB PG
+  run_task('service', peadm::flatten_compact([
+    $master_replica_target,
+    $compiler_m2_targets,
+  ]),
     action => 'stop',
     name   => 'pe-puppetdb',
   )
 
-  # Run the upgrade.sh script on the master replica host
-  run_task('peadm::agent_upgrade', $ha_replica_target,
-    server => $master_host,
-  )
-
-  # Upgrade the master replica's PuppetDB PostgreSQL host
-  run_task('peadm::pe_install', $ha_database_target,
+  run_task('peadm::pe_install', $puppetdb_database_replica_target,
     tarball => $upload_tarball_path,
   )
-  run_task('peadm::puppet_runonce', $ha_database_target)
 
-  # Upgrade the compiler group B hosts
-  run_task('peadm::agent_upgrade', $compiler_cluster_master_replica_hosts,
-    server => $master_host,
+  # Installer-driven upgrade will de-configure auth access for compilers.
+  # Re-run Puppet immediately to fully re-enable
+  run_task('peadm::puppet_runonce', $puppetdb_database_replica_target)
+
+  # Run the upgrade.sh script on the master replica target
+  run_task('peadm::agent_upgrade', $master_replica_target,
+    server => $master_target.peadm::target_name(),
   )
 
-  # Ensure Puppet running on all infrastructure hosts
-  run_task('service', $all_hosts,
+  # Upgrade the compiler group B targets
+  run_task('peadm::agent_upgrade', $compiler_m2_targets,
+    server => $master_target.peadm::target_name(),
+  )
+
+  ###########################################################################
+  # FINALIZE UPGRADE
+  ###########################################################################
+
+  # Ensure Puppet running on all infrastructure targets
+  run_task('service', $all_targets,
     action => 'start',
     name   => 'puppet',
   )
