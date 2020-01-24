@@ -12,15 +12,10 @@ plan peadm::upgrade (
   Optional[Peadm::SingleTargetSpec] $puppetdb_database_host         = undef,
   Optional[Peadm::SingleTargetSpec] $puppetdb_database_replica_host = undef,
 
+  # Common Configuration
   String $version,
 
-  # This parameter exists to enable the use case of running peadm::upgrade over
-  # the PCP transport. An orchestrator restart happens during provision
-  # replica. Running `bolt plan run` directly on the master and using local
-  # transport for that node will let the plan to run to completion without
-  # failing due to being disconnected from the orchestrator.
-  Boolean $executing_on_master = false,
-
+  # Other
   String[1] $stagingdir = '/tmp',
 ) {
   # Ensure input valid for a supported architecture
