@@ -13,7 +13,7 @@ def main
              .to_i
 
   if majver < 6
-    conf = %x{puppet config print dns_alt_names certname}
+    conf = %x{/opt/puppetlabs/bin/puppet config print dns_alt_names certname}
              .chomp
              .split("\n")
              .map {|line| line.split(' = ') }
