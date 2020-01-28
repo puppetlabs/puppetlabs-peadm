@@ -3,10 +3,10 @@ function pe_xl::target_host(
 ) >> Variant[String, Undef] {
   case $target {
     Target: {
-      $target.host
+      $target.name
     }
     Array[Target,1,1]: {
-      $target[0].host
+      $target[0].name
     }
     Array[Target,0,0]: {
       undef

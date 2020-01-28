@@ -213,7 +213,7 @@ plan pe_xl::unit::install (
   }
 
   # Configure autosigning for the puppetdb database hosts 'cause they need it
-  $autosign_conf = $database_targets.reduce('') |$memo,$target| { "${target.host}\n${memo}" }
+  $autosign_conf = $database_targets.reduce('') |$memo,$target| { "${target.name}\n${memo}" }
   run_task('pe_xl::mkdir_p_file', $master_target,
     path    => '/etc/puppetlabs/puppet/autosign.conf',
     owner   => 'pe-puppet',
@@ -289,18 +289,21 @@ plan pe_xl::unit::install (
   )
 
   # Ensure certificate requests have been submitted
-  run_command(@(HEREDOC), $agent_installer_targets)
-    /opt/puppetlabs/bin/puppet ssl submit_request
-    | HEREDOC
+  run_task('pe_xl::submit_csr', $agent_installer_targets)
 
   # TODO: come up with an intelligent way to validate that the expected CSRs
   # have been submitted and are available for signing, prior to signing them.
   # For now, waiting a short period of time is necessary to avoid a small race.
   ctrl::sleep(15)
 
+  # Ensure some basic configuration on the master needed at install time.
+  if ($version.versioncmp('2019.0') < 0) {
+    apply($master_host) { include pe_xl::setup::master }.pe_xl::print_apply_result
+  }
+
   run_command(inline_epp(@(HEREDOC/L)), $master_target)
     /opt/puppetlabs/bin/puppetserver ca sign --certname \
-      <%= $agent_installer_targets.map |$target| { $target.host }.join(',') -%>
+      <%= $agent_installer_targets.map |$target| { $target.name }.join(',') -%>
     | HEREDOC
 
   run_task('pe_xl::puppet_runonce', $master_target)
