@@ -1,7 +1,7 @@
 {
   "name": "puppetlabs-peadm",
-  "version": "0.4.0",
-  "author": "Reid Vandewiele",
+  "version": "0.5.0",
+  "author": "Puppet Labs Solutions Architecture",
   "summary": "Bolt plans used to deploy an at-scale Puppet Enterprise architecture",
   "license": "Apache-2.0",
   "source": "https://github.com/puppetlabs/puppetlabs-peadm",
@@ -29,17 +29,19 @@
     {
       "operatingsystem": "RedHat",
       "operatingsystemrelease": [
-        "7.2",
-        "7.3",
-        "7.4"
+        "7"
       ]
     },
     {
       "operatingsystem": "CentOS",
       "operatingsystemrelease": [
-        "7.2",
-        "7.3",
-        "7.4"
+        "7"
+      ]
+    },
+    {
+      "operatingsystem": "Ubuntu",
+      "operatingsystemrelease": [
+        "18.04"
       ]
     }
   ],
