@@ -16,7 +16,7 @@ def main
     conf = %x{/opt/puppetlabs/bin/puppet config print dns_alt_names certname}
              .chomp
              .split("\n")
-             .map {|line| line.split(' = ') }
+             .map {|line| line.split(' = ', 2) }
              .to_h
 
     cmd = ['/opt/puppetlabs/bin/puppet', 'certificate', 'generate',
