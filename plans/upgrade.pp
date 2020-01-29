@@ -156,6 +156,13 @@ plan peadm::upgrade (
   # Run Puppet on the master to finalize central settings
   run_task('peadm::puppet_runonce', $master_target)
 
+  # The master could restart orchestration services, in which case we would
+  # have to wait for nodes to reconnect
+  if $all_targets.any |$target| { $target.protocol == 'pcp' } {
+    run_task('peadm::orchestrator_healthcheck', $master_target)
+    wait_until_available($all_targets, wait_time => 120)
+  }
+
   # Ensure Puppet running on all infrastructure targets
   run_task('service', $all_targets,
     action => 'start',
