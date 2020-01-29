@@ -40,6 +40,43 @@ The content needed is the PE installation tarball for the target version. The in
 
 Installation content can be downloaded from [https://puppet.com/try-puppet/puppet-enterprise/download/](https://puppet.com/try-puppet/puppet-enterprise/download/).
 
+## Usage over the Orchestrator transport
+
+The peadm::upgrade plan can be used with the Orchestrator (pcp) transport, provided that the Bolt executor is running as root on the master. To use the Orchestrator transport prepare an inventory file such as the following to set the default transport to be `pcp`, but the master specifically to be `local`.
+
+```
+---
+version: 2
+config:
+  transport: pcp
+  pcp:
+    cacert: /etc/puppetlabs/puppet/ssl/certs/ca.pem
+    service-url: https://pe-master-ad1d88-0.us-west1-a.c.reidmv-peadm.internal:8143
+    task-environment: production
+    token-file: /root/.puppetlabs/token
+groups:
+  - name: pe-targets
+    targets:
+      - name: "pe-master-ad1d88-0.us-west1-a.c.reidmv-peadm.internal"
+        config:
+          transport: local
+      - name: "pe-master-ad1d88-1.us-west1-b.c.reidmv-peadm.internal"
+      - name: "pe-compiler-ad1d88-0.us-west1-a.c.reidmv-peadm.internal"
+      - name: "pe-compiler-ad1d88-1.us-west1-b.c.reidmv-peadm.internal"
+      - name: "pe-compiler-ad1d88-2.us-west1-c.c.reidmv-peadm.internal"
+      - name: "pe-compiler-ad1d88-3.us-west1-a.c.reidmv-peadm.internal"
+      - name: "pe-psql-ad1d88-0.us-west1-a.c.reidmv-peadm.internal"
+      - name: "pe-psql-ad1d88-1.us-west1-b.c.reidmv-peadm.internal"
+```
+
+Additionally, you MUST pre-stage a copy of the PE installation media in /tmp on the PuppetDB PostgreSQL node(s), if present. The Orchestrator transport cannot be used to send large files to remote systems, and the plan will fail if tries.
+
+Pre-staging the installation media and using an inventory definition such as the example above, the peadm::upgrade plan can be run as normal. It will not rely on the Orchestrator service to operate on the master, and it will use the Orchestrator transport to operate on other PE nodes.
+
+```
+bolt plan run peadm::upgrade --params @params.json 
+```
+
 ## Manual Upgrades
 
 In the event a manual upgrade is required, the steps may be followed along by reading directly from [the upgrade plan](../plans/upgrade.pp), which is itself the most accurate technical description of the steps required. In general form, the upgrade process is as given below.
@@ -52,7 +89,7 @@ Note: it is assumed that the Puppet master is in cluster A when the upgrade star
 
 **Phase 2: upgrade HA cluster A**
 
-1. Shut down the `pe-puppetdb` service on the master and compilers in cluster A
+1. Shut down the `pe-puppetdb` service on the compilers in cluster A
 2. If different from the master, run the `install-puppet-enterprise` script for the new PE version on the PuppetDB PostgreSQL node for cluster A
 3. Run the `install-puppet-enterprise` script for the new PE version on the master
 4. If different from the master, Run `puppet agent -t` on the PuppetDB PostgreSQL node for cluster A
@@ -60,7 +97,7 @@ Note: it is assumed that the Puppet master is in cluster A when the upgrade star
 
 **Phase 3: upgrade HA cluster B**
 
-1. Shut down the `pe-puppetdb` service on the master (replica) and compilers in cluster B
+1. Shut down the `pe-puppetdb` service on the compilers in cluster B
 2. If different from the master (replica), run the `install-puppet-enterprise` script for the new PE version on the PuppetDB PostgreSQL node for cluster B
 3. If different from the master (replica), Run `puppet agent -t` on the PuppetDB PostgreSQL node for cluster B
 4. Perform the standard `curl upgrade.sh | bash` procedure on the master (replica)

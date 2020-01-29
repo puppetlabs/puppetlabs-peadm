@@ -66,9 +66,10 @@ plan peadm::upgrade (
   # PREPARATION
   ###########################################################################
 
-  # Support for running over the orchestrator transport is still TODO. For now,
-  #fail the plan if the orchestrator is being used.
-  $all_targets.peadm::fail_on_transport('pcp')
+  # Support for running over the orchestrator transport relies on Bolt being
+  # executed from the master using the local transport. For now, fail the plan
+  # if the orchestrator is being used for the master.
+  $master_target.peadm::fail_on_transport('pcp')
 
   # Download the PE tarball on the nodes that need it
   $platform = run_task('peadm::precheck', $master_target).first['platform']
@@ -92,10 +93,7 @@ plan peadm::upgrade (
   ###########################################################################
 
   # Shut down PuppetDB on CMs that use the PM's PDB PG
-  run_task('service', peadm::flatten_compact([
-    $master_target,
-    $compiler_m1_targets,
-  ]),
+  run_task('service', $compiler_m1_targets,
     action => 'stop',
     name   => 'pe-puppetdb',
   )
@@ -108,13 +106,15 @@ plan peadm::upgrade (
     tarball => $upload_tarball_path,
   )
 
+  # If in use, wait until orchestrator service is healthy to proceed
+  if $all_targets.any |$target| { $target.protocol == 'pcp' } {
+    run_task('peadm::orchestrator_healthcheck', $master_target)
+    wait_until_available($all_targets, wait_time => 120)
+  }
+
   # Installer-driven upgrade will de-configure auth access for compilers.
   # Re-run Puppet immediately to fully re-enable
   run_task('peadm::puppet_runonce', $puppetdb_database_target)
-
-
-  # Wait until orchestrator service is healthy to proceed
-  run_task('peadm::orchestrator_healthcheck', $master_target)
 
   # Upgrade the compiler group A targets
   run_task('peadm::agent_upgrade', $compiler_m1_targets,
@@ -125,11 +125,8 @@ plan peadm::upgrade (
   # UPGRADE REPLICA SIDE
   ###########################################################################
 
-  # Shut down PuppetDB on compilers that use the repica's PDB PG
-  run_task('service', peadm::flatten_compact([
-    $master_replica_target,
-    $compiler_m2_targets,
-  ]),
+  # Shut down PuppetDB on compilers that use the replica's PDB PG
+  run_task('service', $compiler_m2_targets,
     action => 'stop',
     name   => 'pe-puppetdb',
   )
