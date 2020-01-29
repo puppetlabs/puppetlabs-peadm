@@ -156,6 +156,9 @@ plan pe_xl::upgrade (
   # FINALIZE UPGRADE
   ###########################################################################
 
+  # Run Puppet on the master to finalize central settings
+  run_task('pe_xl::puppet_runonce', $master_target)
+
   # Ensure Puppet running on all infrastructure targets
   run_task('service', $all_targets,
     action => 'start',
