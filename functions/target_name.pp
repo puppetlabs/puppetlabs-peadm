@@ -1,4 +1,4 @@
-function pe_xl::target_host(
+function pe_xl::target_name(
   Variant[Target, Array[Target,0,1]] $target,
 ) >> Variant[String, Undef] {
   case $target {

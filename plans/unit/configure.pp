@@ -53,10 +53,10 @@ plan pe_xl::unit::configure (
   # Set up the console node groups to configure the various hosts in their
   # roles
   run_task('pe_xl::configure_node_groups', $master_target,
-    master_host                    => $master_target.pe_xl::target_host(),
-    master_replica_host            => $master_replica_target.pe_xl::target_host(),
-    puppetdb_database_host         => $puppetdb_database_target.pe_xl::target_host(),
-    puppetdb_database_replica_host => $puppetdb_database_replica_target.pe_xl::target_host(),
+    master_host                    => $master_target.pe_xl::target_name(),
+    master_replica_host            => $master_replica_target.pe_xl::target_name(),
+    puppetdb_database_host         => $puppetdb_database_target.pe_xl::target_name(),
+    puppetdb_database_replica_host => $puppetdb_database_replica_target.pe_xl::target_name(),
     compiler_pool_address          => $compiler_pool_address,
   )
 
@@ -86,13 +86,13 @@ plan pe_xl::unit::configure (
   if $arch['high-availability'] {
     # Run the PE Replica Provision
     run_task('pe_xl::provision_replica', $master_target,
-      master_replica => $master_replica_target.pe_xl::target_host(),
+      master_replica => $master_replica_target.pe_xl::target_name(),
       token_file     => $token_file,
     )
 
     # Run the PE Replica Enable
     run_task('pe_xl::enable_replica', $master_target,
-      master_replica => $master_replica_target.pe_xl::target_host(),
+      master_replica => $master_replica_target.pe_xl::target_name(),
       token_file     => $token_file,
     )
   }

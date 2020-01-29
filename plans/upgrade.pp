@@ -118,7 +118,7 @@ plan pe_xl::upgrade (
 
   # Upgrade the compiler group A targets
   run_task('pe_xl::agent_upgrade', $compiler_m1_targets,
-    server => $master_target.pe_xl::target_host(),
+    server => $master_target.pe_xl::target_name(),
   )
 
   ###########################################################################
@@ -144,12 +144,12 @@ plan pe_xl::upgrade (
 
   # Run the upgrade.sh script on the master replica target
   run_task('pe_xl::agent_upgrade', $master_replica_target,
-    server => $master_target.pe_xl::target_host(),
+    server => $master_target.pe_xl::target_name(),
   )
 
   # Upgrade the compiler group B targets
   run_task('pe_xl::agent_upgrade', $compiler_m2_targets,
-    server => $master_target.pe_xl::target_host(),
+    server => $master_target.pe_xl::target_name(),
   )
 
   ###########################################################################
