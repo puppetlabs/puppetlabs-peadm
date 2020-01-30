@@ -169,6 +169,6 @@ plan pe_xl::upgrade (
     name   => 'puppet',
   )
 
-  return('End Plan')
+  return("Upgrade of Puppet Enterprise ${arch['architecture']} succeeded.")
 }
 
