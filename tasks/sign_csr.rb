@@ -6,19 +6,9 @@ require 'open3'
 
 def main
   params = JSON.parse(STDIN.read)
-  majver = %x{/opt/puppetlabs/bin/puppet --version}
-             .chomp
-             .split('.')
-             .first
-             .to_i
 
-  if majver < 6
-    cmd = ['/opt/puppetlabs/bin/puppet', 'cert', 'sign',
-           '--allow-dns-alt-names', *params['certnames']]
-  else
-    cmd = ['/opt/puppetlabs/bin/puppetserver', 'ca', 'sign',
-           '--certname', params['certnames'].join(',')]
-  end
+  cmd = ['/opt/puppetlabs/bin/puppetserver', 'ca', 'sign',
+         '--certname', params['certnames'].join(',')]
 
   stdout, status = Open3.capture2(*cmd)
   puts stdout
