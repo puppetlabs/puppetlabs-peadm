@@ -3,7 +3,7 @@
   "parameters": {
     "certnames": {
       "type": "Array[String]",
-      "desscription": "A list of certnames to sign"
+      "description": "A list of certnames to sign"
     }
   },
   "input_method": "stdin",

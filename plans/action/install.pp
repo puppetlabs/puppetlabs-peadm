@@ -304,10 +304,9 @@ plan peadm::action::install (
   ctrl::sleep(15)
 
   if !empty($agent_installer_targets) {
-    run_command(inline_epp(@(HEREDOC/L)), $master_target)
-      /opt/puppetlabs/bin/puppetserver ca sign --certname \
-        <%= $agent_installer_targets.map |$target| { $target.name }.join(',') -%>
-      | HEREDOC
+    run_task('peadm::sign_csr', $master_target,
+      certnames => $agent_installer_targets.map |$target| { $target.name },
+    )
   }
 
   run_task('peadm::puppet_runonce', $master_target)
