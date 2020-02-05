@@ -1,16 +1,18 @@
 # Puppet Enterprise (pe) Administration (adm) Module
 
-This Puppet module contains Puppet Task Plans used to deploy and manage at-scale Puppet Enterprise architecture.
+This Puppet module contains Bolt plans used to deploy and manage Puppet Enterprise infrastructure. Plans are provided to automate common lifecycle activities, in order to increase velocity and reduce the possibility of human error incurred by manually performing these activities.
 
-Use this module to deploy Puppet Enterprise 2019.x Standard, Large, and Extra Large architecture.
+The peadm module is able to deploy and manage Puppet Enterprise 2019.x Standard, Large, and Extra Large architectures.
 
-* This deployment depends on and assumes the use of trusted facts. Specifically, `pp_application` and `pp_cluster`.
-* This deployment assumes that at least for PE infrastructure nodes, Puppet certnames are correct, resolvable FQDNs.
+## Expectations
+
+The peadm module is intended to be used only by Puppet Enterprise customers actively working with and being guided by Puppet Customer Success teams—specifically, the Support team and the Solutions Architecture team. Independent use is not recommended for production environments.
 
 ## Documentation
 
 See this README file and any documents in the [documentation](documentation) directory.
 
-## Architecture
-
-![architecture](documentation/images/architecture.png)
+* [Basic usage](documentation/basic_usage.md)
+* [Upgrade](documentation/upgrade.md)
+* [Classification](documentation/classification/md)
+* [Architectures](documentation/architectures.md)
