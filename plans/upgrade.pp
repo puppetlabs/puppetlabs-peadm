@@ -99,11 +99,13 @@ plan peadm::upgrade (
   )
 
   run_task('peadm::pe_install', $puppetdb_database_target,
-    tarball => $upload_tarball_path,
+    tarball               => $upload_tarball_path,
+    puppet_service_ensure => 'stopped',
   )
 
   run_task('peadm::pe_install', $master_target,
-    tarball => $upload_tarball_path,
+    tarball               => $upload_tarball_path,
+    puppet_service_ensure => 'stopped',
   )
 
   # If in use, wait until orchestrator service is healthy to proceed
@@ -132,7 +134,8 @@ plan peadm::upgrade (
   )
 
   run_task('peadm::pe_install', $puppetdb_database_replica_target,
-    tarball => $upload_tarball_path,
+    tarball               => $upload_tarball_path,
+    puppet_service_ensure => 'stopped',
   )
 
   # Installer-driven upgrade will de-configure auth access for compilers.
@@ -171,4 +174,3 @@ plan peadm::upgrade (
 
   return("Upgrade of Puppet Enterprise ${arch['architecture']} succeeded.")
 }
-
