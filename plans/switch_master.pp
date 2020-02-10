@@ -5,8 +5,8 @@ plan peadm::switch_master (
 
 ){
 
-  # Extract the target node name and convert to certname array
-   $certname = get_targets($nodes).map |$a| { $a.name }
+# Extract the target node name and convert to certname array
+$certname = get_targets($nodes).map |$a| { $a.name }
 
   # Task to stop Puppet and change the Puppet Server name in puppet.conf
     run_task ('peadm::agent_switchover',$nodes,
@@ -21,7 +21,7 @@ plan peadm::switch_master (
       run_task('peadm::puppet_runonce', $nodes,
         noop  =>  true,
         _catch_errors => true
-      )  
+      )
 
     # The Certificate is signed on the Puppet Server
       run_task('peadm::sign_csr', $master,
@@ -41,7 +41,7 @@ plan peadm::switch_master (
     run_task('service', $nodes,
       action => 'start',
       name   => 'puppet',
-    )  
+    )
 
-  return("Switching Puppet Master Certicate Regeneration succeeded.")
+  return('Switching Puppet Master Certicate Regeneration succeeded')
 }
