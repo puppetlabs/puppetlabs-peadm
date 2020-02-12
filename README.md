@@ -12,7 +12,13 @@ The peadm module is intended to be used only by Puppet Enterprise customers acti
 
 See this README file and any documents in the [documentation](documentation) directory.
 
-* [Basic usage](documentation/basic_usage.md)
+Plans:
+
+* [Provision](documentation/provision.md)
 * [Upgrade](documentation/upgrade.md)
-* [Classification](documentation/classification/md)
+
+Reference:
+
+* [Classification](documentation/classification.md)
 * [Architectures](documentation/architectures.md)
+* [Testing](documentation/pre_post_checks.md)
