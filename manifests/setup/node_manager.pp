@@ -20,9 +20,9 @@ class peadm::setup::node_manager (
   Optional[String[1]] $puppetdb_database_replica_host = undef,
 ) {
 
-  if ([$master_replica_host, $puppetdb_database_replica_host].filter |$_| { $_ }.size == 1) {
-    fail('Must pass both master_replica_host and puppetdb_database_replica_host, or neither')
-  }
+  #if ([$master_replica_host, $puppetdb_database_replica_host].filter |$_| { $_ }.size == 1) {
+  #  fail('Must pass both master_replica_host and puppetdb_database_replica_host, or neither')
+  #}
 
   ##################################################
   # PE INFRASTRUCTURE GROUPS
@@ -120,7 +120,7 @@ class peadm::setup::node_manager (
 
   # Create the replica and B groups if a replica master and database host are
   # supplied
-  if ($master_replica_host and $puppetdb_database_replica_host) {
+  if $master_replica_host {
     # We need to pre-create this group so that the master replica can be
     # identified as running PuppetDB, so that Puppet will create a pg_ident
     # authorization rule for it on the PostgreSQL nodes.
@@ -133,7 +133,9 @@ class peadm::setup::node_manager (
       },
       variables => { 'peadm_replica' => true },
     }
+  }
 
+  if $puppetdb_database_replica_host {
     node_group { 'PE Master B':
       ensure => present,
       parent => 'PE Infrastructure',
