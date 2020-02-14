@@ -20,10 +20,6 @@ class peadm::setup::node_manager (
   Optional[String[1]] $puppetdb_database_replica_host = undef,
 ) {
 
-  #if ([$master_replica_host, $puppetdb_database_replica_host].filter |$_| { $_ }.size == 1) {
-  #  fail('Must pass both master_replica_host and puppetdb_database_replica_host, or neither')
-  #}
-
   ##################################################
   # PE INFRASTRUCTURE GROUPS
   ##################################################
