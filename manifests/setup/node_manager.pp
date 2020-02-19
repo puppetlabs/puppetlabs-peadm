@@ -152,7 +152,9 @@ class peadm::setup::node_manager (
         },
       },
     }
+  }
 
+  if $pupppetdb_database_replica_host or $master_replica_host {
     node_group { 'PE Compiler Group B':
       ensure  => 'present',
       parent  => 'PE Master',
