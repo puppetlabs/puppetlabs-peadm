@@ -1,6 +1,5 @@
 #!/opt/puppetlabs/puppet/bin/ruby
 #
-# rubocop:disable Style/GlobalVars
 require 'json'
 require 'open3'
 
