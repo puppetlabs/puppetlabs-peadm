@@ -100,32 +100,13 @@ plan peadm::action::install (
 
   $dns_alt_names_csv = $dns_alt_names.reduce |$csv,$x| { "${csv},${x}" }
 
-  # Process user input for r10k private key (content or file) and set
+  # Process user input for r10k private key (file or content) and set
   # appropriate value in $r10k_private_key. The value of this variable should
   # either be undef or else the key content to write.
-  $r10k_private_key = [
-    $r10k_private_key_file,
-    $r10k_private_key_content,
-  ].peadm::flatten_compact.size ? {
-    0 => undef, # no key data supplied
-    2 => fail('Must specify either one or neither of r10k_private_key_file and r10k_private_key_content; not both'),
-    1 => $r10k_private_key_file ? {
-      String => file($r10k_private_key_file), # key file path supplied, read data from file
-      undef  => $r10k_private_key_content,    # key content supplied directly, use as-is
-    },
-  }
+  $r10k_private_key = peadm::file_or_content('r10k_private_key', $r10k_private_key_file, $r10k_private_key_content)
 
-  $license_key = [
-    $license_key_file,
-    $license_key_content,
-  ].peadm::flatten_compact.size ? {
-    0 => undef, # no key data supplied
-    2 => fail('Must specify either one or neither of license_key_file and license_key_content; not both'),
-    1 => $license_key_file ? {
-      String  => file($license_key_file), # key file path supplied, read data from file
-      undef   => $license_key_content,    # key content supplied directly, use as-is
-    },
-  }
+  # Same for license key
+  $license_key = peadm::file_or_content('license_key', $license_key_file, $license_key_content)
 
   $precheck_results = run_task('peadm::precheck', $all_targets)
   $platform = $precheck_results.first['platform'] # Assume the platform of the first result correct
@@ -233,7 +214,10 @@ plan peadm::action::install (
   }
 
   if $r10k_private_key {
-    run_task('peadm::mkdir_p_file', [$master_target, $master_replica_target],
+    run_task('peadm::mkdir_p_file', peadm::flatten_compact([
+      $master_target,
+      $master_replica_target,
+    ]),
       path    => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
       owner   => 'pe-puppet',
       group   => 'pe-puppet',
@@ -243,7 +227,10 @@ plan peadm::action::install (
   }
 
   if $license_key {
-    run_task('peadm::mkdir_p_file', [$master_target, $master_replica_target],
+    run_task('peadm::mkdir_p_file', peadm::flatten_compact([
+      $master_target,
+      $master_replica_target,
+    ]),
       path    => '/etc/puppetlabs/license.key',
       owner   => 'pe-puppet',
       group   => 'pe-puppet',
