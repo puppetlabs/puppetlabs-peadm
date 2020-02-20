@@ -27,6 +27,10 @@ plan peadm::provision (
   Optional[Peadm::Pem]              $r10k_private_key_content = undef,
   Optional[String]                  $deploy_environment       = undef,
 
+  # License Key
+  Optional[String]                  $license_key_file    = undef,
+  Optional[String]                  $license_key_content = undef,
+
   # Other
   Optional[String]                  $stagingdir = undef,
 ) {
@@ -53,6 +57,10 @@ plan peadm::provision (
     r10k_remote                    => $r10k_remote,
     r10k_private_key_file          => $r10k_private_key_file,
     r10k_private_key_content       => $r10k_private_key_content,
+
+    # License Key
+    license_key_file               => $license_key_file,
+    license_key_content            => $license_key_content,
 
     # Other
     stagingdir                     => $stagingdir,
@@ -81,3 +89,4 @@ plan peadm::provision (
   # Return a string banner reporting on what was done
   return([$install_result, $configure_result])
 }
+
