@@ -9,6 +9,11 @@
 #   over to the masters at /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa
 #   If the file does not exist the value will simply be supplied to the masters
 #
+# @param license_key
+#   The license key to use with Puppet Enterprise.  If this is a local file it
+#   will be copied over to the MoM at /etc/puppetlabs/license.key
+#   If the file does not exist the value will simply be supplied to the masters
+#
 # @param pe_conf_data
 #   Config data to plane into pe.conf when generated on all hosts, this can be
 #   used for tuning data etc.
@@ -35,6 +40,10 @@ plan peadm::action::install (
   Optional[String]     $r10k_remote              = undef,
   Optional[String]     $r10k_private_key_file    = undef,
   Optional[Peadm::Pem] $r10k_private_key_content = undef,
+
+  # License key
+  Optional[String]     $license_key_file    = undef,
+  Optional[String]     $license_key_content = undef,
 
   # Other
   String               $stagingdir   = '/tmp',
@@ -103,6 +112,18 @@ plan peadm::action::install (
     1 => $r10k_private_key_file ? {
       String => file($r10k_private_key_file), # key file path supplied, read data from file
       undef  => $r10k_private_key_content,    # key content supplied directly, use as-is
+    },
+  }
+
+  $license_key = [
+    $license_key_file,
+    $license_key_content,
+  ].peadm::flatten_compact.size ? {
+    0 => undef, # no key data supplied
+    2 => fail('Must specify either one or neither of license_key_file and license_key_content; not both'),
+    1 => $license_key_file ? {
+      String  => file($license_key_file), # key file path supplied, read data from file
+      undef   => $license_key_content,    # key content supplied directly, use as-is
     },
   }
 
@@ -218,6 +239,16 @@ plan peadm::action::install (
       group   => 'pe-puppet',
       mode    => '0400',
       content => $r10k_private_key,
+    )
+  }
+
+  if $license_key {
+    run_task('peadm::mkdir_p_file', [$master_target, $master_replica_target],
+      path    => '/etc/puppetlabs/license.key',
+      owner   => 'pe-puppet',
+      group   => 'pe-puppet',
+      mode    => '0400',
+      content => $license_key,
     )
   }
 
