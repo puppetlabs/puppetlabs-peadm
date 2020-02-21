@@ -150,26 +150,12 @@ class peadm::setup::node_manager (
     }
   }
 
-  if ($puppetdb_database_replica_host) {
-    node_group { 'PE Compiler Group B':
-      ensure  => 'present',
-      parent  => 'PE Master',
-      rule    => ['and',
-        ['=', ['trusted', 'extensions', 'pp_application'], 'puppet/compiler'],
-        ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
-      ],
-      classes => {
-        'puppet_enterprise::profile::puppetdb' => {
-          'database_host' => $puppetdb_database_replica_host,
-        },
-        'puppet_enterprise::profile::master'   => {
-          'puppetdb_host' => ['${clientcert}', $master_host], # lint:ignore:single_quote_string_with_variables
-          'puppetdb_port' => [8081],
-        }
-      },
-      data    => $compiler_data,
+  if ($puppetdb_database_replica_host) or ($master_replica_host) {
+    if ($puppetdb_database_replica_host) {
+      $dbhost = $puppetdb_database_replica_host
+    } else {
+      $dbhost = $puppetdb_database_host
     }
-  } elsif ($master_replica_host) {
     node_group { 'PE Compiler Group B':
       ensure  => 'present',
       parent  => 'PE Master',
@@ -179,7 +165,7 @@ class peadm::setup::node_manager (
       ],
       classes => {
         'puppet_enterprise::profile::puppetdb' => {
-          'database_host' => $puppetdb_database_host,
+          'database_host' => $dbhost,
         },
         'puppet_enterprise::profile::master'   => {
           'puppetdb_host' => ['${clientcert}', $master_host], # lint:ignore:single_quote_string_with_variables
