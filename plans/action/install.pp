@@ -129,8 +129,11 @@ plan peadm::action::install (
     'pe_install::puppet_master_dnsaltnames'                           => $dns_alt_names,
     'puppet_enterprise::puppetdb_database_host'                       => $puppetdb_database_target.peadm::target_name(),
     'puppet_enterprise::profile::master::code_manager_auto_configure' => true,
-    'puppet_enterprise::profile::master::r10k_private_key'            => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
     'puppet_enterprise::profile::master::r10k_remote'                 => $r10k_remote,
+    'puppet_enterprise::profile::master::r10k_private_key'            => $r10k_private_key ? {
+      undef   => undef,
+      default => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
+    },
   } + $pe_conf_data)
 
   $puppetdb_database_pe_conf = peadm::generate_pe_conf({
