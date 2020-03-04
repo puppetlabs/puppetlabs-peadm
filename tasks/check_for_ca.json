@@ -1,0 +1,23 @@
+{
+  "puppet_task_version": 1,
+  "supports_noop": false,
+  "description": "Check the master for restored SSL certs and remove any belonging to infra.",
+  "parameters": {
+    "master_replica_host": {
+      "description": "The Master replica host.",
+      "type": "Optional[String]"
+    },
+    "puppetdb_database_host": {
+      "description": "The PuppetDB host.",
+      "type": "Optional[String]"
+    },
+    "puppetdb_database_replica_host": {
+      "description": "The PuppetDB replica host.",
+      "type": "Optional[String]"
+    },
+    "compiler_hosts": {
+      "description": "The Compiler hosts.",
+      "type": "Optional[Array]"
+    }    
+  }
+}

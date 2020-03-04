@@ -164,6 +164,16 @@ plan peadm::action::install (
     upload_path => $upload_tarball_path,
   )
 
+  # Check for a restored CA on the master and if found, remove any 
+  # existing signed certs.  We want the infra servers to generate new 
+  # certs and let any pre-existing agents continue to be able to connect.
+  run_task('peadm::check_for_ca', $master_target,
+    'master_replica_host'            => $master_replica_host,
+    'puppetdb_database_host'         => $puppetdb_database_host,
+    'puppetdb_database_replica_host' => $puppetdb_database_replica_host,
+    'compiler_hosts'                 => $compiler_hosts,
+  )
+
   # Create csr_attributes.yaml files for the nodes that need them
   # There is a problem with OID names in csr_attributes.yaml for some
   # installs, e.g. PE 2019.0.1, PUP-9746. Use the raw OIDs for now.
