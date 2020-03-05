@@ -19,6 +19,11 @@ plan peadm::action::configure (
 
   # Other
   String           $stagingdir = '/tmp',
+  String           $pp_application_compiler = 'puppet/compiler',
+  String           $pp_application_master = 'puppet/master',
+  String           $pp_application_puppetdb = 'puppet/puppetdb-database',
+  String           $pp_cluster_a = 'A',
+  String           $pp_cluster_b = 'B',
 ) {
   # Convert inputs into targets.
   $master_target                    = peadm::get_targets($master_host, 1)
@@ -89,6 +94,11 @@ plan peadm::action::configure (
       puppetdb_database_host         => $puppetdb_database_host_string, # $puppetdb_database_target.peadm::target_name(),
       puppetdb_database_replica_host => $puppetdb_database_replica_host_string, # $puppetdb_database_replica_target.peadm::target_name(),
       compiler_pool_address          => $compiler_pool_address,
+      pp_application_compiler        => $pp_application_compiler,
+      pp_application_master          => $pp_application_master,
+      pp_application_puppetdb        => $pp_application_puppetdb,
+      pp_cluster_a                   => $pp_cluster_a,
+      pp_cluster_b                   => $pp_cluster_b,
       require                        => File['node_manager.yaml'],
     }
   }

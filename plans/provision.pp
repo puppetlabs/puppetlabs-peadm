@@ -33,6 +33,11 @@ plan peadm::provision (
 
   # Other
   Optional[String]                  $stagingdir = undef,
+  Optional[String]                  $pp_application_compiler = 'puppet/compiler',
+  Optional[String]                  $pp_application_master = 'puppet/master',
+  Optional[String]                  $pp_application_puppetdb = 'puppet/puppetdb-database',
+  Optional[String]                  $pp_cluster_a = 'A',
+  Optional[String]                  $pp_cluster_b = 'B',
 ) {
 
   $install_result = run_plan('peadm::action::install',
@@ -64,6 +69,11 @@ plan peadm::provision (
 
     # Other
     stagingdir                     => $stagingdir,
+    pp_application_compiler        => $pp_application_compiler,
+    pp_application_master          => $pp_application_master,
+    pp_application_puppetdb        => $pp_application_puppetdb,
+    pp_cluster_a                   => $pp_cluster_a,
+    pp_cluster_b                   => $pp_cluster_b,
   )
 
   $configure_result = run_plan('peadm::action::configure',
@@ -84,6 +94,11 @@ plan peadm::provision (
 
     # Other
     stagingdir                     => $stagingdir,
+    pp_application_compiler        => $pp_application_compiler,
+    pp_application_master          => $pp_application_master,
+    pp_application_puppetdb        => $pp_application_puppetdb,
+    pp_cluster_a                   => $pp_cluster_a,
+    pp_cluster_b                   => $pp_cluster_b,
   )
 
   # Return a string banner reporting on what was done
