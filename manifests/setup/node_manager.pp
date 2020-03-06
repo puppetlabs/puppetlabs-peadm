@@ -175,12 +175,12 @@ class peadm::setup::node_manager (
       data    => $compiler_data,
     }
   } elsif ($master_replica_host) {
-    node_group { 'PE Compiler Group B':
+    node_group { "PE Compiler Group ${pp_cluster_b}":
       ensure  => 'present',
       parent  => 'PE Master',
       rule    => ['and',
-        ['=', ['trusted', 'extensions', 'pp_application'], 'puppet/compiler'],
-        ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
+        ['=', ['trusted', 'extensions', 'pp_application'], $pp_application_compiler],
+        ['=', ['trusted', 'extensions', 'pp_cluster'], $pp_cluster_b],
       ],
       classes => {
         'puppet_enterprise::profile::puppetdb' => {
