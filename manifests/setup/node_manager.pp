@@ -81,7 +81,7 @@ class peadm::setup::node_manager (
 
   # Create data-only groups to store PuppetDB PostgreSQL database configuration
   # information specific to the master and master replica nodes.
-  node_group { 'PE Master A':
+  node_group { "PE Master ${pp_cluster_a}":
     ensure => present,
     parent => 'PE Infrastructure',
     rule   => ['and',
@@ -100,7 +100,7 @@ class peadm::setup::node_manager (
 
   # Configure the A pool for compilers. There are up to two pools for HA, each
   # having an affinity for one "availability zone" or the other.
-  node_group { 'PE Compiler Group A':
+  node_group { "PE Compiler Group ${pp_cluster_a}":
     ensure  => 'present',
     parent  => 'PE Master',
     rule    => ['and',
@@ -137,7 +137,7 @@ class peadm::setup::node_manager (
   }
 
   if $puppetdb_database_replica_host {
-    node_group { 'PE Master B':
+    node_group { "PE Master ${pp_cluster_b}":
       ensure => present,
       parent => 'PE Infrastructure',
       rule   => ['and',
@@ -154,7 +154,7 @@ class peadm::setup::node_manager (
       },
     }
 
-    node_group { 'PE Compiler Group B':
+    node_group { "PE Compiler Group ${pp_cluster_b}":
       ensure  => 'present',
       parent  => 'PE Master',
       rule    => ['and',

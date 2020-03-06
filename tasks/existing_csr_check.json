@@ -1,0 +1,7 @@
+{
+  "puppet_task_version": 1,
+  "supports_noop": false,
+  "description": "This script checks for the existence of a csr_attributes file.",
+  "parameters": {
+  }
+}

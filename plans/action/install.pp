@@ -175,35 +175,53 @@ plan peadm::action::install (
   $pp_application = '1.3.6.1.4.1.34380.1.1.8'
   $pp_cluster     = '1.3.6.1.4.1.34380.1.1.16'
 
-  run_task('peadm::mkdir_p_file', $master_target,
-    path    => '/etc/puppetlabs/puppet/csr_attributes.yaml',
-    content => @("HEREDOC"),
-      ---
-      extension_requests:
-        ${pp_application}: "${pp_application_master}"
-        ${pp_cluster}: "${pp_cluster_a}"
-      | HEREDOC
+  $master_check = run_task('peadm::existing_csr_check',
+    $master_target,
+    '_catch_errors' => true
   )
+  if $master_check.ok {
+    run_task('peadm::mkdir_p_file', $master_target,
+      path    => '/etc/puppetlabs/puppet/csr_attributes.yaml',
+      content => @("HEREDOC"),
+        ---
+        extension_requests:
+          ${pp_application}: "${pp_application_master}"
+          ${pp_cluster}: "${pp_cluster_a}"
+        | HEREDOC
+    )
+  }
 
-  run_task('peadm::mkdir_p_file', $puppetdb_database_target,
-    path    => '/etc/puppetlabs/puppet/csr_attributes.yaml',
-    content => @("HEREDOC"),
-      ---
-      extension_requests:
-        ${pp_application}: "${pp_application_puppetdb}"
-        ${pp_cluster}: "${pp_cluster_a}"
-      | HEREDOC
+  $puppetdb_check = run_task('peadm::existing_csr_check',
+    $puppetdb_database_target,
+    '_catch_errors' => true
   )
+  if $puppetdb_check.ok {
+    run_task('peadm::mkdir_p_file', $puppetdb_database_target,
+      path    => '/etc/puppetlabs/puppet/csr_attributes.yaml',
+      content => @("HEREDOC"),
+        ---
+        extension_requests:
+          ${pp_application}: "${pp_application_puppetdb}"
+          ${pp_cluster}: "${pp_cluster_a}"
+        | HEREDOC
+    )
+  }
 
-  run_task('peadm::mkdir_p_file', $puppetdb_database_replica_target,
-    path    => '/etc/puppetlabs/puppet/csr_attributes.yaml',
-    content => @("HEREDOC"),
-      ---
-      extension_requests:
-        ${pp_application}: "${pp_application_puppetdb}"
-        ${pp_cluster}: "${pp_cluster_b}"
-      | HEREDOC
+  $puppetdb_replica_check = run_task('peadm::existing_csr_check',
+    $puppetdb_database_replica_target,
+    '_catch_errors' => true
   )
+  if $puppetdb_replica_check.ok {
+    run_task('peadm::mkdir_p_file', $puppetdb_database_replica_target,
+      path    => '/etc/puppetlabs/puppet/csr_attributes.yaml',
+      content => @("HEREDOC"),
+        ---
+        extension_requests:
+          ${pp_application}: "${pp_application_puppetdb}"
+          ${pp_cluster}: "${pp_cluster_b}"
+        | HEREDOC
+    )
+  }
 
   # Get the master installation up and running. The installer will
   # "fail" because PuppetDB can't start, if puppetdb_database_target
