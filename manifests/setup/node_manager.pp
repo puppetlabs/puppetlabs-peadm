@@ -44,7 +44,7 @@ class peadm::setup::node_manager (
   # We modify this group's rule such that all PE infrastructure nodes will be
   # members.
   node_group { 'PE Infrastructure Agent':
-    rule => ['and', ['~', ['trusted', 'extensions', 'pp_application'], "^${pp_application_compiler}/"]],
+    rule => ['and', ['~', ['trusted', 'extensions', 'pp_application'], "^${pp_application_compiler}|^${pp_application_master}|^${pp_application_puppetdb}"]], # lint:ignore:140chars
   }
 
   # We modify this group to add, as data, the compiler_pool_address only.
