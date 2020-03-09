@@ -25,10 +25,7 @@ plan peadm::action::configure (
   $master_replica_target            = peadm::get_targets($master_replica_host, 1)
   $puppetdb_database_replica_target = peadm::get_targets($puppetdb_database_replica_host, 1)
   $compiler_targets                 = peadm::get_targets($compiler_hosts)
-  $puppetdb_database_target         = $puppetdb_database_host ? {
-    undef   => $master_target,
-    default => peadm::get_targets($puppetdb_database_host, 1)
-  }
+  $puppetdb_database_target         = peadm::get_targets($puppetdb_database_host, 1)
 
   # Ensure input valid for a supported architecture
   $arch = peadm::validate_architecture(

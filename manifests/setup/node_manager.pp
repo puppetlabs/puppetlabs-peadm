@@ -13,11 +13,12 @@
 #
 class peadm::setup::node_manager (
   String[1] $master_host,
-  String[1] $puppetdb_database_host,
+  String[1] $puppetdb_database_host = $master_host,
+
   String[1] $compiler_pool_address,
 
   Optional[String[1]] $master_replica_host            = undef,
-  Optional[String[1]] $puppetdb_database_replica_host = undef,
+  Optional[String[1]] $puppetdb_database_replica_host = $master_replica_host,
 ) {
 
   ##################################################
@@ -129,9 +130,7 @@ class peadm::setup::node_manager (
       },
       variables => { 'peadm_replica' => true },
     }
-  }
 
-  if $puppetdb_database_replica_host {
     node_group { 'PE Master B':
       ensure => present,
       parent => 'PE Infrastructure',
@@ -148,14 +147,7 @@ class peadm::setup::node_manager (
         },
       },
     }
-  }
 
-  if ($puppetdb_database_replica_host) or ($master_replica_host) {
-    if ($puppetdb_database_replica_host) {
-      $dbhost = $puppetdb_database_replica_host
-    } else {
-      $dbhost = $puppetdb_database_host
-    }
     node_group { 'PE Compiler Group B':
       ensure  => 'present',
       parent  => 'PE Master',
@@ -165,7 +157,7 @@ class peadm::setup::node_manager (
       ],
       classes => {
         'puppet_enterprise::profile::puppetdb' => {
-          'database_host' => $dbhost,
+          'database_host' => $puppetdb_database_replica_host,
         },
         'puppet_enterprise::profile::master'   => {
           'puppetdb_host' => ['${clientcert}', $master_host], # lint:ignore:single_quote_string_with_variables
