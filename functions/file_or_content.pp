@@ -1,7 +1,7 @@
 function peadm::file_or_content(
-  String $param_name,
-  String $file,
-  String $content,
+  String                 $param_name,
+  Variant[String, Undef] $file,
+  Variant[String, Undef] $content,
 ) {
 
   $value = [
