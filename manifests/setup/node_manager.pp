@@ -12,12 +12,22 @@
 #               }'
 #
 class peadm::setup::node_manager (
+  # Common
   String[1] $master_host,
-  String[1] $puppetdb_database_host,
   String[1] $compiler_pool_address,
 
+  # High Availability
   Optional[String[1]] $master_replica_host            = undef,
-  Optional[String[1]] $puppetdb_database_replica_host = undef,
+
+  # For the next two parameters, the default values are appropriate when
+  # deploying Standard or Large architectures. These values only need to be
+  # specified differently when deploying an Extra Large architecture.
+
+  # Specify when using Extra Large
+  String[1]           $puppetdb_database_host         = $master_host,
+
+  # Specify when using Extra Large AND High Availability
+  Optional[String[1]] $puppetdb_database_replica_host = $master_replica_host,
 ) {
 
   ##################################################
@@ -129,9 +139,7 @@ class peadm::setup::node_manager (
       },
       variables => { 'peadm_replica' => true },
     }
-  }
 
-  if $puppetdb_database_replica_host {
     node_group { 'PE Master B':
       ensure => present,
       parent => 'PE Infrastructure',
