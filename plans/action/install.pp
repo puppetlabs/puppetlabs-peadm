@@ -148,10 +148,22 @@ plan peadm::action::install (
     'puppet_enterprise::database_host'      => $puppetdb_database_replica_target.peadm::target_name(),
   } + $pe_conf_data)
 
-  # Upload the pe.conf files to the hosts that need them
-  peadm::file_content_upload($master_pe_conf, '/tmp/pe.conf', $master_target)
-  peadm::file_content_upload($puppetdb_database_pe_conf, '/tmp/pe.conf', $puppetdb_database_target)
-  peadm::file_content_upload($puppetdb_database_replica_pe_conf, '/tmp/pe.conf', $puppetdb_database_replica_target)
+  # Upload the pe.conf files to the hosts that need them, and ensure correctly
+  # configured certnames. Right now for these hosts we need to do that by
+  # staging a puppet.conf file.
+  ['master', 'puppetdb_database', 'puppetdb_database_replica'].each |$var| {
+    $target  = getvar("${var}_target")
+    $pe_conf = getvar("${var}_pe_conf")
+
+    peadm::file_content_upload($pe_conf, '/tmp/pe.conf', $target)
+    run_task('peadm::mkdir_p_file', $target,
+      path    => '/etc/puppetlabs/puppet/puppet.conf',
+      content => @("HEREDOC"),
+        [main]
+        certname = ${target.peadm::target_name()}
+        | HEREDOC
+    )
+  }
 
   # Download the PE tarball and send it to the nodes that need it
   $pe_tarball_name     = "puppet-enterprise-${version}-${platform}.tar.gz"
