@@ -290,31 +290,38 @@ plan peadm::action::install (
     server        => $master_target.peadm::target_name(),
     install_flags => [
       '--puppet-service-ensure', 'stopped',
+      "main:certname=${master_replica_target.peadm::target_name()}",
       "main:dns_alt_names=${dns_alt_names_csv}",
       "extension_requests:${pp_application}=puppet/master",
       "extension_requests:${pp_cluster}=B",
     ],
   )
 
-  run_task('peadm::agent_install', $compiler_a_targets,
-    server        => $master_target.peadm::target_name(),
-    install_flags => [
-      '--puppet-service-ensure', 'stopped',
-      "main:dns_alt_names=${dns_alt_names_csv}",
-      "extension_requests:${pp_application}=puppet/compiler",
-      "extension_requests:${pp_cluster}=A",
-    ],
-  )
+  $compiler_a_targets.each |$target| {
+    run_task('peadm::agent_install', $target,
+      server        => $master_target.peadm::target_name(),
+      install_flags => [
+        '--puppet-service-ensure', 'stopped',
+        "main:certname=${target.peadm::target_name()}",
+        "main:dns_alt_names=${dns_alt_names_csv}",
+        "extension_requests:${pp_application}=puppet/compiler",
+        "extension_requests:${pp_cluster}=A",
+      ],
+    )
+  }
 
-  run_task('peadm::agent_install', $compiler_b_targets,
-    server        => $master_target.peadm::target_name(),
-    install_flags => [
-      '--puppet-service-ensure', 'stopped',
-      "main:dns_alt_names=${dns_alt_names_csv}",
-      "extension_requests:${pp_application}=puppet/compiler",
-      "extension_requests:${pp_cluster}=B",
-    ],
-  )
+  $compiler_b_targets.each |$target| {
+    run_task('peadm::agent_install', $target,
+      server        => $master_target.peadm::target_name(),
+      install_flags => [
+        '--puppet-service-ensure', 'stopped',
+        "main:certname=${target.peadm::target_name()}",
+        "main:dns_alt_names=${dns_alt_names_csv}",
+        "extension_requests:${pp_application}=puppet/compiler",
+        "extension_requests:${pp_cluster}=B",
+      ],
+    )
+  }
 
   # Ensure certificate requests have been submitted
   run_task('peadm::submit_csr', $agent_installer_targets)
