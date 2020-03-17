@@ -297,30 +297,19 @@ plan peadm::action::install (
     ],
   )
 
-  $compiler_a_targets.each |$target| {
-    run_task('peadm::agent_install', $target,
-      server        => $master_target.peadm::target_name(),
-      install_flags => [
-        '--puppet-service-ensure', 'stopped',
-        "main:certname=${target.peadm::target_name()}",
-        "main:dns_alt_names=${dns_alt_names_csv}",
-        "extension_requests:${pp_application}=puppet/compiler",
-        "extension_requests:${pp_cluster}=A",
-      ],
-    )
-  }
-
-  $compiler_b_targets.each |$target| {
-    run_task('peadm::agent_install', $target,
-      server        => $master_target.peadm::target_name(),
-      install_flags => [
-        '--puppet-service-ensure', 'stopped',
-        "main:certname=${target.peadm::target_name()}",
-        "main:dns_alt_names=${dns_alt_names_csv}",
-        "extension_requests:${pp_application}=puppet/compiler",
-        "extension_requests:${pp_cluster}=B",
-      ],
-    )
+  ['A', 'B'].each |$group| {
+    getvar("compiler_${group.downcase()}_targets").each |$target| {
+      run_task('peadm::agent_install', $target,
+        server        => $master_target.peadm::target_name(),
+        install_flags => [
+          '--puppet-service-ensure', 'stopped',
+          "main:certname=${target.peadm::target_name()}",
+          "main:dns_alt_names=${dns_alt_names_csv}",
+          "extension_requests:${pp_application}=puppet/compiler",
+          "extension_requests:${pp_cluster}=${group}",
+        ],
+      )
+    }
   }
 
   # Ensure certificate requests have been submitted
