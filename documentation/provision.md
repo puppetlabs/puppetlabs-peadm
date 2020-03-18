@@ -53,7 +53,7 @@ Example inventory.yaml Bolt inventory file:
 ```yaml
 ---
 groups:
-  - name: pe_nodes
+  - name: puppet-enterprise-nodes
     config:
       transport: ssh
       ssh:
@@ -61,7 +61,7 @@ groups:
         user: centos
         run-as: root
         tty: true
-    nodes:
+    targets:
       - pe-xl-core-0.lab1.puppet.vm
       - pe-xl-core-1.lab1.puppet.vm
       - pe-xl-core-2.lab1.puppet.vm
