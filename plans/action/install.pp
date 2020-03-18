@@ -115,7 +115,10 @@ plan peadm::action::install (
   # the configured hostname, and that all systems return the same platform
   $precheck_results.each |$result| {
     if $result.target.name != $result['hostname'] {
-      fail_plan("Hostname / DNS name mismatch: target ${result.target.name} reports '${result['hostname']}'")
+      warning(@("HEREDOC"))
+        WARNING: Target name / hostname mismatch: target ${result.target.name} reports ${result['hostname']}
+                 Certificate name will be set to target name. Please ensure target name is correct and resolvable
+        |-HEREDOC
     }
     if $result['platform'] != $platform {
       fail_plan("Platform mismatch: target ${result.target.name} reports '${result['platform']}; expected ${platform}'")
