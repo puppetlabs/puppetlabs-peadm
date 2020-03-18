@@ -102,6 +102,37 @@ The content needed is the PE installation tarball for the target version. The in
 
 Installation content can be downloaded from [https://puppet.com/try-puppet/puppet-enterprise/download/](https://puppet.com/try-puppet/puppet-enterprise/download/).
 
+## Hostnames and Certificate Names
+
+The various host parameters given to the peadm::provision or peadm::action::install plans will be set as Puppet certificate names. You must use the names here that you want the servers to be identified as by Puppet.
+
+While it is not required that target names match hostnames, it _is_ required that target names be resolvable.
+
+In the event that Bolt will reach servers by IP address or external DNS name rather than internal DNS name or desired certname, a Bolt inventory file should be used to specify URIs for each name. For example:
+
+```yaml
+---
+targets:
+  - name: pe-xl-core-0.lab1.puppet.vm
+    uri: 10.234.6.45
+  - name: pe-xl-core-1.lab1.puppet.vm
+    uri: 10.234.14.131
+```
+
+A parameters JSON file can then reference the target names, which will become the Puppet certificate names, and Bolt will still be able to reach the systems by using the IP addresses or other DNS name specified as the URIs in the inventory.yaml file.
+
+```json
+{
+  "master_host": "pe-xl-core-0.lab1.puppet.vm",
+  "master_replica_host": "pe-xl-core-1.lab1.puppet.vm",
+
+  "console_password": "puppetlabs",
+  "dns_alt_names": [ "puppet", "puppet.lab1.puppet.vm" ],
+  "compiler_pool_address": "puppet.lab1.puppet.vm",
+  "version": "2019.2.2"
+}
+```
+
 ## Implementation Reference
 
 Provisioning can be broken down into two actions: [install](../plans/action/install.pp), and [configure](../plans/action/configure.pp). Installation currently requires ssh access to the un-provisioned nodes, but configure can be performed using the Orchestrator transport if installation has already been completed.
