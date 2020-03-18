@@ -115,7 +115,10 @@ plan peadm::action::install (
   # the configured hostname, and that all systems return the same platform
   $precheck_results.each |$result| {
     if $result.target.name != $result['hostname'] {
-      fail_plan("Hostname / DNS name mismatch: target ${result.target.name} reports '${result['hostname']}'")
+      warning(@("HEREDOC"))
+        WARNING: Target name / hostname mismatch: target ${result.target.name} reports ${result['hostname']}
+                 Certificate name will be set to target name. Please ensure target name is correct and resolvable
+        |-HEREDOC
     }
     if $result['platform'] != $platform {
       fail_plan("Platform mismatch: target ${result.target.name} reports '${result['platform']}; expected ${platform}'")
@@ -148,10 +151,22 @@ plan peadm::action::install (
     'puppet_enterprise::database_host'      => $puppetdb_database_replica_target.peadm::target_name(),
   } + $pe_conf_data)
 
-  # Upload the pe.conf files to the hosts that need them
-  peadm::file_content_upload($master_pe_conf, '/tmp/pe.conf', $master_target)
-  peadm::file_content_upload($puppetdb_database_pe_conf, '/tmp/pe.conf', $puppetdb_database_target)
-  peadm::file_content_upload($puppetdb_database_replica_pe_conf, '/tmp/pe.conf', $puppetdb_database_replica_target)
+  # Upload the pe.conf files to the hosts that need them, and ensure correctly
+  # configured certnames. Right now for these hosts we need to do that by
+  # staging a puppet.conf file.
+  ['master', 'puppetdb_database', 'puppetdb_database_replica'].each |$var| {
+    $target  = getvar("${var}_target")
+    $pe_conf = getvar("${var}_pe_conf")
+
+    peadm::file_content_upload($pe_conf, '/tmp/pe.conf', $target)
+    run_task('peadm::mkdir_p_file', $target,
+      path    => '/etc/puppetlabs/puppet/puppet.conf',
+      content => @("HEREDOC"),
+        [main]
+        certname = ${target.peadm::target_name()}
+        | HEREDOC
+    )
+  }
 
   # Download the PE tarball and send it to the nodes that need it
   $pe_tarball_name     = "puppet-enterprise-${version}-${platform}.tar.gz"
@@ -290,31 +305,27 @@ plan peadm::action::install (
     server        => $master_target.peadm::target_name(),
     install_flags => [
       '--puppet-service-ensure', 'stopped',
+      "main:certname=${master_replica_target.peadm::target_name()}",
       "main:dns_alt_names=${dns_alt_names_csv}",
       "extension_requests:${pp_application}=puppet/master",
       "extension_requests:${pp_cluster}=B",
     ],
   )
 
-  run_task('peadm::agent_install', $compiler_a_targets,
-    server        => $master_target.peadm::target_name(),
-    install_flags => [
-      '--puppet-service-ensure', 'stopped',
-      "main:dns_alt_names=${dns_alt_names_csv}",
-      "extension_requests:${pp_application}=puppet/compiler",
-      "extension_requests:${pp_cluster}=A",
-    ],
-  )
-
-  run_task('peadm::agent_install', $compiler_b_targets,
-    server        => $master_target.peadm::target_name(),
-    install_flags => [
-      '--puppet-service-ensure', 'stopped',
-      "main:dns_alt_names=${dns_alt_names_csv}",
-      "extension_requests:${pp_application}=puppet/compiler",
-      "extension_requests:${pp_cluster}=B",
-    ],
-  )
+  ['A', 'B'].each |$group| {
+    getvar("compiler_${group.downcase()}_targets").each |$target| {
+      run_task('peadm::agent_install', $target,
+        server        => $master_target.peadm::target_name(),
+        install_flags => [
+          '--puppet-service-ensure', 'stopped',
+          "main:certname=${target.peadm::target_name()}",
+          "main:dns_alt_names=${dns_alt_names_csv}",
+          "extension_requests:${pp_application}=puppet/compiler",
+          "extension_requests:${pp_cluster}=${group}",
+        ],
+      )
+    }
+  }
 
   # Ensure certificate requests have been submitted
   run_task('peadm::submit_csr', $agent_installer_targets)
