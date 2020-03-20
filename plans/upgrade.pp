@@ -55,11 +55,13 @@ plan peadm::upgrade (
 
   # Determine which compilers are associated with which HA group
   $compiler_m1_targets = $compiler_targets.filter |$target| {
-    $trusted_facts[$target]['pp_cluster'] == $trusted_facts[$master_target[0]]['pp_cluster']
+    ($trusted_facts[$target][peadm::oid('peadm_availability_group')]
+      == $trusted_facts[$master_target[0]][peadm::oid('peadm_availability_group')])
   }
 
   $compiler_m2_targets = $compiler_targets.filter |$target| {
-    $trusted_facts[$target]['pp_cluster'] == $trusted_facts[$master_replica_target[0]]['pp_cluster']
+    ($trusted_facts[$target][peadm::oid('peadm_availability_group')]
+      == $trusted_facts[$master_replica_target[0]][peadm::oid('peadm_availability_group')])
   }
 
   ###########################################################################

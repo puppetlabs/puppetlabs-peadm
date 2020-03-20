@@ -182,16 +182,14 @@ plan peadm::action::install (
   # Create csr_attributes.yaml files for the nodes that need them
   # There is a problem with OID names in csr_attributes.yaml for some
   # installs, e.g. PE 2019.0.1, PUP-9746. Use the raw OIDs for now.
-  $pp_application = '1.3.6.1.4.1.34380.1.1.8'
-  $pp_cluster     = '1.3.6.1.4.1.34380.1.1.16'
 
   run_task('peadm::mkdir_p_file', $master_target,
     path    => '/etc/puppetlabs/puppet/csr_attributes.yaml',
     content => @("HEREDOC"),
       ---
       extension_requests:
-        ${pp_application}: "puppet/master"
-        ${pp_cluster}: "A"
+        ${peadm::oid('peadm_role')}: "puppet/master"
+        ${peadm::oid('peadm_availability_group')}: "A"
       | HEREDOC
   )
 
@@ -200,8 +198,8 @@ plan peadm::action::install (
     content => @("HEREDOC"),
       ---
       extension_requests:
-        ${pp_application}: "puppet/puppetdb-database"
-        ${pp_cluster}: "A"
+        ${peadm::oid('peadm_role')}: "puppet/puppetdb-database"
+        ${peadm::oid('peadm_availability_group')}: "A"
       | HEREDOC
   )
 
@@ -210,8 +208,8 @@ plan peadm::action::install (
     content => @("HEREDOC"),
       ---
       extension_requests:
-        ${pp_application}: "puppet/puppetdb-database"
-        ${pp_cluster}: "B"
+        ${peadm::oid('peadm_role')}: "puppet/puppetdb-database"
+        ${peadm::oid('peadm_availability_group')}: "B"
       | HEREDOC
   )
 
@@ -307,8 +305,8 @@ plan peadm::action::install (
       '--puppet-service-ensure', 'stopped',
       "main:certname=${master_replica_target.peadm::target_name()}",
       "main:dns_alt_names=${dns_alt_names_csv}",
-      "extension_requests:${pp_application}=puppet/master",
-      "extension_requests:${pp_cluster}=B",
+      "extension_requests:${peadm::oid('peadm_role')}=puppet/master",
+      "extension_requests:${peadm::oid('peadm_availability_group')}=B",
     ],
   )
 
@@ -320,8 +318,8 @@ plan peadm::action::install (
           '--puppet-service-ensure', 'stopped',
           "main:certname=${target.peadm::target_name()}",
           "main:dns_alt_names=${dns_alt_names_csv}",
-          "extension_requests:${pp_application}=puppet/compiler",
-          "extension_requests:${pp_cluster}=${group}",
+          "extension_requests:${peadm::oid('peadm_role')}=puppet/compiler",
+          "extension_requests:${peadm::oid('peadm_availability_group')}=${group}",
         ],
       )
     }

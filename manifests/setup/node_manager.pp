@@ -1,8 +1,6 @@
 # This profile is not intended to be continously enforced on PE masters.
 # Rather, it describes state to enforce as a boostrap action, preparing the
 # Puppet Enterprise console with a sane default environment configuration.
-# Importantly, this includes assigning nodes to an environment matching thier
-# trusted.extensions.pp_environment value by default.
 #
 # This class will be applied during master bootstrap using e.g.
 #
@@ -49,7 +47,7 @@ class peadm::setup::node_manager (
   # We modify this group's rule such that all PE infrastructure nodes will be
   # members.
   node_group { 'PE Infrastructure Agent':
-    rule => ['and', ['~', ['trusted', 'extensions', 'pp_application'], '^puppet/']],
+    rule => ['and', ['~', ['trusted', 'extensions', peadm::oid('peadm_role')], '^puppet/']],
   }
 
   # We modify this group to add, as data, the compiler_pool_address only.
@@ -58,7 +56,7 @@ class peadm::setup::node_manager (
   node_group { 'PE Master':
     parent    => 'PE Infrastructure',
     rule      => ['or',
-      ['and', ['=', ['trusted', 'extensions', 'pp_application'], 'puppet/compiler']],
+      ['and', ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/compiler']],
       ['=', 'name', $master_host],
     ],
     data      => {
@@ -77,7 +75,7 @@ class peadm::setup::node_manager (
       parent               => 'PE Infrastructure',
       environment          => 'production',
       override_environment => false,
-      rule                 => ['and', ['=', ['trusted', 'extensions', 'pp_application'], 'puppet/puppetdb-database']],
+      rule                 => ['and', ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/puppetdb-database']],
       classes              => {
         'puppet_enterprise::profile::database' => { },
       },
@@ -90,8 +88,8 @@ class peadm::setup::node_manager (
     ensure => present,
     parent => 'PE Infrastructure',
     rule   => ['and',
-      ['=', ['trusted', 'extensions', 'pp_application'], 'puppet/master'],
-      ['=', ['trusted', 'extensions', 'pp_cluster'], 'A'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/master'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'A'],
     ],
     data   => {
       'puppet_enterprise::profile::primary_master_replica' => {
@@ -109,8 +107,8 @@ class peadm::setup::node_manager (
     ensure  => 'present',
     parent  => 'PE Master',
     rule    => ['and',
-      ['=', ['trusted', 'extensions', 'pp_application'], 'puppet/compiler'],
-      ['=', ['trusted', 'extensions', 'pp_cluster'], 'A'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/compiler'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'A'],
     ],
     classes => {
       'puppet_enterprise::profile::puppetdb' => {
@@ -144,8 +142,8 @@ class peadm::setup::node_manager (
       ensure => present,
       parent => 'PE Infrastructure',
       rule   => ['and',
-        ['=', ['trusted', 'extensions', 'pp_application'], 'puppet/master'],
-        ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
+        ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/master'],
+        ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'B'],
       ],
       data   => {
         'puppet_enterprise::profile::primary_master_replica' => {
@@ -161,8 +159,8 @@ class peadm::setup::node_manager (
       ensure  => 'present',
       parent  => 'PE Master',
       rule    => ['and',
-        ['=', ['trusted', 'extensions', 'pp_application'], 'puppet/compiler'],
-        ['=', ['trusted', 'extensions', 'pp_cluster'], 'B'],
+        ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/compiler'],
+        ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'B'],
       ],
       classes => {
         'puppet_enterprise::profile::puppetdb' => {
