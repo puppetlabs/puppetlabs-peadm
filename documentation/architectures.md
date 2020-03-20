@@ -12,4 +12,4 @@ Todo: diagram
 
 ## Extra Large
 
-![architecture](documentation/images/architecture.png)
+![architecture](images/architecture.png)
