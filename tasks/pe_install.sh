@@ -26,6 +26,9 @@ else
 	/bin/bash "${tgzdir}/${pedir}/puppet-enterprise-installer" -y
 fi
 
+# The exit code of the installer script will be the exit code of the task
+exit_code=$?
+
 if [ "$PT_shortcircuit_puppetdb" = "true" ]; then
 	systemctl stop pe-puppetdb.service
 	rm /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf
@@ -35,3 +38,6 @@ fi
 if [ "$PT_puppet_service_ensure" = "stopped" ]; then
 	systemctl stop puppet.service
 fi
+
+# Exit with the installer script's exit code
+exit $exit_code
