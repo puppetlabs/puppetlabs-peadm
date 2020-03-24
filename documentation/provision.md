@@ -38,10 +38,9 @@ Supplying a combination of host parameters which does not match one of the suppo
 1. Install Bolt on a jumphost. This can be the master, or any other system.
 2. Download or git clone the peadm module and put it somewhere on the jumphost. e.g. ~/modules/peadm.
 3. Download or git clone the module dependencies, and put them somewhere on the jumphost. e.g. ~/modules/stdlib, ~/modules/node\_manager, etc.
-4. Ensure the hostname of each system is set correctly, to the same value that will be used to connect to the system, and refer to the system as. If the hostname is not set as expected the installation plan will refuse to continue.
-5. Create an inventory file with connection information. Example included below.
-6. Create a parameters file. Example included below.
-7. Run the peadm::provision plan with the inputs created. Example:
+4. Create an inventory file with connection information. Example included below.
+5. Create a parameters file. Example included below.
+6. Run the peadm::provision plan with the inputs created. Example:
 
         bolt plan run peadm::provision \
           --inventory inventory.yaml \
@@ -66,8 +65,10 @@ groups:
       - pe-xl-core-1.lab1.puppet.vm
       - pe-xl-core-2.lab1.puppet.vm
       - pe-xl-core-3.lab1.puppet.vm
-      - pe-xl-compiler-0.lab1.puppet.vm
-      - pe-xl-compiler-1.lab1.puppet.vm
+      - name: pe-xl-compiler-0.lab1.puppet.vm
+        uri: 10.234.6.45
+      - name: pe-xl-compiler-1.lab1.puppet.vm
+        uri: 10.234.14.131
 ```
 
 Example params.json Bolt parameters file (shown: Extra Large with HA):
