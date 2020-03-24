@@ -1,0 +1,7 @@
+{
+    "master_host": "pe-std.puppet.vm",
+    "master_replica_host": "pe-std-replica.puppet.vm",
+    "version": "2019.5.0",
+    "stagingdir": "/downloads"
+}
+  

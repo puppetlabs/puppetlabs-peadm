@@ -8,5 +8,6 @@ fixtures:
     node_manager: 'https://github.com/WhatsARanjit/puppet-node_manager'
     apply_helpers: 'https://github.com/puppetlabs/puppetlabs-apply_helpers'
     bolt_shim: 'https://github.com/puppetlabs/puppetlabs-bolt_shim'
+    debug: 'https://github.com/nwops/puppet-debug'
   symlinks:
     "peadm": "#{source_dir}"
