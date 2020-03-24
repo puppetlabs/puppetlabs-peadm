@@ -1,0 +1,18 @@
+---
+groups:
+  - name: puppet-enterprise-nodes
+    config:
+      transport: ssh
+      ssh:
+        tmpdir: /root
+        script-dir: test123
+        host-key-check: false
+        user: root
+        password: test
+        tty: true
+    targets:
+      - pe-xl-compiler-0.puppet.vm
+      - pe-xl-db-0.puppet.vm
+      - pe-xl-db-1.puppet.vm
+      - pe-xl-core-0.puppet.vm
+      - pe-xl-core-1.puppet.vm

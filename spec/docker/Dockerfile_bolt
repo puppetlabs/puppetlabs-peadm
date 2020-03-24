@@ -1,0 +1,7 @@
+FROM puppet/puppet-bolt
+ENV LC_ALL="en_US.UTF-8" LANG="en_US.UTF-8" LANGUAGE="en_US.UTF-8"
+RUN echo "LANG=en_US.UTF-8" > /etc/locale.conf
+RUN apt-get update && apt-get install -y ssh sudo curl; \
+   /opt/puppetlabs/bolt/bin/gem install bundler puppet-debugger -N -q
+CMD /bin/bash
+ENTRYPOINT [ "/opt/puppetlabs/bin/bolt" ]
