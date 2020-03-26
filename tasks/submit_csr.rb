@@ -1,30 +1,31 @@
 #!/opt/puppetlabs/puppet/bin/ruby
+# frozen_string_literal: true
+
 #
-# rubocop:disable Style/GlobalVars
 require 'json'
 require 'open3'
+require 'puppet'
+require 'puppet/face'
+
+Puppet.initialize_settings
+
+def already_signed?
+  cmd = ['/opt/puppetlabs/bin/puppet', 'ssl', 'verify']
+  _, status = Open3.capture2(*cmd)
+  status.success?
+end
 
 def main
-  params = JSON.parse(STDIN.read)
-  majver = %x{/opt/puppetlabs/bin/puppet --version}
-             .chomp
-             .split('.')
-             .first
-             .to_i
-
+  majver = Gem::Version.new(Puppet.version).segments.first
   if majver < 6
-    conf = %x{/opt/puppetlabs/bin/puppet config print dns_alt_names certname}
-             .chomp
-             .split("\n")
-             .map {|line| line.split(' = ', 2) }
-             .to_h
-
+    # signed cert already exist, assuming it is valid, no good way to verify until Puppet 6
+    exit 0 if File.exist?(Puppet.settings[:hostcert])
     cmd = ['/opt/puppetlabs/bin/puppet', 'certificate', 'generate',
            '--ca-location', 'remote',
-           '--dns-alt-names', conf['dns_alt_names'],
-           conf['certname']
-          ]
+           '--dns-alt-names', Puppet.settings[:dns_alt_names],
+           Puppet.settings[:certname]]
   else
+    exit 0 if already_signed?
     cmd = ['/opt/puppetlabs/bin/puppet', 'ssl', 'submit_request']
   end
 

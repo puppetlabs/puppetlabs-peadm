@@ -15,6 +15,4 @@ See this README file and any documents in the [documentation](documentation) dir
 
 ![architecture](documentation/images/architecture.png)
 * [Classification](documentation/classification.md)
-* [Architectures](documentation/architectures.md)
-* [Testing](documentation/pre_post_checks.md)
 * [Docker Based Examples](documentation/docker_examples.md)

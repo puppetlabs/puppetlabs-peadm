@@ -301,10 +301,11 @@ plan pe_xl::unit::install (
     apply($master_host) { include pe_xl::setup::master }.pe_xl::print_apply_result
   }
 
-  run_command(inline_epp(@(HEREDOC/L)), $master_target)
-    /opt/puppetlabs/bin/puppetserver ca sign --certname \
-      <%= $agent_installer_targets.map |$target| { $target.name }.join(',') -%>
-    | HEREDOC
+  if !empty($agent_installer_targets) {
+      run_task('pe_xl::sign_csr', $master_target,
+        certnames => $agent_installer_targets.map |$target| { $target.name },
+      )
+  }
 
   run_task('pe_xl::puppet_runonce', $master_target)
   run_task('pe_xl::puppet_runonce', $all_targets - $master_target)
