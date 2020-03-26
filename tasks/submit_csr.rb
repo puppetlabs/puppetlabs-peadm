@@ -3,6 +3,12 @@
 require 'json'
 require 'open3'
 
+def already_signed?
+  cmd = ['/opt/puppetlabs/bin/puppet', 'ssl', 'verify']
+  _, status = Open3.capture2(*cmd)
+  status.success?
+end
+
 def main
   majver = `/opt/puppetlabs/bin/puppet --version`
            .chomp
@@ -22,6 +28,7 @@ def main
            '--dns-alt-names', conf['dns_alt_names'],
            conf['certname']]
   else
+    exit 0 if already_signed?
     cmd = ['/opt/puppetlabs/bin/puppet', 'ssl', 'submit_request']
   end
 
