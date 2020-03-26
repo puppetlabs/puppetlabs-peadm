@@ -22,3 +22,4 @@ Reference:
 * [Classification](documentation/classification.md)
 * [Architectures](documentation/architectures.md)
 * [Testing](documentation/pre_post_checks.md)
+* [Converting From Old Versions of peadm](documentation/old_versions_of_peadm.md)
