@@ -28,11 +28,9 @@ extensions = cert.extensions.reduce({}) do |memo, ext|
   end
 end
 
-alt_names = cert.extensions.select do |ext|
-  ext.oid == 'subjectAltName'
-end.map do |ext|
+alt_names = cert.extensions.select { |ext| ext.oid == 'subjectAltName' }.map { |ext|
   ext.value.split(', ').map { |str| str[4..-1] }
-end.first
+}.first
 
 result = {
   'certname'      => certname,

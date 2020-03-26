@@ -12,7 +12,7 @@ rescue StandardError => err
   }
 else
   result = {
-    'content' => content
+    'content' => content,
   }
 ensure
   puts result.to_json
