@@ -58,8 +58,7 @@ plan peadm::upgrade (
     fail_plan(@(HEREDOC/L))
       Required trusted facts are not present; upgrade cannot be completed. If \
       this infrastructure was provisioned with an old version of peadm, you may \
-      need to run the peadm::misc::upgrade_trusted_facts plan against each of the \
-      infrastructure nodes.
+      need to run the peadm::convert plan\
       | HEREDOC
   }
 

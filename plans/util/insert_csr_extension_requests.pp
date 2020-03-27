@@ -1,6 +1,6 @@
-plan peadm::util::insert_csr_extensions (
+plan peadm::util::insert_csr_extension_requests (
   TargetSpec $targets,
-  Hash       $extensions,
+  Hash       $extension_requests,
   Boolean    $merge = true,
 ) {
   get_targets($targets).each |$target| {
@@ -15,8 +15,8 @@ plan peadm::util::insert_csr_extensions (
     # If we're not merging, only ours will be used; existing requests will be
     # overritten.
     $csr_file_data = $merge ? {
-      true  => $csr_attributes_data.deep_merge({'extension_requests' => $extensions}),
-      false => ($csr_attributes_data + {'extension_requests' => $extensions}),
+      true  => $csr_attributes_data.deep_merge({'extension_requests' => $extension_requests}),
+      false => ($csr_attributes_data + {'extension_requests' => $extension_requests}),
     }
 
     run_task('peadm::mkdir_p_file', $target,

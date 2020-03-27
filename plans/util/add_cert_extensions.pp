@@ -1,9 +1,8 @@
-plan peadm::misc::upgrade_trusted_facts (
-  TargetSpec              $targets,
-  Peadm::SingleTargetSpec $master_host,
+plan peadm::util::add_cert_extensions (
+  TargetSpec $targets,
+  TargetSpec $master_host,
+  Hash       $extensions,
 ) {
-
-  # Convert input into array of Targets
   $all_targets   = peadm::get_targets($targets)
   $master_target = peadm::get_targets($master_host, 1)
 
@@ -35,15 +34,12 @@ plan peadm::misc::upgrade_trusted_facts (
   $all_targets.map |$target| {
 
     # This will be the new trusted fact data for this node
-    $new_trusted = $certdata[$target]['extensions'] + {
-      peadm::oid('peadm_role') => $certdata[$target]['extensions'][peadm::oid('pp_application')],
-      peadm::oid('peadm_availability_group') => $certdata[$target]['extensions'][peadm::oid('pp_cluster')],
-    }
+    $extension_requests = $certdata[$target]['extensions'] + $extensions
 
     # Make sure the csr_attributes.yaml file on the node matches
-    run_plan('peadm::util::insert_csr_extensions', $target,
-      extensions => $new_trusted,
-      merge      => false,
+    run_plan('peadm::util::insert_csr_extension_requests', $target,
+      extension_requests => $extension_requests,
+      merge              => false,
     )
 
     # Everything starts the same; we always revoke the existing cert
