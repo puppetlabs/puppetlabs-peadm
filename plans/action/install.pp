@@ -342,6 +342,19 @@ plan peadm::action::install (
   }
 
   run_task('peadm::puppet_runonce', $master_target)
+
+  # The puppetserver might be in the middle of a restart so we check the status by calling
+  # the api and ensuring the puppetserver is taking requests.
+  ctrl::do_until('limit' => 10) || {
+    $pe_status = run_task('peadm::check_status', $master_target, service => 'pe-master')
+    if ($pe_status.first['state'] != 'running') {
+      ctrl::sleep(5)
+      false
+    } else {
+      true
+    }
+  }
+
   run_task('peadm::puppet_runonce', $all_targets - $master_target)
 
   return("Installation of Puppet Enterprise ${arch['architecture']} succeeded.")
