@@ -2,8 +2,18 @@
 
 require 'json'
 
-params  = JSON.parse(STDIN.read)
-content = File.read(params['path'])
-result  = { 'content' => content }.to_json
-
-puts result
+begin
+  params  = JSON.parse(STDIN.read)
+  content = File.read(params['path'])
+rescue StandardError => err
+  result = {
+    'content' => nil,
+    'error'   => err.message,
+  }
+else
+  result = {
+    'content' => content,
+  }
+ensure
+  puts result.to_json
+end

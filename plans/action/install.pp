@@ -179,40 +179,29 @@ plan peadm::action::install (
     upload_path => $upload_tarball_path,
   )
 
-  # Create csr_attributes.yaml files for the nodes that need them
-  # There is a problem with OID names in csr_attributes.yaml for some
-  # installs, e.g. PE 2019.0.1, PUP-9746. Use the raw OIDs for now.
-  $pp_application = '1.3.6.1.4.1.34380.1.1.8'
-  $pp_cluster     = '1.3.6.1.4.1.34380.1.1.16'
+  # Create csr_attributes.yaml files for the nodes that need them. Ensure that
+  # if a csr_attributes.yaml file is already present, the values we need are
+  # merged with the existing values.
 
-  run_task('peadm::mkdir_p_file', $master_target,
-    path    => '/etc/puppetlabs/puppet/csr_attributes.yaml',
-    content => @("HEREDOC"),
-      ---
-      extension_requests:
-        ${pp_application}: "puppet/master"
-        ${pp_cluster}: "A"
-      | HEREDOC
+  run_plan('peadm::util::insert_csr_extensions', $master_target,
+    extensions => {
+      peadm::oid('peadm_role')               => 'puppet/master',
+      peadm::oid('peadm_availability_group') => 'A',
+    },
   )
 
-  run_task('peadm::mkdir_p_file', $puppetdb_database_target,
-    path    => '/etc/puppetlabs/puppet/csr_attributes.yaml',
-    content => @("HEREDOC"),
-      ---
-      extension_requests:
-        ${pp_application}: "puppet/puppetdb-database"
-        ${pp_cluster}: "A"
-      | HEREDOC
+  run_plan('peadm::util::insert_csr_extensions', $puppetdb_database_target,
+    extensions => {
+      peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
+      peadm::oid('peadm_availability_group') => 'A',
+    },
   )
 
-  run_task('peadm::mkdir_p_file', $puppetdb_database_replica_target,
-    path    => '/etc/puppetlabs/puppet/csr_attributes.yaml',
-    content => @("HEREDOC"),
-      ---
-      extension_requests:
-        ${pp_application}: "puppet/puppetdb-database"
-        ${pp_cluster}: "B"
-      | HEREDOC
+  run_plan('peadm::util::insert_csr_extensions', $puppetdb_database_replica_target,
+    extensions => {
+      peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
+      peadm::oid('peadm_availability_group') => 'B',
+    },
   )
 
   # Get the master installation up and running. The installer will
@@ -307,8 +296,8 @@ plan peadm::action::install (
       '--puppet-service-ensure', 'stopped',
       "main:certname=${master_replica_target.peadm::target_name()}",
       "main:dns_alt_names=${dns_alt_names_csv}",
-      "extension_requests:${pp_application}=puppet/master",
-      "extension_requests:${pp_cluster}=B",
+      "extension_requests:${peadm::oid('peadm_role')}=puppet/master",
+      "extension_requests:${peadm::oid('peadm_availability_group')}=B",
     ],
   )
 
@@ -320,8 +309,8 @@ plan peadm::action::install (
           '--puppet-service-ensure', 'stopped',
           "main:certname=${target.peadm::target_name()}",
           "main:dns_alt_names=${dns_alt_names_csv}",
-          "extension_requests:${pp_application}=puppet/compiler",
-          "extension_requests:${pp_cluster}=${group}",
+          "extension_requests:${peadm::oid('peadm_role')}=puppet/compiler",
+          "extension_requests:${peadm::oid('peadm_availability_group')}=${group}",
         ],
       )
     }

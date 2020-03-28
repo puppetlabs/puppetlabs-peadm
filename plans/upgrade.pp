@@ -53,13 +53,24 @@ plan peadm::upgrade (
     $memo + { $result.target => $result['extensions'] }
   }
 
+  # Ensure needed trusted facts are available
+  if $trusted_facts.any |$t,$ext| { $ext[peadm::oid('peadm_role')] == undef } {
+    fail_plan(@(HEREDOC/L))
+      Required trusted facts are not present; upgrade cannot be completed. If \
+      this infrastructure was provisioned with an old version of peadm, you may \
+      need to run the peadm::convert plan\
+      | HEREDOC
+  }
+
   # Determine which compilers are associated with which HA group
   $compiler_m1_targets = $compiler_targets.filter |$target| {
-    $trusted_facts[$target]['pp_cluster'] == $trusted_facts[$master_target[0]]['pp_cluster']
+    ($trusted_facts[$target][peadm::oid('peadm_availability_group')]
+      == $trusted_facts[$master_target[0]][peadm::oid('peadm_availability_group')])
   }
 
   $compiler_m2_targets = $compiler_targets.filter |$target| {
-    $trusted_facts[$target]['pp_cluster'] == $trusted_facts[$master_replica_target[0]]['pp_cluster']
+    ($trusted_facts[$target][peadm::oid('peadm_availability_group')]
+      == $trusted_facts[$master_replica_target[0]][peadm::oid('peadm_availability_group')])
   }
 
   ###########################################################################

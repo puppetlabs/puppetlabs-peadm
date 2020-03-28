@@ -16,6 +16,7 @@ Plans:
 
 * [Provision](documentation/provision.md)
 * [Upgrade](documentation/upgrade.md)
+* [Convert](documentation/convert.md)
 
 Reference:
 
