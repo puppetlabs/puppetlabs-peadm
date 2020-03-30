@@ -267,6 +267,7 @@ plan peadm::action::install (
   # master. Explicitly stop puppetdb first to avoid any systemd interference.
   run_command('systemctl stop pe-puppetdb', $master_target)
   run_command('systemctl start pe-puppetdb', $master_target)
+  run_command("/opt/puppetlabs/bin/puppet infra console_password --password ${console_password}", $master_target)
   run_task('peadm::rbac_token', $master_target,
     password => $console_password,
   )
