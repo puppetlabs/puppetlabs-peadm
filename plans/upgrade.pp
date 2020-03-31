@@ -121,7 +121,7 @@ plan peadm::upgrade (
 
   # If in use, wait until orchestrator service is healthy to proceed
   if $all_targets.any |$target| { $target.protocol == 'pcp' } {
-    run_task('peadm::orchestrator_healthcheck', $master_target)
+    peadm::wait_until_service_ready('orchestrator-service', $master_target)
     wait_until_available($all_targets, wait_time => 120)
   }
 
@@ -135,7 +135,7 @@ plan peadm::upgrade (
   # The master could restart orchestration services again, in which case we
   # would have to wait for nodes to reconnect
   if $all_targets.any |$target| { $target.protocol == 'pcp' } {
-    run_task('peadm::orchestrator_healthcheck', $master_target)
+    peadm::wait_until_service_ready('orchestrator-service', $master_target)
     wait_until_available($all_targets, wait_time => 120)
   }
 
