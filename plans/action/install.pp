@@ -183,22 +183,22 @@ plan peadm::action::install (
   # if a csr_attributes.yaml file is already present, the values we need are
   # merged with the existing values.
 
-  run_plan('peadm::util::insert_csr_extensions', $master_target,
-    extensions => {
+  run_plan('peadm::util::insert_csr_extension_requests', $master_target,
+    extension_requests => {
       peadm::oid('peadm_role')               => 'puppet/master',
       peadm::oid('peadm_availability_group') => 'A',
     },
   )
 
-  run_plan('peadm::util::insert_csr_extensions', $puppetdb_database_target,
-    extensions => {
+  run_plan('peadm::util::insert_csr_extension_requests', $puppetdb_database_target,
+    extension_requests => {
       peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
       peadm::oid('peadm_availability_group') => 'A',
     },
   )
 
-  run_plan('peadm::util::insert_csr_extensions', $puppetdb_database_replica_target,
-    extensions => {
+  run_plan('peadm::util::insert_csr_extension_requests', $puppetdb_database_replica_target,
+    extension_requests => {
       peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
       peadm::oid('peadm_availability_group') => 'B',
     },
