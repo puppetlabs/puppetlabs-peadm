@@ -1,0 +1,16 @@
+{
+  "description": "Return when the orchestrator service is healthy, or timeout after 15 seconds",
+  "parameters": {
+    "service": {
+      "type": "Enum[all, ca, pe-master, orchestrator-service]",
+      "description": "What service to check. For example: all, pe-master, orchestrator-service"
+    },
+    "port": {
+      "type": "Enum['8140', '8143']",
+      "description": "Which port to query the status API on"
+    }
+  },
+  "implementations": [
+    {"name": "wait_until_service_ready.sh", "input_method": "environment"}
+  ]
+}
