@@ -75,7 +75,10 @@ class peadm::setup::node_manager (
       parent               => 'PE Infrastructure',
       environment          => 'production',
       override_environment => false,
-      rule                 => ['and', ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/puppetdb-database']],
+      rule                 => ['or',
+        ['and', ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/puppetdb-database']],
+        ['=', 'name', $master_host],
+      ],
       classes              => {
         'puppet_enterprise::profile::database' => { },
       },
