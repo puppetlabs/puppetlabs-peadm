@@ -1,0 +1,41 @@
+version: "3"
+services:
+  bolt:
+    build:
+      dockerfile: '../Dockerfile_bolt'
+      context: .
+    image: pe-build
+    hostname: bolter-std.puppet.vm
+    container_name: bolter-std.puppet.vm
+    volumes:
+      - .:/app
+    working_dir: /app
+    depends_on:
+      - standard_aio
+  standard_aio:
+    environment:
+      LC_ALL: "en_US.utf8"
+      LANG: "en_US.utf8"
+      LANGUAGE: "en_US.utf8"
+    build:
+      dockerfile: '../Dockerfile'
+      context: .
+    entrypoint: /sbin/init
+    image: pe-base
+    privileged: true # required for systemd
+    ports:
+      - "22001:22"
+      - "8140"
+      - "8443"
+      - "8080"
+      - "8081"
+      - "4433"
+      - "443"
+    hostname: pe-std.puppet.vm
+    container_name: pe-std.puppet.vm
+    stop_signal: SIGRTMIN+3
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'

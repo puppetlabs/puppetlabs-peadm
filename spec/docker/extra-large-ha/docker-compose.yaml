@@ -1,0 +1,120 @@
+version: "3"
+services:
+  bolt:
+    build:
+      dockerfile: '../Dockerfile_bolt'
+      context: .
+    image: pe-bolt
+    hostname: bolter.puppet.vm
+    container_name: bolter.puppet.vm
+    volumes:
+      - .:/app
+    working_dir: /app
+    depends_on:
+      - pe_xl_core_0
+  compiler1:
+    depends_on:
+      - pe_xl_core_0
+    build:
+      dockerfile: '../Dockerfile'
+      context: .
+    entrypoint: /sbin/init
+    image: pe-base
+    privileged: true # required for systemd
+    ports:
+      - "22"
+      - "8140"
+    hostname: pe-xl-compiler-0.puppet.vm
+    container_name: pe-xl-compiler-0.puppet.vm
+    stop_signal: SIGRTMIN+3
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'  
+  pe_pdb:
+    depends_on:
+      - pe_xl_core_0
+    build:
+      dockerfile: '../Dockerfile'
+      context: .
+    entrypoint: /sbin/init
+    image: pe-base
+    privileged: true # required for systemd
+    ports:
+      - "22"
+    hostname: pe-xl-db-0.puppet.vm
+    container_name: pe-xl-db-0.puppet.vm
+    stop_signal: SIGRTMIN+3
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - '/sys/fs/cgroup:/sys/fs/cgroup:ro' 
+  pe_pdb-replica:
+    depends_on:
+      - pe_xl_core_0
+    build:
+      dockerfile: '../Dockerfile'
+      context: .
+    entrypoint: /sbin/init
+    image: pe-base
+    privileged: true # required for systemd
+    ports:
+      - "22"
+    hostname: pe-xl-db-1.puppet.vm
+    container_name: pe-xl-db-1.puppet.vm
+    stop_signal: SIGRTMIN+3
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'       
+  pe_xl_core_1:
+    depends_on:
+      - pe_xl_core_0
+    build:
+      dockerfile: '../Dockerfile'
+      context: .
+    entrypoint: /sbin/init
+    image: pe-base
+    privileged: true # required for systemd
+    ports:
+      - "22"
+      - "8140"
+      - "8443"
+      - "8080"
+      - "8081"
+      - "4433"
+      - "443"
+    container_name: pe-xl-core-1.puppet.vm
+    hostname: pe-xl-core-1.puppet.vm
+    stop_signal: SIGRTMIN+3
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'      
+  pe_xl_core_0:
+    build:
+      dockerfile: '../Dockerfile'
+      context: .
+    entrypoint: /sbin/init
+    image: pe-base
+    privileged: true # required for systemd
+    ports:
+      - "22"
+      - "8140"
+      - "8443"
+      - "8080"
+      - "8081"
+      - "4433"
+      - "443"
+    hostname: pe-xl-core-0.puppet.vm
+    container_name: pe-xl-core-0.puppet.vm
+    stop_signal: SIGRTMIN+3
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'    
