@@ -6,7 +6,7 @@ The peadm provisioning plan creates base reference implementation. Once a base s
 
 ## Reference Architectures
 
-When provisioning a new PE stack using peadm, there are several different host parameters which can be specified. At a minimum, you must always specify the Puppet master. Depending on which architecture you are deploying, other host parameters may be needed as well. The following is a list of the architectures peadm can provision.
+When provisioning a new PE stack using peadm, there are several different host parameters which can be specified. At a minimum, you must always specify the master parameter. Depending on which architecture you are deploying, other host parameters may be needed as well. The following is a list of the architectures peadm can provision and the required parameters.
 
 * Standard
     - master
