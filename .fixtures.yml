@@ -9,5 +9,6 @@ fixtures:
     apply_helpers: 'https://github.com/puppetlabs/puppetlabs-apply_helpers'
     bolt_shim: 'https://github.com/puppetlabs/puppetlabs-bolt_shim'
     debug: 'https://github.com/nwops/puppet-debug'
+    format: 'https://github.com/voxpupuli/puppet-format'
   symlinks:
     "peadm": "#{source_dir}"

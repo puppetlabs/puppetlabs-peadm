@@ -1,0 +1,12 @@
++-----------+------------------+--------------------------+--------+
+|                      Failed Service Status                       |
++-----------+------------------+--------------------------+--------+
+| Stack     | Service          | Url                      | Status |
++-----------+------------------+--------------------------+--------+
+| pnw_stack | file-sync-client | pe-std-replica.puppet.vm | [31mfailed[0m |
+| pnw_stack | master           | pe-std-replica.puppet.vm | [31mfailed[0m |
+| pnw_stack | classifier       | pe-std-replica.puppet.vm | [31mfailed[0m |
+| pnw_stack | rbac             | pe-std-replica.puppet.vm | [31mfailed[0m |
+| pnw_stack | activity         | pe-std-replica.puppet.vm | [31mfailed[0m |
+| pnw_stack | puppetdb         | pe-std-replica.puppet.vm | [31mfailed[0m |
++-----------+------------------+--------------------------+--------+

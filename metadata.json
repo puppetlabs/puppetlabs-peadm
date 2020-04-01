@@ -23,6 +23,9 @@
     {
       "name": "puppetlabs/apply_helpers",
       "version_requirement": ">= 0.1.0 < 2.0.0"
+    },
+    {
+      "name": "puppet/format", "version_requirement": ">= 0.1.0 < 1.0.0"
     }
   ],
   "operatingsystem_support": [
