@@ -1,0 +1,17 @@
+{
+  "description": "Wrapper task for mv command",
+  "parameters": {
+    "source": {
+      "type": "String",
+      "description": "Current path of file"
+    },
+    "target": {
+      "type": "String",
+      "description": "New path of file"
+    }
+  },
+  "input_method": "environment",
+  "implementations": [
+    {"name": "mv.sh"}
+  ]
+}
