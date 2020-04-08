@@ -4,8 +4,7 @@ groups:
     config:
       transport: ssh
       ssh:
-        tmpdir: /root
-        script-dir: test123
+        tmpdir: /root/bolt_scripts
         host-key-check: false
         user: root
         password: test
