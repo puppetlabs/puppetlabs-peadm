@@ -7,7 +7,9 @@ EXPOSE 22
 ENV LC_ALL="en_US.UTF-8" LANG="en_US.UTF-8" LANGUAGE="en_US.UTF-8"
 RUN echo "LANG=en_US.UTF-8" > /etc/locale.conf
 STOPSIGNAL SIGRTMIN+3
-RUN yum -y install systemd openssh openssh-server openssh-clients anacron sudo curl openssl; yum clean all;
+ADD live_audit.sh /usr/bin/live_audit.sh
+RUN yum -y install epel-release systemd rsync tree vim openssh openssh-server openssh-clients anacron sudo curl openssl; yum clean all;
+RUN yum -y inotify-tools 
 RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; done); \ 
   rm -f /lib/systemd/system/multi-user.target.wants/*; \
   rm -f /etc/systemd/system/*.wants/*; \
