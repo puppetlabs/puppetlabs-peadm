@@ -9,7 +9,7 @@ RUN echo "LANG=en_US.UTF-8" > /etc/locale.conf
 STOPSIGNAL SIGRTMIN+3
 ADD live_audit.sh /usr/bin/live_audit.sh
 RUN yum -y install epel-release systemd rsync tree vim openssh openssh-server openssh-clients anacron sudo curl openssl; yum clean all;
-RUN yum -y inotify-tools 
+RUN yum -y inotify-tools && mkdir /root/bolt_scripts
 RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; done); \ 
   rm -f /lib/systemd/system/multi-user.target.wants/*; \
   rm -f /etc/systemd/system/*.wants/*; \
