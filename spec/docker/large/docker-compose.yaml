@@ -2,8 +2,8 @@ version: "3"
 services:
   bolt:
     build:
-      dockerfile: '../Dockerfile_bolt'
-      context: .
+      dockerfile: 'Dockerfile_bolt'
+      context: ../
     image: pe-build
     hostname: bolter-lg.puppet.vm
     container_name: bolter.puppet.vm
@@ -16,8 +16,8 @@ services:
     depends_on:
       - large_aio
     build:
-      dockerfile: '../Dockerfile'
-      context: .
+      dockerfile: 'Dockerfile'
+      context: ../
     entrypoint: /sbin/init
     image: pe-base
     privileged: true # required for systemd
@@ -34,8 +34,8 @@ services:
       - '/sys/fs/cgroup:/sys/fs/cgroup:ro'    
   large_aio:
     build:
-      dockerfile: '../Dockerfile'
-      context: .
+      dockerfile: 'Dockerfile'
+      context: ../
     entrypoint: /sbin/init
     image: pe-base
     privileged: true # required for systemd

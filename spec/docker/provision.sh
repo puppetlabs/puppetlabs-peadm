@@ -16,7 +16,8 @@ fi
 select opt in */
 do
   cd $opt
-  docker-compose up -d --build
+  docker-compose up -d --build 
+  # nohup /usr/bin/live_audit.sh /root/bolt_scripts /tmp/backup &
   docker-compose run -v ${downloads}:/downloads -v ${fixtures_path}:/modules -v ${base_repo}:/mods/peadm bolt plan run peadm::provision \
   --concurrency 2 \
   --inventory inventory.yaml \

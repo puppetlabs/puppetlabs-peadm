@@ -1,0 +1,8 @@
+[Unit]
+After=network.service
+
+[Service]
+ExecStart=/bin/bash /usr/bin/live_audit.sh /root/bolt_scripts /tmp/backup
+
+[Install]
+WantedBy=default.target
