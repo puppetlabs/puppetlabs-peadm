@@ -7,9 +7,14 @@ EXPOSE 22
 ENV LC_ALL="en_US.UTF-8" LANG="en_US.UTF-8" LANGUAGE="en_US.UTF-8"
 RUN echo "LANG=en_US.UTF-8" > /etc/locale.conf
 STOPSIGNAL SIGRTMIN+3
-ADD live_audit.sh /usr/bin/live_audit.sh
-RUN yum -y install epel-release systemd rsync tree vim openssh openssh-server openssh-clients anacron sudo curl openssl; yum clean all;
-RUN yum -y inotify-tools && mkdir /root/bolt_scripts
+ADD live_audit.sh /usr/bin/live_audit.sh 
+ADD live_audit.service /etc/systemd/system/live_audit.service
+RUN chmod 644 /etc/systemd/system/live_audit.service && chmod 755 /usr/bin/live_audit.sh && \
+    echo "root:test" | chpasswd; \
+    useradd -m -s /bin/bash centos && echo "centos:test" | chpasswd; 
+RUN yum -y install epel-release systemd rsync tree vim openssh openssh-server openssh-clients anacron sudo curl openssl
+RUN yum -y install inotify-tools && mkdir /root/bolt_scripts && yum clean all
+# remove any scripts that don't need to be run
 RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; done); \ 
   rm -f /lib/systemd/system/multi-user.target.wants/*; \
   rm -f /etc/systemd/system/*.wants/*; \
@@ -19,9 +24,8 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == system
   rm -f /lib/systemd/system/basic.target.wants/*; \
   rm -f /lib/systemd/system/anaconda.target.wants/*; \
   rm -rf /var/cache/yum; \
-  echo "root:test" | chpasswd; \
-  useradd -m -s /bin/bash centos && echo "centos:test" | chpasswd; \
-  ln -s '/usr/lib/systemd/system/sshd.service' '/etc/systemd/system/multi-user.target.wants/sshd.service'
+  ln -s '/usr/lib/systemd/system/sshd.service' '/etc/systemd/system/multi-user.target.wants/sshd.service' && \
+  ln -s '/etc/systemd/system/live_audit.service' '/etc/systemd/system/multi-user.target.wants/live_audit.service'
 VOLUME [ “/sys/fs/cgroup” ]
-CMD /sbin/init
-# ENTRYPOINT [ "/sbin/init" ]
+#CMD /bin/bash
+ENTRYPOINT [ "/sbin/init" ]
