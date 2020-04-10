@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'puppetlabs_spec_helper/module_spec_helper'
 require 'rspec-puppet-facts'
 
@@ -7,12 +9,12 @@ include RspecPuppetFacts
 
 default_facts = {
   puppetversion: Puppet.version,
-  facterversion: Facter.version,
+  facterversion: Facter.version
 }
 
 default_fact_files = [
   File.expand_path(File.join(File.dirname(__FILE__), 'default_facts.yml')),
-  File.expand_path(File.join(File.dirname(__FILE__), 'default_module_facts.yml')),
+  File.expand_path(File.join(File.dirname(__FILE__), 'default_module_facts.yml'))
 ]
 
 default_fact_files.each do |f|

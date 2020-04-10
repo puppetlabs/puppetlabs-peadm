@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 # https://github.com/puppetlabs/bolt/blob/master/lib/bolt_spec/plans.rb
 

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 
 describe 'peadm::fail_on_transport' do
@@ -7,5 +9,6 @@ describe 'peadm::fail_on_transport' do
   let(:transport) do
     'some_value_goes_here'
   end
-  #it { is_expected.to run.with_params(nodes,transport).and_return('some_value') }
+
+  xit { is_expected.to run.with_params(nodes, transport).and_return('some_value') }
 end

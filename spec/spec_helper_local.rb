@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'puppet'
 
 if Gem::Version.new(Puppet.version) >= Gem::Version.new('6.0.0')
@@ -17,7 +19,7 @@ end
 # for proper testing and availablity with other tooling.  The code below will
 # locate the bolt gem dir and create fixtures for each of the bolt modules.
 
-spec = Gem::Specification.latest_specs.find { |spec| spec.name.eql?('bolt') }
+spec = Gem::Specification.latest_specs.find { |s| s.name.eql?('bolt') }
 bolt_modules = File.join(spec.full_gem_path, 'bolt-modules')
 Dir.glob(File.join(bolt_modules, '*')).each do |dir|
   mod_name = File.basename(dir)
