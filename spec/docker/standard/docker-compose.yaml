@@ -2,8 +2,8 @@ version: "3"
 services:
   bolt:
     build:
-      dockerfile: '../Dockerfile_bolt'
-      context: .
+      dockerfile: 'Dockerfile_bolt'
+      context: ../
     image: pe-build
     hostname: bolter-std.puppet.vm
     container_name: bolter-std.puppet.vm
@@ -18,8 +18,8 @@ services:
       LANG: "en_US.utf8"
       LANGUAGE: "en_US.utf8"
     build:
-      dockerfile: '../Dockerfile'
-      context: .
+      dockerfile: 'Dockerfile'
+      context: ../
     entrypoint: /sbin/init
     image: pe-base
     privileged: true # required for systemd
