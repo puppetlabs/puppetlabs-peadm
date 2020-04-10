@@ -20,13 +20,15 @@ end
 # locate the bolt gem dir and create fixtures for each of the bolt modules.
 
 spec = Gem::Specification.latest_specs.find { |s| s.name.eql?('bolt') }
-bolt_modules = File.join(spec.full_gem_path, 'bolt-modules')
-Dir.glob(File.join(bolt_modules, '*')).each do |dir|
-  mod_name = File.basename(dir)
-  mod_path = File.expand_path(File.join(__dir__, 'fixtures', 'modules', mod_name))
-  FileUtils.ln_sf(dir, mod_path) unless File.exist?(mod_path)
-end
+if spec
+  bolt_modules = File.join(spec.full_gem_path, 'bolt-modules')
+  Dir.glob(File.join(bolt_modules, '*')).each do |dir|
+    mod_name = File.basename(dir)
+    mod_path = File.expand_path(File.join(__dir__, 'fixtures', 'modules', mod_name))
+    FileUtils.ln_sf(dir, mod_path) unless File.exist?(mod_path)
+  end
 
-RSpec.configure do |c|
-  c.basemodulepath = bolt_modules
+  RSpec.configure do |c|
+    c.basemodulepath = bolt_modules
+  end
 end

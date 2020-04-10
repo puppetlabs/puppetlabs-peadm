@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'tempfile'
 
 Puppet::Functions.create_function(:'peadm::file_content_upload') do
