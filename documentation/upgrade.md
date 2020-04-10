@@ -92,8 +92,9 @@ Note: it is assumed that the Puppet master is in cluster A when the upgrade star
 1. Shut down the `pe-puppetdb` service on the compilers in cluster A
 2. If different from the master, run the `install-puppet-enterprise` script for the new PE version on the PuppetDB PostgreSQL node for cluster A
 3. Run the `install-puppet-enterprise` script for the new PE version on the master
-4. If different from the master, Run `puppet agent -t` on the PuppetDB PostgreSQL node for cluster A
-5. Perform the standard `curl upgrade.sh | bash` procedure on the compilers for cluster A
+4. Run `puppet agent -t` on the master
+5. If different from the master, Run `puppet agent -t` on the PuppetDB PostgreSQL node for cluster A
+6. Perform the standard `curl upgrade.sh | bash` procedure on the compilers for cluster A
 
 **Phase 3: upgrade HA cluster B**
 
