@@ -5,3 +5,5 @@ Rakefile:
 .gitignore:
   paths:
     - '.rerun.json'
+    - '*.tar.gz'
+    

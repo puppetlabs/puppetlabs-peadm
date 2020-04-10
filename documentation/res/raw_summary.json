@@ -1,0 +1,170 @@
+{
+  "pnw_stack": {
+    "status": "degraded",
+    "state": {
+      "code-manager-service/pe-std.puppet.vm": true,
+      "file-sync-storage-service/pe-std.puppet.vm": true,
+      "file-sync-client-service/pe-std.puppet.vm": true,
+      "pe-master/pe-std.puppet.vm": true,
+      "classifier-service/pe-std.puppet.vm": true,
+      "rbac-service/pe-std.puppet.vm": true,
+      "activity-service/pe-std.puppet.vm": true,
+      "orchestrator-service/pe-std.puppet.vm": true,
+      "broker-service/pe-std.puppet.vm": true,
+      "puppetdb-status/pe-std.puppet.vm": true,
+      "file-sync-client/pe-std-replica.puppet.vm": false,
+      "master/pe-std-replica.puppet.vm": false,
+      "classifier/pe-std-replica.puppet.vm": false,
+      "rbac/pe-std-replica.puppet.vm": false,
+      "activity/pe-std-replica.puppet.vm": false,
+      "puppetdb/pe-std-replica.puppet.vm": false
+    },
+    "failed": {
+      "file-sync-client/pe-std-replica.puppet.vm": false,
+      "master/pe-std-replica.puppet.vm": false,
+      "classifier/pe-std-replica.puppet.vm": false,
+      "rbac/pe-std-replica.puppet.vm": false,
+      "activity/pe-std-replica.puppet.vm": false,
+      "puppetdb/pe-std-replica.puppet.vm": false
+    },
+    "passed": {
+      "code-manager-service/pe-std.puppet.vm": true,
+      "file-sync-storage-service/pe-std.puppet.vm": true,
+      "file-sync-client-service/pe-std.puppet.vm": true,
+      "pe-master/pe-std.puppet.vm": true,
+      "classifier-service/pe-std.puppet.vm": true,
+      "rbac-service/pe-std.puppet.vm": true,
+      "activity-service/pe-std.puppet.vm": true,
+      "orchestrator-service/pe-std.puppet.vm": true,
+      "broker-service/pe-std.puppet.vm": true,
+      "puppetdb-status/pe-std.puppet.vm": true
+    },
+    "stack_name": "pnw_stack"
+  },
+  "east_stack": {
+    "status": "degraded",
+    "state": {
+      "code-manager-service/pe-std.puppet.vm": true,
+      "file-sync-storage-service/pe-std.puppet.vm": true,
+      "file-sync-client-service/pe-std.puppet.vm": true,
+      "pe-master/pe-std.puppet.vm": true,
+      "classifier-service/pe-std.puppet.vm": true,
+      "rbac-service/pe-std.puppet.vm": true,
+      "activity-service/pe-std.puppet.vm": true,
+      "orchestrator-service/pe-std.puppet.vm": true,
+      "broker-service/pe-std.puppet.vm": true,
+      "puppetdb-status/pe-std.puppet.vm": true,
+      "file-sync-client/pe-std-replica.puppet.vm": false,
+      "master/pe-std-replica.puppet.vm": false,
+      "classifier/pe-std-replica.puppet.vm": false,
+      "rbac/pe-std-replica.puppet.vm": false,
+      "activity/pe-std-replica.puppet.vm": false,
+      "puppetdb/pe-std-replica.puppet.vm": false
+    },
+    "failed": {
+      "file-sync-client/pe-std-replica.puppet.vm": false,
+      "master/pe-std-replica.puppet.vm": false,
+      "classifier/pe-std-replica.puppet.vm": false,
+      "rbac/pe-std-replica.puppet.vm": false,
+      "activity/pe-std-replica.puppet.vm": false,
+      "puppetdb/pe-std-replica.puppet.vm": false
+    },
+    "passed": {
+      "code-manager-service/pe-std.puppet.vm": true,
+      "file-sync-storage-service/pe-std.puppet.vm": true,
+      "file-sync-client-service/pe-std.puppet.vm": true,
+      "pe-master/pe-std.puppet.vm": true,
+      "classifier-service/pe-std.puppet.vm": true,
+      "rbac-service/pe-std.puppet.vm": true,
+      "activity-service/pe-std.puppet.vm": true,
+      "orchestrator-service/pe-std.puppet.vm": true,
+      "broker-service/pe-std.puppet.vm": true,
+      "puppetdb-status/pe-std.puppet.vm": true
+    },
+    "stack_name": "east_stack"
+  },
+  "west_stack": {
+    "status": "degraded",
+    "state": {
+      "code-manager-service/pe-std.puppet.vm": true,
+      "file-sync-storage-service/pe-std.puppet.vm": true,
+      "file-sync-client-service/pe-std.puppet.vm": true,
+      "pe-master/pe-std.puppet.vm": true,
+      "classifier-service/pe-std.puppet.vm": true,
+      "rbac-service/pe-std.puppet.vm": true,
+      "activity-service/pe-std.puppet.vm": true,
+      "orchestrator-service/pe-std.puppet.vm": true,
+      "broker-service/pe-std.puppet.vm": true,
+      "puppetdb-status/pe-std.puppet.vm": true,
+      "file-sync-client/pe-std-replica.puppet.vm": false,
+      "master/pe-std-replica.puppet.vm": false,
+      "classifier/pe-std-replica.puppet.vm": false,
+      "rbac/pe-std-replica.puppet.vm": false,
+      "activity/pe-std-replica.puppet.vm": false,
+      "puppetdb/pe-std-replica.puppet.vm": false
+    },
+    "failed": {
+      "file-sync-client/pe-std-replica.puppet.vm": false,
+      "master/pe-std-replica.puppet.vm": false,
+      "classifier/pe-std-replica.puppet.vm": false,
+      "rbac/pe-std-replica.puppet.vm": false,
+      "activity/pe-std-replica.puppet.vm": false,
+      "puppetdb/pe-std-replica.puppet.vm": false
+    },
+    "passed": {
+      "code-manager-service/pe-std.puppet.vm": true,
+      "file-sync-storage-service/pe-std.puppet.vm": true,
+      "file-sync-client-service/pe-std.puppet.vm": true,
+      "pe-master/pe-std.puppet.vm": true,
+      "classifier-service/pe-std.puppet.vm": true,
+      "rbac-service/pe-std.puppet.vm": true,
+      "activity-service/pe-std.puppet.vm": true,
+      "orchestrator-service/pe-std.puppet.vm": true,
+      "broker-service/pe-std.puppet.vm": true,
+      "puppetdb-status/pe-std.puppet.vm": true
+    },
+    "stack_name": "west_stack"
+  },
+  "northeast_stack": {
+    "status": "degraded",
+    "state": {
+      "code-manager-service/pe-std.puppet.vm": true,
+      "file-sync-storage-service/pe-std.puppet.vm": true,
+      "file-sync-client-service/pe-std.puppet.vm": true,
+      "pe-master/pe-std.puppet.vm": true,
+      "classifier-service/pe-std.puppet.vm": true,
+      "rbac-service/pe-std.puppet.vm": true,
+      "activity-service/pe-std.puppet.vm": true,
+      "orchestrator-service/pe-std.puppet.vm": true,
+      "broker-service/pe-std.puppet.vm": true,
+      "puppetdb-status/pe-std.puppet.vm": true,
+      "file-sync-client/pe-std-replica.puppet.vm": false,
+      "master/pe-std-replica.puppet.vm": false,
+      "classifier/pe-std-replica.puppet.vm": false,
+      "rbac/pe-std-replica.puppet.vm": false,
+      "activity/pe-std-replica.puppet.vm": false,
+      "puppetdb/pe-std-replica.puppet.vm": false
+    },
+    "failed": {
+      "file-sync-client/pe-std-replica.puppet.vm": false,
+      "master/pe-std-replica.puppet.vm": false,
+      "classifier/pe-std-replica.puppet.vm": false,
+      "rbac/pe-std-replica.puppet.vm": false,
+      "activity/pe-std-replica.puppet.vm": false,
+      "puppetdb/pe-std-replica.puppet.vm": false
+    },
+    "passed": {
+      "code-manager-service/pe-std.puppet.vm": true,
+      "file-sync-storage-service/pe-std.puppet.vm": true,
+      "file-sync-client-service/pe-std.puppet.vm": true,
+      "pe-master/pe-std.puppet.vm": true,
+      "classifier-service/pe-std.puppet.vm": true,
+      "rbac-service/pe-std.puppet.vm": true,
+      "activity-service/pe-std.puppet.vm": true,
+      "orchestrator-service/pe-std.puppet.vm": true,
+      "broker-service/pe-std.puppet.vm": true,
+      "puppetdb-status/pe-std.puppet.vm": true
+    },
+    "stack_name": "northeast_stack"
+  }
+}

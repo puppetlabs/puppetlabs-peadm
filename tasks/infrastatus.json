@@ -1,0 +1,15 @@
+{
+  "supports_noop": false,
+  "description": "Runs puppet infra status and returns the output",
+  "parameters": {
+    "format": {
+      "type": "Enum[json,text]",
+      "description": "The type of output to return",
+      "default": "text"
+    }
+  },
+  "input_method": "environment",
+  "implementations": [
+    {"name": "infrastatus.sh"}
+  ]
+}
