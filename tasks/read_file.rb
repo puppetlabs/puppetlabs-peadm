@@ -1,4 +1,5 @@
 #!/opt/puppetlabs/puppet/bin/ruby
+# frozen_string_literal: true
 
 require 'json'
 
@@ -8,11 +9,11 @@ begin
 rescue StandardError => err
   result = {
     'content' => nil,
-    'error'   => err.message,
+    'error'   => err.message
   }
 else
   result = {
-    'content' => content,
+    'content' => content
   }
 ensure
   puts result.to_json

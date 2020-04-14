@@ -1,4 +1,6 @@
 #!/opt/puppetlabs/puppet/bin/ruby
+# frozen_string_literal: true
+
 #
 # rubocop:disable Style/GlobalVars
 require 'json'
