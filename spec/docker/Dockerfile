@@ -26,6 +26,18 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == system
   rm -rf /var/cache/yum; \
   ln -s '/usr/lib/systemd/system/sshd.service' '/etc/systemd/system/multi-user.target.wants/sshd.service' && \
   ln -s '/etc/systemd/system/live_audit.service' '/etc/systemd/system/multi-user.target.wants/live_audit.service'
+ARG HOST="localhost"
+RUN mkdir -p /root/.puppetlabs/client-tools && \
+    echo $' \n\
+{ \n\
+  "puppetdb": { \n\
+    "server_urls": "https://'$HOST$':8081", \n\
+    "cacert": "/etc/puppetlabs/puppet/ssl/certs/ca.pem", \n\
+    "cert": "/etc/puppetlabs/puppet/ssl/certs/'$HOST$'.pem", \n\
+    "key": "/etc/puppetlabs/puppet/ssl/private_keys/'$HOST$'.pem" \n\
+  } \n\
+} \n '\
+> /root/.puppetlabs/client-tools/puppetdb.conf
 VOLUME [ “/sys/fs/cgroup” ]
 #CMD /bin/bash
 ENTRYPOINT [ "/sbin/init" ]
