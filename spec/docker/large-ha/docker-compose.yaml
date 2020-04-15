@@ -38,6 +38,8 @@ services:
     build:
       dockerfile: 'Dockerfile'
       context: ../
+      args:
+        HOST: 'pe-lg-replica.puppet.vm'
     entrypoint: /sbin/init
     image: pe-base
     privileged: true # required for systemd
@@ -61,6 +63,8 @@ services:
     build:
       dockerfile: 'Dockerfile'
       context: ../
+      args:
+        HOST: 'pe-lg.puppet.vm'
     entrypoint: /sbin/init
     image: pe-base
     privileged: true # required for systemd

@@ -76,6 +76,8 @@ services:
     build:
       dockerfile: 'Dockerfile'
       context: ../
+      args:
+        HOST: 'pe-xl-core-1.puppet.vm'
     entrypoint: /sbin/init
     image: pe-base
     privileged: true # required for systemd
@@ -99,6 +101,8 @@ services:
     build:
       dockerfile: 'Dockerfile'
       context: ../
+      args:
+        HOST: 'pe-xl-core-0.puppet.vm'
     entrypoint: /sbin/init
     image: pe-base
     privileged: true # required for systemd
