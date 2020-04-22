@@ -1,4 +1,9 @@
 ---
+Gemfile:
+  ':development':
+     required:
+       - gem: 'puppet-debugger'
+         version: '>= 0.18.0'
 Rakefile:
   extras:
     - 'PuppetSyntax.exclude_paths = ["plans/**/*.pp", "vendor/**/*"]'
