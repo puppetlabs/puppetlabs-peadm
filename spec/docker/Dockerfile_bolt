@@ -1,7 +1,10 @@
 FROM puppet/puppet-bolt
-ENV LC_ALL="en_US.UTF-8" LANG="en_US.UTF-8" LANGUAGE="en_US.UTF-8"
-RUN echo "LANG=en_US.UTF-8" > /etc/locale.conf
-RUN apt-get update && apt-get install -y ssh sudo curl; \
+RUN apt-get update && apt-get install -y locales ssh sudo curl; \
    /opt/puppetlabs/bolt/bin/gem install bundler puppet-debugger -N -q
+ENV LC_ALL="en_US.UTF-8" LANG="en_US.UTF-8" LANGUAGE="en_US.UTF-8"
+RUN echo "LC_ALL=en_US.UTF-8" >> /etc/environment && /
+  echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen && /
+  echo "LANG=en_US.UTF-8" > /etc/locale.conf && /
+  locale-gen en_US.UTF-8
 CMD /bin/bash
 ENTRYPOINT [ "/opt/puppetlabs/bin/bolt" ]
