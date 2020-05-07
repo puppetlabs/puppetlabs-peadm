@@ -20,6 +20,7 @@ Plans:
 
 Reference:
 
+* [PE Architecture Documentation](https://puppet.com/docs/pe/latest/choosing_an_architecture.html)
 * [Classification](documentation/classification.md)
 * [Architectures](documentation/architectures.md)
 * [Testing](documentation/pre_post_checks.md)
@@ -30,3 +31,7 @@ Reference:
 Normally, if you are able to use peadm to set up an infrastructure and Puppet agent runs are all working, chances are you met all the requirements and don't have to worry. Sometimes Some notable requirements are highlighted below which may accidentally be adjusted by users, but which architectures deployed by this module rely on. These configuration requirements need to be maintained for the infrastructure to operate correctly.
 
 * Classifier Data needs to be enabled. This feature is enabled by default on new installs, but can be disabled by users if they remove the relevant configuration from their global hiera.yaml file. See the [PE docs](https://puppet.com/docs/pe/latest/config_console.html#task-5039) for more information.
+
+## Getting Help
+
+To get help with issues concerning this module, please make use of [issues](https://github.com/puppetlabs/puppetlabs-peadm/issues) in the project on GitHub.
