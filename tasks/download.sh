@@ -8,5 +8,6 @@ filesize=$(stat -c%s "$PT_path" 2>/dev/null)
 if [[ ! -z "$urisize" && ! -z "$filesize" && "$filesize" -eq "$urisize" ]]; then
   exit 0
 else
-  curl -L -o "$PT_path" "$PT_source"
+  printf '%s\n' "Downloading: ${PT_source}" >&2
+  curl -f -L -o "$PT_path" "$PT_source"
 fi
