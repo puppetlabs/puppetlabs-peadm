@@ -32,7 +32,7 @@ plan peadm::action::install (
 
   # Common Configuration
   String               $console_password,
-  String               $version       = '2019.1.1',
+  String               $version       = '2019.7.0',
   Array[String]        $dns_alt_names = [ ],
   Hash                 $pe_conf_data  = { },
 
@@ -129,6 +129,16 @@ plan peadm::action::install (
   }
 
   # Generate all the needed pe.conf files
+
+  # This is necessary starting in PE 2019.7, when we need to pre-configure
+  # PostgreSQL to permit connections from compilers. After the compilers run
+  # puppet and are present in PuppetDB, it is not necessary anymore.
+  $puppetdb_database_temp_config = {
+    'puppet_enterprise::profile::database::puppetdb_hosts' => (
+      $compiler_targets + $master_target + $master_replica_target
+    ).map |$t| { $t.peadm::target_name() },
+  }
+
   $master_pe_conf = peadm::generate_pe_conf({
     'console_admin_password'                                          => $console_password,
     'puppet_enterprise::puppet_master_host'                           => $master_target.peadm::target_name(),
@@ -140,25 +150,25 @@ plan peadm::action::install (
       undef   => undef,
       default => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
     },
-  } + $pe_conf_data)
+  } + $puppetdb_database_temp_config + $pe_conf_data)
 
   $puppetdb_database_pe_conf = peadm::generate_pe_conf({
     'console_admin_password'                => 'not used',
     'puppet_enterprise::puppet_master_host' => $master_target.peadm::target_name(),
     'puppet_enterprise::database_host'      => $puppetdb_database_target.peadm::target_name(),
-  } + $pe_conf_data)
+  } + $puppetdb_database_temp_config + $pe_conf_data)
 
   $puppetdb_database_replica_pe_conf = peadm::generate_pe_conf({
     'console_admin_password'                => 'not used',
     'puppet_enterprise::puppet_master_host' => $master_target.peadm::target_name(),
     'puppet_enterprise::database_host'      => $puppetdb_database_replica_target.peadm::target_name(),
-  } + $pe_conf_data)
+  } + $puppetdb_database_temp_config + $pe_conf_data)
 
   # Upload the pe.conf files to the hosts that need them, and ensure correctly
   # configured certnames. Right now for these hosts we need to do that by
   # staging a puppet.conf file.
   ['master', 'puppetdb_database', 'puppetdb_database_replica'].each |$var| {
-    $target  = getvar("${var}_target")
+    $target  = getvar("${var}_target", [])
     $pe_conf = getvar("${var}_pe_conf")
 
     peadm::file_content_upload($pe_conf, '/tmp/pe.conf', $target)
@@ -296,32 +306,41 @@ plan peadm::action::install (
     action => 'file-sync commit',
   )
 
-  # Deploy the PE agent to all remaining hosts
-  run_task('peadm::agent_install', $master_replica_target,
+  run_task_with('peadm::agent_install', $agent_installer_targets) |$target| {{
     server        => $master_target.peadm::target_name(),
-    install_flags => [
-      '--puppet-service-ensure', 'stopped',
-      "main:certname=${master_replica_target.peadm::target_name()}",
-      "main:dns_alt_names=${dns_alt_names_csv}",
-      "extension_requests:${peadm::oid('peadm_role')}=puppet/master",
-      "extension_requests:${peadm::oid('peadm_availability_group')}=B",
-    ],
-  )
+    install_flags => peadm::flatten_compact([
 
-  ['A', 'B'].each |$group| {
-    getvar("compiler_${group.downcase()}_targets").each |$target| {
-      run_task('peadm::agent_install', $target,
-        server        => $master_target.peadm::target_name(),
-        install_flags => [
-          '--puppet-service-ensure', 'stopped',
-          "main:certname=${target.peadm::target_name()}",
-          "main:dns_alt_names=${dns_alt_names_csv}",
-          "extension_requests:${peadm::oid('peadm_role')}=puppet/compiler",
-          "extension_requests:${peadm::oid('peadm_availability_group')}=${group}",
+      # Common params
+      '--puppet-service-ensure', 'stopped',
+      "main:dns_alt_names=${dns_alt_names_csv}",
+
+      # Params that vary depending on what kind of server this is.
+      # The undef values will be compacted out
+      "main:certname=${target.peadm::target_name()}",
+      ($target in $compiler_a_targets) ? {
+        false => undef,
+        true  => [
+          "extension_requests:${peadm::oid('pp_auth_role')}=pe_compiler",
+          "extension_requests:${peadm::oid('peadm_availability_group')}=A",
         ],
-      )
-    }
-  }
+      },
+      ($target in $compiler_b_targets) ? {
+        false => undef,
+        true  => [
+          "extension_requests:${peadm::oid('pp_auth_role')}=pe_compiler",
+          "extension_requests:${peadm::oid('peadm_availability_group')}=B",
+        ],
+      },
+      ($target in $master_replica_target) ? {
+        false => undef,
+        true => [
+          "extension_requests:${peadm::oid('peadm_availability_group')}=B",
+          "extension_requests:${peadm::oid('peadm_role')}=puppet/master",
+        ],
+      },
+
+    ])
+  }}
 
   # Ensure certificate requests have been submitted
   run_task('peadm::submit_csr', $agent_installer_targets)
@@ -331,19 +350,30 @@ plan peadm::action::install (
   # For now, waiting a short period of time is necessary to avoid a small race.
   ctrl::sleep(15)
 
-  if !empty($agent_installer_targets) {
-    run_task('peadm::sign_csr', $master_target,
-      certnames => $agent_installer_targets.map |$target| { $target.name },
-    )
-  }
+  run_task('peadm::sign_csr', $master_target,
+    certnames => $agent_installer_targets.map |$target| { $target.name },
+  )
+
+  run_task('peadm::puppet_runonce', $all_targets - $master_target)
 
   # The puppetserver might be in the middle of a restart after the Puppet run,
   # so we check the status by calling the api and ensuring the puppetserver is
-  # taking requests before proceeding.
+  # taking requests before proceeding. It takes two runs to fully finish
+  # configuration.
   run_task('peadm::puppet_runonce', $master_target)
   peadm::wait_until_service_ready('pe-master', $master_target)
+  run_task('peadm::puppet_runonce', $master_target)
 
-  run_task('peadm::puppet_runonce', $all_targets - $master_target)
+  # Cleanup temp bootstrapping config
+  ['master', 'puppetdb_database', 'puppetdb_database_replica'].each |$var| {
+    $target  = getvar("${var}_target", [])
+    $pe_conf = getvar("${var}_pe_conf", '{}')
+
+    run_task('peadm::mkdir_p_file', $target,
+      path    => '/etc/puppetlabs/enterprise/conf.d/pe.conf',
+      content => ($pe_conf.parsejson() - $puppetdb_database_temp_config).to_json_pretty(),
+    )
+  }
 
   return("Installation of Puppet Enterprise ${arch['architecture']} succeeded.")
 }

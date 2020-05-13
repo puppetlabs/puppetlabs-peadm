@@ -16,7 +16,7 @@ plan peadm::provision (
 
   # Common Configuration
   String                            $console_password,
-  String                            $version               = '2019.1.1',
+  String                            $version               = '2019.7.0',
   Optional[Array[String]]           $dns_alt_names         = undef,
   Optional[String]                  $compiler_pool_address = undef,
   Optional[Hash]                    $pe_conf_data          = { },

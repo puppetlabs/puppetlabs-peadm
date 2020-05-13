@@ -8,6 +8,11 @@
     "token_file": {
       "type": "Optional[String]",
       "description": "The name of the token-file for auth"
+    },
+    "legacy": {
+      "type": "Boolean",
+      "description": "Set to true if provisioning a replica for PE 2019.5 or older. Defaults to false",
+      "default": false
     }
   },
   "input_method": "environment",

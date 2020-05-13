@@ -1,18 +1,34 @@
 #!/bin/bash
 
-USER=$(id -un)
-HOME=$(getent passwd "$USER" | cut -d : -f 6)
+export USER=$(id -un)
+export HOME=$(getent passwd "$USER" | cut -d : -f 6)
+export PATH="/opt/puppetlabs/bin:${PATH}"
 
 if [ -z "$PT_token_file" -o "$PT_token_file" = "null" ]; then
-  TOKEN_FILE="${HOME}/.puppetlabs/token"
+  export TOKEN_FILE="${HOME}/.puppetlabs/token"
 else
-  TOKEN_FILE="$PT_token_file"
+  export TOKEN_FILE="$PT_token_file"
 fi
+
 
 set -e
 
-env PATH="/opt/puppetlabs/bin:${PATH}" \
-    USER="$USER" \
-    HOME="$HOME" \
-    puppet infrastructure provision replica --token-file "$TOKEN_FILE" \
-    "$PT_master_replica"
+if [ "$PT_legacy" = "false" ]; then
+  puppet infrastructure provision replica "$PT_master_replica" \
+    --yes --token-file "$TOKEN_FILE" \
+    --skip-agent-config \
+    --topology mono-with-compile \
+    --enable
+
+elif [ "$PT_legacy" = "true" ]; then
+  puppet infrastructure provision replica "$PT_master_replica" \
+    --token-file "$TOKEN_FILE"
+
+  puppet infrastructure enable replica "$PT_master_replica" \
+    --yes --token-file "$TOKEN_FILE" \
+    --skip-agent-config \
+    --topology mono-with-compile
+
+else
+  exit 1
+fi

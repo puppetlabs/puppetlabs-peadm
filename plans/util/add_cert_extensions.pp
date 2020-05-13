@@ -2,9 +2,13 @@ plan peadm::util::add_cert_extensions (
   TargetSpec $targets,
   TargetSpec $master_host,
   Hash       $extensions,
+  Array      $remove = [ ],
 ) {
   $all_targets   = peadm::get_targets($targets)
   $master_target = peadm::get_targets($master_host, 1)
+
+  # Short-circuit if there are no targets
+  if $all_targets.empty { return(0) }
 
   # This plan doesn't work over the orchestrator due to certificates being revoked.
   $all_targets.peadm::fail_on_transport('pcp')
@@ -20,7 +24,7 @@ plan peadm::util::add_cert_extensions (
     # there'll be a problem trying to sign the cert.
     $memo + { $result.target => ($result.value + {
       'extensions' => ($result['extensions'].filter |$k,$v| {
-        $k =~ /^1\.3\.6\.1\.4\.1\.34380\.1(?!\.3\.39)/
+        $k =~ /^1\.3\.6\.1\.4\.1\.34380\.1(?!\.3\.39)/ and !($k in $remove)
       })
     })}
   }

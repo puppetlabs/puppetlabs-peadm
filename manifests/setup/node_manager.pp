@@ -12,7 +12,7 @@
 class peadm::setup::node_manager (
   # Common
   String[1] $master_host,
-  String[1] $compiler_pool_address,
+  Optional[String[1]] $compiler_pool_address          = undef,
 
   # High Availability
   Optional[String[1]] $master_replica_host            = undef,
@@ -32,57 +32,40 @@ class peadm::setup::node_manager (
   # PE INFRASTRUCTURE GROUPS
   ##################################################
 
-  # Hiera data tuning for compilers
-  $compiler_data = {
-    'puppet_enterprise::profile::puppetdb' => {
-      'gc_interval' => '0',
-    },
-    'puppet_enterprise::puppetdb' => {
-      'command_processing_threads' => 2,
-      'write_maximum_pool_size'    => 4,
-      'read_maximum_pool_size'     => 8,
-    },
-  }
-
   # We modify this group's rule such that all PE infrastructure nodes will be
   # members.
   node_group { 'PE Infrastructure Agent':
-    rule => ['and', ['~', ['trusted', 'extensions', peadm::oid('peadm_role')], '^puppet/']],
+    rule => ['or',
+      ['~', ['trusted', 'extensions', peadm::oid('peadm_role')], '^puppet/'],
+      ['~', ['fact', 'pe_server_version'], '.+']
+    ],
   }
 
-  # We modify this group to add, as data, the compiler_pool_address only.
+  # We modify PE Master to add, as data, the compiler_pool_address only.
   # Because the group does not have any data by default this does not impact
   # out-of-box configuration of the group.
-  node_group { 'PE Master':
-    parent    => 'PE Infrastructure',
-    rule      => ['or',
-      ['and', ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/compiler']],
-      ['=', 'name', $master_host],
-    ],
-    data      => {
-      'pe_repo' => { 'compile_master_pool_address' => $compiler_pool_address },
-    },
-    variables => { 'pe_master' => true },
+  $compiler_pool_address_data = $compiler_pool_address ? {
+    undef   => undef,
+    default => { 'pe_repo' => { 'compile_master_pool_address' => $compiler_pool_address } },
   }
 
-  # Create the database group if a database host is external
-  if ($puppetdb_database_host != $master_host) {
-    # This class has to be included here because puppet_enterprise is declared
-    # in the console with parameters. It is therefore not possible to include
-    # puppet_enterprise::profile::database in code without causing a conflict.
-    node_group { 'PE Database':
-      ensure               => present,
-      parent               => 'PE Infrastructure',
-      environment          => 'production',
-      override_environment => false,
-      rule                 => ['or',
-        ['and', ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/puppetdb-database']],
-        ['=', 'name', $master_host],
-      ],
-      classes              => {
-        'puppet_enterprise::profile::database' => { },
-      },
-    }
+  node_group { 'PE Master':
+    parent    => 'PE Infrastructure',
+    data      => $compiler_pool_address_data,
+    variables => { 'pe_master' => true },
+    rule      => ['or',
+      ['and', ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler']],
+      ['=', 'name', $master_host],
+    ],
+  }
+
+  # This group should pin master, puppetdb_database, and puppetdb_database_replica,
+  # but only if provided (and not just the default).
+  node_group { 'PE Database':
+    rule => ['or',
+      ['and', ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/puppetdb-database']],
+      ['=', 'name', $master_host],
+    ]
   }
 
   # Create data-only groups to store PuppetDB PostgreSQL database configuration
@@ -108,9 +91,10 @@ class peadm::setup::node_manager (
   # having an affinity for one "availability zone" or the other.
   node_group { 'PE Compiler Group A':
     ensure  => 'present',
-    parent  => 'PE Master',
+    parent  => 'PE Compiler',
+    data    => { },
     rule    => ['and',
-      ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/compiler'],
+      ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler'],
       ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'A'],
     ],
     classes => {
@@ -118,11 +102,10 @@ class peadm::setup::node_manager (
         'database_host' => $puppetdb_database_host,
       },
       'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => ['${clientcert}', $master_replica_host].filter |$_| { $_ }, # lint:ignore:single_quote_string_with_variables
+        'puppetdb_host' => ['${trusted[\'certname\']}', $master_replica_host].filter |$_| { $_ }, # lint:ignore:single_quote_string_with_variables
         'puppetdb_port' => [8081],
       }
     },
-    data    => $compiler_data,
   }
 
   # Create the replica and B groups if a replica master and database host are
@@ -160,9 +143,10 @@ class peadm::setup::node_manager (
 
     node_group { 'PE Compiler Group B':
       ensure  => 'present',
-      parent  => 'PE Master',
+      parent  => 'PE Compiler',
+      data    => { },
       rule    => ['and',
-        ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/compiler'],
+        ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler'],
         ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'B'],
       ],
       classes => {
@@ -170,11 +154,10 @@ class peadm::setup::node_manager (
           'database_host' => $puppetdb_database_replica_host,
         },
         'puppet_enterprise::profile::master'   => {
-          'puppetdb_host' => ['${clientcert}', $master_host], # lint:ignore:single_quote_string_with_variables
+          'puppetdb_host' => ['${trusted[\'certname\']}', $master_host], # lint:ignore:single_quote_string_with_variables
           'puppetdb_port' => [8081],
         }
       },
-      data    => $compiler_data,
     }
   }
 

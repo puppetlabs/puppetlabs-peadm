@@ -16,6 +16,8 @@ def main
   params = JSON.parse(STDIN.read)
   unsigned = params['certnames'].reject { |name| csr_signed?(name) }
 
+  exit 0 if unsigned.empty?
+
   cmd = ['/opt/puppetlabs/bin/puppetserver', 'ca', 'sign',
          '--certname', unsigned.join(',')]
 

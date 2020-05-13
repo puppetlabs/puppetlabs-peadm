@@ -52,12 +52,21 @@ plan peadm::upgrade (
   ])
 
   # Gather trusted facts from all systems
-  $trusted_facts = run_task('peadm::trusted_facts', $all_targets).reduce({}) |$memo,$result| {
-    $memo + { $result.target => $result['extensions'] }
+  $cert_extensions = run_task('peadm::trusted_facts', $all_targets).reduce({}) |$memo,$result| {
+    $memo + { $result.target.name => $result['extensions'] }
   }
 
+  $convert_targets = $cert_extensions.filter |$name,$exts| {
+    ($name in $compiler_targets.map |$t| { $t.name }) and ($exts['pp_auth_role'] == undef)
+  }.keys
+
+  # Determine PE version currently installed on master
+  $current_pe_version = run_task('peadm::read_file', $master_target,
+    path => '/opt/puppetlabs/server/pe_build',
+  ).first['content']
+
   # Ensure needed trusted facts are available
-  if $trusted_facts.any |$t,$ext| { $ext[peadm::oid('peadm_role')] == undef } {
+  if $cert_extensions.any |$t,$ext| { $ext[peadm::oid('peadm_role')] == undef } {
     fail_plan(@(HEREDOC/L))
       Required trusted facts are not present; upgrade cannot be completed. If \
       this infrastructure was provisioned with an old version of peadm, you may \
@@ -67,13 +76,13 @@ plan peadm::upgrade (
 
   # Determine which compilers are associated with which HA group
   $compiler_m1_targets = $compiler_targets.filter |$target| {
-    ($trusted_facts[$target][peadm::oid('peadm_availability_group')]
-      == $trusted_facts[$master_target[0]][peadm::oid('peadm_availability_group')])
+    ($cert_extensions[$target.name][peadm::oid('peadm_availability_group')]
+      == $cert_extensions[$master_target[0].name][peadm::oid('peadm_availability_group')])
   }
 
   $compiler_m2_targets = $compiler_targets.filter |$target| {
-    ($trusted_facts[$target][peadm::oid('peadm_availability_group')]
-      == $trusted_facts[$master_replica_target[0]][peadm::oid('peadm_availability_group')])
+    ($cert_extensions[$target.name][peadm::oid('peadm_availability_group')]
+      == $cert_extensions[$master_replica_target[0].name][peadm::oid('peadm_availability_group')])
   }
 
   ###########################################################################
@@ -139,10 +148,10 @@ plan peadm::upgrade (
 
   # Installer-driven upgrade will de-configure auth access for compilers.
   # Re-run Puppet immediately to fully re-enable
-  run_task('peadm::puppet_runonce', [
+  run_task('peadm::puppet_runonce', peadm::flatten_compact([
     $master_target,
     $puppetdb_database_target,
-  ])
+  ]))
 
   # The master could restart orchestration services again, in which case we
   # would have to wait for nodes to reconnect
@@ -152,8 +161,9 @@ plan peadm::upgrade (
   }
 
   # Upgrade the compiler group A targets
-  run_task('peadm::agent_upgrade', $compiler_m1_targets,
-    server => $master_target.peadm::target_name(),
+  run_task('peadm::puppet_infra_upgrade', $master_target,
+    type    => 'compiler',
+    targets => $compiler_m1_targets.map |$t| { $t.peadm::target_name() }
   )
 
   ###########################################################################
@@ -172,22 +182,52 @@ plan peadm::upgrade (
   )
 
   # Installer-driven upgrade will de-configure auth access for compilers.
-  # Re-run Puppet immediately to fully re-enable
-  run_task('peadm::puppet_runonce', $puppetdb_database_replica_target)
+  # Re-run Puppet immediately to fully re-enable.
+  #
+  # Because the steps following involve performing orchestrated actions and
+  # `puppet infra upgrade` cannot handle orchestration services restarting,
+  # also run Puppet immediately on the master.
+  run_task('peadm::puppet_runonce', peadm::flatten_compact([
+    $master_target,
+    $puppetdb_database_replica_target,
+  ]))
 
-  # Run the upgrade.sh script on the master replica target
-  run_task('peadm::agent_upgrade', $master_replica_target,
-    server => $master_target.peadm::target_name(),
+  # Upgrade the master replica
+  run_task('peadm::puppet_infra_upgrade', $master_target,
+    type    => 'replica',
+    targets => $master_replica_target.map |$t| { $t.peadm::target_name() }
   )
 
   # Upgrade the compiler group B targets
-  run_task('peadm::agent_upgrade', $compiler_m2_targets,
-    server => $master_target.peadm::target_name(),
+  run_task('peadm::puppet_infra_upgrade', $master_target,
+    type    => 'compiler',
+    targets => $compiler_m2_targets.map |$t| { $t.peadm::target_name() }
   )
 
   ###########################################################################
   # FINALIZE UPGRADE
   ###########################################################################
+
+  run_plan('peadm::util::add_cert_extensions', $convert_targets,
+    master_host => $master_target,
+    extensions  => {
+      'pp_auth_role' => 'pe_compiler',
+    },
+  )
+
+  apply($master_target) {
+    class { 'peadm::setup::node_manager_yaml':
+      master_host => $master_target.peadm::target_name(),
+    }
+
+    class { 'peadm::setup::node_manager':
+      master_host                    => $master_target.peadm::target_name(),
+      master_replica_host            => $master_replica_target.peadm::target_name(),
+      puppetdb_database_host         => $puppetdb_database_target.peadm::target_name(),
+      puppetdb_database_replica_host => $puppetdb_database_replica_target.peadm::target_name(),
+      require                        => Class['peadm::setup::node_manager_yaml'],
+    }
+  }
 
   # Ensure Puppet running on all infrastructure targets
   run_task('service', $all_targets,

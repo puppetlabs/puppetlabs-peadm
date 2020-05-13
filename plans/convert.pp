@@ -14,6 +14,8 @@ plan peadm::convert (
   String                            $compiler_pool_address = $master_host,
   Array[String]                     $dns_alt_names         = [ ],
 ) {
+  # TODO: read and validate convertable PE version
+
   # Convert inputs into targets.
   $master_target                    = peadm::get_targets($master_host, 1)
   $master_replica_target            = peadm::get_targets($master_replica_host, 1)
@@ -46,18 +48,20 @@ plan peadm::convert (
   }
 
   # Clusters A and B are used to divide PuppetDB availability for compilers. If
-  # the compilers given already have pp_cluster facts designating them A or B,
-  # use that. Otherwise, divide them by modulus of 2.
+  # the compilers given already have peadm_availability_group facts designating
+  # them A or B, use that. Otherwise, divide them by modulus of 2.
   if $arch['high-availability'] {
     $compiler_a_targets = $compiler_targets.filter |$index,$target| {
-      $compiler_extensions[$target.peadm::target_name()][peadm::oid('pp_cluster')] =~ /^[AB]$/ ? {
-        true  => $compiler_extensions[$target.peadm::target_name()][peadm::oid('pp_cluster')] == 'A',
+      $exts = $compiler_extensions[$target.peadm::target_name()]
+      $exts[peadm::oid('peadm_availability_group')] in ['A', 'B'] ? {
+        true  => $exts[peadm::oid('peadm_availability_group')] == 'A',
         false => $index % 2 == 0,
       }
     }
     $compiler_b_targets = $compiler_targets.filter |$index,$target| {
-      $compiler_extensions[$target.peadm::target_name()][peadm::oid('pp_cluster')] =~ /^[AB]$/ ? {
-        true  => $compiler_extensions[$target.peadm::target_name()][peadm::oid('pp_cluster')] == 'B',
+      $exts = $compiler_extensions[$target.peadm::target_name()]
+      $exts[peadm::oid('peadm_availability_group')] in ['A', 'B'] ? {
+        true  => $exts[peadm::oid('peadm_availability_group')] == 'B',
         false => $index % 2 != 0,
       }
     }
@@ -104,16 +108,18 @@ plan peadm::convert (
 
   run_plan('peadm::util::add_cert_extensions', $compiler_a_targets,
     master_host => $master_target,
+    remove      => ['1.3.6.1.4.1.34380.1.3.13'], # OID form of pp_auth_role
     extensions  => {
-      peadm::oid('peadm_role')               => 'puppet/compiler',
+      'pp_auth_role'                         => 'pe_compiler',
       peadm::oid('peadm_availability_group') => 'A',
     },
   )
 
   run_plan('peadm::util::add_cert_extensions', $compiler_b_targets,
     master_host => $master_target,
+    remove      => ['1.3.6.1.4.1.34380.1.3.13'], # OID form of pp_auth_role
     extensions  => {
-      peadm::oid('peadm_role')               => 'puppet/compiler',
+      'pp_auth_role'                         => 'pe_compiler',
       peadm::oid('peadm_availability_group') => 'B',
     },
   )

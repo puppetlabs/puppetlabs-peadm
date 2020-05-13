@@ -1,0 +1,17 @@
+{
+  "description": "Execute the puppet infra upgrade command",
+  "parameters": {
+    "type": {
+      "type": "Enum[compiler,replica]",
+      "description": "Which kind of infra node to upgrade"
+    },
+    "targets": {
+      "type": "Array[String]",
+      "description": "The certnames of the targets to upgrade"
+    }
+  },
+  "input_method": "stdin",
+  "implementations": [
+    {"name": "puppet_infra_upgrade.rb"}
+  ]
+}
