@@ -1,10 +1,24 @@
 #!/bin/bash
 
 main() {
+
+	local python_exec=""
+
+	if command -v python >/dev/null 2>&1; then
+		python_exec=$(which python)
+	elif command -v python2 >/dev/null 2>&1; then
+		python_exec=$(which python2)
+	elif command -v python3 >/dev/null 2>&1; then
+		python_exec=$(which python3)
+    else 
+		echo "Error: No Python version 2 or 3 interpreter found." 2>&1
+		exit 1
+	fi
+
 	if [ -r "$PT_path" ]; then
 		cat <<-EOS
 			{
-				"content": $(python_cmd -c "import json; print json.dumps(open('$PT_path','r').read())")
+				"content": $($python_exec -c "import json; print(json.dumps(open('$PT_path','r').read()))")
 			}
 		EOS
 	else
@@ -17,14 +31,4 @@ main() {
 	fi
 }
 
-python_cmd() {
-	if command -v python >/dev/null 2>&1; then
-		python "$@"
-	else
-		python3 "$@"
-	fi
-}
-
 main "$@"
-exit_code=$?
-exit $exit_code
