@@ -1,16 +1,17 @@
-## Release 0.0.1
+## Release 1.1.0
 ### Summary
 
-Adds several new features and updates
+This release supports PE 2019.1 through 2019.5.
+
+A Changelog was not maintained prior to this release.
 
 ### Features
-- Deprecation function X in favor of Y.
-- Updated Gemfile to deal with parallel_tests Ruby dependancy
+- Provision new PE clusters with standard, large, or extra-large architecture
+- Upgrade PE clusters provisioned with peadm
 
 ### Bugfixes
-- README typo fixes.
-- Updates deprecation tests to include future parser.
 
+N/A
 
 This changelog is used track changes with this module in human readable format.
 Feel free to reference tickets with links or other important information the 
