@@ -7,7 +7,6 @@
     }
   },
   "implementations": [
-    {"name": "read_file.rb", "requirements": ["puppet-agent"], "input_method": "stdin"},
     {"name": "read_file.sh", "requirements": ["shell"], "input_method": "environment"}
   ]
 }
