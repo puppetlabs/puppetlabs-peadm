@@ -32,7 +32,8 @@ plan peadm::provision (
   Optional[String]                  $license_key_content = undef,
 
   # Other
-  Optional[String]                  $stagingdir = undef,
+  Optional[String]                  $stagingdir    = undef,
+  Enum[direct,bolthost]             $download_mode = 'bolthost',
 ) {
 
   $install_result = run_plan('peadm::action::install',
@@ -64,6 +65,7 @@ plan peadm::provision (
 
     # Other
     stagingdir                     => $stagingdir,
+    download_mode                  => $download_mode,
   )
 
   $configure_result = run_plan('peadm::action::configure',

@@ -40,6 +40,10 @@ The content needed is the PE installation tarball for the target version. The in
 
 Installation content can be downloaded from [https://puppet.com/try-puppet/puppet-enterprise/download/](https://puppet.com/try-puppet/puppet-enterprise/download/).
 
+## Online usage
+
+The peadm::provision plan can be configured to download installation content directly to hosts. To configure online installation, set the `download_mode` parameter of the `peadm::provision` plan to `direct`. The direct mode is often more efficient when PE hosts have a route to the internet.
+
 ## Usage over the Orchestrator transport
 
 The peadm::upgrade plan can be used with the Orchestrator (pcp) transport, provided that the Bolt executor is running as root on the master. To use the Orchestrator transport prepare an inventory file such as the following to set the default transport to be `pcp`, but the master specifically to be `local`.

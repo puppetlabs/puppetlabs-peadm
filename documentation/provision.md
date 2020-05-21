@@ -103,6 +103,10 @@ The content needed is the PE installation tarball for the target version. The in
 
 Installation content can be downloaded from [https://puppet.com/try-puppet/puppet-enterprise/download/](https://puppet.com/try-puppet/puppet-enterprise/download/).
 
+## Online usage
+
+The peadm::provision plan can be configured to download installation content directly to hosts. To configure online installation, set the `download_mode` parameter of the `peadm::provision` plan to `direct`. The direct mode is often more efficient when PE hosts have a route to the internet.
+
 ## Hostnames and Certificate Names
 
 The various host parameters given to the peadm::provision or peadm::action::install plans will be set as Puppet certificate names. You must use the names here that you want the servers to be identified as by Puppet.
