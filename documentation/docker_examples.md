@@ -69,6 +69,54 @@ This will run an interactive bash shell in the running container.
 ### Upgrades
 There is also a upgrade.sh script that is similar to the provision.sh script.  This script will upgrade an already provisioned PE stack to the version specified in the update_params.json file.
 
+## Attaching agent containers
+Because we are using containers we can start up numerous container instances and attach them all to the same PE stack.  In a matter of minutes you can easily attach hunders of new nodes to the PE stack (if resources allow). This is very useful for testing out scenarios involving different puppet versions or operating systems and even features like the orchestrator. 
+
+To attach a container to the PE stack you first must get the network name of the PE stack.  This can be done with a command like: `docker inspect pe-xl-core-0.puppet.vm`.  You need to use either the container id or the container name of the MoM when inspecting. 
+
+The network name we want to grab is 'extra-large-ha_default'.  (Yours will be different, but the output will be similar)
+
+```shell
+docker inspect pe-xl-core-0.puppet.vm -f "{{json .NetworkSettings.Networks }}" | jq
+{
+  "extra-large-ha_default": {
+    "IPAMConfig": null,
+    "Links": null,
+    "Aliases": [
+      "pe_xl_core_0",
+      "5cf7047a36cd"
+    ],
+    "NetworkID": "204ae562a25510b2425f9fe3f1599c487e40dbcaaaaf02c2f73f6fa81f45d674",
+    "EndpointID": "d91d7060fcc623a9f16cea09eecf83e9ee4454252e1af34053ef090f9c01c9c3",
+    "Gateway": "172.25.0.1",
+    "IPAddress": "172.25.0.6",
+    "IPPrefixLen": 16,
+    "IPv6Gateway": "",
+    "GlobalIPv6Address": "",
+    "GlobalIPv6PrefixLen": 0,
+    "MacAddress": "02:42:ac:19:00:06",
+    "DriverOpts": null
+  }
+}
+```
+
+**NOTE** In these example you may see the use of `jq`.  This is a [cli utility for parsing JSON](https://stedolan.github.io/jq/).  I recommend installing it.  As a alternative you can pipe output to `python -m json.tool`.
+
+### Starting agent containers
+Once you have the network name you only need to specify the network when starting a container.  Puppet [publishes container images](https://hub.docker.com/r/puppet/puppet-agent) for all version of the puppet agent.  So you can easily switch agent versions with a single command. Which container image you use is entirely up to you.  If it doesn't have puppet preinstalled you can use the special curl command from the PE console to install it. 
+
+Example:
+ `docker run -ti --network=extra-large-ha_default --entrypoint=/bin/bash puppet/puppet-agent:latest`
+ `docker run -ti --network=extra-large-ha_default --entrypoint=/bin/bash puppet/puppet-agent:6.15.0`
+ `docker run -ti --network=extra-large-ha_default --entrypoint=/bin/bash puppet/puppet-agent:6.3.0`
+ `docker run -ti --network=extra-large-ha_default --entrypoint=/bin/bash ruby:latest`
+
+For most tasks these images are great.  However, if you wish to use puppet orchestrator with the pcp transport. The one requirement is that all images used must be systemd aware, otherwise pxp will not start. If you do not plan on using pcp 
+there is no need for containers with systemd.
+
+At this time we have not added documention for starting a container with systemd.  Instructions coming soon.
+
+
 ### Other notes
 1. The provision plan is not fully idempotent.
 2. Some tasks may fail when run due to resource constraints.
