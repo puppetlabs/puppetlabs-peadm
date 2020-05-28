@@ -17,7 +17,7 @@ select opt in */
 do
   cd $opt
   docker-compose up -d --build
-  docker-compose run -v ${downloads}:/downloads -v ${fixtures_path}:/modules -v ${base_repo}:/mods/peadm bolt plan run peadm::upgrade \
+  docker-compose run -v ${downloads}:/downloads -v ${fixtures_path}:/modules -v ${base_repo}:/mods/pe_xl bolt plan run pe_xl::upgrade \
   --concurrency 2 \
   --inventory inventory.yaml \
   --modulepath=/modules:/mods \

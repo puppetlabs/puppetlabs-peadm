@@ -4,6 +4,6 @@
     "puppetdb_database_replica_host": "pe-xl-db-1.puppet.vm",
     "master_replica_host": "pe-xl-core-1.puppet.vm",
     "compiler_hosts": ["pe-xl-compiler-0.puppet.vm"],
-    "version": "2019.5.0",
+    "version": "2018.1.15",
     "stagingdir": "/downloads"
 }

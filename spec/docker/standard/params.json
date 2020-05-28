@@ -2,6 +2,6 @@
   "master_host": "pe-std.puppet.vm",
   "console_password": "puppetlabs",
   "dns_alt_names": [ "puppet", "pe-std.puppet.vm" ],
-  "version": "2019.1.1",
+  "version": "2018.1.13",
   "stagingdir": "/downloads"
 }

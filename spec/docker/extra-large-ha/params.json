@@ -6,7 +6,7 @@
   "compiler_hosts": ["pe-xl-compiler-0.puppet.vm"],
   "console_password": "puppetlabs",
   "dns_alt_names": [ "puppet", "pe-xl-core-0.puppet.vm", "puppet-xl.vm" ],
-  "version": "2019.1.1",
+  "version": "2018.1.13",
   "compiler_pool_address": "puppet-xl.vm",
   "stagingdir": "/downloads"
 }
