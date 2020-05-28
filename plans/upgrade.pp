@@ -16,7 +16,8 @@ plan peadm::upgrade (
   String $version,
 
   # Other
-  String[1] $stagingdir = '/tmp',
+  String                $stagingdir    = '/tmp',
+  Enum[direct,bolthost] $download_mode = 'bolthost',
 ) {
   # Ensure input valid for a supported architecture
   $arch = peadm::validate_architecture(
@@ -82,16 +83,25 @@ plan peadm::upgrade (
   # if the orchestrator is being used for the master.
   $master_target.peadm::fail_on_transport('pcp')
 
-  # Download the PE tarball on the nodes that need it
   $platform = run_task('peadm::precheck', $master_target).first['platform']
   $tarball_filename = "puppet-enterprise-${version}-${platform}.tar.gz"
+  $tarball_source   = "https://s3.amazonaws.com/pe-builds/released/${version}/${tarball_filename}"
   $upload_tarball_path = "/tmp/${tarball_filename}"
 
-  run_plan('peadm::util::retrieve_and_upload', $pe_installer_targets,
-    source      => "https://s3.amazonaws.com/pe-builds/released/${version}/${tarball_filename}",
-    local_path  => "${stagingdir}/${tarball_filename}",
-    upload_path => $upload_tarball_path,
-  )
+  if $download_mode == 'bolthost' {
+    # Download the PE tarball on the nodes that need it
+    run_plan('peadm::util::retrieve_and_upload', $pe_installer_targets,
+      source      => $tarball_source,
+      local_path  => "${stagingdir}/${tarball_filename}",
+      upload_path => $upload_tarball_path,
+    )
+  } else {
+    # Download PE tarballs directly to nodes that need it
+    run_task('peadm::download', $pe_installer_targets,
+      source => $tarball_source,
+      path   => $upload_tarball_path,
+    )
+  }
 
   # Shut down Puppet on all infra targets
   run_task('service', $all_targets,

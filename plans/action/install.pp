@@ -46,7 +46,8 @@ plan peadm::action::install (
   Optional[String]     $license_key_content = undef,
 
   # Other
-  String               $stagingdir   = '/tmp',
+  String                $stagingdir    = '/tmp',
+  Enum[direct,bolthost] $download_mode = 'bolthost',
 ) {
   # Convert inputs into targets.
   $master_target                    = peadm::get_targets($master_host, 1)
@@ -168,16 +169,24 @@ plan peadm::action::install (
     )
   }
 
-  # Download the PE tarball and send it to the nodes that need it
   $pe_tarball_name     = "puppet-enterprise-${version}-${platform}.tar.gz"
-  $local_tarball_path  = "${stagingdir}/${pe_tarball_name}"
+  $pe_tarball_source   = "https://s3.amazonaws.com/pe-builds/released/${version}/${pe_tarball_name}"
   $upload_tarball_path = "/tmp/${pe_tarball_name}"
 
-  run_plan('peadm::util::retrieve_and_upload', $pe_installer_targets,
-    source      => "https://s3.amazonaws.com/pe-builds/released/${version}/puppet-enterprise-${version}-${platform}.tar.gz",
-    local_path  => $local_tarball_path,
-    upload_path => $upload_tarball_path,
-  )
+  if $download_mode == 'bolthost' {
+    # Download the PE tarball and send it to the nodes that need it
+    run_plan('peadm::util::retrieve_and_upload', $pe_installer_targets,
+      source      => $pe_tarball_source,
+      local_path  => "${stagingdir}/${pe_tarball_name}",
+      upload_path => $upload_tarball_path,
+    )
+  } else {
+    # Download PE tarballs directly to nodes that need it
+    run_task('peadm::download', $pe_installer_targets,
+      source => $pe_tarball_source,
+      path   => $upload_tarball_path,
+    )
+  }
 
   # Create csr_attributes.yaml files for the nodes that need them. Ensure that
   # if a csr_attributes.yaml file is already present, the values we need are
