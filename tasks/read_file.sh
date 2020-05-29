@@ -15,7 +15,7 @@ main() {
 	if [ -r "$PT_path" ]; then
 		cat <<-EOS
 			{
-				"content": $($python_exec -c "import json; print json.dumps(open('$PT_path','r').read())")
+				"content": $($python_exec -c "import json; print(json.dumps(open('$PT_path','r').read()))")
 			}
 		EOS
 	else
