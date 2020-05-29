@@ -10,8 +10,11 @@ plan peadm::util::add_cert_extensions (
   # Short-circuit if there are no targets
   if $all_targets.empty { return(0) }
 
-  # This plan doesn't work over the orchestrator due to certificates being revoked.
-  $all_targets.peadm::fail_on_transport('pcp')
+  # This plan doesn't work to reissue the master cert over the orchestrator due
+  # to pe-puppetserver needing to restart
+  if ($master_target[0] in $all_targets) {
+    $master_target.peadm::fail_on_transport('pcp')
+  }
 
   # The master is treated differently than a standard node, so we need to be
   # able to identify it if it's in the target list
