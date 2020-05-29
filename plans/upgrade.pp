@@ -19,6 +19,8 @@ plan peadm::upgrade (
   String                $stagingdir    = '/tmp',
   Enum[direct,bolthost] $download_mode = 'bolthost',
 ) {
+  peadm::validate_version($version)
+
   # Ensure input valid for a supported architecture
   $arch = peadm::validate_architecture(
     $master_host,

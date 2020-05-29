@@ -49,6 +49,8 @@ plan peadm::action::install (
   String                $stagingdir    = '/tmp',
   Enum[direct,bolthost] $download_mode = 'bolthost',
 ) {
+  peadm::validate_version($version)
+
   # Convert inputs into targets.
   $master_target                    = peadm::get_targets($master_host, 1)
   $master_replica_target            = peadm::get_targets($master_replica_host, 1)

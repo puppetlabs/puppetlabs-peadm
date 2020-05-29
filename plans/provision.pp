@@ -35,6 +35,7 @@ plan peadm::provision (
   Optional[String]                  $stagingdir    = undef,
   Enum[direct,bolthost]             $download_mode = 'bolthost',
 ) {
+  peadm::validate_version($version)
 
   $install_result = run_plan('peadm::action::install',
     # Standard
