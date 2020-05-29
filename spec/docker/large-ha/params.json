@@ -1,0 +1,9 @@
+{
+  "master_host": "pe-lg.puppet.vm",
+  "master_replica_host": "pe-lg-replica.puppet.vm",
+  "compiler_hosts": ["pe-lg-compiler-0.puppet.vm"],
+  "console_password": "puppetlabs",
+  "dns_alt_names": [ "puppet", "pe-lg.puppet.vm" ],
+  "version": "2018.1.13",
+  "stagingdir": "/downloads"
+}

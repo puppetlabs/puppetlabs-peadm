@@ -1,0 +1,13 @@
+{
+  "description": "Submit a certificate signing request",
+  "parameters": {
+    "certnames": {
+      "type": "Array[String]",
+      "description": "A list of certnames to sign"
+    }
+  },
+  "input_method": "stdin",
+  "implementations": [
+    {"name": "sign_csr.rb"}
+  ]
+}
