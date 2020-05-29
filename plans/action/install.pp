@@ -235,8 +235,6 @@ plan peadm::action::install (
       $master_replica_target,
     ]),
       path    => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
-      owner   => 'pe-puppet',
-      group   => 'pe-puppet',
       mode    => '0400',
       content => $r10k_private_key,
     )
@@ -248,8 +246,6 @@ plan peadm::action::install (
       $master_replica_target,
     ]),
       path    => '/etc/puppetlabs/license.key',
-      owner   => 'pe-puppet',
-      group   => 'pe-puppet',
       mode    => '0400',
       content => $license_key,
     )
