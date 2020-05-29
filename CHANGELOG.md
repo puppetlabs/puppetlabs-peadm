@@ -1,10 +1,18 @@
-## Unreleased
+## Release 1.2.0
 ### Summary
 
+Feature and bugfix release.
+
 ### Features
+- Add direct download option for PE installers (download\_mode parameter)
+- Add docker features for testing deployments in containers
+- Improve idempotency around CSR submission and signing
+- Add basic version validation
 
 ### Bugfixes
-
+- Make peadm::read\_file compatible with python3 for better CentOS 8 support
+- Fix failure to install when passing passing r10k\_private\_key parameters
+- Improve error handling of peadm::download task
 
 ## Release 1.1.0
 ### Summary
