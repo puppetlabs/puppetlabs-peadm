@@ -1,9 +1,15 @@
-## Unreleased
+## Release 2.0.0
 ### Summary
 
-### Features
+Major version release to support PE 2019.7.
 
-### Bugfixes
+Users can use peadm 2.0.0 to create new 2019.7 deployments, or to upgrade from
+2019.5 to 2019.7.
+
+To deploy PE 2019.5 or older, use a 1.x release of peadm.
+
+### Features
+- Support added for PE 2019.7
 
 ## Release 1.2.0
 ### Summary
