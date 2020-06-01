@@ -98,15 +98,27 @@ Note: it is assumed that the Puppet master is in cluster A when the upgrade star
 3. Run the `install-puppet-enterprise` script for the new PE version on the master
 4. Run `puppet agent -t` on the master
 5. If different from the master, Run `puppet agent -t` on the PuppetDB PostgreSQL node for cluster A
-6. Perform the standard `curl upgrade.sh | bash` procedure on the compilers for cluster A
+6. Perform the compiler upgrade using `puppet infra upgrade compiler` for the compilers in cluster A
 
 **Phase 3: upgrade HA cluster B**
 
 1. Shut down the `pe-puppetdb` service on the compilers in cluster B
 2. If different from the master (replica), run the `install-puppet-enterprise` script for the new PE version on the PuppetDB PostgreSQL node for cluster B
 3. If different from the master (replica), Run `puppet agent -t` on the PuppetDB PostgreSQL node for cluster B
-4. Perform the standard `curl upgrade.sh | bash` procedure on the master (replica)
-5. Perform the standard `curl upgrade.sh | bash` procedure on the compilers for cluster B
+5. Run `puppet agent -t` on the master to ensure orchestration services are configured and restarted before the next steps
+6. Perform the replica upgrade using `puppet infra upgrade replica` for the master (replica)
+7. Perform the compiler upgrade using `puppet infra upgrade compiler` for the compilers in cluster B
+
+**If Upgrading from 2019.5**
+
+The following steps apply _only_ if upgrading from 2019.5 or older
+
+1. Run `puppet infra run convert_legacy_compiler` for all compilers
+2. Modify the peadm node groups "PE Compiler Group A" and "PE Compiler Group B" as follows:
+    * Re-parent the groups. They should be children of "PE Compiler"
+    * Remove configuration data (Hiera data). Leave the classes and class parameters
+    * Add the rule `trusted.extensions.pp_auth_role = pe_compiler`
+    * Remove the rule `trusted.extensions."1.3.6.1.4.1.34380.1.1.9812" = puppet/compiler`
 
 **Phase 4: resume puppet service**
 
