@@ -1,0 +1,10 @@
+{
+  "description": "Download an agent's certificate",
+  "parameters": {
+    "certname": {
+      "type": "String",
+      "description": "The certname to download"
+    }
+  },
+  "input_method": "stdin"
+}

@@ -1,0 +1,10 @@
+{
+  "description": "Clean an agent's certificate",
+  "parameters": {
+    "certname": {
+      "type": "String",
+      "description": "The certname to clean"
+    }
+  },
+  "input_method": "stdin"
+}
