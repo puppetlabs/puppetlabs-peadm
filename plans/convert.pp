@@ -13,6 +13,9 @@ plan peadm::convert (
   # Common Configuration
   String                            $compiler_pool_address = $master_host,
   Array[String]                     $dns_alt_names         = [ ],
+
+  # Options
+  Boolean                           $configure_node_groups = true,
 ) {
   # Convert inputs into targets.
   $master_target                    = peadm::get_targets($master_host, 1)
@@ -120,18 +123,20 @@ plan peadm::convert (
 
   # Create the necessary node groups in the console
 
-  apply($master_target) {
-    class { 'peadm::setup::node_manager_yaml':
-      master_host => $master_target.peadm::target_name(),
-    }
+  if $configure_node_groups {
+    apply($master_target) {
+      class { 'peadm::setup::node_manager_yaml':
+        master_host => $master_target.peadm::target_name(),
+      }
 
-    class { 'peadm::setup::node_manager':
-      master_host                    => $master_target.peadm::target_name(),
-      master_replica_host            => $master_replica_target.peadm::target_name(),
-      puppetdb_database_host         => $puppetdb_database_target.peadm::target_name(),
-      puppetdb_database_replica_host => $puppetdb_database_replica_target.peadm::target_name(),
-      compiler_pool_address          => $compiler_pool_address,
-      require                        => Class['peadm::setup::node_manager_yaml'],
+      class { 'peadm::setup::node_manager':
+        master_host                    => $master_target.peadm::target_name(),
+        master_replica_host            => $master_replica_target.peadm::target_name(),
+        puppetdb_database_host         => $puppetdb_database_target.peadm::target_name(),
+        puppetdb_database_replica_host => $puppetdb_database_replica_target.peadm::target_name(),
+        compiler_pool_address          => $compiler_pool_address,
+        require                        => Class['peadm::setup::node_manager_yaml'],
+      }
     }
   }
 
