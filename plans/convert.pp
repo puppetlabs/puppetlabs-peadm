@@ -43,6 +43,11 @@ plan peadm::convert (
     $compiler_hosts,
   )
 
+  # Know what version of PE the current targets are
+  $pe_version = run_task('peadm::read_file', $master_target,
+    path => '/opt/puppetlabs/server/pe_version',
+  )[0][content].chomp
+
   # Get trusted fact information for all compilers. Use peadm::target_name() as
   # the hash key because the apply block below will break trying to parse the
   # $compiler_extensions variable if it has Target-type hash keys.
@@ -72,6 +77,12 @@ plan peadm::convert (
   else {
     $compiler_a_targets = $compiler_targets
     $compiler_b_targets = []
+  }
+
+  if $pe_version =~ /^2018/ {
+    apply($master_target) {
+      include peadm::setup::convert_pe2018
+    }
   }
 
   # Modify csr_attributes.yaml and insert the peadm-specific OIDs to identify
