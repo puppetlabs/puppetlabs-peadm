@@ -85,6 +85,12 @@ plan peadm::convert (
     },
   )
 
+  # If the orchestrator is in use, get certs fully straightened up before
+  # proceeding
+  if $all_targets.any |$target| { $target.protocol == 'pcp' } {
+    run_task('peadm::puppet_runonce', $master_target)
+  }
+
   run_plan('peadm::util::add_cert_extensions', $master_replica_target,
     master_host => $master_target,
     extensions  => {
