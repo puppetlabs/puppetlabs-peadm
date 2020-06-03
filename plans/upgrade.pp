@@ -66,7 +66,9 @@ plan peadm::upgrade (
   ).first['content']
 
   # Ensure needed trusted facts are available
-  if $cert_extensions.any |$t,$ext| { $ext[peadm::oid('peadm_role')] == undef } {
+  if $cert_extensions.any |$_,$cert| {
+    [peadm::oid('peadm_role'), 'pp_auth_role'].all |$ext| { $cert[$ext] == undef }
+  } {
     fail_plan(@(HEREDOC/L))
       Required trusted facts are not present; upgrade cannot be completed. If \
       this infrastructure was provisioned with an old version of peadm, you may \
