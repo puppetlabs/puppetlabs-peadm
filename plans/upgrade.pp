@@ -116,11 +116,10 @@ plan peadm::upgrade (
     )
   }
 
-  # Shut down Puppet on all infra targets
-  run_task('service', $all_targets,
-    action => 'stop',
-    name   => 'puppet',
-  )
+  # Shut down Puppet on all infra targets. Avoid using the built-in service
+  # task for idempotency reasons. When the orchestrator has been upgraded but
+  # not all pxp-agents have, the built-in service task does not work over pcp.
+  run_command('systemctl stop puppet', $all_targets)
 
   # If necessary, add missing cert extensions to compilers
   run_plan('peadm::util::add_cert_extensions', $convert_targets,
@@ -134,11 +133,9 @@ plan peadm::upgrade (
   # UPGRADE MASTER SIDE
   ###########################################################################
 
-  # Shut down PuppetDB on CMs that use the PM's PDB PG
-  run_task('service', $compiler_m1_targets,
-    action => 'stop',
-    name   => 'pe-puppetdb',
-  )
+  # Shut down PuppetDB on CMs that use the PM's PDB PG. Use run_command instead
+  # of run_task(service, ...) so that upgrading from 2018.1 works over PCP.
+  run_command('systemctl stop pe-puppetdb', $compiler_m1_targets)
 
   run_task('peadm::pe_install', $puppetdb_database_target,
     tarball               => $upload_tarball_path,
@@ -197,11 +194,10 @@ plan peadm::upgrade (
   # UPGRADE REPLICA SIDE
   ###########################################################################
 
-  # Shut down PuppetDB on compilers that use the replica's PDB PG
-  run_task('service', $compiler_m2_targets,
-    action => 'stop',
-    name   => 'pe-puppetdb',
-  )
+  # Shut down PuppetDB on CMs that use the replica's PDB PG. Use run_command
+  # instead of run_task(service, ...) so that upgrading from 2018.1 works
+  # over PCP.
+  run_command('systemctl stop pe-puppetdb', $compiler_m2_targets)
 
   run_task('peadm::pe_install', $puppetdb_database_replica_target,
     tarball               => $upload_tarball_path,
