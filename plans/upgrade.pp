@@ -121,14 +121,6 @@ plan peadm::upgrade (
   # not all pxp-agents have, the built-in service task does not work over pcp.
   run_command('systemctl stop puppet', $all_targets)
 
-  # If necessary, add missing cert extensions to compilers
-  run_plan('peadm::util::add_cert_extensions', $convert_targets,
-    master_host => $master_target,
-    extensions  => {
-      'pp_auth_role' => 'pe_compiler',
-    },
-  )
-
   ###########################################################################
   # UPGRADE MASTER SIDE
   ###########################################################################
@@ -166,6 +158,14 @@ plan peadm::upgrade (
     peadm::wait_until_service_ready('orchestrator-service', $master_target)
     wait_until_available($all_targets, wait_time => 120)
   }
+
+  # If necessary, add missing cert extensions to compilers
+  run_plan('peadm::util::add_cert_extensions', $convert_targets,
+    master_host => $master_target,
+    extensions  => {
+      'pp_auth_role' => 'pe_compiler',
+    },
+  )
 
   # Update classification. This needs to be done now because if we don't, and
   # the PE Compiler node groups are wrong, then the compilers won't be able to
