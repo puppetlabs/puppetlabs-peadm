@@ -122,6 +122,14 @@ plan peadm::upgrade (
     name   => 'puppet',
   )
 
+  # If necessary, add missing cert extensions to compilers
+  run_plan('peadm::util::add_cert_extensions', $convert_targets,
+    master_host => $master_target,
+    extensions  => {
+      'pp_auth_role' => 'pe_compiler',
+    },
+  )
+
   ###########################################################################
   # UPGRADE MASTER SIDE
   ###########################################################################
@@ -160,6 +168,23 @@ plan peadm::upgrade (
   if $all_targets.any |$target| { $target.protocol == 'pcp' } {
     peadm::wait_until_service_ready('orchestrator-service', $master_target)
     wait_until_available($all_targets, wait_time => 120)
+  }
+
+  # Update classification. This needs to be done now because if we don't, and
+  # the PE Compiler node groups are wrong, then the compilers won't be able to
+  # successfully classify and update
+  apply($master_target) {
+    class { 'peadm::setup::node_manager_yaml':
+      master_host => $master_target.peadm::target_name(),
+    }
+
+    class { 'peadm::setup::node_manager':
+      master_host                    => $master_target.peadm::target_name(),
+      master_replica_host            => $master_replica_target.peadm::target_name(),
+      puppetdb_database_host         => $puppetdb_database_target.peadm::target_name(),
+      puppetdb_database_replica_host => $puppetdb_database_replica_target.peadm::target_name(),
+      require                        => Class['peadm::setup::node_manager_yaml'],
+    }
   }
 
   # Upgrade the compiler group A targets
@@ -209,27 +234,6 @@ plan peadm::upgrade (
   ###########################################################################
   # FINALIZE UPGRADE
   ###########################################################################
-
-  run_plan('peadm::util::add_cert_extensions', $convert_targets,
-    master_host => $master_target,
-    extensions  => {
-      'pp_auth_role' => 'pe_compiler',
-    },
-  )
-
-  apply($master_target) {
-    class { 'peadm::setup::node_manager_yaml':
-      master_host => $master_target.peadm::target_name(),
-    }
-
-    class { 'peadm::setup::node_manager':
-      master_host                    => $master_target.peadm::target_name(),
-      master_replica_host            => $master_replica_target.peadm::target_name(),
-      puppetdb_database_host         => $puppetdb_database_target.peadm::target_name(),
-      puppetdb_database_replica_host => $puppetdb_database_replica_target.peadm::target_name(),
-      require                        => Class['peadm::setup::node_manager_yaml'],
-    }
-  }
 
   # Ensure Puppet running on all infrastructure targets
   run_task('service', $all_targets,
