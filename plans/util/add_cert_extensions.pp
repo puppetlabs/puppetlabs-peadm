@@ -52,7 +52,8 @@ plan peadm::util::add_cert_extensions (
 
     # Everything starts the same; we always stop the agent and revoke the
     # existing cert
-    run_task('service', $target, {action => 'stop', name => 'puppet'})
+    $puppet_status = run_task('service', $target, {action => 'status', name => 'puppet'})[0]['status']
+    if ($puppet_status == 'running') { run_task('service', $target, {action => 'stop', name => 'puppet'}) }
     run_command("${pserver} ca clean --certname ${certname}", $master_target)
 
     # Then things get crazy...
@@ -101,7 +102,7 @@ plan peadm::util::add_cert_extensions (
     }
 
     # Fire puppet back up when done
-    run_task('service', $target, {action => 'start', name => 'puppet'})
+    if ($puppet_status == 'running') { run_task('service', $target, {action => 'start', name => 'puppet'}) }
   }
 
   run_command("${puppet} facts upload", $all_targets)
