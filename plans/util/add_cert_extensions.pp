@@ -51,14 +51,16 @@ plan peadm::util::add_cert_extensions (
     )
 
     # Everything starts the same; we always stop the agent and revoke the
-    # existing cert
-    $puppet_status = run_task('service', $target, {action => 'status', name => 'puppet'})[0]['status']
-    if ($puppet_status == 'running') { run_task('service', $target, {action => 'stop', name => 'puppet'}) }
+    # existing cert. We use `run_command` in case the master is 2019.x but
+    # the agent is only 2018.x. In that scenario `run_task(service, ...)`
+    # doesn't work.
+    $was_running = run_command('systemctl is-active puppet.service', $target, _catch_errors => true)[0].ok
+    if ($was_running) { run_command('systemctl stop puppet.service', $target) }
     run_command("${pserver} ca clean --certname ${certname}", $master_target)
 
     # Then things get crazy...
 
-    if ($certdata[$target]['certname'] != $master_certname) {
+    if ($certname != $master_certname) {
       # AGENT cert regeneration
       run_task('peadm::ssl_clean', $target, certname => $certname)
       run_task('peadm::submit_csr', $target)
@@ -86,15 +88,15 @@ plan peadm::util::add_cert_extensions (
       # The docs are broken, and the process is unclean. Sadface.
       run_command(@("HEREDOC"/L), $target)
         rm -f \
-          /etc/puppetlabs/puppet/ssl/certs/${certdata[$target]['certname']}.pem \
-          /etc/puppetlabs/puppet/ssl/private_keys/${certdata[$target]['certname']}.pem \
-          /etc/puppetlabs/puppet/ssl/public_keys/${certdata[$target]['certname']}.pem \
-          /etc/puppetlabs/puppet/ssl/certificate_requests/${certdata[$target]['certname']}.pem \
+          /etc/puppetlabs/puppet/ssl/certs/${certname}.pem \
+          /etc/puppetlabs/puppet/ssl/private_keys/${certname}.pem \
+          /etc/puppetlabs/puppet/ssl/public_keys/${certname}.pem \
+          /etc/puppetlabs/puppet/ssl/certificate_requests/${certname}.pem \
         | HEREDOC
       run_task('service', $target, {action => 'stop', name => 'pe-puppetserver'})
       run_command(@("HEREDOC"/L), $target)
         ${pserver} ca generate \
-          --certname ${certdata[$target]['certname']} \
+          --certname ${certname} \
           ${alt_names_flag} \
           --ca-client \
         | HEREDOC
@@ -102,7 +104,7 @@ plan peadm::util::add_cert_extensions (
     }
 
     # Fire puppet back up when done
-    if ($puppet_status == 'running') { run_task('service', $target, {action => 'start', name => 'puppet'}) }
+    if ($was_running) { run_command('systemctl start puppet.service', $target) }
   }
 
   run_command("${puppet} facts upload", $all_targets)
