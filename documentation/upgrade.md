@@ -123,3 +123,10 @@ The following steps apply _only_ if upgrading from 2019.5 or older
 **Phase 4: resume puppet service**
 
 * Ensure the `puppet` service on all PE infrastructure nodes is running again
+
+## Upgrade from 2018.1
+
+To upgrade to PE 2019.7 or newer from PE 2018.1:
+
+1. Run the peadm::convert plan with `configure_node_groups = false`
+2. Run the peadm::upgrade plan
