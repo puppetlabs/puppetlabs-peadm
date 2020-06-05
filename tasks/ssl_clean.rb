@@ -12,7 +12,7 @@ def main
     Dir.glob("/etc/puppetlabs/puppet/ssl/**/#{certname}.pem").each do |file|
       File.delete(file)
     end
-    puts "Done"
+    puts 'Done'
     exit 0
   else
     cmd = ['/opt/puppetlabs/bin/puppet', 'ssl', 'clean', '--certname', certname]
