@@ -100,6 +100,8 @@ plan peadm::convert (
   # proceeding
   if $all_targets.any |$target| { $target.protocol == 'pcp' } {
     run_task('peadm::puppet_runonce', $master_target)
+    peadm::wait_until_service_ready('orchestrator-service', $master_target)
+    wait_until_available($all_targets, wait_time => 120)
   }
 
   run_plan('peadm::util::add_cert_extensions', $master_replica_target,
