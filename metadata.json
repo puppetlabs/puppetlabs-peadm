@@ -33,19 +33,22 @@
     {
       "operatingsystem": "RedHat",
       "operatingsystemrelease": [
-        "7"
+        "7",
+        "8"
       ]
     },
     {
       "operatingsystem": "CentOS",
       "operatingsystemrelease": [
-        "7"
+        "7",
+        "8"
       ]
     },
     {
       "operatingsystem": "Ubuntu",
       "operatingsystemrelease": [
-        "18.04"
+        "18.04",
+        "20.04"
       ]
     }
   ],
