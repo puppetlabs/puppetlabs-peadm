@@ -86,6 +86,7 @@ plan peadm::util::add_cert_extensions (
       }
 
       # The docs are broken, and the process is unclean. Sadface.
+      run_task('service', $target, {action => 'stop', name => 'pe-puppetserver'})
       run_command(@("HEREDOC"/L), $target)
         rm -f \
           /etc/puppetlabs/puppet/ssl/certs/${certname}.pem \
@@ -93,7 +94,6 @@ plan peadm::util::add_cert_extensions (
           /etc/puppetlabs/puppet/ssl/public_keys/${certname}.pem \
           /etc/puppetlabs/puppet/ssl/certificate_requests/${certname}.pem \
         | HEREDOC
-      run_task('service', $target, {action => 'stop', name => 'pe-puppetserver'})
       run_command(@("HEREDOC"/L), $target)
         ${pserver} ca generate \
           --certname ${certname} \
