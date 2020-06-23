@@ -8,6 +8,7 @@ main() {
 		python_exec=$(command -v python)  && break
 		python_exec=$(command -v python3) && break
 		python_exec=$(command -v python2) && break
+		python_exec=$(command -v /usr/libexec/platform-python) && break
 		echo "Error: No Python version 2 or 3 interpreter found."
 		exit 1
 	done
