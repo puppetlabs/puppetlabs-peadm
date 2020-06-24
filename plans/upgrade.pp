@@ -66,7 +66,9 @@ plan peadm::upgrade (
   ).first['content']
 
   # Ensure needed trusted facts are available
-  if $cert_extensions.any |$t,$ext| { $ext[peadm::oid('peadm_role')] == undef } {
+  if $cert_extensions.any |$_,$cert| {
+    [peadm::oid('peadm_role'), 'pp_auth_role'].all |$ext| { $cert[$ext] == undef }
+  } {
     fail_plan(@(HEREDOC/L))
       Required trusted facts are not present; upgrade cannot be completed. If \
       this infrastructure was provisioned with an old version of peadm, you may \
@@ -114,21 +116,18 @@ plan peadm::upgrade (
     )
   }
 
-  # Shut down Puppet on all infra targets
-  run_task('service', $all_targets,
-    action => 'stop',
-    name   => 'puppet',
-  )
+  # Shut down Puppet on all infra targets. Avoid using the built-in service
+  # task for idempotency reasons. When the orchestrator has been upgraded but
+  # not all pxp-agents have, the built-in service task does not work over pcp.
+  run_command('systemctl stop puppet', $all_targets)
 
   ###########################################################################
   # UPGRADE MASTER SIDE
   ###########################################################################
 
-  # Shut down PuppetDB on CMs that use the PM's PDB PG
-  run_task('service', $compiler_m1_targets,
-    action => 'stop',
-    name   => 'pe-puppetdb',
-  )
+  # Shut down PuppetDB on CMs that use the PM's PDB PG. Use run_command instead
+  # of run_task(service, ...) so that upgrading from 2018.1 works over PCP.
+  run_command('systemctl stop pe-puppetdb', $compiler_m1_targets)
 
   run_task('peadm::pe_install', $puppetdb_database_target,
     tarball               => $upload_tarball_path,
@@ -160,6 +159,31 @@ plan peadm::upgrade (
     wait_until_available($all_targets, wait_time => 120)
   }
 
+  # If necessary, add missing cert extensions to compilers
+  run_plan('peadm::util::add_cert_extensions', $convert_targets,
+    master_host => $master_target,
+    extensions  => {
+      'pp_auth_role' => 'pe_compiler',
+    },
+  )
+
+  # Update classification. This needs to be done now because if we don't, and
+  # the PE Compiler node groups are wrong, then the compilers won't be able to
+  # successfully classify and update
+  apply($master_target) {
+    class { 'peadm::setup::node_manager_yaml':
+      master_host => $master_target.peadm::target_name(),
+    }
+
+    class { 'peadm::setup::node_manager':
+      master_host                    => $master_target.peadm::target_name(),
+      master_replica_host            => $master_replica_target.peadm::target_name(),
+      puppetdb_database_host         => $puppetdb_database_target.peadm::target_name(),
+      puppetdb_database_replica_host => $puppetdb_database_replica_target.peadm::target_name(),
+      require                        => Class['peadm::setup::node_manager_yaml'],
+    }
+  }
+
   # Upgrade the compiler group A targets
   run_task('peadm::puppet_infra_upgrade', $master_target,
     type    => 'compiler',
@@ -170,11 +194,10 @@ plan peadm::upgrade (
   # UPGRADE REPLICA SIDE
   ###########################################################################
 
-  # Shut down PuppetDB on compilers that use the replica's PDB PG
-  run_task('service', $compiler_m2_targets,
-    action => 'stop',
-    name   => 'pe-puppetdb',
-  )
+  # Shut down PuppetDB on CMs that use the replica's PDB PG. Use run_command
+  # instead of run_task(service, ...) so that upgrading from 2018.1 works
+  # over PCP.
+  run_command('systemctl stop pe-puppetdb', $compiler_m2_targets)
 
   run_task('peadm::pe_install', $puppetdb_database_replica_target,
     tarball               => $upload_tarball_path,
@@ -207,27 +230,6 @@ plan peadm::upgrade (
   ###########################################################################
   # FINALIZE UPGRADE
   ###########################################################################
-
-  run_plan('peadm::util::add_cert_extensions', $convert_targets,
-    master_host => $master_target,
-    extensions  => {
-      'pp_auth_role' => 'pe_compiler',
-    },
-  )
-
-  apply($master_target) {
-    class { 'peadm::setup::node_manager_yaml':
-      master_host => $master_target.peadm::target_name(),
-    }
-
-    class { 'peadm::setup::node_manager':
-      master_host                    => $master_target.peadm::target_name(),
-      master_replica_host            => $master_replica_target.peadm::target_name(),
-      puppetdb_database_host         => $puppetdb_database_target.peadm::target_name(),
-      puppetdb_database_replica_host => $puppetdb_database_replica_target.peadm::target_name(),
-      require                        => Class['peadm::setup::node_manager_yaml'],
-    }
-  }
 
   # Ensure Puppet running on all infrastructure targets
   run_task('service', $all_targets,

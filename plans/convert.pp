@@ -13,6 +13,9 @@ plan peadm::convert (
   # Common Configuration
   String                            $compiler_pool_address = $master_host,
   Array[String]                     $dns_alt_names         = [ ],
+
+  # Options
+  Boolean                           $configure_node_groups = true,
 ) {
   # TODO: read and validate convertable PE version
 
@@ -39,6 +42,11 @@ plan peadm::convert (
     $puppetdb_database_replica_host,
     $compiler_hosts,
   )
+
+  # Know what version of PE the current targets are
+  $pe_version = run_task('peadm::read_file', $master_target,
+    path => '/opt/puppetlabs/server/pe_version',
+  )[0][content].chomp
 
   # Get trusted fact information for all compilers. Use peadm::target_name() as
   # the hash key because the apply block below will break trying to parse the
@@ -71,6 +79,12 @@ plan peadm::convert (
     $compiler_b_targets = []
   }
 
+  if $pe_version =~ /^2018/ {
+    apply($master_target) {
+      include peadm::setup::convert_pe2018
+    }
+  }
+
   # Modify csr_attributes.yaml and insert the peadm-specific OIDs to identify
   # each server's role and availability group
 
@@ -81,6 +95,14 @@ plan peadm::convert (
       peadm::oid('peadm_availability_group') => 'A',
     },
   )
+
+  # If the orchestrator is in use, get certs fully straightened up before
+  # proceeding
+  if $all_targets.any |$target| { $target.protocol == 'pcp' } {
+    run_task('peadm::puppet_runonce', $master_target)
+    peadm::wait_until_service_ready('orchestrator-service', $master_target)
+    wait_until_available($all_targets, wait_time => 120)
+  }
 
   run_plan('peadm::util::add_cert_extensions', $master_replica_target,
     master_host => $master_target,
@@ -126,18 +148,20 @@ plan peadm::convert (
 
   # Create the necessary node groups in the console
 
-  apply($master_target) {
-    class { 'peadm::setup::node_manager_yaml':
-      master_host => $master_target.peadm::target_name(),
-    }
+  if $configure_node_groups {
+    apply($master_target) {
+      class { 'peadm::setup::node_manager_yaml':
+        master_host => $master_target.peadm::target_name(),
+      }
 
-    class { 'peadm::setup::node_manager':
-      master_host                    => $master_target.peadm::target_name(),
-      master_replica_host            => $master_replica_target.peadm::target_name(),
-      puppetdb_database_host         => $puppetdb_database_target.peadm::target_name(),
-      puppetdb_database_replica_host => $puppetdb_database_replica_target.peadm::target_name(),
-      compiler_pool_address          => $compiler_pool_address,
-      require                        => Class['peadm::setup::node_manager_yaml'],
+      class { 'peadm::setup::node_manager':
+        master_host                    => $master_target.peadm::target_name(),
+        master_replica_host            => $master_replica_target.peadm::target_name(),
+        puppetdb_database_host         => $puppetdb_database_target.peadm::target_name(),
+        puppetdb_database_replica_host => $puppetdb_database_replica_target.peadm::target_name(),
+        compiler_pool_address          => $compiler_pool_address,
+        require                        => Class['peadm::setup::node_manager_yaml'],
+      }
     }
   }
 
