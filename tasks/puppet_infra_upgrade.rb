@@ -12,10 +12,12 @@ def main
 
   exit 0 if targets.empty?
 
-  cmd = ['/opt/puppetlabs/bin/puppet-infrastructure', '--render-as', 'json', 'upgrade'] << type << targets.join(',')
+  cmd = ['/opt/puppetlabs/bin/puppet-infrastructure', '--render-as', 'json', 'upgrade']
+  cmd << '--token-file' << params['token_file'] unless params['token_file'].nil?
+  cmd << type << targets.join(',')
 
-  stdout, status = Open3.capture2(*cmd)
-  puts stdout
+  stdouterr, status = Open3.capture2e(*cmd)
+  puts stdouterr
   if status.success?
     exit 0
   else

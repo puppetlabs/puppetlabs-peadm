@@ -8,6 +8,10 @@
     "targets": {
       "type": "Array[String]",
       "description": "The certnames of the targets to upgrade"
+    },
+    "token_file": {
+      "type": "Optional[String]",
+      "description": "The path to the token file to use"
     }
   },
   "input_method": "stdin",
