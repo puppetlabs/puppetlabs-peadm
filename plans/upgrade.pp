@@ -16,6 +16,7 @@ plan peadm::upgrade (
   String $version,
 
   # Other
+  Optional[String]      $token_file    = undef,
   String                $stagingdir    = '/tmp',
   Enum[direct,bolthost] $download_mode = 'bolthost',
 ) {
@@ -186,8 +187,9 @@ plan peadm::upgrade (
 
   # Upgrade the compiler group A targets
   run_task('peadm::puppet_infra_upgrade', $master_target,
-    type    => 'compiler',
-    targets => $compiler_m1_targets.map |$t| { $t.peadm::target_name() }
+    type       => 'compiler',
+    targets    => $compiler_m1_targets.map |$t| { $t.peadm::target_name() },
+    token_file => $token_file,
   )
 
   ###########################################################################
@@ -217,14 +219,16 @@ plan peadm::upgrade (
 
   # Upgrade the master replica
   run_task('peadm::puppet_infra_upgrade', $master_target,
-    type    => 'replica',
-    targets => $master_replica_target.map |$t| { $t.peadm::target_name() }
+    type       => 'replica',
+    targets    => $master_replica_target.map |$t| { $t.peadm::target_name() },
+    token_file => $token_file,
   )
 
   # Upgrade the compiler group B targets
   run_task('peadm::puppet_infra_upgrade', $master_target,
-    type    => 'compiler',
-    targets => $compiler_m2_targets.map |$t| { $t.peadm::target_name() }
+    type       => 'compiler',
+    targets    => $compiler_m2_targets.map |$t| { $t.peadm::target_name() },
+    token_file => $token_file,
   )
 
   ###########################################################################
