@@ -36,7 +36,7 @@ alt_names = cert.extensions.select { |ext| ext.oid == 'subjectAltName' }.map { |
 result = {
   'certname'      => certname,
   'dns-alt-names' => alt_names,
-  'extensions'    => extensions
+  'extensions'    => extensions,
 }
 
 puts result.to_json

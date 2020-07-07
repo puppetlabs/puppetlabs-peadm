@@ -18,7 +18,7 @@ body = {
   'login'    => 'admin',
   'password' => $params['password'],
   'lifetime' => '1y',
-  'label'    => 'provision-time token'
+  'label'    => 'provision-time token',
 }.to_json
 
 http = Net::HTTP.new(uri.host, uri.port)
