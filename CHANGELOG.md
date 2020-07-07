@@ -1,9 +1,11 @@
-## Unreleased
+## Release 2.1.0
 ### Summary
+
+Support upgrades from PE 2018.1 to 2019.7.
 
 ### Features
 
-### Bugfixes
+- Support added for upgrading from PE 2018.1 to 2019.7
 
 ## Release 2.0.0
 ### Summary

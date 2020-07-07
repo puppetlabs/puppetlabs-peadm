@@ -11,6 +11,7 @@ Gemfile:
         ref: '20ee04ba1234e9e83eb2ffb5056e23d641c7a018'
         condition: "Gem::Version.new(RUBY_VERSION.dup) >= Gem::Version.new('2.2.2')"
 Rakefile:
+  changelog_since_tag: '2.1.0'
   extras:
     - 'PuppetSyntax.exclude_paths = ["plans/**/*.pp", "vendor/**/*"]'
 .gitignore:
