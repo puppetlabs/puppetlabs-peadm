@@ -74,10 +74,16 @@ plan peadm::action::configure (
   }
 
   if $arch['high-availability'] {
+    $topology =  $arch['architecture']? {
+      'standard' => 'mono',
+      default    => 'mono-with-compile',
+    }
+
     # Run the PE Replica Provision
     run_task('peadm::provision_replica', $master_target,
       master_replica => $master_replica_target.peadm::target_name(),
       token_file     => $token_file,
+      topology       => $topology,
 
       # Race condition, where the provision command checks PuppetDB status and
       # probably gets "starting", but fails out because that's not "running".

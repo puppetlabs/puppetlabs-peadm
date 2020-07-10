@@ -10,14 +10,19 @@ else
   export TOKEN_FILE="$PT_token_file"
 fi
 
+if [ "$PT_topology" = "mono" ] ; then
+  AGENT_CONFIG=""
+else
+  AGENT_CONFIG="--skip-agent-config"
+fi
 
 set -e
 
 if [ "$PT_legacy" = "false" ]; then
   puppet infrastructure provision replica "$PT_master_replica" \
     --yes --token-file "$TOKEN_FILE" \
-    --skip-agent-config \
-    --topology mono-with-compile \
+    $AGENT_CONFIG \
+    --topology "$PT_topology" \
     --enable
 
 elif [ "$PT_legacy" = "true" ]; then
@@ -26,8 +31,8 @@ elif [ "$PT_legacy" = "true" ]; then
 
   puppet infrastructure enable replica "$PT_master_replica" \
     --yes --token-file "$TOKEN_FILE" \
-    --skip-agent-config \
-    --topology mono-with-compile
+    $AGENT_CONFIG \
+    --topology "$PT_topology"
 
 else
   exit 1
