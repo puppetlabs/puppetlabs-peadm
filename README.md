@@ -6,7 +6,7 @@ The peadm module is able to deploy and manage Puppet Enterprise 2019.x Standard,
 
 ## Expectations
 
-The peadm module is intended to be used only by Puppet Enterprise customers actively working with and being guided by Puppet Customer Success teams—specifically, the Support team and the Solutions Architecture team. Independent use is not recommended for production environments.
+The peadm module is intended to be used only by Puppet Enterprise customers actively working with and being guided by Puppet Customer Success teams—specifically, the Professional Services and Solutions Architecture teams. Independent use is not recommended for production environments without a comprehensive understanding of the peadm module.
 
 ## Documentation
 
