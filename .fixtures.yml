@@ -15,8 +15,3 @@ fixtures:
     container_inventory: 'https://gitlab.com/nwops/bolt-container_inventory'
   symlinks:
     "peadm": "#{source_dir}"
-    out: "#{source_dir}/.bundle/gems/bolt-1.49.0/bolt-modules/out"
-    ctrl: "#{source_dir}/.bundle/gems/bolt-1.49.0/bolt-modules/ctrl"
-    file: "#{source_dir}/.bundle/gems/bolt-1.49.0/bolt-modules/file"
-    system: "#{source_dir}/.bundle/gems/bolt-1.49.0/bolt-modules/system"
-    boltlib: "#{source_dir}/.bundle/gems/bolt-1.49.0/bolt-modules/boltlib"
