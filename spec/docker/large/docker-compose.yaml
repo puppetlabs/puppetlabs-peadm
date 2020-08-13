@@ -9,6 +9,8 @@ services:
     entrypoint: /sbin/init
     image: pe-base
     privileged: true # required for systemd
+    labels:
+      com.puppet.role: "compiler_host"
     ports:
       - "22"
       - "8140"
@@ -39,6 +41,8 @@ services:
       - "443"
     hostname: pe-lg.puppet.vm
     container_name: pe-lg.puppet.vm
+    labels:
+      com.puppet.role: "master_host"
     stop_signal: SIGRTMIN+3
     tmpfs:
       - /run
