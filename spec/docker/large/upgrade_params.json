@@ -1,7 +1,6 @@
 {
     "master_host": "pe-lg.puppet.vm",
     "compiler_hosts": ["pe-lg-compiler-0.puppet.vm"],
-    "version": "2019.5.0",
-    "stagingdir": "/downloads"
+    "version": "2019.8.0"
 }
   

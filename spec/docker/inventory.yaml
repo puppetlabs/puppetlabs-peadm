@@ -1,0 +1,15 @@
+---
+config:
+  transport: docker
+  docker:
+    tmpdir: /root/bolt_scripts
+  ssh:
+    tmpdir: /root/bolt_scripts
+    host-key-check: false
+    user: root
+    password: test
+    tty: true  
+groups:
+  - _plugin: container_inventory
+    format: groups
+    use_hostname: true

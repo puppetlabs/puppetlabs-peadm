@@ -1,17 +1,5 @@
 version: "3"
 services:
-  bolt:
-    build:
-      dockerfile: 'Dockerfile_bolt'
-      context: ../
-    image: pe-bolt
-    hostname: bolter.puppet.vm
-    container_name: bolter.puppet.vm
-    volumes:
-      - .:/app
-    working_dir: /app
-    depends_on:
-      - pe_xl_core_0
   compiler1:
     restart: always
     depends_on:
@@ -21,6 +9,8 @@ services:
       context: ../
     entrypoint: /sbin/init
     image: pe-base
+    labels:
+      com.puppet.role: "compiler_host"
     privileged: true # required for systemd
     ports:
       - "22"
@@ -43,6 +33,8 @@ services:
     entrypoint: /sbin/init
     image: pe-base
     privileged: true # required for systemd
+    labels:
+      com.puppet.role: "puppetdb_database_host"
     ports:
       - "22"
     hostname: pe-xl-db-0.puppet.vm
@@ -63,6 +55,8 @@ services:
     entrypoint: /sbin/init
     image: pe-base
     privileged: true # required for systemd
+    labels:
+      com.puppet.role: "puppetdb_database_replica_host"
     ports:
       - "22"
     hostname: pe-xl-db-1.puppet.vm
@@ -85,6 +79,8 @@ services:
     entrypoint: /sbin/init
     image: pe-base
     privileged: true # required for systemd
+    labels:
+      com.puppet.role: "master_replica_host"
     ports:
       - "22"
       - "8140"
@@ -111,6 +107,8 @@ services:
     entrypoint: /sbin/init
     image: pe-base
     privileged: true # required for systemd
+    labels:
+      com.puppet.role: "master_host"
     ports:
       - "22"
       - "8140"

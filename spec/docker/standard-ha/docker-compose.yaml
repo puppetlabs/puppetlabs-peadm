@@ -1,17 +1,5 @@
 version: "3"
 services:
-  bolt:
-    build:
-      dockerfile: 'Dockerfile_bolt'
-      context: ../
-    image: pe-build
-    hostname: bolter-std.puppet.vm
-    container_name: bolter-std.puppet.vm
-    volumes:
-      - .:/app
-    working_dir: /app
-    depends_on:
-      - standard_aio
   replica_master:
     depends_on:
       - standard_aio
@@ -23,6 +11,8 @@ services:
     entrypoint: /sbin/init
     image: pe-base
     privileged: true # required for systemd
+    labels:
+      com.puppet.role: "master_replica_host"
     ports:
       - "22"
       - "8140"
@@ -48,6 +38,8 @@ services:
     entrypoint: /sbin/init
     image: pe-base
     privileged: true # required for systemd
+    labels:
+      com.puppet.role: "master_host"
     ports:
       - "22"
       - "8140"

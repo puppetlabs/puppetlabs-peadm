@@ -38,6 +38,6 @@ RUN mkdir -p /root/.puppetlabs/client-tools && \
   } \n\
 } \n '\
 > /root/.puppetlabs/client-tools/puppetdb.conf
-VOLUME [ “/sys/fs/cgroup” ]
+VOLUME ["/sys/fs/cgroup"]
 #CMD /bin/bash
-ENTRYPOINT [ "/sbin/init" ]
+ENTRYPOINT /sbin/init
