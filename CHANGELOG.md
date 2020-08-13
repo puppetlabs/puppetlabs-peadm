@@ -1,3 +1,13 @@
+## Release 2.1.1
+### Summary
+
+Development tool and README fixes.
+
+### Bugfixes
+
+- Remove reference to Puppet Support team from README. This module is intended to be used in collaboration with Professional Services and Solutions Architects at Puppet, not Support
+- Fixes and improvements to Docker development tools
+
 ## Release 2.1.0
 ### Summary
 
