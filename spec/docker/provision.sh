@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# bundle install
-# bundle exec rake spec_prep
-# must be in the spec/docker/standard directory
+# bundle install or pdk bundle install
+# bundle exec rake spec_prep or pdk bundle exec rake spec_prep
+# must be in the spec/docker directory
 echo 'Please choose a PE architecture to provision: '
 downloads=$(realpath ./)
+inventory_dir=$(realpath ./)
+inventory_path=${inventory_dir}/inventory.yaml
 base_repo=$(realpath ../../)
 spec_path=$(realpath ../)
 fixtures_path=$spec_path/fixtures/modules
@@ -15,14 +17,15 @@ fi
 # The concurrency is set to 2 to keep CPU usage from skyrocketing during Large and XL deployments
 select opt in */
 do
-  cd $opt
+  dir=$(realpath ${opt})
+  name=$(basename $opt)
+  cd $dir
   docker-compose up -d --build 
   # nohup /usr/bin/live_audit.sh /root/bolt_scripts /tmp/backup &
-  docker-compose run -v ${downloads}:/downloads -v ${fixtures_path}:/modules -v ${base_repo}:/mods/peadm bolt plan run peadm::provision \
-  --concurrency 2 \
-  --inventory inventory.yaml \
-  --modulepath=/modules:/mods \
-  --params @params.json 
+  pdk bundle exec bolt plan run peadm::provision --concurrency 2 \
+  --inventory $inventory_path \
+  --modulepath=$fixtures_path \
+  --params @${dir}/params.json \
+  --targets=$name
   break;
-   
 done

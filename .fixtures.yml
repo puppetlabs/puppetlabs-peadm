@@ -1,5 +1,7 @@
 ---
 fixtures:
+  forge_modules:
+    ruby_task_helper: "puppetlabs/ruby_task_helper"
   repositories:
     facts: 'https://github.com/puppetlabs/puppetlabs-facts.git'
     puppet_agent: 'https://github.com/puppetlabs/puppetlabs-puppet_agent.git'
@@ -10,6 +12,7 @@ fixtures:
     bolt_shim: 'https://github.com/puppetlabs/puppetlabs-bolt_shim'
     debug: 'https://github.com/nwops/puppet-debug'
     format: 'https://github.com/voxpupuli/puppet-format'
+    container_inventory: 'https://gitlab.com/nwops/bolt-container_inventory'
   symlinks:
     "peadm": "#{source_dir}"
     out: "#{source_dir}/.bundle/gems/bolt-1.49.0/bolt-modules/out"

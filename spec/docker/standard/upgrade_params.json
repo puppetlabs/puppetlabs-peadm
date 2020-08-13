@@ -1,6 +1,5 @@
 {
     "master_host": "pe-std.puppet.vm",
-    "version": "2019.5.0",
-    "stagingdir": "/downloads"
+    "version": "2019.8.0"
 }
   

@@ -1,17 +1,5 @@
 version: "3"
 services:
-  bolt:
-    build:
-      dockerfile: 'Dockerfile_bolt'
-      context: ../
-    image: pe-build
-    hostname: bolter-lg.puppet.vm
-    container_name: bolter.puppet.vm
-    volumes:
-      - .:/app
-    working_dir: /app
-    depends_on:
-      - large_aio
   compiler1:
     depends_on:
       - large_aio
