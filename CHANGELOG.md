@@ -1,3 +1,8 @@
+# PEADM module
+
+## Unreleased
+- add service module as a dependency
+
 ## Release 2.1.1
 ### Summary
 
