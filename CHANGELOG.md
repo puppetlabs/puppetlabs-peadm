@@ -1,7 +1,13 @@
 # PEADM module
 
 ## Unreleased
-- add service module as a dependency
+### Summary
+
+Documentation and README update
+
+### Improvements
+
+- Provide a useful overview of the module in the README so that readers can quickly gain a sense of how the module is used, what it affects, and what it does not affect.
 
 ## Release 2.1.1
 ### Summary
