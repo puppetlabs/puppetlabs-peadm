@@ -2,6 +2,18 @@
 #   Puppet Enterprise Extra Large cluster.  This plan accepts all parameters
 #   used by its sub-plans, and invokes them in order.
 #
+# @param compiler_pool_address 
+#   The service address used by agents to connect to compilers, or the Puppet
+#   service. Typically this is a load balancer.
+# @param internal_compiler_a_pool_address
+#   A load balancer address directing traffic to any of the "A" pool
+#   compilers. This is used for DR/HA configuration in large and extra large
+#   architectures.
+# @param internal_compiler_b_pool_address
+#   A load balancer address directing traffic to any of the "B" pool
+#   compilers. This is used for DR/HA configuration in large and extra large
+#   architectures.
+#
 plan peadm::provision (
   # Standard
   Peadm::SingleTargetSpec           $master_host,
@@ -16,10 +28,12 @@ plan peadm::provision (
 
   # Common Configuration
   String                            $console_password,
-  String                            $version               = '2019.7.0',
-  Optional[Array[String]]           $dns_alt_names         = undef,
-  Optional[String]                  $compiler_pool_address = undef,
-  Optional[Hash]                    $pe_conf_data          = { },
+  String                            $version                          = '2019.8.1',
+  Optional[Array[String]]           $dns_alt_names                    = undef,
+  Optional[String]                  $compiler_pool_address            = undef,
+  Optional[String]                  $internal_compiler_a_pool_address = undef,
+  Optional[String]                  $internal_compiler_b_pool_address = undef,
+  Optional[Hash]                    $pe_conf_data                     = { },
 
   # Code Manager
   Optional[String]                  $r10k_remote              = undef,
@@ -71,22 +85,24 @@ plan peadm::provision (
 
   $configure_result = run_plan('peadm::action::configure',
     # Standard
-    master_host                    => $master_host,
-    master_replica_host            => $master_replica_host,
+    master_host                      => $master_host,
+    master_replica_host              => $master_replica_host,
 
     # Large
-    compiler_hosts                 => $compiler_hosts,
+    compiler_hosts                   => $compiler_hosts,
 
     # Extra Large
-    puppetdb_database_host         => $puppetdb_database_host,
-    puppetdb_database_replica_host => $puppetdb_database_replica_host,
+    puppetdb_database_host           => $puppetdb_database_host,
+    puppetdb_database_replica_host   => $puppetdb_database_replica_host,
 
     # Common Configuration
-    compiler_pool_address          => $compiler_pool_address,
-    deploy_environment             => $deploy_environment,
+    compiler_pool_address            => $compiler_pool_address,
+    internal_compiler_a_pool_address => $internal_compiler_a_pool_address,
+    internal_compiler_b_pool_address => $internal_compiler_b_pool_address,
+    deploy_environment               => $deploy_environment,
 
     # Other
-    stagingdir                     => $stagingdir,
+    stagingdir                       => $stagingdir,
   )
 
   # Return a string banner reporting on what was done

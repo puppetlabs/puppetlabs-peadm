@@ -5,6 +5,14 @@
 
 Documentation and README update
 
+### Features
+
+- Added parameters to configure compiler pool addresses for the A and B availability groups. These are used in large and extra large architectures.
+
+### Bugfixes
+
+- Fixed GH-118, wherein a compiler would unnecessarily send duplicate work to an extra configured PuppetDB endpoint.
+
 ### Improvements
 
 - Provide a useful overview of the module in the README so that readers can quickly gain a sense of how the module is used, what it affects, and what it does not affect.

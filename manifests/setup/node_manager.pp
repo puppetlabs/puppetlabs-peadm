@@ -9,13 +9,29 @@
 #                 environments => ["production", "staging", "development"],
 #               }'
 #
+# @param compiler_pool_address 
+#   The service address used by agents to connect to compilers, or the Puppet
+#   service. Typically this is a load balancer.
+# @param internal_compiler_a_pool_address
+#   A load balancer address directing traffic to any of the "A" pool
+#   compilers. This is used for DR/HA configuration in large and extra large
+#   architectures.
+# @param internal_compiler_b_pool_address
+#   A load balancer address directing traffic to any of the "B" pool
+#   compilers. This is used for DR/HA configuration in large and extra large
+#   architectures.
+#
 class peadm::setup::node_manager (
-  # Common
+  # Standard
   String[1] $master_host,
-  Optional[String[1]] $compiler_pool_address          = undef,
 
   # High Availability
   Optional[String[1]] $master_replica_host            = undef,
+
+  # Common
+  Optional[String[1]] $compiler_pool_address            = undef,
+  Optional[String[1]] $internal_compiler_a_pool_address = $master_host,
+  Optional[String[1]] $internal_compiler_b_pool_address = $master_replica_host,
 
   # For the next two parameters, the default values are appropriate when
   # deploying Standard or Large architectures. These values only need to be
@@ -102,7 +118,7 @@ class peadm::setup::node_manager (
         'database_host' => $puppetdb_database_host,
       },
       'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => ['${trusted[\'certname\']}', $master_replica_host].filter |$_| { $_ }, # lint:ignore:single_quote_string_with_variables
+        'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_b_pool_address].filter |$_| { $_ }, # lint:ignore:single_quote_string_with_variables
         'puppetdb_port' => [8081],
       }
     },
@@ -154,7 +170,7 @@ class peadm::setup::node_manager (
           'database_host' => $puppetdb_database_replica_host,
         },
         'puppet_enterprise::profile::master'   => {
-          'puppetdb_host' => ['${trusted[\'certname\']}', $master_host], # lint:ignore:single_quote_string_with_variables
+          'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_a_pool_address], # lint:ignore:single_quote_string_with_variables
           'puppetdb_port' => [8081],
         }
       },
