@@ -1,5 +1,17 @@
 # @summary Upgrade an Extra Large stack from one .z to the next
 #
+# @param compiler_pool_address 
+#   The service address used by agents to connect to compilers, or the Puppet
+#   service. Typically this is a load balancer.
+# @param internal_compiler_a_pool_address
+#   A load balancer address directing traffic to any of the "A" pool
+#   compilers. This is used for DR/HA configuration in large and extra large
+#   architectures.
+# @param internal_compiler_b_pool_address
+#   A load balancer address directing traffic to any of the "B" pool
+#   compilers. This is used for DR/HA configuration in large and extra large
+#   architectures.
+#
 plan peadm::upgrade (
   # Standard
   Peadm::SingleTargetSpec           $master_host,
@@ -13,7 +25,10 @@ plan peadm::upgrade (
   Optional[Peadm::SingleTargetSpec] $puppetdb_database_replica_host = undef,
 
   # Common Configuration
-  String $version,
+  String           $version,
+  Optional[String] $compiler_pool_address            = undef,
+  Optional[String] $internal_compiler_a_pool_address = undef,
+  Optional[String] $internal_compiler_b_pool_address = undef,
 
   # Other
   Optional[String]      $token_file    = undef,
@@ -177,11 +192,14 @@ plan peadm::upgrade (
     }
 
     class { 'peadm::setup::node_manager':
-      master_host                    => $master_target.peadm::target_name(),
-      master_replica_host            => $master_replica_target.peadm::target_name(),
-      puppetdb_database_host         => $puppetdb_database_target.peadm::target_name(),
-      puppetdb_database_replica_host => $puppetdb_database_replica_target.peadm::target_name(),
-      require                        => Class['peadm::setup::node_manager_yaml'],
+      master_host                      => $master_target.peadm::target_name(),
+      master_replica_host              => $master_replica_target.peadm::target_name(),
+      puppetdb_database_host           => $puppetdb_database_target.peadm::target_name(),
+      puppetdb_database_replica_host   => $puppetdb_database_replica_target.peadm::target_name(),
+      compiler_pool_address            => $compiler_pool_address,
+      internal_compiler_a_pool_address => $internal_compiler_a_pool_address,
+      internal_compiler_b_pool_address => $internal_compiler_b_pool_address,
+      require                          => Class['peadm::setup::node_manager_yaml'],
     }
   }
 
