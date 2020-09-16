@@ -67,7 +67,7 @@ plan peadm::upgrade (
     $puppetdb_database_replica_target,
   ])
 
-  message::out(@(EOL)) ######################################################
+  out::message(@(EOL)) ######################################################
   ### UPGRADE STAGE: INFORMATION GATHERING
   | EOL
 
@@ -107,7 +107,7 @@ plan peadm::upgrade (
       == $cert_extensions[$master_replica_target[0].name][peadm::oid('peadm_availability_group')])
   }
 
-  message::out(@(EOL)) ###########################################
+  out::message(@(EOL)) ###########################################
   ### UPGRADE STAGE: PREPARATION
   | EOL
 
@@ -141,7 +141,7 @@ plan peadm::upgrade (
   # not all pxp-agents have, the built-in service task does not work over pcp.
   run_command('systemctl stop puppet', $all_targets)
 
-  message::out(@(EOL)) ###########################################
+  out::message(@(EOL)) ###########################################
   ### UPGRADE STAGE: UPGRADE MASTER SIDE
   | EOL
 
@@ -214,7 +214,7 @@ plan peadm::upgrade (
     token_file => $token_file,
   )
 
-  message::out(@(EOL)) ######################################################
+  out::message(@(EOL)) ######################################################
   ### UPGRADE STAGE: UPGRADE REPLICA SIDE
   | EOL
 
@@ -253,7 +253,7 @@ plan peadm::upgrade (
     token_file => $token_file,
   )
 
-  message::out(@(EOL)) ######################################################
+  out::message(@(EOL)) ######################################################
   ### UPGRADE STAGE: FINALIZE UPGRADE
   | EOL
 
