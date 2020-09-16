@@ -12,6 +12,11 @@
     "token_file": {
       "type": "Optional[String]",
       "description": "The path to the token file to use"
+    },
+    "wait_until_connected_timeout": {
+      "type": "Integer",
+      "description": "How many seconds to wait for targets to be connected to the orchestrator",
+      "default": 120
     }
   },
   "input_method": "stdin",

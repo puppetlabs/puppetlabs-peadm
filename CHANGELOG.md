@@ -12,6 +12,7 @@ Documentation and README update
 ### Bugfixes
 
 - Fixed GH-118, wherein a compiler would unnecessarily send duplicate work to an extra configured PuppetDB endpoint.
+- Puppet infra upgrade operations now always wait until target nodes are connected before attempting an operation
 
 ### Improvements
 
