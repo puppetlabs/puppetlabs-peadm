@@ -67,6 +67,10 @@ plan peadm::upgrade (
     $puppetdb_database_replica_target,
   ])
 
+  message::out(@(EOL)) ######################################################
+  ### UPGRADE STAGE: INFORMATION GATHERING
+  | EOL
+
   # Gather trusted facts from all systems
   $cert_extensions = run_task('peadm::trusted_facts', $all_targets).reduce({}) |$memo,$result| {
     $memo + { $result.target.name => $result['extensions'] }
@@ -103,9 +107,9 @@ plan peadm::upgrade (
       == $cert_extensions[$master_replica_target[0].name][peadm::oid('peadm_availability_group')])
   }
 
-  ###########################################################################
-  # PREPARATION
-  ###########################################################################
+  message::out(@(EOL)) ###########################################
+  ### UPGRADE STAGE: PREPARATION
+  | EOL
 
   # Support for running over the orchestrator transport relies on Bolt being
   # executed from the master using the local transport. For now, fail the plan
@@ -137,9 +141,9 @@ plan peadm::upgrade (
   # not all pxp-agents have, the built-in service task does not work over pcp.
   run_command('systemctl stop puppet', $all_targets)
 
-  ###########################################################################
-  # UPGRADE MASTER SIDE
-  ###########################################################################
+  message::out(@(EOL)) ###########################################
+  ### UPGRADE STAGE: UPGRADE MASTER SIDE
+  | EOL
 
   # Shut down PuppetDB on CMs that use the PM's PDB PG. Use run_command instead
   # of run_task(service, ...) so that upgrading from 2018.1 works over PCP.
@@ -210,9 +214,9 @@ plan peadm::upgrade (
     token_file => $token_file,
   )
 
-  ###########################################################################
-  # UPGRADE REPLICA SIDE
-  ###########################################################################
+  message::out(@(EOL)) ######################################################
+  ### UPGRADE STAGE: UPGRADE REPLICA SIDE
+  | EOL
 
   # Shut down PuppetDB on CMs that use the replica's PDB PG. Use run_command
   # instead of run_task(service, ...) so that upgrading from 2018.1 works
@@ -249,9 +253,9 @@ plan peadm::upgrade (
     token_file => $token_file,
   )
 
-  ###########################################################################
-  # FINALIZE UPGRADE
-  ###########################################################################
+  message::out(@(EOL)) ######################################################
+  ### UPGRADE STAGE: FINALIZE UPGRADE
+  | EOL
 
   # Ensure Puppet running on all infrastructure targets
   run_task('service', $all_targets,

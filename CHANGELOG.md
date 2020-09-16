@@ -8,6 +8,7 @@ Documentation and README update
 ### Features
 
 - Added parameters to configure compiler pool addresses for the A and B availability groups. These are used in large and extra large architectures.
+- Add basic informational messages to upgrade plan output, to communicate when different stages of the upgrade begin.
 
 ### Bugfixes
 
