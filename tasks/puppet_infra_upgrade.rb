@@ -6,13 +6,14 @@ require 'net/https'
 require 'json'
 require 'open3'
 require 'timeout'
+require 'etc'
 
 def main
   params     = JSON.parse(STDIN.read)
   type       = params['type']
   targets    = params['targets']
   timeout    = params['wait_until_connected_timeout']
-  token_file = params['token_file'] || '/root/.puppetlabs/token'
+  token_file = params['token_file'] || File.join(Etc.getpwuid.dir, '.puppetlabs', 'token')
 
   exit 0 if targets.empty?
 
@@ -36,7 +37,7 @@ def inventory_uri
 end
 
 def request_object(nodes:, token_file:)
-  token = File.read('/root/.puppetlabs/token')
+  token = File.read(token_file)
   body = {
     'nodes' => nodes,
   }.to_json
@@ -61,7 +62,7 @@ def wait_until_connected(nodes:, token_file:, timeout: 120)
   http = http_object
   request = request_object(nodes: nodes, token_file: token_file)
   inventory = {}
-  Timeout::timeout(timeout) do
+  Timeout.timeout(timeout) do
     loop do
       response = http.request(request)
       raise unless response.is_a? Net::HTTPSuccess
@@ -71,8 +72,8 @@ def wait_until_connected(nodes:, token_file:, timeout: 120)
     end
   end
 rescue Timeout::Error
-  raise "Timed out waiting for nodes to be connected to orchestrator: " +
-        inventory['items'].select { |item| !item['connected'] }
+  raise 'Timed out waiting for nodes to be connected to orchestrator: ' +
+        inventory['items'].reject { |item| item['connected'] }
                           .map { |item| item['name'] }
                           .to_s
 end

@@ -1,9 +1,9 @@
 # PEADM module
 
-## Unreleased
+## 2.2.0
 ### Summary
 
-Documentation and README update
+Reliability fixes for 2019.8.1, README updates, and simpification of the convert plan. New parameters added for `internal_compiler_a_pool_address` and `internal_compiler_b_pool_address` to configure lb addresses for each half of the compiler pool, so that this configuration does not need to be re-applied after upgrades.
 
 ### Features
 
