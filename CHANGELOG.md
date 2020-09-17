@@ -1,5 +1,14 @@
 # PEADM module
 
+## 2.2.1
+### Summary
+
+Bugfix release
+
+### Bugfixes
+
+- Fixed problem with `internal_compiler_b_pool_address` parameter name in peadm::action::configure plan
+
 ## 2.2.0
 ### Summary
 

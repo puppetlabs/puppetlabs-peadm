@@ -27,7 +27,7 @@ plan peadm::action::configure (
   # Common Configuration
   String           $compiler_pool_address = $master_host,
   Optional[String] $internal_compiler_a_pool_address = undef,
-  Optional[String] $compiler_pool_b_address = undef,
+  Optional[String] $internal_compiler_b_pool_address = undef,
   Optional[String] $token_file = undef,
   Optional[String] $deploy_environment = undef,
 
