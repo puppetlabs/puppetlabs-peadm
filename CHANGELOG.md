@@ -18,6 +18,7 @@ Documentation and README update
 ### Improvements
 
 - Provide a useful overview of the module in the README so that readers can quickly gain a sense of how the module is used, what it affects, and what it does not affect.
+- Eliminate `configure_node_groups` parameter to peadm::convert. Perform the correct action(s) automatically.
 
 ## Release 2.1.1
 ### Summary
