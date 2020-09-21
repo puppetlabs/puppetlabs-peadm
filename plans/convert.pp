@@ -15,6 +15,16 @@ plan peadm::convert (
   Optional[String]                  $internal_compiler_a_pool_address = undef,
   Optional[String]                  $internal_compiler_b_pool_address = undef,
   Array[String]                     $dns_alt_names                    = [ ],
+
+  Optional[Enum[
+    'convert-primary',
+    'convert-replica',
+    'convert-database',
+    'convert-database-replica',
+    'convert-compilers-a',
+    'convert-compilers-b',
+    'convert-node-groups',
+    'finalize']] $begin_at_step = undef,
 ) {
   # TODO: read and validate convertable PE version
 
@@ -41,6 +51,8 @@ plan peadm::convert (
     $puppetdb_database_replica_host,
     $compiler_hosts,
   )
+
+  out::message('# Gathering information')
 
   # Get trusted fact information for all compilers. Use peadm::target_name() as
   # the hash key because the apply block below will break trying to parse the
@@ -104,109 +116,125 @@ plan peadm::convert (
     $compiler_b_targets = []
   }
 
-  # If PE version is older than 2019.7
-  if (versioncmp($pe_version, '2019.7.0') < 0) {
-    apply($master_target) {
-      include peadm::setup::convert_pre20197
-    }
-  }
-
   # Modify csr_attributes.yaml and insert the peadm-specific OIDs to identify
   # each server's role and availability group
 
-  run_plan('peadm::util::add_cert_extensions', $master_target,
-    master_host => $master_target,
-    extensions  => {
-      peadm::oid('peadm_role')               => 'puppet/master',
-      peadm::oid('peadm_availability_group') => 'A',
-    },
-  )
-
-  # If the orchestrator is in use, get certs fully straightened up before
-  # proceeding
-  if $all_targets.any |$target| { $target.protocol == 'pcp' } {
-    run_task('peadm::puppet_runonce', $master_target)
-    peadm::wait_until_service_ready('orchestrator-service', $master_target)
-    wait_until_available($all_targets, wait_time => 120)
-  }
-
-  run_plan('peadm::util::add_cert_extensions', $master_replica_target,
-    master_host => $master_target,
-    extensions  => {
-      peadm::oid('peadm_role')               => 'puppet/master',
-      peadm::oid('peadm_availability_group') => 'B',
-    },
-  )
-
-  run_plan('peadm::util::add_cert_extensions', $puppetdb_database_target,
-    master_host => $master_target,
-    extensions  => {
-      peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
-      peadm::oid('peadm_availability_group') => 'A',
-    },
-  )
-
-  run_plan('peadm::util::add_cert_extensions', $puppetdb_database_replica_target,
-    master_host => $master_target,
-    extensions  => {
-      peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
-      peadm::oid('peadm_availability_group') => 'B',
-    },
-  )
-
-  run_plan('peadm::util::add_cert_extensions', $compiler_a_targets,
-    master_host => $master_target,
-    remove      => ['1.3.6.1.4.1.34380.1.3.13'], # OID form of pp_auth_role
-    extensions  => {
-      'pp_auth_role'                         => 'pe_compiler',
-      peadm::oid('peadm_availability_group') => 'A',
-    },
-  )
-
-  run_plan('peadm::util::add_cert_extensions', $compiler_b_targets,
-    master_host => $master_target,
-    remove      => ['1.3.6.1.4.1.34380.1.3.13'], # OID form of pp_auth_role
-    extensions  => {
-      'pp_auth_role'                         => 'pe_compiler',
-      peadm::oid('peadm_availability_group') => 'B',
-    },
-  )
-
-  # Create the necessary node groups in the console, unless the PE version is
-  # too old to support it pre-upgrade. In that circumstance, we trust that
-  # the existing groups are correct enough to function until the upgrade is
-  # performed.
-  if (versioncmp($pe_version, '2019.7.0') >= 0) {
-    apply($master_target) {
-      class { 'peadm::setup::node_manager_yaml':
-        master_host => $master_target.peadm::target_name(),
-      }
-
-      class { 'peadm::setup::node_manager':
-        master_host                      => $master_target.peadm::target_name(),
-        master_replica_host              => $master_replica_target.peadm::target_name(),
-        puppetdb_database_host           => $puppetdb_database_target.peadm::target_name(),
-        puppetdb_database_replica_host   => $puppetdb_database_replica_target.peadm::target_name(),
-        compiler_pool_address            => $compiler_pool_address,
-        internal_compiler_a_pool_address => $internal_compiler_a_pool_address,
-        internal_compiler_b_pool_address => $internal_compiler_b_pool_address,
-        require                          => Class['peadm::setup::node_manager_yaml'],
+  peadm::plan_step('convert-primary') || {
+    # If PE version is older than 2019.7
+    if (versioncmp($pe_version, '2019.7.0') < 0) {
+      apply($master_target) {
+        include peadm::setup::convert_pre20197
       }
     }
-  }
-  else {
-    out::message(@("EOL"/L))
-      NOTICE: Node groups not created/updated as part of convert because PE \
-      version is too old to support them. Node groups will be updated when \
-      the peadm::upgrade plan is run.
-      | EOL
+
+    run_plan('peadm::util::add_cert_extensions', $master_target,
+      master_host => $master_target,
+      extensions  => {
+        peadm::oid('peadm_role')               => 'puppet/master',
+        peadm::oid('peadm_availability_group') => 'A',
+      },
+    )
   }
 
-  # Run Puppet on all targets to ensure catalogs and exported resources fully
-  # up-to-date. Run on master first in case puppet server restarts, 'cause
-  # that would cause the runs to fail on all the rest.
-  run_task('peadm::puppet_runonce', $master_target)
-  run_task('peadm::puppet_runonce', $all_targets - $master_target)
+  peadm::plan_step('convert-replica') || {
+    # If the orchestrator is in use, get certs fully straightened up before
+    # proceeding
+    if $all_targets.any |$target| { $target.protocol == 'pcp' } {
+      run_task('peadm::puppet_runonce', $master_target)
+      peadm::wait_until_service_ready('orchestrator-service', $master_target)
+      wait_until_available($all_targets, wait_time => 120)
+    }
+
+    run_plan('peadm::util::add_cert_extensions', $master_replica_target,
+      master_host => $master_target,
+      extensions  => {
+        peadm::oid('peadm_role')               => 'puppet/master',
+        peadm::oid('peadm_availability_group') => 'B',
+      },
+    )
+  }
+
+  peadm::plan_step('convert-database') || {
+    run_plan('peadm::util::add_cert_extensions', $puppetdb_database_target,
+      master_host => $master_target,
+      extensions  => {
+        peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
+        peadm::oid('peadm_availability_group') => 'A',
+      },
+    )
+  }
+
+  peadm::plan_step('convert-database-replica') || {
+    run_plan('peadm::util::add_cert_extensions', $puppetdb_database_replica_target,
+      master_host => $master_target,
+      extensions  => {
+        peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
+        peadm::oid('peadm_availability_group') => 'B',
+      },
+    )
+  }
+
+  peadm::plan_step('convert-compilers-a') || {
+    run_plan('peadm::util::add_cert_extensions', $compiler_a_targets,
+      master_host => $master_target,
+      remove      => ['1.3.6.1.4.1.34380.1.3.13'], # OID form of pp_auth_role
+      extensions  => {
+        'pp_auth_role'                         => 'pe_compiler',
+        peadm::oid('peadm_availability_group') => 'A',
+      },
+    )
+  }
+
+  peadm::plan_step('convert-compilers-b') || {
+    run_plan('peadm::util::add_cert_extensions', $compiler_b_targets,
+      master_host => $master_target,
+      remove      => ['1.3.6.1.4.1.34380.1.3.13'], # OID form of pp_auth_role
+      extensions  => {
+        'pp_auth_role'                         => 'pe_compiler',
+        peadm::oid('peadm_availability_group') => 'B',
+      },
+    )
+  }
+
+  peadm::plan_step('convert-node-groups') || {
+    # Create the necessary node groups in the console, unless the PE version is
+    # too old to support it pre-upgrade. In that circumstance, we trust that
+    # the existing groups are correct enough to function until the upgrade is
+    # performed.
+    if (versioncmp($pe_version, '2019.7.0') >= 0) {
+      apply($master_target) {
+        class { 'peadm::setup::node_manager_yaml':
+          master_host => $master_target.peadm::target_name(),
+        }
+
+        class { 'peadm::setup::node_manager':
+          master_host                      => $master_target.peadm::target_name(),
+          master_replica_host              => $master_replica_target.peadm::target_name(),
+          puppetdb_database_host           => $puppetdb_database_target.peadm::target_name(),
+          puppetdb_database_replica_host   => $puppetdb_database_replica_target.peadm::target_name(),
+          compiler_pool_address            => $compiler_pool_address,
+          internal_compiler_a_pool_address => $internal_compiler_a_pool_address,
+          internal_compiler_b_pool_address => $internal_compiler_b_pool_address,
+          require                          => Class['peadm::setup::node_manager_yaml'],
+        }
+      }
+    }
+    else {
+      out::message(@("EOL"/L))
+        NOTICE: Node groups not created/updated as part of convert because PE \
+        version is too old to support them. Node groups will be updated when \
+        the peadm::upgrade plan is run.
+        | EOL
+    }
+  }
+
+  peadm::plan_step('finalize') || {
+    # Run Puppet on all targets to ensure catalogs and exported resources fully
+    # up-to-date. Run on master first in case puppet server restarts, 'cause
+    # that would cause the runs to fail on all the rest.
+    run_task('peadm::puppet_runonce', $master_target)
+    run_task('peadm::puppet_runonce', $all_targets - $master_target)
+  }
 
   return("Conversion to peadm Puppet Enterprise ${arch['architecture']} succeeded.")
 }
