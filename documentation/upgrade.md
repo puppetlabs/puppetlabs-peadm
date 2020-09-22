@@ -81,6 +81,12 @@ Pre-staging the installation media and using an inventory definition such as the
 bolt plan run peadm::upgrade --params @params.json 
 ```
 
+## Retry or resume plan
+
+This plan is broken down into steps. Normally, the plan runs through all the steps from start to finish. The name of each step is displayed during the plan run, as the step begins.
+
+The `begin_at_step` parameter can be used to facilitate re-running this plan after a failed attempt, skipping past any steps that already completed successfully on the first try and picking up again at the step specified. The step name to resume at can be read from the previous run logs. A full list of available values for this parameter can be viewed by running `bolt plan show peadm::upgrade`.
+
 ## Manual Upgrades
 
 In the event a manual upgrade is required, the steps may be followed along by reading directly from [the upgrade plan](../plans/upgrade.pp), which is itself the most accurate technical description of the steps required. In general form, the upgrade process is as given below.
@@ -128,5 +134,5 @@ The following steps apply _only_ if upgrading from 2019.5 or older
 
 To upgrade to PE 2019.7 or newer from PE 2018.1:
 
-1. Run the peadm::convert plan with `configure_node_groups = false`
+1. Run the peadm::convert plan
 2. Run the peadm::upgrade plan
