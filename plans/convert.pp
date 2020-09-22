@@ -203,8 +203,10 @@ plan peadm::convert (
   }
 
   # Run Puppet on all targets to ensure catalogs and exported resources fully
-  # up-to-date
-  run_task('peadm::puppet_runonce', $all_targets)
+  # up-to-date. Run on master first in case puppet server restarts, 'cause
+  # that would cause the runs to fail on all the rest.
+  run_task('peadm::puppet_runonce', $master_target)
+  run_task('peadm::puppet_runonce', $all_targets - $master_target)
 
   return("Conversion to peadm Puppet Enterprise ${arch['architecture']} succeeded.")
 }
