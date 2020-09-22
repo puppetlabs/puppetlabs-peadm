@@ -1,5 +1,23 @@
 # PEADM module
 
+## 2.3.0
+### Summary
+
+Add ability to resume peadm::upgrade or peadm::convert at an intermediate step, rather than requiring re-runs to perform all plan actions from the beginning.
+
+### Features
+
+- Added `begin_at_step` parameter and documentation to peadm::upgrade and peadm::convert
+
+### Bugfixes
+
+- In peadm::convert plan, stop the Puppet agent before writing the csr\_attributes.yaml file, to prevent possible agent interference
+- In the peadm::convert plan during finalization, run the Puppet agent on the primary server first, then the rest, to avoid the possibility of a puppetserver restart impacting Puppet agent runs on other systems.
+
+### Improvements
+
+- In the peadm::convert plan, when no peadm\_availability\_group trusted fact is present to identify if compilers should be members of the A pool or B pool, check for pp\_cluster being used to designate this configuration before falling back to a simple even/odd split. This is to catch systems provisioned with the old pe\_xl module, which used pp\_cluster to designate A/B.
+
 ## 2.2.1
 ### Summary
 

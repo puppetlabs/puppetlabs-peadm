@@ -1,7 +1,5 @@
-# rubocop:disable Style/Documentation
 # frozen_string_literal: true
 
-#Puppet::Functions.create_function(:'peadm::plan_step', Puppet::Functions::InternalFunction) do
 Puppet::Functions.create_function(:'peadm::plan_step', Puppet::Functions::InternalFunction) do
   dispatch :plan_step do
     scope_param
@@ -11,9 +9,9 @@ Puppet::Functions.create_function(:'peadm::plan_step', Puppet::Functions::Intern
 
   def plan_step(scope, step_name)
     first_step = scope.bound?('begin_at_step') ? scope['begin_at_step'] : nil
-    first_step_reached = if first_step.nil? or scope.bound?('__first_plan_step_reached__')
+    first_step_reached = if first_step.nil? || scope.bound?('__first_plan_step_reached__')
                            true
-                         elsif (step_name == first_step)
+                         elsif step_name == first_step
                            scope['__first_plan_step_reached__'] = true
                          else
                            false
