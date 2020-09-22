@@ -38,11 +38,20 @@ plan peadm::util::add_cert_extensions (
 
   # Loop through and recert each target one at at time, because Bolt lacks
   # real parallelism
-  $all_targets.map |$target| {
+  $all_targets.each |$target| {
     $certname = $certdata[$target]['certname']
+    $existing_exts = $certdata[$target]['extensions']
 
     # This will be the new trusted fact data for this node
-    $extension_requests = $certdata[$target]['extensions'] + $extensions
+    $extension_requests = $existing_exts + $extensions
+
+    # If the existing certificate meets all the requirements, there's no need
+    # to regenerate it. Skip it and move on to the next.
+    if (($extension_requests.all |$key,$val| { $existing_exts[$key] == $val }) and
+        !($remove.any |$key| { $key in $existing_exts.keys })) {
+      out::message("${certname} already has requested extensions; certificate will not be re-issued")
+      next()
+    }
 
     # Everything starts the same; we always stop the agent and revoke the
     # existing cert. We use `run_command` in case the master is 2019.x but

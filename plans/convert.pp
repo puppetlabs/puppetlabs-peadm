@@ -177,9 +177,8 @@ plan peadm::convert (
   peadm::plan_step('convert-compilers-a') || {
     run_plan('peadm::util::add_cert_extensions', $compiler_a_targets,
       master_host => $master_target,
-      remove      => ['1.3.6.1.4.1.34380.1.3.13'], # OID form of pp_auth_role
       extensions  => {
-        'pp_auth_role'                         => 'pe_compiler',
+        peadm::oid('pp_auth_role')             => 'pe_compiler',
         peadm::oid('peadm_availability_group') => 'A',
       },
     )
@@ -188,9 +187,8 @@ plan peadm::convert (
   peadm::plan_step('convert-compilers-b') || {
     run_plan('peadm::util::add_cert_extensions', $compiler_b_targets,
       master_host => $master_target,
-      remove      => ['1.3.6.1.4.1.34380.1.3.13'], # OID form of pp_auth_role
       extensions  => {
-        'pp_auth_role'                         => 'pe_compiler',
+        peadm::oid('pp_auth_role')             => 'pe_compiler',
         peadm::oid('peadm_availability_group') => 'B',
       },
     )
@@ -236,5 +234,5 @@ plan peadm::convert (
     run_task('peadm::puppet_runonce', $all_targets - $master_target)
   }
 
-  return("Conversion to peadm Puppet Enterprise ${arch['architecture']} succeeded.")
+  return("Conversion to peadm Puppet Enterprise ${arch['architecture']} completed.")
 }
