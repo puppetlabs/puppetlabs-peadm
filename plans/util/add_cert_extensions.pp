@@ -44,18 +44,19 @@ plan peadm::util::add_cert_extensions (
     # This will be the new trusted fact data for this node
     $extension_requests = $certdata[$target]['extensions'] + $extensions
 
-    # Make sure the csr_attributes.yaml file on the node matches
-    run_plan('peadm::util::insert_csr_extension_requests', $target,
-      extension_requests => $extension_requests,
-      merge              => false,
-    )
-
     # Everything starts the same; we always stop the agent and revoke the
     # existing cert. We use `run_command` in case the master is 2019.x but
     # the agent is only 2018.x. In that scenario `run_task(service, ...)`
     # doesn't work.
     $was_running = run_command('systemctl is-active puppet.service', $target, _catch_errors => true)[0].ok
     if ($was_running) { run_command('systemctl stop puppet.service', $target) }
+
+    # Make sure the csr_attributes.yaml file on the node matches
+    run_plan('peadm::util::insert_csr_extension_requests', $target,
+      extension_requests => $extension_requests,
+      merge              => false,
+    )
+
     run_command("${pserver} ca clean --certname ${certname}", $master_target)
 
     # Then things get crazy...

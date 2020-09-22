@@ -76,16 +76,26 @@ plan peadm::convert (
   if $arch['high-availability'] {
     $compiler_a_targets = $compiler_targets.filter |$index,$target| {
       $exts = $cert_extensions[$target.peadm::target_name()]
-      $exts[peadm::oid('peadm_availability_group')] in ['A', 'B'] ? {
-        true  => $exts[peadm::oid('peadm_availability_group')] == 'A',
-        false => $index % 2 == 0,
+      if ($exts[peadm::oid('peadm_availability_group')] in ['A', 'B']) {
+        $exts[peadm::oid('peadm_availability_group')] == 'A'
+      }
+      elsif ($exts[peadm::oid('pp_cluster')] in ['A', 'B']) {
+        $exts[peadm::oid('pp_cluster')] == 'A'
+      }
+      else {
+        $index % 2 == 0
       }
     }
     $compiler_b_targets = $compiler_targets.filter |$index,$target| {
       $exts = $cert_extensions[$target.peadm::target_name()]
-      $exts[peadm::oid('peadm_availability_group')] in ['A', 'B'] ? {
-        true  => $exts[peadm::oid('peadm_availability_group')] == 'B',
-        false => $index % 2 != 0,
+      if ($exts[peadm::oid('peadm_availability_group')] in ['A', 'B']) {
+        $exts[peadm::oid('peadm_availability_group')] == 'B'
+      }
+      elsif ($exts[peadm::oid('pp_cluster')] in ['A', 'B']) {
+        $exts[peadm::oid('pp_cluster')] == 'B'
+      }
+      else {
+        $index % 2 != 0
       }
     }
   }
@@ -193,8 +203,10 @@ plan peadm::convert (
   }
 
   # Run Puppet on all targets to ensure catalogs and exported resources fully
-  # up-to-date
-  run_task('peadm::puppet_runonce', $all_targets)
+  # up-to-date. Run on master first in case puppet server restarts, 'cause
+  # that would cause the runs to fail on all the rest.
+  run_task('peadm::puppet_runonce', $master_target)
+  run_task('peadm::puppet_runonce', $all_targets - $master_target)
 
   return("Conversion to peadm Puppet Enterprise ${arch['architecture']} succeeded.")
 }
