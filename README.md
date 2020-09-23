@@ -6,8 +6,8 @@ The peadm module is able to deploy and manage Puppet Enterprise 2019.x Standard,
 
 #### Table of Contents
 
-1. [Expectations](#expectations)
-1. [Overview](#overview)
+1. [Expectations and support](#expectations-and-support)
+2. [Overview](#overview)
     * [What peadm affects](#what-peadm-affects)
     * [What peadm does not affect](#what-peadm-does-not-affect)
     * [Requirements](#requirements)
@@ -15,9 +15,18 @@ The peadm module is able to deploy and manage Puppet Enterprise 2019.x Standard,
 4. [Reference](#reference)
 5. [Getting Help](#getting-help)
 
-## Expectations
+## Expectations and support
 
 The peadm module is intended to be used only by Puppet Enterprise customers actively working with and being guided by Puppet Customer Success teams—specifically, the Professional Services and Solutions Architecture teams. Independent use is not recommended for production environments without a comprehensive understanding of the peadm module.
+
+The peadm module is a services-led tool, and is **NOT** supported through Puppet Enterprise's standard or premium [support.puppet.com](https://support.puppet.com) service.
+
+As a services-led tool, Puppet Enterprise customers who are advised to start using this tool should get support for it through the following general process.
+
+1. Be introduced to the tool through a services engagement or by their Technical Account Manager (TAM).
+2. During Professional Services (PS) engagements, the Puppet PS team will aid and instruct in use of the tool.
+3. Outside of PS engagements, use TAM services to request assistance with problems encountered when using the tool, and to inform Puppet Customer Success (CS) teams of planned major maintenance or upgrades for which advisory services are needed.
+4. In the absence of a TAM, your Puppet account management team (Account Executive and Solutions Engineer) may be a fallback communication option for requesting assistance, or for informing CS teams of planned major maintenance for which advisory services are needed.
 
 ## Overview
 
