@@ -1,6 +1,6 @@
 # PEADM module
 
-## Unreleased
+## 2.4.0
 ### Summary
 
 Readme updates and further convert plan efficiency improvements
