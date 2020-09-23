@@ -1,5 +1,18 @@
 # PEADM module
 
+## Unreleased
+### Summary
+
+Readme updates and further convert plan efficiency improvements
+
+### Features
+
+- In the peadm::convert plan, certificates which already contain requested extensions will not be re-issued. This will accelerate the convert process, or allow re-runs of the convert process to move more quickly.
+
+### Improvements
+
+- The README now provides more detailed information on how customers using the peadm module should go about getting support for it.
+
 ## 2.3.0
 ### Summary
 
