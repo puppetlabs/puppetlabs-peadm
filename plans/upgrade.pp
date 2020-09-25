@@ -143,6 +143,37 @@ plan peadm::upgrade (
     # task for idempotency reasons. When the orchestrator has been upgraded but
     # not all pxp-agents have, the built-in service task does not work over pcp.
     run_command('systemctl stop puppet', $all_targets)
+
+    # Create a variable for configuring PuppetDB access for all the certnames
+    # that are known to need it.
+    $profile_database_puppetdb_hosts = {
+      'puppet_enterprise::profile::database::puppetdb_hosts' => (
+        $compiler_targets + $master_target + $master_replica_target
+      ).map |$t| { $t.peadm::target_name() },
+    }
+
+    # Ensure the pe.conf files on the PostgreSQL node(s) are correct. This file
+    # is only ever consulted during install and upgrade of these nodes, but if
+    # it contains the wrong values, upgrade will fail.
+    peadm::flatten_compact([
+      $puppetdb_database_target,
+      $puppetdb_database_replica_target,
+    ]).each |$target| {
+      $current_pe_conf = run_task('peadm::read_file', $target,
+        path => '/etc/puppetlabs/enterprise/conf.d/pe.conf',
+      ).first['content']
+
+      $pe_conf = ($current_pe_conf ? {
+        undef   => {},
+        default => $current_pe_conf.peadm::parsehocon(),
+      } + {
+        'console_admin_password'                => 'not used',
+        'puppet_enterprise::puppet_master_host' => $master_target.peadm::target_name(),
+        'puppet_enterprise::database_host'      => $target.peadm::target_name(),
+      } + $profile_database_puppetdb_hosts).to_json_pretty()
+
+      write_file($pe_conf, '/etc/puppetlabs/enterprise/conf.d/pe.conf', $target)
+    }
   }
 
   peadm::plan_step('upgrade-primary') || {
