@@ -242,12 +242,37 @@ plan peadm::upgrade (
       $puppetdb_database_replica_target,
     ]))
 
-    # Upgrade the master replica
+    # The `puppetdb delete-reports` CLI app has a bug in 2019.8.0 where it
+    # doesn't deal well with the PuppetDB database being on a separate node.
+    # So, move it aside before running the upgrade.
+    $pdbapps = '/opt/puppetlabs/server/apps/puppetdb/cli/apps'
+    $workaround_delete_reports = $arch['high-availability'] and $version =~ SemVerRange('>= 2019.8')
+    if $workaround_delete_reports {
+      run_command(@("COMMAND"/$), $master_replica_target)
+        if [ -e ${pdbapps}/delete-reports -a ! -h ${pdbapps}/delete-reports ]
+        then
+          mv ${pdbapps}/delete-reports ${pdbapps}/delete-reports.original
+          ln -s \$(which true) ${pdbapps}/delete-reports
+        fi
+        | COMMAND
+    }
+
+    # Upgrade the master replica.
     run_task('peadm::puppet_infra_upgrade', $master_target,
       type       => 'replica',
       targets    => $master_replica_target.map |$t| { $t.peadm::target_name() },
       token_file => $token_file,
     )
+
+    # Return the delete-reports CLI app to its original state
+    if $workaround_delete_reports {
+      run_command(@("COMMAND"/$), $master_replica_target)
+        if [ -e ${pdbapps}/delete-reports.original ]
+        then
+          mv ${pdbapps}/delete-reports.original ${pdbapps}/delete-reports
+        fi
+        | COMMAND
+    }
   }
 
   peadm::plan_step('upgrade-replica-compilers') || {
