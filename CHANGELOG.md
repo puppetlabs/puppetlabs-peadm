@@ -1,5 +1,15 @@
 # PEADM module
 
+## Unreleased
+### Summary
+
+Bugfix release
+
+### Bugfixes
+
+- Previously, on upgrade, peadm did not ensure that PostgreSQL servers' pe.conf file contained the critical keys that inform the installer that the system is a stand-alone database. The peadm::upgrade plan now ensures the critical keys are correct as part of the upgrade preparation.
+- When upgrading a DR replica to PE 2019.8.0 or 2019.8.1, there is an installer bug that causes the upgrade to fail due to how `puppetdb delete-reports` performs in this configuration. This release works around the problem by bypassing `puppetdb delete-reports`. This workaround will be removed in future releases of peadm after the installer / `puppetdb delete-reports` bug is fixed.
+
 ## 2.4.0
 ### Summary
 

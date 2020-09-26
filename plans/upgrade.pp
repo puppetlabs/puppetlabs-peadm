@@ -143,6 +143,37 @@ plan peadm::upgrade (
     # task for idempotency reasons. When the orchestrator has been upgraded but
     # not all pxp-agents have, the built-in service task does not work over pcp.
     run_command('systemctl stop puppet', $all_targets)
+
+    # Create a variable for configuring PuppetDB access for all the certnames
+    # that are known to need it.
+    $profile_database_puppetdb_hosts = {
+      'puppet_enterprise::profile::database::puppetdb_hosts' => (
+        $compiler_targets + $master_target + $master_replica_target
+      ).map |$t| { $t.peadm::target_name() },
+    }
+
+    # Ensure the pe.conf files on the PostgreSQL node(s) are correct. This file
+    # is only ever consulted during install and upgrade of these nodes, but if
+    # it contains the wrong values, upgrade will fail.
+    peadm::flatten_compact([
+      $puppetdb_database_target,
+      $puppetdb_database_replica_target,
+    ]).each |$target| {
+      $current_pe_conf = run_task('peadm::read_file', $target,
+        path => '/etc/puppetlabs/enterprise/conf.d/pe.conf',
+      ).first['content']
+
+      $pe_conf = ($current_pe_conf ? {
+        undef   => {},
+        default => $current_pe_conf.peadm::parsehocon(),
+      } + {
+        'console_admin_password'                => 'not used',
+        'puppet_enterprise::puppet_master_host' => $master_target.peadm::target_name(),
+        'puppet_enterprise::database_host'      => $target.peadm::target_name(),
+      } + $profile_database_puppetdb_hosts).to_json_pretty()
+
+      write_file($pe_conf, '/etc/puppetlabs/enterprise/conf.d/pe.conf', $target)
+    }
   }
 
   peadm::plan_step('upgrade-primary') || {
@@ -242,12 +273,37 @@ plan peadm::upgrade (
       $puppetdb_database_replica_target,
     ]))
 
-    # Upgrade the master replica
+    # The `puppetdb delete-reports` CLI app has a bug in 2019.8.0 where it
+    # doesn't deal well with the PuppetDB database being on a separate node.
+    # So, move it aside before running the upgrade.
+    $pdbapps = '/opt/puppetlabs/server/apps/puppetdb/cli/apps'
+    $workaround_delete_reports = $arch['high-availability'] and $version =~ SemVerRange('>= 2019.8')
+    if $workaround_delete_reports {
+      run_command(@("COMMAND"/$), $master_replica_target)
+        if [ -e ${pdbapps}/delete-reports -a ! -h ${pdbapps}/delete-reports ]
+        then
+          mv ${pdbapps}/delete-reports ${pdbapps}/delete-reports.original
+          ln -s \$(which true) ${pdbapps}/delete-reports
+        fi
+        | COMMAND
+    }
+
+    # Upgrade the master replica.
     run_task('peadm::puppet_infra_upgrade', $master_target,
       type       => 'replica',
       targets    => $master_replica_target.map |$t| { $t.peadm::target_name() },
       token_file => $token_file,
     )
+
+    # Return the delete-reports CLI app to its original state
+    if $workaround_delete_reports {
+      run_command(@("COMMAND"/$), $master_replica_target)
+        if [ -e ${pdbapps}/delete-reports.original ]
+        then
+          mv ${pdbapps}/delete-reports.original ${pdbapps}/delete-reports
+        fi
+        | COMMAND
+    }
   }
 
   peadm::plan_step('upgrade-replica-compilers') || {
