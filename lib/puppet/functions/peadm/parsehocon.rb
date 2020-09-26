@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 Puppet::Functions.create_function(:'peadm::parsehocon') do
   dispatch :parsehocon do
     param 'String', :hocon_string

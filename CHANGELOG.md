@@ -1,6 +1,6 @@
 # PEADM module
 
-## Unreleased
+## 2.4.1
 ### Summary
 
 Bugfix release
