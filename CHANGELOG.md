@@ -6,6 +6,7 @@
 ### Improvements
 
 - Handle exit code 11 from replica upgrade task gracefully. Code 11 means "PuppetDB sync in progress but not yet complete".
+- Further remediate the bug fixed in 2.4.2, by ensuring that all peadm-managed node groups preserve existing data or class parameters not explicitly being managed. This is accomplished by requiring a new version of WhatsARanjit-node\_manager, v0.7.4.
 
 ## 2.4.5
 ### Summary

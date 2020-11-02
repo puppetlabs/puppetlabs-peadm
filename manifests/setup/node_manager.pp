@@ -44,6 +44,13 @@ class peadm::setup::node_manager (
   Optional[String[1]] $puppetdb_database_replica_host = $master_replica_host,
 ) {
 
+  # Preserve existing user data and classes values. We only need to make sure
+  # the values we care about are present; we don't need to remove anything
+  # else.
+  Node_group {
+    purge_behavior => none,
+  }
+
   ##################################################
   # PE INFRASTRUCTURE GROUPS
   ##################################################
@@ -62,9 +69,7 @@ class peadm::setup::node_manager (
   # out-of-box configuration of the group.
   $compiler_pool_address_data = $compiler_pool_address ? {
     undef   => undef,
-    default => Deferred('peadm::merge_ng_config_data', ['PE Master',
-      { 'pe_repo' => { 'compile_master_pool_address' => $compiler_pool_address } }
-    ]),
+    default => { 'pe_repo' => { 'compile_master_pool_address' => $compiler_pool_address } },
   }
 
   node_group { 'PE Master':

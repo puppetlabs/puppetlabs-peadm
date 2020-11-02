@@ -14,7 +14,7 @@
     },
     {
       "name": "WhatsARanjit/node_manager",
-      "version_requirement": ">= 0.7.3 < 2.0.0"
+      "version_requirement": ">= 0.7.4 < 2.0.0"
     },
     {
       "name": "puppetlabs/bolt_shim",
