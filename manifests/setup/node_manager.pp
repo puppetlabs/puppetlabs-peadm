@@ -62,7 +62,9 @@ class peadm::setup::node_manager (
   # out-of-box configuration of the group.
   $compiler_pool_address_data = $compiler_pool_address ? {
     undef   => undef,
-    default => { 'pe_repo' => { 'compile_master_pool_address' => $compiler_pool_address } },
+    default => Deferred('peadm::merge_ng_config_data', ['PE Master',
+      { 'pe_repo' => { 'compile_master_pool_address' => $compiler_pool_address } }
+    ]),
   }
 
   node_group { 'PE Master':
