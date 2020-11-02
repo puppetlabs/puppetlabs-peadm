@@ -1,5 +1,14 @@
 # PEADM module
 
+## 2.4.2
+### Summary
+
+Bugfix release
+
+### Bugfixes
+
+- Previously, on upgrade, peadm could overwrite user configuration data on the PE Master group because it overwrote the entire configuration data value. This release modifies the peadm::setup::node\_manager desired state configuration to merge required configuration into any existing configuration when configuring data on the PE Master node group.
+
 ## 2.4.1
 ### Summary
 
