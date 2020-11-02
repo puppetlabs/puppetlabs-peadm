@@ -95,14 +95,14 @@ class peadm::setup::node_manager (
       ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/master'],
       ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'A'],
     ],
-    data   => {
+    data   => Deferred('peadm::merge_ng_config_data', ['PE Master A', {
       'puppet_enterprise::profile::primary_master_replica' => {
         'database_host_puppetdb' => $puppetdb_database_host,
       },
       'puppet_enterprise::profile::puppetdb'               => {
         'database_host' => $puppetdb_database_host,
       },
-    },
+    }]),
   }
 
   # Configure the A pool for compilers. There are up to two pools for HA, each
@@ -123,12 +123,12 @@ class peadm::setup::node_manager (
         'puppetdb_port' => [8081],
       }
     },
-    data    => {
+    data    => Deferred('peadm::merge_ng_config_data', ['PE Compiler Group A', {
       # Workaround for GH-118
       'puppet_enterprise::profile::master::puppetdb' => {
         'ha_enabled_replicas' => [ ],
       },
-    },
+    }]),
   }
 
   # Create the replica and B groups if a replica master and database host are
@@ -154,14 +154,14 @@ class peadm::setup::node_manager (
         ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/master'],
         ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'B'],
       ],
-      data   => {
+      data   => Deferred('peadm::merge_ng_config_data', ['PE Master B', {
         'puppet_enterprise::profile::primary_master_replica' => {
           'database_host_puppetdb' => $puppetdb_database_replica_host,
         },
         'puppet_enterprise::profile::puppetdb'               => {
           'database_host' => $puppetdb_database_replica_host,
         },
-      },
+      }]),
     }
 
     node_group { 'PE Compiler Group B':
@@ -180,12 +180,12 @@ class peadm::setup::node_manager (
           'puppetdb_port' => [8081],
         }
       },
-      data    => {
+      data    => Deferred('peadm::merge_ng_config_data', ['PE Compiler Group B', {
         # Workaround for GH-118
         'puppet_enterprise::profile::master::puppetdb' => {
           'ha_enabled_replicas' => [ ],
         },
-      },
+      }]),
     }
   }
 

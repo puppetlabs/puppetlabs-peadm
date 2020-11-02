@@ -24,7 +24,8 @@ Puppet::Functions.create_function(:'peadm::merge_ng_config_data') do
 
     ng = Puppet::Util::Nc_https.new
     group = ng.get_groups.select { |g| g['name'] == group_name }.first
-    group['config_data'].deep_merge(new_config_data)
+    data = group ? group['config_data'] : {}
+    data.deep_merge(new_config_data)
   rescue StandardError => e
     Puppet.warn "Error attempting to read and merge node_group config data for #{group_name}: #{e.message}"
     new_config_data
