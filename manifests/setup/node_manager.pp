@@ -134,13 +134,10 @@ class peadm::setup::node_manager (
   # Create the replica and B groups if a replica master and database host are
   # supplied
   if $master_replica_host {
-    # We need to pre-create this group so that the master replica can be
-    # identified as running PuppetDB, so that Puppet will create a pg_ident
-    # authorization rule for it on the PostgreSQL nodes.
+    # We need to ensure this group provides the peadm_replica variable.
     node_group { 'PE HA Replica':
       ensure    => 'present',
       parent    => 'PE Infrastructure',
-      rule      => ['or', ['=', 'name', $master_replica_host]],
       classes   => {
         'puppet_enterprise::profile::primary_master_replica' => { }
       },

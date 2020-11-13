@@ -1,5 +1,14 @@
 # PEADM module
 
+## 2.4.3
+### Summary
+
+Support PE 2019.8.3
+
+### Improvements
+
+- Support installing or upgrading to PE 2019.8.3
+
 ## 2.4.2
 ### Summary
 
