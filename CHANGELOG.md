@@ -1,5 +1,14 @@
 # PEADM module
 
+## 2.4.4
+### Summary
+
+Support PE 2019.8.4 and newer 2019.8.z releases
+
+### Improvements
+
+- Validation should Permit installing or upgrading to any PE 2019.8.z release
+
 ## 2.4.3
 ### Summary
 
