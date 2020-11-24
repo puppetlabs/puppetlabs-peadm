@@ -1,5 +1,14 @@
 # PEADM module
 
+## Unreleased
+### Summary
+
+Bugfix release
+
+### Bugfixes
+
+* Fix an issue in the convert plan incorrectly disallowing conversion of deployments newer than 2019.7.0.
+
 ## 2.4.4
 ### Summary
 

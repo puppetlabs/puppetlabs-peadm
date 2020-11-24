@@ -73,7 +73,7 @@ plan peadm::convert (
     $exts[peadm::oid('peadm_role')] or String($exts[peadm::oid('pp_role')]) =~ /pe_xl|peadm/
   }
 
-  if (!$previously_configured_by_peadm and (versioncmp($pe_version, '2019.7.0') > 0)) {
+  if (!$previously_configured_by_peadm and ($pe_version =~ SemVerRange('< 2019.7.0'))) {
     fail_plan(@("EOL"/L))
       PE deployment cannot be converted! PE deployment must be a deployment \
       created by pe_xl, by an older version of peadm, or be PE version \
