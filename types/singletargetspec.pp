@@ -6,5 +6,5 @@
 type Peadm::SingleTargetSpec = Variant[
   Pattern[/\A[^[:space:],]+\z/],
   Target,
-  Array[Boltlib::SingleTargetSpec, 1, 1]
+  Array[Peadm::SingleTargetSpec, 1, 1]
 ]

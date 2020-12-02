@@ -8,6 +8,7 @@ Bugfix release
 ### Bugfixes
 
 * Fix an issue in the convert plan incorrectly disallowing conversion of deployments newer than 2019.7.0.
+* Fix a problem with the Peadm::SingleTargetSpec type alias.
 
 ## 2.4.4
 ### Summary
