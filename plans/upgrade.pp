@@ -243,6 +243,10 @@ plan peadm::upgrade (
   }
 
   peadm::plan_step('upgrade-primary-compilers') || {
+    # It's possible that an orchestrator file-sync operation delays startup of
+    # orchestrator-service by a loooong time.
+    peadm::wait_until_service_ready('orchestrator-service', $master_target, 600)
+
     # Upgrade the compiler group A targets
     run_task('peadm::puppet_infra_upgrade', $master_target,
       type       => 'compiler',

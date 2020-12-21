@@ -8,6 +8,11 @@
     "port": {
       "type": "Enum['8140', '8143']",
       "description": "Which port to query the status API on"
+    },
+    "wait_time": {
+      "type": "Integer[0]",
+      "description": "How many seconds to wait before timing out and failing",
+      "default": 60
     }
   },
   "implementations": [

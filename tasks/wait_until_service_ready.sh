@@ -8,10 +8,10 @@ check() {
   fi
 }
 
-n=0
-until [ $n -ge 20 ]
+elapsed=0
+until [ $elapsed -gt "$PT_wait_time" ]
 do
   check && break
-  n=$[$n+1]
+  elapsed=$[$elapsed+3]
   sleep 3
 done
