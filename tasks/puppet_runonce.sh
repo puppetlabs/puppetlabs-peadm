@@ -24,4 +24,15 @@ echo
   --no-usecacheonfailure \
   --no-splay \
   --no-use_cached_catalog \
+  --detailed-exitcodes \
   $NOOP_FLAG
+
+# Without --detailed-exitcodes, the `puppet agent` command will return 0 even
+# if there are resource failures. Use --detailed-exitcodes but only exit
+# non-zero if an error occurred. Changes (code 2) are not errors.
+exitcode=$?
+if [ $exitcode -eq 0 -o $exitcode -eq 2 ]; then
+  exit 0
+else
+  exit $exitcode
+fi
