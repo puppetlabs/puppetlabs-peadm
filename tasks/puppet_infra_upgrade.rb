@@ -27,8 +27,10 @@ def main
   puts stdouterr
   if status.success?
     exit 0
+  elsif status.exitstatus == 11 # Waiting for PuppetDB sync to complete, but otherwise successful
+    exit 0
   else
-    exit 1
+    exit status.exitstatus
   end
 end
 

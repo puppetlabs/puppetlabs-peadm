@@ -1,5 +1,12 @@
 # PEADM module
 
+## UNRELEASED
+### Summary
+
+### Improvements
+
+- Handle exit code 11 from replica upgrade (still waiting for PuppetDB sync to complete) gracefully.
+
 ## 2.4.5
 ### Summary
 
