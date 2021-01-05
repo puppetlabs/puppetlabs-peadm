@@ -5,7 +5,7 @@
 
 ### Improvements
 
-- Handle exit code 11 from replica upgrade (still waiting for PuppetDB sync to complete) gracefully.
+- Handle exit code 11 from replica upgrade task gracefully. Code 11 means "PuppetDB sync in progress but not yet complete".
 
 ## 2.4.5
 ### Summary
