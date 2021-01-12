@@ -91,9 +91,10 @@ class PEAdm
   end
 end
 
-# Run the task if we got piped input. In order to enable unit testing, do not
-# run the task if input is a tty.
-unless STDIN.tty?
+# Run the task unless an environment flag has been set, signaling not to. The
+# environment flag is used to disable auto-execution and enable Ruby unit
+# testing of this task.
+unless ENV['RSPEC_UNIT_TEST_MODE']
   upgrade = PEAdm::Task::PuppetInfraUpgrade.new(JSON.parse(STDIN.read))
   upgrade.execute!
 end
