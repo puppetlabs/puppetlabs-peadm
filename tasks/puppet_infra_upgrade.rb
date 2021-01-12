@@ -73,7 +73,9 @@ class PEAdm
         Timeout.timeout(timeout) do
           loop do
             response = http.request(request)
-            raise unless response.is_a? Net::HTTPSuccess
+            unless response.is_a? Net::HTTPSuccess
+              raise "Unexpected result from orchestrator: #{response.class}\n#{response}"
+            end
             inventory = JSON.parse(response.body)
             break if inventory['items'].all? { |item| item['connected'] }
             sleep(1)
