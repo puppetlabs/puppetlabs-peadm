@@ -14,6 +14,8 @@ Rakefile:
   changelog_since_tag: '2.1.0'
   extras:
     - 'PuppetSyntax.exclude_paths = ["plans/**/*.pp", "vendor/**/*"]'
+spec/spec_helper.rb:
+    mock_with: ':rspec'
 .gitignore:
   paths:
     - '.rerun.json'

@@ -2,6 +2,10 @@
 
 require 'puppet'
 
+# This environment variable can be read by Ruby Bolt tasks to prevent unwanted
+# auto-execution, enabling easy unit testing.
+ENV["RSPEC_UNIT_TEST_MODE"] ||= "TRUE"
+
 if Gem::Version.new(Puppet.version) >= Gem::Version.new('6.0.0')
   begin
     require 'bolt_spec/plans'
