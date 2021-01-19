@@ -43,6 +43,8 @@ plan peadm::upgrade (
     'upgrade-replica-compilers',
     'finalize']] $begin_at_step = undef,
 ) {
+  peadm::check_bolt_version()
+
   peadm::validate_version($version)
 
   # Ensure input valid for a supported architecture

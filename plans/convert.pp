@@ -26,6 +26,8 @@ plan peadm::convert (
     'convert-node-groups',
     'finalize']] $begin_at_step = undef,
 ) {
+  peadm::check_bolt_version()
+
   # TODO: read and validate convertable PE version
 
   # Convert inputs into targets.
