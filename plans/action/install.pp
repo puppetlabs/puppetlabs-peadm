@@ -4,12 +4,12 @@
 #   The clone URL of the controlrepo to use. This just uses the basic config
 #   from the documentaion https://puppet.com/docs/pe/2019.0/code_mgr_config.html
 #
-# @param r10k_private_key
+# @param r10k_private_key_file
 #   The private key to use for r10k. If this is a local file it will be copied
 #   over to the masters at /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa
 #   If the file does not exist the value will simply be supplied to the masters
 #
-# @param license_key
+# @param license_key_file
 #   The license key to use with Puppet Enterprise.  If this is a local file it
 #   will be copied over to the MoM at /etc/puppetlabs/license.key
 #   If the file does not exist the value will simply be supplied to the masters
