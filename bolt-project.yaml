@@ -9,4 +9,6 @@ modules:
 - name: puppetlabs/service
 - name: puppetlabs/stdlib
 
-- name: WhatsARanjit/node_manager
+- name: 'WhatsARanjit/node_manager'
+  git: 'https://github.com/WhatsARanjit/puppet-node_manager.git'
+  ref: '3775a9d07bdea9a9258225dc7053118b1f2fd871' # 0.7.4-1-g3775a9d
