@@ -1,2 +1,12 @@
 ---
 name: peadm
+
+modules:
+- name: puppet/format
+
+- name: puppetlabs/apply_helpers
+- name: puppetlabs/bolt_shim
+- name: puppetlabs/service
+- name: puppetlabs/stdlib
+
+- name: WhatsARanjit/node_manager
