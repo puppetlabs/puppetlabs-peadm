@@ -29,5 +29,6 @@ bolt-debug.log
 .envrc
 /inventory.yaml
 .rerun.json
+.plan_cache.json
 *.tar.gz
 Puppetfile
