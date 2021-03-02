@@ -1,14 +1,15 @@
 # frozen_string_literal: true
+
 require 'spec_helper'
 
 describe 'peadm::validate_version' do
   context 'invalid PE versions' do
     it 'rejects PE versions that are too new' do
-      is_expected.to run.with_params('2021.1.0').and_raise_error(Puppet::ParseError, /This\ version\ of\ the/)
+      is_expected.to run.with_params('2021.1.0').and_raise_error(Puppet::ParseError, %r{This\ version\ of\ the})
     end
 
     it 'rejects PE versions that are too old' do
-      is_expected.to run.with_params('2018.1.9').and_raise_error(Puppet::ParseError, /This\ version\ of\ the/)
+      is_expected.to run.with_params('2018.1.9').and_raise_error(Puppet::ParseError, %r{This\ version\ of\ the})
     end
   end
 

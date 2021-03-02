@@ -4,6 +4,8 @@ Gemfile:
     ':development':
       - gem: 'puppet-debugger'
         version: '>= 0.18.0'
+      - gem: 'bolt'
+        version: '>= 2.42.0'
   optional:
     ':development':
       - gem: 'github_changelog_generator'
