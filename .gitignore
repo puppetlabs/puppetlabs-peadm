@@ -1,7 +1,4 @@
 .git/
-.modules
-.resource_types
-bolt-debug.log
 .*.sw[op]
 .metadata
 .yardoc
@@ -29,6 +26,8 @@ bolt-debug.log
 .envrc
 /inventory.yaml
 .rerun.json
-.plan_cache.json
 *.tar.gz
-Puppetfile
+.modules/
+.plan_cache.json
+.resource_types/
+bolt-debug.log
