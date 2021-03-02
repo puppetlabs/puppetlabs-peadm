@@ -4,6 +4,8 @@ Gemfile:
     ':development':
       - gem: 'puppet-debugger'
         version: '>= 0.18.0'
+      - gem: 'bolt'
+        version: '>= 2.42.0'
   optional:
     ':development':
       - gem: 'github_changelog_generator'
@@ -20,3 +22,7 @@ spec/spec_helper.rb:
   paths:
     - '.rerun.json'
     - '*.tar.gz'
+    - '.modules/'
+    - '.plan_cache.json'
+    - '.resource_types/'
+    - 'bolt-debug.log'

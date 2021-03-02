@@ -5,4 +5,3 @@ Puppet::Functions.create_function(:'peadm::bolt_version') do
     Bolt::VERSION
   end
 end
-

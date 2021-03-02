@@ -1,9 +1,19 @@
 # frozen_string_literal: true
 
+# rubocop:disable RSpec/BeforeAfterAll
+
 require 'spec_helper'
 # https://github.com/puppetlabs/bolt/blob/master/lib/bolt_spec/plans.rb
 
-describe 'peadm::status', if: Gem::Version.new(Puppet.version) >= Gem::Version.new('6.0.0') do
+describe 'peadm::status' do
+  # Include the BoltSpec library functions
+  include BoltSpec::Plans
+
+  # Configure Puppet and Bolt before running any tests
+  before(:all) do
+    BoltSpec::Plans.init
+  end
+
   let(:infrastatus) do
     data = JSON.parse(File.read(File.expand_path(File.join(fixtures, 'infrastatus.json'))))
     { 'output' => data }
