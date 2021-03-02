@@ -59,7 +59,6 @@ groups:
         host-key-check: false
         user: centos
         run-as: root
-        tty: true
     targets:
       - pe-xl-core-0.lab1.puppet.vm
       - pe-xl-core-1.lab1.puppet.vm
