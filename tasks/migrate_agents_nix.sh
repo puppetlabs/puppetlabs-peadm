@@ -44,15 +44,6 @@ echo "Pointing Puppet Agent to new PE server..."
 puppet config set server $PT_target_pe
 
 echo 
-echo "Installing the new Puppet Agent..."
-curl -k https://$PT_target_pe:8140/packages/current/install.bash | sudo bash 2>&1
-
-if [ $? -gt 0 ]; then
-    echo "Installation of new Puppet Agent failed! Check the error for details."
-    exit 3
-fi
-
-echo 
 echo "Performing initial Puppet Agent run..."
 puppet agent --no-daemonize --onetime --no-usecacheonfailure --no-splay  2>&1
 

@@ -41,19 +41,6 @@ Write-Host "Pointing Puppet Agent to new PE server..."
 puppet.bat config set server $target_pe
 
 Write-Host 
-Write-Host "Installing the new Puppet Agent..."
-[System.Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-[Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
-$webClient = New-Object System.Net.WebClient
-$webClient.DownloadFile("https://${target_pe}:8140/packages/current/install.ps1", "$env:TEMP\install.ps1") 2>&1
-& $env:TEMP\install.ps1 -v 2>&1
-
-if (-not $?) {
-    Write-Host "Installation of new Puppet Agent failed! Check the error for details."
-    exit 3
-}
-
-Write-Host 
 Write-Host "Performing initial Puppet Agent run..."
 puppet.bat agent --no-daemonize --onetime --no-usecacheonfailure --no-splay  2>&1
 
