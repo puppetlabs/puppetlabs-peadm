@@ -9,12 +9,18 @@ else
     exit 1
 fi
 
-echo .
+# Ensure Curl is installed
+if ! command -v curl &> /dev/null; then
+    echo "Curl is not installed on this system, unable to continue!"
+    exit 2
+fi
+
+echo 
 echo "Stopping the Puppet Agent service..."
 service puppet stop 2>&1
 
 if [ $PT_regenerate == 'true' ]; then
-    echo .
+    echo 
     echo "Regenerate flag detected, clearing out existing node certificates before migration..."
     localcacert=$(puppet config print localcacert)
     hostcert=$(puppet config print hostcert)
@@ -33,23 +39,23 @@ if [ $PT_regenerate == 'true' ]; then
     echo "Existing node certificates have been cleared, new certificates will be generated on the next Puppet run"
 fi
 
-echo .
+echo 
+echo "Pointing Puppet Agent to new PE server..."
+puppet config set server $PT_target_pe
+
+echo 
 echo "Installing the new Puppet Agent..."
-if ! command -v curl &> /dev/null; then
-    echo "Curl is not installed on this system, unable to continue!"
-    exit 2
-fi
 curl -k https://$PT_target_pe:8140/packages/current/install.bash | sudo bash 2>&1
 
-if [ $? -gt 0]; then
+if [ $? -gt 0 ]; then
     echo "Installation of new Puppet Agent failed! Check the error for details."
     exit 3
 fi
 
-echo .
+echo 
 echo "Performing initial Puppet Agent run..."
 puppet agent -t 2>&1
 
-echo .
+echo 
 echo "Starting the Puppet Agent service..."
 service puppet start
