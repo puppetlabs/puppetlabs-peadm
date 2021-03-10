@@ -54,7 +54,7 @@ fi
 
 echo 
 echo "Performing initial Puppet Agent run..."
-puppet agent -t 2>&1
+puppet agent --no-daemonize --onetime --no-usecacheonfailure --no-splay  2>&1
 
 echo 
 echo "Starting the Puppet Agent service..."
