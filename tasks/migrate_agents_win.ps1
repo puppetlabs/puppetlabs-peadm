@@ -20,12 +20,12 @@ Stop-Service puppet
 if ($regenerate) {
     Write-Host 
     Write-Host "Regenerate flag detected, clearing out existing node certificates before migration..."
-    $localcacert = puppet config print localcacert
-    $hostcert    = puppet config print hostcert
-    $hostprivkey = puppet config print hostprivkey
-    $hostpubkey  = puppet config print hostpubkey
-    $hostcrl     = puppet config print hostcrl
-    $hostcsr     = puppet config print hostcsr
+    $localcacert = puppet.bat config print localcacert
+    $hostcert    = puppet.bat config print hostcert
+    $hostprivkey = puppet.bat config print hostprivkey
+    $hostpubkey  = puppet.bat config print hostpubkey
+    $hostcrl     = puppet.bat config print hostcrl
+    $hostcsr     = puppet.bat config print hostcsr
     $collection = $localcacert, $hostcert, $hostprivkey, $hostpubkey, $hostcrl, $hostcsr
     foreach ($item in $collection) {
         if (Test-Path $item -PathType leaf) {
@@ -38,7 +38,7 @@ if ($regenerate) {
 
 Write-Host 
 Write-Host "Pointing Puppet Agent to new PE server..."
-puppet config set server $target_pe
+puppet.bat config set server $target_pe
 
 Write-Host 
 Write-Host "Installing the new Puppet Agent..."
@@ -55,7 +55,7 @@ if ($? -gt 0) {
 
 Write-Host 
 Write-Host "Performing initial Puppet Agent run..."
-puppet agent --no-daemonize --onetime --no-usecacheonfailure --no-splay  2>&1
+puppet.bat agent --no-daemonize --onetime --no-usecacheonfailure --no-splay  2>&1
 
 Write-Host 
 Write-Host "Starting the Puppet Agent service..."
