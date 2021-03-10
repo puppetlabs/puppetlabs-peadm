@@ -6,7 +6,7 @@ Param(
 
 # Ensure we can reach the target Puppet Enterprise server
 Write-Host "Verifying connectivity to target Puppet server $target_pe:8140..."
-if (Test-NetConnection -ComputerName $target_pe -Port 8140) {
+if (Test-NetConnection -ComputerName $target_pe -Port 8140 -WarningAction Stop) {
     Write-Host "Target Puppet server is reacheable"
 } else {
     Write-Host "Target Puppet server is not reacheable, aborting migration!"
@@ -48,7 +48,7 @@ $webClient = New-Object System.Net.WebClient
 $webClient.DownloadFile("https://${target_pe}:8140/packages/current/install.ps1", "$env:TEMP\install.ps1") 2>&1
 & $env:TEMP\install.ps1 -v 2>&1
 
-if ($? -gt 0) {
+if (-not $?) {
     Write-Host "Installation of new Puppet Agent failed! Check the error for details."
     exit 3
 }
