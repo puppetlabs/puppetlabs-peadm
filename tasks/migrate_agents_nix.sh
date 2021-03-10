@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Ensure we can reach the target Puppet Enterprise server
-echo "Verifying connectivity to target Puppet server $target_pe:8140..."
-if timeout 1 bash -c "cat < /dev/null > /dev/tcp/$target_pe/8140"; then
+echo "Verifying connectivity to target Puppet server $PT_target_pe:8140..."
+if timeout 1 bash -c "cat < /dev/null > /dev/tcp/$PT_target_pe/8140"; then
     echo "Target Puppet server is reacheable"
 else
     echo "Target Puppet server is not reacheable, aborting migration!"
@@ -12,7 +12,7 @@ fi
 echo "Stopping the Puppet Agent service..."
 service puppet stop
 
-if [ $regenerate == 'true' ]; then
+if [ $PT_regenerate == 'true' ]; then
     echo "Regenerate flag detected, clearing out existing node certificates before migration..."
     localcacert=$(puppet config print localcacert)
     hostcert=$(puppet config print hostcert)
@@ -36,7 +36,7 @@ if ! command -v curl &> /dev/null; then
     echo "Curl is not installed on this system, unable to continue!"
     exit 2
 fi
-curl -k https://$target_pe:8140/packages/current/install.bash | sudo bash
+curl -k https://$PT_target_pe:8140/packages/current/install.bash | sudo bash
 
 echo "Performing initial Puppet Agent run..."
 puppet agent -t
