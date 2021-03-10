@@ -45,7 +45,7 @@ Write-Host "Installing the new Puppet Agent..."
 [System.Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 [Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
 $webClient = New-Object System.Net.WebClient
-$webClient.DownloadFile("https://$target_pe:8140/packages/current/install.ps1", "$env:TEMP\install.ps1")
+$webClient.DownloadFile("https://${target_pe}:8140/packages/current/install.ps1", "$env:TEMP\install.ps1") 2>&1
 & $env:TEMP\install.ps1 -v 2>&1
 
 if ($? -gt 0) {
