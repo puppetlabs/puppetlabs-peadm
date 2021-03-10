@@ -1,0 +1,19 @@
+{
+    "description": "Migrates Puppet Agents to a new Puppet Enterprise installation",
+    "private": false,
+    "parameters":{
+        "regenerate" : {
+            "description": "Delete & regenerate the node's certificate? Enable this when you're not migrating the Puppet CA",
+            "type": "Boolean",
+            "default": true
+          },
+        "target_pe" : {
+            "description": "FQDN of the target Puppet Enterprise server to point the agent to",
+            "type": "String[1]"
+        }
+    },
+    "implementations": [
+        {"name": "migrate_agents_nix.sh", "requirements": ["shell"]},
+        {"name": "migrate_agents_win.ps1", "requirements": ["powershell"]}
+    ]
+}
