@@ -36,13 +36,19 @@ if ($regenerate) {
     Write-Host "Existing node certificates have been cleared, new certificates will be generated on the next Puppet run"
 }
 
+if (puppet.bat --version | Select-String -Pattern "^5") {
+    Write-Host 
+    Write-Host "Puppet 5.x detected, setting certificate_revocation to leaf to facilitate migration..."
+    puppet.bat config set --section main certificate_revocation leaf
+}
+
 Write-Host 
 Write-Host "Pointing Puppet Agent to new PE server..."
 puppet.bat config delete --section main server
 puppet.bat config delete --section agent server
 puppet.bat config delete --section main server_list
 puppet.bat config delete --section agent server_list
-puppet.bat config set server --section agent $PT_target_pe
+puppet.bat config set --section agent server $PT_target_pe
 
 Write-Host 
 Write-Host "Performing initial Puppet Agent run..."

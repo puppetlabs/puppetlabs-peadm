@@ -39,13 +39,19 @@ if [ $PT_regenerate == 'true' ]; then
     echo "Existing node certificates have been cleared, new certificates will be generated on the next Puppet run"
 fi
 
+if puppet --version | grep -e ^5; then
+    echo 
+    echo "Puppet 5.x detected, setting certificate_revocation to leaf to facilitate migration..."
+    puppet config set --section main certificate_revocation leaf
+fi
+
 echo 
 echo "Pointing Puppet Agent to new PE server..."
 puppet config delete --section main server
 puppet config delete --section agent server
 puppet config delete --section main server_list
 puppet config delete --section agent server_list
-puppet config set server --section agent $PT_target_pe
+puppet config set --section agent server $PT_target_pe
 
 echo 
 echo "Performing initial Puppet Agent run..."
