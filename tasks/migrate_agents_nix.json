@@ -1,5 +1,6 @@
 {
     "description": "Migrates Puppet Agents on Linux/Unix to a new Puppet Enterprise installation",
+    "input_method": "environment",
     "private": true,
     "parameters":{
         "regenerate" : {

@@ -1,5 +1,6 @@
 {
     "description": "Migrates Puppet Agents on Windows to a new Puppet Enterprise installation",
+    "input_method": "powershell",
     "private": true,
     "parameters":{
         "regenerate" : {
