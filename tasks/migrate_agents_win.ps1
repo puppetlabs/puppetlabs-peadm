@@ -38,7 +38,11 @@ if ($regenerate) {
 
 Write-Host 
 Write-Host "Pointing Puppet Agent to new PE server..."
-puppet.bat config set server $target_pe
+puppet.bat config delete --section main server
+puppet.bat config delete --section agent server
+puppet.bat config delete --section main server_list
+puppet.bat config delete --section agent server_list
+puppet.bat config set server --section agent $PT_target_pe
 
 Write-Host 
 Write-Host "Performing initial Puppet Agent run..."

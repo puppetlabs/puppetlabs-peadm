@@ -41,7 +41,11 @@ fi
 
 echo 
 echo "Pointing Puppet Agent to new PE server..."
-puppet config set server $PT_target_pe
+puppet config delete --section main server
+puppet config delete --section agent server
+puppet config delete --section main server_list
+puppet config delete --section agent server_list
+puppet config set server --section agent $PT_target_pe
 
 echo 
 echo "Performing initial Puppet Agent run..."
