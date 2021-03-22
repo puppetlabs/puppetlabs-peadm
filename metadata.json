@@ -1,6 +1,6 @@
 {
   "name": "puppetlabs-peadm",
-  "version": "2.4.5",
+  "version": "2.5.0",
   "author": "puppetlabs",
   "summary": "Bolt plans used to deploy an at-scale Puppet Enterprise architecture",
   "license": "Apache-2.0",
@@ -10,11 +10,11 @@
   "dependencies": [
     {
       "name": "puppetlabs/stdlib",
-      "version_requirement": ">= 6.5.0 < 7.0.0"
+      "version_requirement": ">= 6.5.0 < 8.0.0"
     },
     {
       "name": "WhatsARanjit/node_manager",
-      "version_requirement": ">= 0.7.4 < 2.0.0"
+      "version_requirement": ">= 0.7.5 < 2.0.0"
     },
     {
       "name": "puppetlabs/bolt_shim",
@@ -26,7 +26,7 @@
     },
     {
       "name": "puppet/format",
-      "version_requirement": ">= 0.1.0 < 1.0.0"
+      "version_requirement": ">= 0.1.0 < 2.0.0"
     },
     {
       "name": "puppetlabs/service",
