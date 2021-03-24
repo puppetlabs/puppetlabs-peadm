@@ -167,7 +167,7 @@ plan peadm::upgrade (
 
       $pe_conf = ($current_pe_conf ? {
         undef   => {},
-        default => $current_pe_conf.peadm::parsehocon(),
+        default => $current_pe_conf.parsehocon(),
       } + {
         'console_admin_password'                => 'not used',
         'puppet_enterprise::puppet_master_host' => $master_target.peadm::target_name(),
