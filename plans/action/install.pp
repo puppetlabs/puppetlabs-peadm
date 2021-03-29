@@ -75,6 +75,11 @@ plan peadm::action::install (
     $compiler_targets,
   ])
 
+  $master_targets = peadm::flatten_compact([
+    $master_target,
+    $master_replica_target,
+  ])
+
   $database_targets = peadm::flatten_compact([
     $puppetdb_database_target,
     $puppetdb_database_replica_target,
@@ -167,7 +172,7 @@ plan peadm::action::install (
   # Upload the pe.conf files to the hosts that need them, and ensure correctly
   # configured certnames. Right now for these hosts we need to do that by
   # staging a puppet.conf file.
-  ['master', 'puppetdb_database', 'puppetdb_database_replica'].each |$var| {
+  parallelize(['master', 'puppetdb_database', 'puppetdb_database_replica']) |$var| {
     $target  = getvar("${var}_target", [])
     $pe_conf = getvar("${var}_pe_conf")
 
@@ -203,27 +208,32 @@ plan peadm::action::install (
   # Create csr_attributes.yaml files for the nodes that need them. Ensure that
   # if a csr_attributes.yaml file is already present, the values we need are
   # merged with the existing values.
-
-  run_plan('peadm::util::insert_csr_extension_requests', $master_target,
-    extension_requests => {
-      peadm::oid('peadm_role')               => 'puppet/master',
-      peadm::oid('peadm_availability_group') => 'A',
-    },
-  )
-
-  run_plan('peadm::util::insert_csr_extension_requests', $puppetdb_database_target,
-    extension_requests => {
-      peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
-      peadm::oid('peadm_availability_group') => 'A',
-    },
-  )
-
-  run_plan('peadm::util::insert_csr_extension_requests', $puppetdb_database_replica_target,
-    extension_requests => {
-      peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
-      peadm::oid('peadm_availability_group') => 'B',
-    },
-  )
+  parallelize($pe_installer_targets) |$target| {
+    if ($target in $master_target) {
+      run_plan('peadm::util::insert_csr_extension_requests', $target,
+        extension_requests => {
+          peadm::oid('peadm_role')               => 'puppet/master',
+          peadm::oid('peadm_availability_group') => 'A'
+        }
+      )
+    }
+    elsif ($target in $puppetdb_database_target) {
+      run_plan('peadm::util::insert_csr_extension_requests', $target,
+        extension_requests => {
+          peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
+          peadm::oid('peadm_availability_group') => 'A'
+        }
+      )
+    }
+    elsif ($target in $puppetdb_database_replica_target) {
+      run_plan('peadm::util::insert_csr_extension_requests', $target,
+        extension_requests => {
+          peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
+          peadm::oid('peadm_availability_group') => 'B'
+        }
+      )
+    }
+  }
 
   # Get the master installation up and running. The installer will
   # "fail" because PuppetDB can't start, if puppetdb_database_target
@@ -241,26 +251,22 @@ plan peadm::action::install (
     out::message("Finished: task peadm::pe_install on ${master_target[0].name}")
   }
 
-  if $r10k_private_key {
-    run_task('peadm::mkdir_p_file', peadm::flatten_compact([
-      $master_target,
-      $master_replica_target,
-    ]),
-      path    => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
-      mode    => '0600',
-      content => $r10k_private_key,
-    )
-  }
+  parallelize($master_targets) |$target| {
+    if $r10k_private_key {
+      run_task('peadm::mkdir_p_file', $target,
+        path    => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
+        mode    => '0600',
+        content => $r10k_private_key,
+      )
+    }
 
-  if $license_key {
-    run_task('peadm::mkdir_p_file', peadm::flatten_compact([
-      $master_target,
-      $master_replica_target,
-    ]),
-      path    => '/etc/puppetlabs/license.key',
-      mode    => '0644',
-      content => $license_key,
-    )
+    if $license_key {
+      run_task('peadm::mkdir_p_file', $target,
+        path    => '/etc/puppetlabs/license.key',
+        mode    => '0644',
+        content => $license_key,
+      )
+    }
   }
 
   # Configure autosigning for the puppetdb database hosts 'cause they need it
@@ -306,55 +312,52 @@ plan peadm::action::install (
     action => 'file-sync commit',
   )
 
-  run_task_with('peadm::agent_install', $agent_installer_targets) |$target| {{
-    server        => $master_target.peadm::target_name(),
-    install_flags => peadm::flatten_compact([
-
-      # Common params
+  parallelize($agent_installer_targets) |$target| {
+    $common_install_flags = [
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
-
-      # Params that vary depending on what kind of server this is.
-      # The undef values will be compacted out
       "main:certname=${target.peadm::target_name()}",
-      ($target in $compiler_a_targets) ? {
-        false => undef,
-        true  => [
+    ]
+
+    if ($target in $compiler_a_targets) {
+      run_task('peadm::agent_install', $target,
+        server        => $master_target.peadm::target_name(),
+        install_flags => $common_install_flags + [
           "extension_requests:${peadm::oid('pp_auth_role')}=pe_compiler",
           "extension_requests:${peadm::oid('peadm_availability_group')}=A",
         ],
-      },
-      ($target in $compiler_b_targets) ? {
-        false => undef,
-        true  => [
+      )
+    }
+    elsif ($target in $compiler_b_targets) {
+      run_task('peadm::agent_install', $target,
+        server        => $master_target.peadm::target_name(),
+        install_flags => $common_install_flags + [
           "extension_requests:${peadm::oid('pp_auth_role')}=pe_compiler",
           "extension_requests:${peadm::oid('peadm_availability_group')}=B",
         ],
-      },
-      ($target in $master_replica_target) ? {
-        false => undef,
-        true => [
-          "extension_requests:${peadm::oid('peadm_availability_group')}=B",
+      )
+    }
+    elsif ($target in $master_replica_target) {
+      run_task('peadm::agent_install', $target,
+        server        => $master_target.peadm::target_name(),
+        install_flags => $common_install_flags + [
           "extension_requests:${peadm::oid('peadm_role')}=puppet/master",
+          "extension_requests:${peadm::oid('peadm_availability_group')}=B",
         ],
-      },
+      )
+    }
 
-    ])
-  }}
+    # Ensure certificate requests have been submitted
+    run_task('peadm::submit_csr', $target)
+    # TODO: come up with an intelligent way to validate that the expected CSRs
+    # have been submitted and are available for signing, prior to signing them.
+    # For now, waiting a short period of time is necessary to avoid a small race.
+    ctrl::sleep(5)
+    run_task('peadm::sign_csr', $master_target, { 'certnames' => [$target.name] } )
+    run_task('peadm::puppet_runonce', $target)
+  }
 
-  # Ensure certificate requests have been submitted
-  run_task('peadm::submit_csr', $agent_installer_targets)
-
-  # TODO: come up with an intelligent way to validate that the expected CSRs
-  # have been submitted and are available for signing, prior to signing them.
-  # For now, waiting a short period of time is necessary to avoid a small race.
-  ctrl::sleep(15)
-
-  run_task('peadm::sign_csr', $master_target,
-    certnames => $agent_installer_targets.map |$target| { $target.name },
-  )
-
-  run_task('peadm::puppet_runonce', $all_targets - $master_target)
+  run_task('peadm::puppet_runonce', $database_targets )
 
   # The puppetserver might be in the middle of a restart after the Puppet run,
   # so we check the status by calling the api and ensuring the puppetserver is
@@ -365,7 +368,7 @@ plan peadm::action::install (
   run_task('peadm::puppet_runonce', $master_target)
 
   # Cleanup temp bootstrapping config
-  ['master', 'puppetdb_database', 'puppetdb_database_replica'].each |$var| {
+  parallelize(['master', 'puppetdb_database', 'puppetdb_database_replica']) |$var| {
     $target  = getvar("${var}_target", [])
     $pe_conf = getvar("${var}_pe_conf", '{}')
 
