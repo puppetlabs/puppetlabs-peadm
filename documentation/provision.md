@@ -35,6 +35,18 @@ Supplying a combination of host parameters which does not match one of the suppo
 
 ## Usage
 
+### Bolt 3 usage
+We will name the bolt project `large_ha_peadm` in this example but the project name can be anything.  
+
+1. Install Bolt on a jumphost. This can be the master, or any other system. (via package)
+2. Run `mkdir large_ha_peadm && cd large_ha_peadm && bolt project init large_ha_peadm --modules puppetlabs-peadm`        
+4. Create an inventory file with connection information. Example included below.
+5. Create a parameters file. Example included below.
+6. Run `bolt plan run peadm::provision --params @params.json ` after the inventory and params files are created. 
+   
+          
+### Bolt 2 usage
+
 1. Install Bolt on a jumphost. This can be the master, or any other system.
 2. Download or git clone the peadm module and put it somewhere on the jumphost. e.g. ~/modules/peadm.
 3. Download or git clone the module dependencies, and put them somewhere on the jumphost. e.g. ~/modules/stdlib, ~/modules/node\_manager, etc.
@@ -46,6 +58,7 @@ Supplying a combination of host parameters which does not match one of the suppo
           --inventory inventory.yaml \
           --modulepath ~/modules \
           --params @params.json 
+
 
 Example inventory.yaml Bolt inventory file:
 
@@ -102,6 +115,12 @@ The content needed is the PE installation tarball for the target version. The in
 
 Installation content can be downloaded from [https://puppet.com/try-puppet/puppet-enterprise/download/](https://puppet.com/try-puppet/puppet-enterprise/download/).
 
+If you wish to prevent the bolt host from transferring the installer tarball to the targets you can place the installer tar files on the target hosts in the staging directory.   This can save time over slow networks, but is best to just perform the bolt task on the target node (puppetserver).  The tar file will need to exist in the staging directory for the following configuration:
+
+* /tmp on the Bolt host
+* /tmp on the primary
+* /tmp on the primary PuppetDB PostgreSQL (if used)
+* /tmp on the replica PuppetDB PostgreSQL (if used)
 ## Online usage
 
 The peadm::provision plan can be configured to download installation content directly to hosts. To configure online installation, set the `download_mode` parameter of the `peadm::provision` plan to `direct`. The direct mode is often more efficient when PE hosts have a route to the internet.
