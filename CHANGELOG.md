@@ -1,5 +1,14 @@
 # PEADM module
 
+## Unreleased
+### Summary
+
+Unreleased
+
+### Changes
+
+- Improve error handling during early installation of PE
+
 ## 2.5.0
 ### Summary
 
