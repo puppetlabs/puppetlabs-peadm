@@ -235,21 +235,15 @@ plan peadm::action::install (
     }
   }
 
-  # Get the master installation up and running. The installer will
-  # "fail" because PuppetDB can't start, if puppetdb_database_target
-  # is set. That's expected.
-  $shortcircuit_puppetdb = !($puppetdb_database_target.empty)
-  without_default_logging() || {
-    out::message("Starting: task peadm::pe_install on ${master_target[0].name}")
-    run_task('peadm::pe_install', $master_target,
-      _catch_errors         => $shortcircuit_puppetdb,
-      tarball               => $upload_tarball_path,
-      peconf                => '/tmp/pe.conf',
-      puppet_service_ensure => 'stopped',
-      shortcircuit_puppetdb => $shortcircuit_puppetdb,
-    )
-    out::message("Finished: task peadm::pe_install on ${master_target[0].name}")
-  }
+  # Get the master installation up and running. The installer will "fail"
+  # because PuppetDB can't start, if puppetdb_database_target is set. That's
+  # expected, and handled by the task's install_extra_large parameter.
+  run_task('peadm::pe_install', $master_target,
+    tarball               => $upload_tarball_path,
+    peconf                => '/tmp/pe.conf',
+    puppet_service_ensure => 'stopped',
+    install_extra_large   => ($arch['architecture'] == 'extra-large'),
+  )
 
   parallelize($master_targets) |$target| {
     if $r10k_private_key {
