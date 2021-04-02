@@ -306,14 +306,19 @@ plan peadm::action::install (
     action => 'file-sync commit',
   )
 
-  parallelize($agent_installer_targets) |$target| {
+  parallelize($agent_installer_targets + $database_targets) |$target| {
     $common_install_flags = [
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
       "main:certname=${target.peadm::target_name()}",
     ]
 
-    if ($target in $compiler_a_targets) {
+    # Database targets don't need agent installed, they just need to run Puppet
+    if ($target in $database_targets) {
+      run_task('peadm::puppet_runonce', $target)
+    }
+    # Everything else needs an agent installed and cert signed
+    elsif ($target in $compiler_a_targets) {
       run_task('peadm::agent_install', $target,
         server        => $master_target.peadm::target_name(),
         install_flags => $common_install_flags + [
@@ -341,17 +346,17 @@ plan peadm::action::install (
       )
     }
 
-    # Ensure certificate requests have been submitted
-    run_task('peadm::submit_csr', $target)
-    # TODO: come up with an intelligent way to validate that the expected CSRs
-    # have been submitted and are available for signing, prior to signing them.
-    # For now, waiting a short period of time is necessary to avoid a small race.
-    ctrl::sleep(5)
-    run_task('peadm::sign_csr', $master_target, { 'certnames' => [$target.name] } )
-    run_task('peadm::puppet_runonce', $target)
+    # Ensure certificate requests have been submitted, then run Puppet
+    unless ($target in $database_targets) {
+      run_task('peadm::submit_csr', $target)
+      # TODO: come up with an intelligent way to validate that the expected CSRs
+      # have been submitted and are available for signing, prior to signing them.
+      # For now, waiting a short period of time is necessary to avoid a small race.
+      ctrl::sleep(5)
+      run_task('peadm::sign_csr', $master_target, { 'certnames' => [$target.name] } )
+      run_task('peadm::puppet_runonce', $target)
+    }
   }
-
-  run_task('peadm::puppet_runonce', $database_targets )
 
   # The puppetserver might be in the middle of a restart after the Puppet run,
   # so we check the status by calling the api and ensuring the puppetserver is
