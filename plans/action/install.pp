@@ -349,10 +349,6 @@ plan peadm::action::install (
     # Ensure certificate requests have been submitted, then run Puppet
     unless ($target in $database_targets) {
       run_task('peadm::submit_csr', $target)
-      # TODO: come up with an intelligent way to validate that the expected CSRs
-      # have been submitted and are available for signing, prior to signing them.
-      # For now, waiting a short period of time is necessary to avoid a small race.
-      ctrl::sleep(5)
       run_task('peadm::sign_csr', $master_target, { 'certnames' => [$target.name] } )
       run_task('peadm::puppet_runonce', $target)
     }
