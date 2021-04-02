@@ -4,7 +4,7 @@
 # in situations where PuppetDB WILL fail, such as when PostgreSQL is not yet
 # configured, and we don't want to let PuppetDB wait five minutes before
 # giving up on it.
-if [ "$PT_shortcircuit_puppetdb" = "true" ]; then
+if [ "$PT_install_extra_large" = "true" ]; then
 	mkdir /etc/systemd/system/pe-puppetdb.service.d
 	cat > /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf <<-EOF
 		[Service]
@@ -33,7 +33,7 @@ fi
 # The exit code of the installer script will be the exit code of the task
 exit_code=$?
 
-if [ "$PT_shortcircuit_puppetdb" = "true" ]; then
+if [ "$PT_install_extra_large" = "true" ]; then
 	systemctl stop pe-puppetdb.service
 	rm /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf
 	systemctl daemon-reload
@@ -43,5 +43,16 @@ if [ "$PT_puppet_service_ensure" = "stopped" ]; then
 	systemctl stop puppet.service
 fi
 
-# Exit with the installer script's exit code
-exit $exit_code
+# In an extra large install, the installer is known to exit with code 1, even
+# on an otherwise successful install, because PuppetDB cannot start yet. The
+# task should indicate successful completion even if the exit code is 1, as
+# long as some basic "did it install?" health checks pass.
+if [ "$PT_install_extra_large" = "true" ]; then
+	for svc in pe-puppetserver pe-orchestration-services pe-console-services; do
+		systemctl is-active --quiet $svc.service || exit $exit_code
+	done
+	exit 0
+else
+	# Exit with the installer script's exit code
+	exit $exit_code
+fi

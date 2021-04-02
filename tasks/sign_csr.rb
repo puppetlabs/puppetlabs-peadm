@@ -1,33 +1,54 @@
 #!/opt/puppetlabs/puppet/bin/ruby
 # frozen_string_literal: true
 
-#
 require 'json'
 require 'open3'
 require 'puppet'
 
-def csr_signed?(certname)
-  !File.exist?(File.join(Puppet.settings[:csrdir], "#{certname}.pem")) &&
-    File.exist?(File.join(Puppet.settings[:cadir], 'signed', "#{certname}.pem"))
-end
+# Class to run and execute the `puppetserver ca sign` command as a task.
+class SignCSR
+  class SigningError; end
 
-def main
-  Puppet.initialize_settings
-  params = JSON.parse(STDIN.read)
-  unsigned = params['certnames'].reject { |name| csr_signed?(name) }
+  def initialize(params)
+    Puppet.initialize_settings
+    @certnames = params['certnames']
+  end
 
-  exit 0 if unsigned.empty?
+  def execute!
+    attempts = 0
 
-  cmd = ['/opt/puppetlabs/bin/puppetserver', 'ca', 'sign',
-         '--certname', unsigned.join(',')]
+    begin
+      unsigned = @certnames.reject { |name| csr_signed?(name) }
+      exit 0 if unsigned.empty?
+      sign(unsigned)
+    rescue SigningError
+      exit 1 if attempts > 5
+      attempts += 1
+      puts "Signing attempt #{attempts} failed; waiting 1s and trying again"
+      sleep 1
+      retry
+    end
+  end
 
-  stdout, status = Open3.capture2(*cmd)
-  puts stdout
-  if status.success?
-    exit 0
-  else
-    exit 1
+  def csr_signed?(certname)
+    !File.exist?(File.join(Puppet.settings[:csrdir], "#{certname}.pem")) &&
+      File.exist?(File.join(Puppet.settings[:cadir], 'signed', "#{certname}.pem"))
+  end
+
+  def sign(certnames)
+    cmd = ['/opt/puppetlabs/bin/puppetserver', 'ca', 'sign',
+           '--certname', certnames.join(',')]
+
+    stdout, status = Open3.capture2(*cmd)
+    puts stdout
+    raise SigningError unless status.success?
   end
 end
 
-main
+# Run the task unless an environment flag has been set, signaling not to. The
+# environment flag is used to disable auto-execution and enable Ruby unit
+# testing of this task.
+unless ENV['RSPEC_UNIT_TEST_MODE']
+  task = SignCSR.new(JSON.parse(STDIN.read))
+  task.execute!
+end

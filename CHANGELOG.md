@@ -1,5 +1,15 @@
 # PEADM module
 
+## Unreleased
+### Summary
+
+Unreleased
+
+### Changes
+
+- Improve error handling during early installation of PE
+- Implement concurrency in peadm::action::install to increase speed of installation process
+
 ## 2.5.0
 ### Summary
 

@@ -9,9 +9,9 @@
       "type": "Optional[String]",
       "description": "The path to the pe.conf file"
     },
-    "shortcircuit_puppetdb": {
+    "install_extra_large": {
       "type": "Optional[Boolean]",
-      "description": "If true, during install, configure PuppetDB to short-circuit its startup"
+      "description": "If true, optimize task for known manual issues with extra-large installs. Do not use for upgrades"
     },
     "puppet_service_ensure": {
       "type": "Optional[Enum['stopped']]",

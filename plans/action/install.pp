@@ -32,7 +32,7 @@ plan peadm::action::install (
 
   # Common Configuration
   String               $console_password,
-  String               $version       = '2019.7.0',
+  String               $version       = '2019.8.5',
   Array[String]        $dns_alt_names = [ ],
   Hash                 $pe_conf_data  = { },
 
@@ -235,21 +235,15 @@ plan peadm::action::install (
     }
   }
 
-  # Get the master installation up and running. The installer will
-  # "fail" because PuppetDB can't start, if puppetdb_database_target
-  # is set. That's expected.
-  $shortcircuit_puppetdb = !($puppetdb_database_target.empty)
-  without_default_logging() || {
-    out::message("Starting: task peadm::pe_install on ${master_target[0].name}")
-    run_task('peadm::pe_install', $master_target,
-      _catch_errors         => $shortcircuit_puppetdb,
-      tarball               => $upload_tarball_path,
-      peconf                => '/tmp/pe.conf',
-      puppet_service_ensure => 'stopped',
-      shortcircuit_puppetdb => $shortcircuit_puppetdb,
-    )
-    out::message("Finished: task peadm::pe_install on ${master_target[0].name}")
-  }
+  # Get the master installation up and running. The installer will "fail"
+  # because PuppetDB can't start, if puppetdb_database_target is set. That's
+  # expected, and handled by the task's install_extra_large parameter.
+  run_task('peadm::pe_install', $master_target,
+    tarball               => $upload_tarball_path,
+    peconf                => '/tmp/pe.conf',
+    puppet_service_ensure => 'stopped',
+    install_extra_large   => ($arch['architecture'] == 'extra-large'),
+  )
 
   parallelize($master_targets) |$target| {
     if $r10k_private_key {
@@ -312,14 +306,19 @@ plan peadm::action::install (
     action => 'file-sync commit',
   )
 
-  parallelize($agent_installer_targets) |$target| {
+  parallelize($agent_installer_targets + $database_targets) |$target| {
     $common_install_flags = [
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
       "main:certname=${target.peadm::target_name()}",
     ]
 
-    if ($target in $compiler_a_targets) {
+    # Database targets don't need agent installed, they just need to run Puppet
+    if ($target in $database_targets) {
+      run_task('peadm::puppet_runonce', $target)
+    }
+    # Everything else needs an agent installed and cert signed
+    elsif ($target in $compiler_a_targets) {
       run_task('peadm::agent_install', $target,
         server        => $master_target.peadm::target_name(),
         install_flags => $common_install_flags + [
@@ -347,17 +346,13 @@ plan peadm::action::install (
       )
     }
 
-    # Ensure certificate requests have been submitted
-    run_task('peadm::submit_csr', $target)
-    # TODO: come up with an intelligent way to validate that the expected CSRs
-    # have been submitted and are available for signing, prior to signing them.
-    # For now, waiting a short period of time is necessary to avoid a small race.
-    ctrl::sleep(5)
-    run_task('peadm::sign_csr', $master_target, { 'certnames' => [$target.name] } )
-    run_task('peadm::puppet_runonce', $target)
+    # Ensure certificate requests have been submitted, then run Puppet
+    unless ($target in $database_targets) {
+      run_task('peadm::submit_csr', $target)
+      run_task('peadm::sign_csr', $master_target, { 'certnames' => [$target.name] } )
+      run_task('peadm::puppet_runonce', $target)
+    }
   }
-
-  run_task('peadm::puppet_runonce', $database_targets )
 
   # The puppetserver might be in the middle of a restart after the Puppet run,
   # so we check the status by calling the api and ensuring the puppetserver is

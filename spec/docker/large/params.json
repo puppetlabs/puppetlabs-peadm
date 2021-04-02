@@ -3,5 +3,5 @@
   "compiler_hosts": ["pe-lg-compiler-0.puppet.vm"],
   "console_password": "puppetlabs",
   "dns_alt_names": [ "puppet", "pe-lg.puppet.vm" ],
-  "version": "2019.8.0"
+  "version": "2019.8.5"
 }
