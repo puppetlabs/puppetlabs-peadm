@@ -32,7 +32,7 @@ plan peadm::action::install (
 
   # Common Configuration
   String               $console_password,
-  String               $version       = '2019.7.0',
+  String               $version       = '2019.8.5',
   Array[String]        $dns_alt_names = [ ],
   Hash                 $pe_conf_data  = { },
 
