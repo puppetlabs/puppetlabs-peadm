@@ -67,6 +67,7 @@ Follow the links below to usage instructions for each peadm plan.
 
 Additional documentation and information pertaining to various aspects or elements of peadm.
 
+* [DR Component Recovery](documentation/recovery.md)
 * [PE Architecture Documentation](https://puppet.com/docs/pe/latest/choosing_an_architecture.html)
 * [Classification](documentation/classification.md)
 * [Architectures](documentation/architectures.md)
