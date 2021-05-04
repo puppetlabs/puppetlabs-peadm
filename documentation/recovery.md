@@ -164,21 +164,48 @@ After you finish the procedure and pg\_basebackup, restart puppetdb.service and 
 
 ## Add or replace compiler
 
-1. On the new compiler, install the puppet agent making sure to specify an availability group letter, A or B, as an extension request.
+This procedure uses the following placeholder references.
 
-        curl -k https://<primary-server-fqdn>:8140/packages/current/install.bash \
-          | sudo bash -s -- extension_requests:1.3.6.1.4.1.34380.1.1.9813=<avail-group-letter>
+* _\<avail-group-letter\>_ - Either A or B; whichever of the two letter designations the compiler is being assigned to
+* _\<new-compiler-fqdn\>_ - The FQDN and certname of the new compiler
+* _\<dns-alt-names\>_ - A comma-separated list of DNS alt names for the compiler
+* _\<primary-server-fqdn\>_ - The FQDN and certname of the primary Puppet server
+* _\<postgresql-server-fqdn\>_ - The FQDN and certname of the PE-PostgreSQL server with availability group _\<avail-group-letter\>_
 
-        puppet ssl submit_request
+1. On _\<postgresql-server-fqdn\>_:
+    1. Stop puppet.service
+    2. Add the following two lines to /opt/puppetlabs/server/data/postgresql/11/data/pg\_ident.conf
 
-2. On the primary server, if necessary, sign the certificate request.
+            pe-puppetdb-pe-puppetdb-map <new-compiler-fqdn> pe-puppetdb
+            pe-puppetdb-pe-puppetdb-migrator-map <new-compiler-fqdn> pe-puppetdb-migrator
+
+    3. Reload pe-postgresql.service
+
+2. On _\<new-compiler-fqdn\>_:
+    1. Install the puppet agent making sure to specify an availability group letter, A or B, as an extension request.
+
+            curl -k https://<primary-server-fqdn>:8140/packages/current/install.bash \
+              | sudo bash -s -- \
+                  extension_requests:pp_auth_role=pe_compiler \
+                  extension_requests:1.3.6.1.4.1.34380.1.1.9813=<avail-group-letter> \
+                  main:dns_alt_names=<dns-alt-names> \
+                  main:certname=<new-compiler-fqdn>
+
+    2. If necessary, manually submit a CSR
+
+            puppet ssl submit_request
+
+3. On _\<primary-server-fqdn\>_, if necessary, sign the certificate request.
 
         puppetserver ca sign --certname <new-compiler-certname>
 
-3. On the new compiler, run the puppet agent
+4. On _\<new-compiler-fqdn\>_, run the puppet agent
 
         puppet agent -t
 
-4. On the primary server, run the provision compiler command
+5. On _\<postgresql-server-fqdn\>_:
+    1. Run the puppet agent
 
-        puppet infrastructure provision compiler <new-compiler-certname> --dns-alt-names <comma-separated-list>
+            puppet agent -t
+
+    2. Start puppet.service
