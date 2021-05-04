@@ -102,11 +102,11 @@ On _\<working-postgres-server-fqdn\>_:
 
         systemctl stop puppet
 
-2. Add this line to /opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf
+2. Add this line to /opt/puppetlabs/server/data/postgresql/11/data/pg\_ident.conf
 
         replication-pe-ha-replication-map <replacement-postgres-server-fqdn> pe-ha-replication
 
-3. Add these lines to /opt/puppetlabs/server/data/postgresql/11/data/pg_hba.conf
+3. Add these lines to /opt/puppetlabs/server/data/postgresql/11/data/pg\_hba.conf
 
         # REPLICATION RESTORE PERMISSIONS
         hostssl replication    pe-ha-replication 0.0.0.0/0  cert  map=replication-pe-ha-replication-map  clientcert=1
@@ -136,7 +136,7 @@ runuser -u pe-postgres -- \
         sslcert=/opt/puppetlabs/server/data/pg_certs/_local.cert.pem
         sslkey=/opt/puppetlabs/server/data/pg_certs/_local.private_key.pem
         sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem"
-        
+
 rm -rf /opt/puppetlabs/server/data/pg_certs
 
 systemctl start puppet.service pe-postgresql.service
@@ -162,3 +162,23 @@ After you finish the procedure and pg\_basebackup, restart puppetdb.service and 
 1. [Replace failed PE-PostgreSQL server (A or B side)](#replace-failed-pe-postgresql-server-a-or-b-side)
 2. [Replace missing or failed replica Puppet server](#replace-missing-or-failed-replica-puppet-server)
 
+## Add or replace compiler
+
+1. On the new compiler, install the puppet agent making sure to specify an availability group letter, A or B, as an extension request.
+
+        curl -k https://<primary-server-fqdn>:8140/packages/current/install.bash \
+          | sudo bash -s -- extension_requests:1.3.6.1.4.1.34380.1.1.9813=<avail-group-letter>
+
+        puppet ssl submit_request
+
+2. On the primary server, if necessary, sign the certificate request.
+
+        puppetserver ca sign --certname <new-compiler-certname>
+
+3. On the new compiler, run the puppet agent
+
+        puppet agent -t
+
+4. On the primary server, run the provision compiler command
+
+        puppet infrastructure provision compiler <new-compiler-certname> --dns-alt-names <comma-separated-list>
