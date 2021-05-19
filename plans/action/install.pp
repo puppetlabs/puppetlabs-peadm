@@ -52,7 +52,7 @@ plan peadm::action::install (
   peadm::validate_version($version)
 
   # Convert inputs into targets.
-  $master_target                    = peadm::get_targets($primary_host, 1)
+  $primary_target                   = peadm::get_targets($primary_host, 1)
   $master_replica_target            = peadm::get_targets($primary_replica_host, 1)
   $puppetdb_database_target         = peadm::get_targets($puppetdb_database_host, 1)
   $puppetdb_database_replica_target = peadm::get_targets($puppetdb_database_replica_host, 1)
@@ -68,15 +68,15 @@ plan peadm::action::install (
   )
 
   $all_targets = peadm::flatten_compact([
-    $master_target,
+    $primary_target,
     $puppetdb_database_target,
     $master_replica_target,
     $puppetdb_database_replica_target,
     $compiler_targets,
   ])
 
-  $master_targets = peadm::flatten_compact([
-    $master_target,
+  $primary_targets = peadm::flatten_compact([
+    $primary_target,
     $master_replica_target,
   ])
 
@@ -86,7 +86,7 @@ plan peadm::action::install (
   ])
 
   $pe_installer_targets = peadm::flatten_compact([
-    $master_target,
+    $primary_target,
     $puppetdb_database_target,
     $puppetdb_database_replica_target,
   ])
@@ -140,13 +140,13 @@ plan peadm::action::install (
   # puppet and are present in PuppetDB, it is not necessary anymore.
   $puppetdb_database_temp_config = {
     'puppet_enterprise::profile::database::puppetdb_hosts' => (
-      $compiler_targets + $master_target + $master_replica_target
+      $compiler_targets + $primary_target + $master_replica_target
     ).map |$t| { $t.peadm::target_name() },
   }
 
   $master_pe_conf = peadm::generate_pe_conf({
     'console_admin_password'                                          => $console_password,
-    'puppet_enterprise::puppet_master_host'                           => $master_target.peadm::target_name(),
+    'puppet_enterprise::puppet_master_host'                           => $primary_target.peadm::target_name(),
     'pe_install::puppet_master_dnsaltnames'                           => $dns_alt_names,
     'puppet_enterprise::puppetdb_database_host'                       => $puppetdb_database_target.peadm::target_name(),
     'puppet_enterprise::profile::master::code_manager_auto_configure' => true,
@@ -159,13 +159,13 @@ plan peadm::action::install (
 
   $puppetdb_database_pe_conf = peadm::generate_pe_conf({
     'console_admin_password'                => 'not used',
-    'puppet_enterprise::puppet_master_host' => $master_target.peadm::target_name(),
+    'puppet_enterprise::puppet_master_host' => $primary_target.peadm::target_name(),
     'puppet_enterprise::database_host'      => $puppetdb_database_target.peadm::target_name(),
   } + $puppetdb_database_temp_config + $pe_conf_data)
 
   $puppetdb_database_replica_pe_conf = peadm::generate_pe_conf({
     'console_admin_password'                => 'not used',
-    'puppet_enterprise::puppet_master_host' => $master_target.peadm::target_name(),
+    'puppet_enterprise::puppet_master_host' => $primary_target.peadm::target_name(),
     'puppet_enterprise::database_host'      => $puppetdb_database_replica_target.peadm::target_name(),
   } + $puppetdb_database_temp_config + $pe_conf_data)
 
@@ -209,7 +209,7 @@ plan peadm::action::install (
   # if a csr_attributes.yaml file is already present, the values we need are
   # merged with the existing values.
   parallelize($pe_installer_targets) |$target| {
-    if ($target in $master_target) {
+    if ($target in $primary_target) {
       run_plan('peadm::util::insert_csr_extension_requests', $target,
         extension_requests => {
           peadm::oid('peadm_role')               => 'puppet/master',
@@ -238,14 +238,14 @@ plan peadm::action::install (
   # Get the master installation up and running. The installer will "fail"
   # because PuppetDB can't start, if puppetdb_database_target is set. That's
   # expected, and handled by the task's install_extra_large parameter.
-  run_task('peadm::pe_install', $master_target,
+  run_task('peadm::pe_install', $primary_target,
     tarball               => $upload_tarball_path,
     peconf                => '/tmp/pe.conf',
     puppet_service_ensure => 'stopped',
     install_extra_large   => ($arch['architecture'] == 'extra-large'),
   )
 
-  parallelize($master_targets) |$target| {
+  parallelize($primary_targets) |$target| {
     if $r10k_private_key {
       run_task('peadm::mkdir_p_file', $target,
         path    => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
@@ -265,7 +265,7 @@ plan peadm::action::install (
 
   # Configure autosigning for the puppetdb database hosts 'cause they need it
   $autosign_conf = $database_targets.reduce('') |$memo,$target| { "${target.name}\n${memo}" }
-  run_task('peadm::mkdir_p_file', $master_target,
+  run_task('peadm::mkdir_p_file', $primary_target,
     path    => '/etc/puppetlabs/puppet/autosign.conf',
     owner   => 'pe-puppet',
     group   => 'pe-puppet',
@@ -282,9 +282,9 @@ plan peadm::action::install (
 
   # Now that the main PuppetDB database node is ready, finish priming the
   # master. Explicitly stop puppetdb first to avoid any systemd interference.
-  run_command('systemctl stop pe-puppetdb', $master_target)
-  run_command('systemctl start pe-puppetdb', $master_target)
-  run_task('peadm::rbac_token', $master_target,
+  run_command('systemctl stop pe-puppetdb', $primary_target)
+  run_command('systemctl start pe-puppetdb', $primary_target)
+  run_task('peadm::rbac_token', $primary_target,
     password => $console_password,
   )
 
@@ -293,7 +293,7 @@ plan peadm::action::install (
   # replication. A production environment must exist when committed to avoid
   # corrupting the PE console. Create the site.pp file specifically to avoid
   # breaking the `puppet infra configure` command.
-  run_task('peadm::mkdir_p_file', $master_target,
+  run_task('peadm::mkdir_p_file', $primary_target,
     path    => '/etc/puppetlabs/code-staging/environments/production/manifests/site.pp',
     chown_r => '/etc/puppetlabs/code-staging/environments',
     owner   => 'pe-puppet',
@@ -302,7 +302,7 @@ plan peadm::action::install (
     content => "# Empty manifest\n",
   )
 
-  run_task('peadm::code_manager', $master_target,
+  run_task('peadm::code_manager', $primary_target,
     action => 'file-sync commit',
   )
 
@@ -320,7 +320,7 @@ plan peadm::action::install (
     # Everything else needs an agent installed and cert signed
     elsif ($target in $compiler_a_targets) {
       run_task('peadm::agent_install', $target,
-        server        => $master_target.peadm::target_name(),
+        server        => $primary_target.peadm::target_name(),
         install_flags => $common_install_flags + [
           "extension_requests:${peadm::oid('pp_auth_role')}=pe_compiler",
           "extension_requests:${peadm::oid('peadm_availability_group')}=A",
@@ -329,7 +329,7 @@ plan peadm::action::install (
     }
     elsif ($target in $compiler_b_targets) {
       run_task('peadm::agent_install', $target,
-        server        => $master_target.peadm::target_name(),
+        server        => $primary_target.peadm::target_name(),
         install_flags => $common_install_flags + [
           "extension_requests:${peadm::oid('pp_auth_role')}=pe_compiler",
           "extension_requests:${peadm::oid('peadm_availability_group')}=B",
@@ -338,7 +338,7 @@ plan peadm::action::install (
     }
     elsif ($target in $master_replica_target) {
       run_task('peadm::agent_install', $target,
-        server        => $master_target.peadm::target_name(),
+        server        => $primary_target.peadm::target_name(),
         install_flags => $common_install_flags + [
           "extension_requests:${peadm::oid('peadm_role')}=puppet/master",
           "extension_requests:${peadm::oid('peadm_availability_group')}=B",
@@ -349,7 +349,7 @@ plan peadm::action::install (
     # Ensure certificate requests have been submitted, then run Puppet
     unless ($target in $database_targets) {
       run_task('peadm::submit_csr', $target)
-      run_task('peadm::sign_csr', $master_target, { 'certnames' => [$target.name] } )
+      run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$target.name] } )
       run_task('peadm::puppet_runonce', $target)
     }
   }
@@ -358,9 +358,9 @@ plan peadm::action::install (
   # so we check the status by calling the api and ensuring the puppetserver is
   # taking requests before proceeding. It takes two runs to fully finish
   # configuration.
-  run_task('peadm::puppet_runonce', $master_target)
-  peadm::wait_until_service_ready('pe-master', $master_target)
-  run_task('peadm::puppet_runonce', $master_target)
+  run_task('peadm::puppet_runonce', $primary_target)
+  peadm::wait_until_service_ready('pe-master', $primary_target)
+  run_task('peadm::puppet_runonce', $primary_target)
 
   # Cleanup temp bootstrapping config
   parallelize(['master', 'puppetdb_database', 'puppetdb_database_replica']) |$var| {
