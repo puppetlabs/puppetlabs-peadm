@@ -4,7 +4,7 @@ Puppet Enterprise deployments provisioned using the peadm module can be upgradin
 
 ## Usage
 
-The `peadm::upgrade` plan requires as input the version of PE to upgrade to, and the names of each PE infrastructure host. Master, replica, compilers, etc.
+The `peadm::upgrade` plan requires as input the version of PE to upgrade to, and the names of each PE infrastructure host. Primary, replica, compilers, etc.
 
 The following is an example parameters file for upgrading an Extra Large architecture deployment of PE 2019.0.1 to PE 2019.2.2.
 
@@ -46,7 +46,7 @@ The peadm::provision plan can be configured to download installation content dir
 
 ## Usage over the Orchestrator transport
 
-The peadm::upgrade plan can be used with the Orchestrator (pcp) transport, provided that the Bolt executor is running as root on the master. To use the Orchestrator transport prepare an inventory file such as the following to set the default transport to be `pcp`, but the master specifically to be `local`.
+The peadm::upgrade plan can be used with the Orchestrator (pcp) transport, provided that the Bolt executor is running as root on the primary. To use the Orchestrator transport prepare an inventory file such as the following to set the default transport to be `pcp`, but the replica specifically to be `local`.
 
 ```
 ---
@@ -75,7 +75,7 @@ groups:
 
 Additionally, you MUST pre-stage a copy of the PE installation media in /tmp on the PuppetDB PostgreSQL node(s), if present. The Orchestrator transport cannot be used to send large files to remote systems, and the plan will fail if tries.
 
-Pre-staging the installation media and using an inventory definition such as the example above, the peadm::upgrade plan can be run as normal. It will not rely on the Orchestrator service to operate on the master, and it will use the Orchestrator transport to operate on other PE nodes.
+Pre-staging the installation media and using an inventory definition such as the example above, the peadm::upgrade plan can be run as normal. It will not rely on the Orchestrator service to operate on the primary, and it will use the Orchestrator transport to operate on other PE nodes.
 
 ```
 bolt plan run peadm::upgrade --params @params.json 
@@ -91,7 +91,7 @@ The `begin_at_step` parameter can be used to facilitate re-running this plan aft
 
 In the event a manual upgrade is required, the steps may be followed along by reading directly from [the upgrade plan](../plans/upgrade.pp), which is itself the most accurate technical description of the steps required. In general form, the upgrade process is as given below.
 
-Note: it is assumed that the Puppet master is in cluster A when the upgrade starts, and that the replica is in cluster B. If the master is in cluster B, the A/B designations in the instruction should be inverted.
+Note: it is assumed that the Puppet primary is in cluster A when the upgrade starts, and that the replica is in cluster B. If the primary is in cluster B, the A/B designations in the instruction should be inverted.
 
 **Phase 1: stop puppet service**
 
@@ -100,19 +100,19 @@ Note: it is assumed that the Puppet master is in cluster A when the upgrade star
 **Phase 2: upgrade HA cluster A**
 
 1. Shut down the `pe-puppetdb` service on the compilers in cluster A
-2. If different from the master, run the `install-puppet-enterprise` script for the new PE version on the PuppetDB PostgreSQL node for cluster A
-3. Run the `install-puppet-enterprise` script for the new PE version on the master
-4. Run `puppet agent -t` on the master
-5. If different from the master, Run `puppet agent -t` on the PuppetDB PostgreSQL node for cluster A
+2. If different from the primary, run the `install-puppet-enterprise` script for the new PE version on the PuppetDB PostgreSQL node for cluster A
+3. Run the `install-puppet-enterprise` script for the new PE version on the primary
+4. Run `puppet agent -t` on the primary
+5. If different from the primary, Run `puppet agent -t` on the PuppetDB PostgreSQL node for cluster A
 6. Perform the compiler upgrade using `puppet infra upgrade compiler` for the compilers in cluster A
 
 **Phase 3: upgrade HA cluster B**
 
 1. Shut down the `pe-puppetdb` service on the compilers in cluster B
-2. If different from the master (replica), run the `install-puppet-enterprise` script for the new PE version on the PuppetDB PostgreSQL node for cluster B
-3. If different from the master (replica), Run `puppet agent -t` on the PuppetDB PostgreSQL node for cluster B
-5. Run `puppet agent -t` on the master to ensure orchestration services are configured and restarted before the next steps
-6. Perform the replica upgrade using `puppet infra upgrade replica` for the master (replica)
+2. If different from the primary (replica), run the `install-puppet-enterprise` script for the new PE version on the PuppetDB PostgreSQL node for cluster B
+3. If different from the primary (replica), Run `puppet agent -t` on the PuppetDB PostgreSQL node for cluster B
+5. Run `puppet agent -t` on the primary to ensure orchestration services are configured and restarted before the next steps
+6. Perform the replica upgrade using `puppet infra upgrade replica` for the primary (replica)
 7. Perform the compiler upgrade using `puppet infra upgrade compiler` for the compilers in cluster B
 
 **If Upgrading from 2019.5**

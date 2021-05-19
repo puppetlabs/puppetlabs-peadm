@@ -32,9 +32,9 @@ function peadm::validate_architecture (
     default: {                     # Invalid
       out::message(inline_epp(@(HEREDOC)))
         Invalid architecture! Recieved:
-          - master
+          - primary
         <% if $primary_replica_host { -%>
-          - master-replica
+          - primary-replica
         <% } -%>
         <% if $puppetdb_database_host { -%>
           - pdb-database
@@ -48,24 +48,24 @@ function peadm::validate_architecture (
 
         Supported architectures include:
           Standard
-            - master
+            - primary
           Standard with HA
-            - master
-            - master-replica
+            - primary
+            - primary-replica
           Large
-            - master
+            - primary
             - compilers
           Large with HA
-            - master
-            - master-replica
+            - primary
+            - primary-replica
             - compilers
           Extra Large
-            - master
+            - primary
             - pdb-database
             - compilers (optional)
           Extra Large with HA
-            - master
-            - master-replica
+            - primary
+            - primary-replica
             - pdb-database
             - pdb-database-replica
             - compilers (optional)

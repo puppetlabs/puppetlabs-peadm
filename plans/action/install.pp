@@ -6,13 +6,13 @@
 #
 # @param r10k_private_key_file
 #   The private key to use for r10k. If this is a local file it will be copied
-#   over to the masters at /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa
-#   If the file does not exist the value will simply be supplied to the masters
+#   over to the primary at /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa
+#   If the file does not exist the value will simply be supplied to the primary
 #
 # @param license_key_file
 #   The license key to use with Puppet Enterprise.  If this is a local file it
 #   will be copied over to the MoM at /etc/puppetlabs/license.key
-#   If the file does not exist the value will simply be supplied to the masters
+#   If the file does not exist the value will simply be supplied to the primaries
 #
 # @param pe_conf_data
 #   Config data to plane into pe.conf when generated on all hosts, this can be

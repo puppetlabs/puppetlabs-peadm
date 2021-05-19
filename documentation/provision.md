@@ -6,27 +6,27 @@ The peadm provisioning plan creates base reference implementation. Once a base s
 
 ## Reference Architectures
 
-When provisioning a new PE stack using peadm, there are several different host parameters which can be specified. At a minimum, you must always specify the master parameter. Depending on which architecture you are deploying, other host parameters may be needed as well. The following is a list of the architectures peadm can provision and the required parameters.
+When provisioning a new PE stack using peadm, there are several different host parameters which can be specified. At a minimum, you must always specify the primary parameter. Depending on which architecture you are deploying, other host parameters may be needed as well. The following is a list of the architectures peadm can provision and the required parameters.
 
 * Standard
-    - master
+    - primary
 * Standard with HA
-    - master
-    - master-replica
+    - primary
+    - primary-replica
 * Large
-    - master
+    - primary
     - compilers
 * Large with HA
-    - master
-    - master-replica
+    - primary
+    - primary-replica
     - compilers
 * Extra Large
-    - master
+    - primary
     - pdb-database
     - compilers (optional)
 * Extra Large with HA
-    - master
-    - master-replica
+    - primary
+    - primary-replica
     - pdb-database
     - pdb-database-replica
     - compilers (optional)
@@ -38,7 +38,7 @@ Supplying a combination of host parameters which does not match one of the suppo
 ### Bolt 3 usage
 We will name the bolt project `large_ha_peadm` in this example but the project name can be anything.  
 
-1. Install Bolt on a jumphost. This can be the master, or any other system. (via package)
+1. Install Bolt on a jumphost. This can be the primary, or any other system. (via package)
 2. Run `mkdir large_ha_peadm && cd large_ha_peadm && bolt project init large_ha_peadm --modules puppetlabs-peadm`        
 4. Create an inventory file with connection information. Example included below.
 5. Create a parameters file. Example included below.
@@ -47,7 +47,7 @@ We will name the bolt project `large_ha_peadm` in this example but the project n
           
 ### Bolt 2 usage
 
-1. Install Bolt on a jumphost. This can be the master, or any other system.
+1. Install Bolt on a jumphost. This can be the primary, or any other system.
 2. Download or git clone the peadm module and put it somewhere on the jumphost. e.g. ~/modules/peadm.
 3. Download or git clone the module dependencies, and put them somewhere on the jumphost. e.g. ~/modules/stdlib, ~/modules/node\_manager, etc.
 4. Create an inventory file with connection information. Example included below.
@@ -165,5 +165,5 @@ Besides getting Puppet Enterprise installed, the key configuration supporting La
 * [classification.md](classification.md)
 * [peadm::setup::node\_manager class](../manifests/setup/node_manager.pp)
 
-The reference implementation uses trusted facts to put nodes in the right groups. Because the important puppet\_enterprise::\* class parameters and data are specified in the console, it should also be safe to have a pe.conf present on both the master, and the master replica nodes.
+The reference implementation uses trusted facts to put nodes in the right groups. Because the important puppet\_enterprise::\* class parameters and data are specified in the console, it should also be safe to have a pe.conf present on both the primary, and the primary replica nodes.
 

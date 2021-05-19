@@ -29,7 +29,7 @@ Notes for PE Primary A:
 * Sets as data two parameters
     * `puppet_enterprise::profile::master_replica::database_host_puppetdb`
     * `puppet_enterprise::profile::puppetdb::database_host`
-* Sets both parameters to the name of the PuppetDB PostgreSQL node paired with this master
+* Sets both parameters to the name of the PuppetDB PostgreSQL node paired with this primary
 * Uses a different PuppetDB PostgreSQL node than PE Primary B
 
 ### PE Primary B
@@ -52,10 +52,10 @@ Notes for PE Compiler Group A:
 * Half of the compilers are members of this group
 * Applies the `puppet_enterprise::profile::puppetdb` class
 * Sets the `puppet_enterprise::profile::puppetdb::database_host` parameter
-    * Should be set to `"pdb-pg-a"`, where "pdb-pg-a" is the name of the PuppetDB PostgreSQL database host paired with the (initial) Master
+    * Should be set to `"pdb-pg-a"`, where "pdb-pg-a" is the name of the PuppetDB PostgreSQL database host paired with the (initial) Primary
 * Modifies the `puppet_enterprise::profile::master::puppetdb_host` parameter
-    * Should be set to `[${clientcert}, "master-b"]`, where "master-b" is the name of the (initial) Primary Replica.
-    * If you have a load balancer for the compilers in PE Compiler Group B port 8081, you should use that load balancer address instead of "master-b"
+    * Should be set to `[${clientcert}, "primary-b"]`, where "primary-b" is the name of the (initial) Primary Replica.
+    * If you have a load balancer for the compilers in PE Compiler Group B port 8081, you should use that load balancer address instead of "primary-b"
 * Modifies the `puppet_enterprise::profile::master::puppetdb_port` parameter
     * Should be set to `[8081]`
 
@@ -69,7 +69,7 @@ Notes for PE Compiler Group B:
 * Sets the `puppet_enterprise::profile::puppetdb::database_host` parameter
     * Should be set to `"pdb-pg-b"`, where "pdb-pg-b" is the name of the PuppetDB PostgreSQL database host paired with the (initial) Primary Replica
 * Modifies the `puppet_enterprise::profile::master::puppetdb_host` parameter
-    * Should be set to `[${clientcert}, "master-a"]`, where "master-a" is the name of the PuppetDB PostgreSQL node paired with the (initial) Primary Replica.
-    * If you have a load balancer for the compilers in PE Compiler Group A port 8081, you should use that load balancer address instead of "master-a"
+    * Should be set to `[${clientcert}, "primary-a"]`, where "primary-a" is the name of the PuppetDB PostgreSQL node paired with the (initial) Primary Replica.
+    * If you have a load balancer for the compilers in PE Compiler Group A port 8081, you should use that load balancer address instead of "primary-a"
 * Modifies the `puppet_enterprise::profile::master::puppetdb_port` parameter
     * Should be set to `[8081]`
