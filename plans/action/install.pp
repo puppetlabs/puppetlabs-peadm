@@ -144,7 +144,7 @@ plan peadm::action::install (
     ).map |$t| { $t.peadm::target_name() },
   }
 
-  $master_pe_conf = peadm::generate_pe_conf({
+  $primary_pe_conf = peadm::generate_pe_conf({
     'console_admin_password'                                          => $console_password,
     'puppet_enterprise::puppet_master_host'                           => $primary_target.peadm::target_name(),
     'pe_install::puppet_master_dnsaltnames'                           => $dns_alt_names,
