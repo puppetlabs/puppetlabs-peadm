@@ -18,7 +18,7 @@ plan peadm::util::add_cert_extensions (
 
   # The master is treated differently than a standard node, so we need to be
   # able to identify it if it's in the target list
-  $master_certname = run_task('peadm::trusted_facts', $primary_target)[0]['certname']
+  $primary_certname = run_task('peadm::trusted_facts', $primary_target)[0]['certname']
 
   # Get trusted fact information for all targets
   $certdata = run_task('peadm::trusted_facts', $all_targets).reduce({}) |$memo,$result| {
@@ -70,7 +70,7 @@ plan peadm::util::add_cert_extensions (
 
     # Then things get crazy...
 
-    if ($certname != $master_certname) {
+    if ($certname != $primary_certname) {
       # AGENT cert regeneration
       run_task('peadm::ssl_clean', $target, certname => $certname)
       run_task('peadm::submit_csr', $target)
