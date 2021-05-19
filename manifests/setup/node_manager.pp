@@ -1,8 +1,8 @@
-# This profile is not intended to be continously enforced on PE masters.
+# This profile is not intended to be continously enforced on PE primaries.
 # Rather, it describes state to enforce as a boostrap action, preparing the
 # Puppet Enterprise console with a sane default environment configuration.
 #
-# This class will be applied during master bootstrap using e.g.
+# This class will be applied during primary bootstrap using e.g.
 #
 #     puppet apply \
 #       --exec 'class { "peadm::setup::node_manager":
@@ -72,7 +72,7 @@ class peadm::setup::node_manager (
     default => { 'pe_repo' => { 'compile_master_pool_address' => $compiler_pool_address } },
   }
 
-  node_group { 'PE Master':
+  node_group { 'PE Primary':
     parent    => 'PE Infrastructure',
     data      => $compiler_pool_address_data,
     variables => { 'pe_master' => true },
@@ -92,8 +92,8 @@ class peadm::setup::node_manager (
   }
 
   # Create data-only groups to store PuppetDB PostgreSQL database configuration
-  # information specific to the master and master replica nodes.
-  node_group { 'PE Master A':
+  # information specific to the primary and primary replica nodes.
+  node_group { 'PE Primary A':
     ensure => present,
     parent => 'PE Infrastructure',
     rule   => ['and',
@@ -136,7 +136,7 @@ class peadm::setup::node_manager (
     },
   }
 
-  # Create the replica and B groups if a replica master and database host are
+  # Create the replica and B groups if a replica primary and database host are
   # supplied
   if $primary_replica_host {
     # We need to ensure this group provides the peadm_replica variable.
@@ -149,7 +149,7 @@ class peadm::setup::node_manager (
       variables => { 'peadm_replica' => true },
     }
 
-    node_group { 'PE Master B':
+    node_group { 'PE Primary ter B':
       ensure => present,
       parent => 'PE Infrastructure',
       rule   => ['and',

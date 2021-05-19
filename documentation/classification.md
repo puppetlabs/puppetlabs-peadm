@@ -12,37 +12,37 @@ This image shows a fully expanded view of the PE Infrastructure node group, high
 
 The new groups are:
 
-* PE Master A
-* PE Master B
+* PE Primary A
+* PE Primary B
 * PE Compiler Group A
 * PE Compiler Group B
 
 The configuration applied in each group looks as follows:
 
-### PE Master A
+### PE Primary A
 
-![PE Master A group](images/pe-master-a.png)
+![PE Primary A group](images/pe-master-a.png)
 
-Notes for PE Master A:
+Notes for PE Primary A:
 
-* The (initial) Master is the only member of this node group
+* The (initial) Primary is the only member of this node group
 * Sets as data two parameters
     * `puppet_enterprise::profile::master_replica::database_host_puppetdb`
     * `puppet_enterprise::profile::puppetdb::database_host`
 * Sets both parameters to the name of the PuppetDB PostgreSQL node paired with this master
-* Uses a different PuppetDB PostgreSQL node than PE Master B
+* Uses a different PuppetDB PostgreSQL node than PE Primary B
 
-### PE Master B
-![PE Master B group](images/pe-master-b.png)
+### PE Primary B
+![PE Primary B group](images/pe-master-b.png)
 
-Notes for PE Master B:
+Notes for PE Primary B:
 
-* The (initial) Master Replica is the only member of this node group
+* The (initial) Primary Replica is the only member of this node group
 * Sets as data two parameters
     * `puppet_enterprise::profile::master_replica::database_host_puppetdb`
     * `puppet_enterprise::profile::puppetdb::database_host`
 * Sets both parameters to the name of the PuppetDB PostgreSQL node paired with this master
-* Uses a different PuppetDB PostgreSQL node than PE Master A
+* Uses a different PuppetDB PostgreSQL node than PE Primary A
 
 ### PE Compiler Group A
 ![PE Compiler Group A group](images/pe-compiler-group-a.png)
@@ -54,7 +54,7 @@ Notes for PE Compiler Group A:
 * Sets the `puppet_enterprise::profile::puppetdb::database_host` parameter
     * Should be set to `"pdb-pg-a"`, where "pdb-pg-a" is the name of the PuppetDB PostgreSQL database host paired with the (initial) Master
 * Modifies the `puppet_enterprise::profile::master::puppetdb_host` parameter
-    * Should be set to `[${clientcert}, "master-b"]`, where "master-b" is the name of the (initial) Master Replica.
+    * Should be set to `[${clientcert}, "master-b"]`, where "master-b" is the name of the (initial) Primary Replica.
     * If you have a load balancer for the compilers in PE Compiler Group B port 8081, you should use that load balancer address instead of "master-b"
 * Modifies the `puppet_enterprise::profile::master::puppetdb_port` parameter
     * Should be set to `[8081]`
@@ -67,9 +67,9 @@ Notes for PE Compiler Group B:
 * The other half of the compilers (those not in the PE Compiler Group A node group) are members of this group
 * Applies the `puppet_enterprise::profile::puppetdb` class
 * Sets the `puppet_enterprise::profile::puppetdb::database_host` parameter
-    * Should be set to `"pdb-pg-b"`, where "pdb-pg-b" is the name of the PuppetDB PostgreSQL database host paired with the (initial) Master Replica
+    * Should be set to `"pdb-pg-b"`, where "pdb-pg-b" is the name of the PuppetDB PostgreSQL database host paired with the (initial) Primary Replica
 * Modifies the `puppet_enterprise::profile::master::puppetdb_host` parameter
-    * Should be set to `[${clientcert}, "master-a"]`, where "master-a" is the name of the PuppetDB PostgreSQL node paired with the (initial) Master Replica.
+    * Should be set to `[${clientcert}, "master-a"]`, where "master-a" is the name of the PuppetDB PostgreSQL node paired with the (initial) Primary Replica.
     * If you have a load balancer for the compilers in PE Compiler Group A port 8081, you should use that load balancer address instead of "master-a"
 * Modifies the `puppet_enterprise::profile::master::puppetdb_port` parameter
     * Should be set to `[8081]`
