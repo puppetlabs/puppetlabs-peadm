@@ -1,7 +1,7 @@
 plan peadm::convert (
   # Standard
   Peadm::SingleTargetSpec           $primary_host,
-  Optional[Peadm::SingleTargetSpec] $master_replica_host = undef,
+  Optional[Peadm::SingleTargetSpec] $primary_replica_host = undef,
 
   # Large
   Optional[TargetSpec]              $compiler_hosts = undef,
@@ -32,7 +32,7 @@ plan peadm::convert (
 
   # Convert inputs into targets.
   $master_target                    = peadm::get_targets($primary_host, 1)
-  $master_replica_target            = peadm::get_targets($master_replica_host, 1)
+  $master_replica_target            = peadm::get_targets($primary_replica_host, 1)
   $puppetdb_database_replica_target = peadm::get_targets($puppetdb_database_replica_host, 1)
   $compiler_targets                 = peadm::get_targets($compiler_hosts)
   $puppetdb_database_target         = peadm::get_targets($puppetdb_database_host, 1)
@@ -48,7 +48,7 @@ plan peadm::convert (
   # Ensure input valid for a supported architecture
   $arch = peadm::validate_architecture(
     $primary_host,
-    $master_replica_host,
+    $primary_replica_host,
     $puppetdb_database_host,
     $puppetdb_database_replica_host,
     $compiler_hosts,
@@ -209,7 +209,7 @@ plan peadm::convert (
 
         class { 'peadm::setup::node_manager':
           primary_host                     => $master_target.peadm::target_name(),
-          master_replica_host              => $master_replica_target.peadm::target_name(),
+          primary_replica_host             => $master_replica_target.peadm::target_name(),
           puppetdb_database_host           => $puppetdb_database_target.peadm::target_name(),
           puppetdb_database_replica_host   => $puppetdb_database_replica_target.peadm::target_name(),
           compiler_pool_address            => $compiler_pool_address,

@@ -1,13 +1,13 @@
 function peadm::validate_architecture (
   TargetSpec                 $primary_host,
-  Variant[TargetSpec, Undef] $master_replica_host = undef,
+  Variant[TargetSpec, Undef] $primary_replica_host = undef,
   Variant[TargetSpec, Undef] $puppetdb_database_host = undef,
   Variant[TargetSpec, Undef] $puppetdb_database_replica_host = undef,
   Variant[TargetSpec, Undef] $compiler_hosts = undef,
 )  >> Hash {
   $result = case [
     !!($primary_host),
-    !!($master_replica_host),
+    !!($primary_replica_host),
     !!($puppetdb_database_host),
     !!($puppetdb_database_replica_host),
   ] {
@@ -33,7 +33,7 @@ function peadm::validate_architecture (
       out::message(inline_epp(@(HEREDOC)))
         Invalid architecture! Recieved:
           - master
-        <% if $master_replica_host { -%>
+        <% if $primary_replica_host { -%>
           - master-replica
         <% } -%>
         <% if $puppetdb_database_host { -%>

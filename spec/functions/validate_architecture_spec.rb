@@ -12,7 +12,7 @@ describe 'peadm::validate_architecture' do
   let(:primary_host) do
     'puppet-std.puppet.vm'
   end
-  let(:master_replica_host) do
+  let(:primary_replica_host) do
     'pup-replica.puppet.vm'
   end
   let(:puppetdb_database_host) do
@@ -30,14 +30,14 @@ describe 'peadm::validate_architecture' do
                       .and_return('high-availability' => false, 'architecture' => 'standard')
   }
   it {
-    is_expected.to run.with_params(primary_host, master_replica_host)
+    is_expected.to run.with_params(primary_host, primary_replica_host)
                       .and_return('high-availability' => true, 'architecture' => 'standard')
   }
 
   it do
     is_expected.to run.with_params(
       primary_host,
-      master_replica_host,
+      primary_replica_host,
       nil,
       nil,
       compiler_hosts,
@@ -59,7 +59,7 @@ describe 'peadm::validate_architecture' do
   it do
     is_expected.to run.with_params(
       primary_host,
-      master_replica_host,
+      primary_replica_host,
       puppetdb_database_host,
       puppetdb_database_replica_host,
       compiler_hosts,

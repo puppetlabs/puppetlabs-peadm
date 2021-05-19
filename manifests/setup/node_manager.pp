@@ -26,12 +26,12 @@ class peadm::setup::node_manager (
   String[1] $primary_host,
 
   # High Availability
-  Optional[String[1]] $master_replica_host            = undef,
+  Optional[String[1]] $primary_replica_host            = undef,
 
   # Common
   Optional[String[1]] $compiler_pool_address            = undef,
   Optional[String[1]] $internal_compiler_a_pool_address = $primary_host,
-  Optional[String[1]] $internal_compiler_b_pool_address = $master_replica_host,
+  Optional[String[1]] $internal_compiler_b_pool_address = $primary_replica_host,
 
   # For the next two parameters, the default values are appropriate when
   # deploying Standard or Large architectures. These values only need to be
@@ -41,7 +41,7 @@ class peadm::setup::node_manager (
   String[1]           $puppetdb_database_host         = $primary_host,
 
   # Specify when using Extra Large AND High Availability
-  Optional[String[1]] $puppetdb_database_replica_host = $master_replica_host,
+  Optional[String[1]] $puppetdb_database_replica_host = $primary_replica_host,
 ) {
 
   # Preserve existing user data and classes values. We only need to make sure
@@ -138,7 +138,7 @@ class peadm::setup::node_manager (
 
   # Create the replica and B groups if a replica master and database host are
   # supplied
-  if $master_replica_host {
+  if $primary_replica_host {
     # We need to ensure this group provides the peadm_replica variable.
     node_group { 'PE HA Replica':
       ensure    => 'present',
