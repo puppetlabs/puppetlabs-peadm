@@ -88,7 +88,7 @@ plan peadm::upgrade (
     ($name in $compiler_targets.map |$t| { $t.name }) and ($exts['pp_auth_role'] == undef)
   }.keys
 
-  # Determine PE version currently installed on master
+  # Determine PE version currently installed on primary
   $current_pe_version = run_task('peadm::read_file', $primary_target,
     path => '/opt/puppetlabs/server/pe_build',
   ).first['content']
@@ -124,8 +124,8 @@ plan peadm::upgrade (
 
   peadm::plan_step('preparation') || {
     # Support for running over the orchestrator transport relies on Bolt being
-    # executed from the master using the local transport. For now, fail the plan
-    # if the orchestrator is being used for the master.
+    # executed from the primary using the local transport. For now, fail the plan
+    # if the orchestrator is being used for the primary.
     if $download_mode == 'bolthost' {
       # Download the PE tarball on the nodes that need it
       run_plan('peadm::util::retrieve_and_upload', $pe_installer_targets,
@@ -208,7 +208,7 @@ plan peadm::upgrade (
   }
 
   peadm::plan_step('upgrade-node-groups') || {
-    # The master could restart orchestration services again, in which case we
+    # The primary could restart orchestration services again, in which case we
     # would have to wait for nodes to reconnect
     if $all_targets.any |$target| { $target.protocol == 'pcp' } {
       peadm::wait_until_service_ready('orchestrator-service', $primary_target)
@@ -269,7 +269,7 @@ plan peadm::upgrade (
     #
     # Because the steps following involve performing orchestrated actions and
     # `puppet infra upgrade` cannot handle orchestration services restarting,
-    # also run Puppet immediately on the master.
+    # also run Puppet immediately on the primary.
     run_task('peadm::puppet_runonce', peadm::flatten_compact([
       $primary_target,
       $puppetdb_database_replica_target,
@@ -290,7 +290,7 @@ plan peadm::upgrade (
         | COMMAND
     }
 
-    # Upgrade the master replica.
+    # Upgrade the primary replica.
     run_task('peadm::puppet_infra_upgrade', $primary_target,
       type       => 'replica',
       targets    => $primary_replica_target.map |$t| { $t.peadm::target_name() },
