@@ -2,7 +2,7 @@ plan peadm::util::sanitize_pg_pe_conf (
   TargetSpec              $targets,
   Peadm::SingleTargetSpec $primary_host,
 ) {
-  $master_target = get_target($primary_host)
+  $primary_target = get_target($primary_host)
 
   $path = '/etc/puppetlabs/enterprise/conf.d/pe.conf'
   # Ensure the pe.conf file on PostgreSQL nodes has the needed values for
@@ -11,7 +11,7 @@ plan peadm::util::sanitize_pg_pe_conf (
     path => $path,
   ).map |$result| {
     $sanitized = $result['content'].loadjson() + {
-      'puppet_enterprise::puppet_master_host' => $master_target.peadm::target_name(),
+      'puppet_enterprise::puppet_master_host' => $primary_target.peadm::target_name(),
       'puppet_enterprise::database_host'      => $result.target.peadm::target_name(),
     }
     # Return the result of file_content_upload. There is only one target
