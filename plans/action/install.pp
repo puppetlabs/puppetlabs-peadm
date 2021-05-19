@@ -53,7 +53,7 @@ plan peadm::action::install (
 
   # Convert inputs into targets.
   $primary_target                   = peadm::get_targets($primary_host, 1)
-  $master_replica_target            = peadm::get_targets($primary_replica_host, 1)
+  $primary_replica_target           = peadm::get_targets($primary_replica_host, 1)
   $puppetdb_database_target         = peadm::get_targets($puppetdb_database_host, 1)
   $puppetdb_database_replica_target = peadm::get_targets($puppetdb_database_replica_host, 1)
   $compiler_targets                 = peadm::get_targets($compiler_hosts)
@@ -70,14 +70,14 @@ plan peadm::action::install (
   $all_targets = peadm::flatten_compact([
     $primary_target,
     $puppetdb_database_target,
-    $master_replica_target,
+    $primary_replica_target,
     $puppetdb_database_replica_target,
     $compiler_targets,
   ])
 
   $primary_targets = peadm::flatten_compact([
     $primary_target,
-    $master_replica_target,
+    $primary_replica_target,
   ])
 
   $database_targets = peadm::flatten_compact([
@@ -93,7 +93,7 @@ plan peadm::action::install (
 
   $agent_installer_targets = peadm::flatten_compact([
     $compiler_targets,
-    $master_replica_target,
+    $primary_replica_target,
   ])
 
   # Clusters A and B are used to divide PuppetDB availability for compilers
@@ -140,7 +140,7 @@ plan peadm::action::install (
   # puppet and are present in PuppetDB, it is not necessary anymore.
   $puppetdb_database_temp_config = {
     'puppet_enterprise::profile::database::puppetdb_hosts' => (
-      $compiler_targets + $primary_target + $master_replica_target
+      $compiler_targets + $primary_target + $primary_replica_target
     ).map |$t| { $t.peadm::target_name() },
   }
 
@@ -336,7 +336,7 @@ plan peadm::action::install (
         ],
       )
     }
-    elsif ($target in $master_replica_target) {
+    elsif ($target in $primary_replica_target) {
       run_task('peadm::agent_install', $target,
         server        => $primary_target.peadm::target_name(),
         install_flags => $common_install_flags + [

@@ -4,21 +4,21 @@ plan peadm::util::add_cert_extensions (
   Hash       $extensions,
   Array      $remove = [ ],
 ) {
-  $all_targets   = peadm::get_targets($targets)
-  $master_target = peadm::get_targets($primary_host, 1)
+  $all_targets    = peadm::get_targets($targets)
+  $primary_target = peadm::get_targets($primary_host, 1)
 
   # Short-circuit if there are no targets
   if $all_targets.empty { return(0) }
 
   # This plan doesn't work to reissue the master cert over the orchestrator due
   # to pe-puppetserver needing to restart
-  if ($master_target[0] in $all_targets) {
-    $master_target.peadm::fail_on_transport('pcp')
+  if ($primary_target[0] in $all_targets) {
+    $primary_target.peadm::fail_on_transport('pcp')
   }
 
   # The master is treated differently than a standard node, so we need to be
   # able to identify it if it's in the target list
-  $master_certname = run_task('peadm::trusted_facts', $master_target)[0]['certname']
+  $master_certname = run_task('peadm::trusted_facts', $primary_target)[0]['certname']
 
   # Get trusted fact information for all targets
   $certdata = run_task('peadm::trusted_facts', $all_targets).reduce({}) |$memo,$result| {
@@ -66,7 +66,7 @@ plan peadm::util::add_cert_extensions (
       merge              => false,
     )
 
-    run_command("${pserver} ca clean --certname ${certname}", $master_target)
+    run_command("${pserver} ca clean --certname ${certname}", $primary_target)
 
     # Then things get crazy...
 
@@ -75,7 +75,7 @@ plan peadm::util::add_cert_extensions (
       run_task('peadm::ssl_clean', $target, certname => $certname)
       run_task('peadm::submit_csr', $target)
       ctrl::sleep(2) # some lag sometimes before the cert is available to sign
-      run_task('peadm::sign_csr', $master_target, certnames => [$certname])
+      run_task('peadm::sign_csr', $primary_target, certnames => [$certname])
 
       # Use a command instead of a task so that this works for Puppet 5 agents
       # w/ PCP transport. If using a task, we run into problems downloading
