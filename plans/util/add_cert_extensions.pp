@@ -1,11 +1,11 @@
 plan peadm::util::add_cert_extensions (
   TargetSpec $targets,
-  TargetSpec $master_host,
+  TargetSpec $primary_host,
   Hash       $extensions,
   Array      $remove = [ ],
 ) {
   $all_targets   = peadm::get_targets($targets)
-  $master_target = peadm::get_targets($master_host, 1)
+  $master_target = peadm::get_targets($primary_host, 1)
 
   # Short-circuit if there are no targets
   if $all_targets.empty { return(0) }

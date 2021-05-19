@@ -11,7 +11,7 @@ The following is an example parameters file for upgrading an Extra Large archite
 ```json
 {
   "version": "2019.2.2",
-  "master_host": "pe-master-09a40c-0.us-west1-a.c.reidmv-peadm.internal",
+  "primary_host": "pe-master-09a40c-0.us-west1-a.c.reidmv-peadm.internal",
   "puppetdb_database_host": "pe-psql-09a40c-0.us-west1-a.c.reidmv-peadm.internal",
   "master_replica_host": "pe-master-09a40c-1.us-west1-b.c.reidmv-peadm.internal",
   "puppetdb_database_replica_host": "pe-psql-09a40c-1.us-west1-b.c.reidmv-peadm.internal",

@@ -1,6 +1,6 @@
 plan peadm::convert (
   # Standard
-  Peadm::SingleTargetSpec           $master_host,
+  Peadm::SingleTargetSpec           $primary_host,
   Optional[Peadm::SingleTargetSpec] $master_replica_host = undef,
 
   # Large
@@ -11,7 +11,7 @@ plan peadm::convert (
   Optional[Peadm::SingleTargetSpec] $puppetdb_database_replica_host = undef,
 
   # Common Configuration
-  String                            $compiler_pool_address            = $master_host,
+  String                            $compiler_pool_address            = $primary_host,
   Optional[String]                  $internal_compiler_a_pool_address = undef,
   Optional[String]                  $internal_compiler_b_pool_address = undef,
   Array[String]                     $dns_alt_names                    = [ ],
@@ -31,7 +31,7 @@ plan peadm::convert (
   # TODO: read and validate convertable PE version
 
   # Convert inputs into targets.
-  $master_target                    = peadm::get_targets($master_host, 1)
+  $master_target                    = peadm::get_targets($primary_host, 1)
   $master_replica_target            = peadm::get_targets($master_replica_host, 1)
   $puppetdb_database_replica_target = peadm::get_targets($puppetdb_database_replica_host, 1)
   $compiler_targets                 = peadm::get_targets($compiler_hosts)
@@ -47,7 +47,7 @@ plan peadm::convert (
 
   # Ensure input valid for a supported architecture
   $arch = peadm::validate_architecture(
-    $master_host,
+    $primary_host,
     $master_replica_host,
     $puppetdb_database_host,
     $puppetdb_database_replica_host,
@@ -130,7 +130,7 @@ plan peadm::convert (
     }
 
     run_plan('peadm::util::add_cert_extensions', $master_target,
-      master_host => $master_target,
+      primary_host => $master_target,
       extensions  => {
         peadm::oid('peadm_role')               => 'puppet/master',
         peadm::oid('peadm_availability_group') => 'A',
@@ -148,7 +148,7 @@ plan peadm::convert (
     }
 
     run_plan('peadm::util::add_cert_extensions', $master_replica_target,
-      master_host => $master_target,
+      primary_host => $master_target,
       extensions  => {
         peadm::oid('peadm_role')               => 'puppet/master',
         peadm::oid('peadm_availability_group') => 'B',
@@ -158,7 +158,7 @@ plan peadm::convert (
 
   peadm::plan_step('convert-database') || {
     run_plan('peadm::util::add_cert_extensions', $puppetdb_database_target,
-      master_host => $master_target,
+      primary_host => $master_target,
       extensions  => {
         peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
         peadm::oid('peadm_availability_group') => 'A',
@@ -168,7 +168,7 @@ plan peadm::convert (
 
   peadm::plan_step('convert-database-replica') || {
     run_plan('peadm::util::add_cert_extensions', $puppetdb_database_replica_target,
-      master_host => $master_target,
+      primary_host => $master_target,
       extensions  => {
         peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
         peadm::oid('peadm_availability_group') => 'B',
@@ -178,7 +178,7 @@ plan peadm::convert (
 
   peadm::plan_step('convert-compilers-a') || {
     run_plan('peadm::util::add_cert_extensions', $compiler_a_targets,
-      master_host => $master_target,
+      primary_host => $master_target,
       extensions  => {
         peadm::oid('pp_auth_role')             => 'pe_compiler',
         peadm::oid('peadm_availability_group') => 'A',
@@ -188,7 +188,7 @@ plan peadm::convert (
 
   peadm::plan_step('convert-compilers-b') || {
     run_plan('peadm::util::add_cert_extensions', $compiler_b_targets,
-      master_host => $master_target,
+      primary_host => $master_target,
       extensions  => {
         peadm::oid('pp_auth_role')             => 'pe_compiler',
         peadm::oid('peadm_availability_group') => 'B',
@@ -204,11 +204,11 @@ plan peadm::convert (
     if (versioncmp($pe_version, '2019.7.0') >= 0) {
       apply($master_target) {
         class { 'peadm::setup::node_manager_yaml':
-          master_host => $master_target.peadm::target_name(),
+          primary_host => $master_target.peadm::target_name(),
         }
 
         class { 'peadm::setup::node_manager':
-          master_host                      => $master_target.peadm::target_name(),
+          primary_host                     => $master_target.peadm::target_name(),
           master_replica_host              => $master_replica_target.peadm::target_name(),
           puppetdb_database_host           => $puppetdb_database_target.peadm::target_name(),
           puppetdb_database_replica_host   => $puppetdb_database_replica_target.peadm::target_name(),

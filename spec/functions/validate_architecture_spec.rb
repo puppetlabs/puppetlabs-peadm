@@ -9,7 +9,7 @@ describe 'peadm::validate_architecture' do
   let(:pre_condition) do
     'type TargetSpec = Variant[String[1], Target, Array[TargetSpec]]'
   end
-  let(:master_host) do
+  let(:primary_host) do
     'puppet-std.puppet.vm'
   end
   let(:master_replica_host) do
@@ -26,17 +26,17 @@ describe 'peadm::validate_architecture' do
   end
 
   it {
-    is_expected.to run.with_params(master_host)
+    is_expected.to run.with_params(primary_host)
                       .and_return('high-availability' => false, 'architecture' => 'standard')
   }
   it {
-    is_expected.to run.with_params(master_host, master_replica_host)
+    is_expected.to run.with_params(primary_host, master_replica_host)
                       .and_return('high-availability' => true, 'architecture' => 'standard')
   }
 
   it do
     is_expected.to run.with_params(
-      master_host,
+      primary_host,
       master_replica_host,
       nil,
       nil,
@@ -47,7 +47,7 @@ describe 'peadm::validate_architecture' do
 
   it do
     is_expected.to run.with_params(
-      master_host,
+      primary_host,
       nil,
       nil,
       nil,
@@ -58,7 +58,7 @@ describe 'peadm::validate_architecture' do
 
   it do
     is_expected.to run.with_params(
-      master_host,
+      primary_host,
       master_replica_host,
       puppetdb_database_host,
       puppetdb_database_replica_host,
@@ -69,7 +69,7 @@ describe 'peadm::validate_architecture' do
 
   it do
     is_expected.to run.with_params(
-      master_host,
+      primary_host,
       nil,
       puppetdb_database_host,
       nil,

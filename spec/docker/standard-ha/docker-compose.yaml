@@ -39,7 +39,7 @@ services:
     image: pe-base
     privileged: true # required for systemd
     labels:
-      com.puppet.role: "master_host"
+      com.puppet.role: "primary_host"
     ports:
       - "22"
       - "8140"

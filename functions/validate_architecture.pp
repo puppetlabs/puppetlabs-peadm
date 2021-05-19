@@ -1,12 +1,12 @@
 function peadm::validate_architecture (
-  TargetSpec                 $master_host,
+  TargetSpec                 $primary_host,
   Variant[TargetSpec, Undef] $master_replica_host = undef,
   Variant[TargetSpec, Undef] $puppetdb_database_host = undef,
   Variant[TargetSpec, Undef] $puppetdb_database_replica_host = undef,
   Variant[TargetSpec, Undef] $compiler_hosts = undef,
 )  >> Hash {
   $result = case [
-    !!($master_host),
+    !!($primary_host),
     !!($master_replica_host),
     !!($puppetdb_database_host),
     !!($puppetdb_database_replica_host),

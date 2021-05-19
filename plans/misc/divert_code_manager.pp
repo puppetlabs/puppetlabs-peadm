@@ -11,7 +11,7 @@
 # This is a stop-gap at best. This should not be attempted without advisement.
 #
 plan peadm::misc::divert_code_manager (
-  $master_host,
+  $primary_host,
 ) {
 
   notice(@(HEREDOC))
@@ -21,7 +21,7 @@ plan peadm::misc::divert_code_manager (
     This will allow /etc/puppetlabs/code to be managed manually
     | HEREDOC
 
-  run_task('peadm::divert_code_manager', $master_host)
+  run_task('peadm::divert_code_manager', $primary_host)
 
   notice(@(HEREDOC))
     Remember to enforce this configuration in your Puppet code with a Collector Override. E.g.

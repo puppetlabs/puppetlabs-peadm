@@ -14,7 +14,7 @@
 #
 plan peadm::upgrade (
   # Standard
-  Peadm::SingleTargetSpec           $master_host,
+  Peadm::SingleTargetSpec           $primary_host,
   Optional[Peadm::SingleTargetSpec] $master_replica_host = undef,
 
   # Large
@@ -49,7 +49,7 @@ plan peadm::upgrade (
 
   # Ensure input valid for a supported architecture
   $arch = peadm::validate_architecture(
-    $master_host,
+    $primary_host,
     $master_replica_host,
     $puppetdb_database_host,
     $puppetdb_database_replica_host,
@@ -57,7 +57,7 @@ plan peadm::upgrade (
   )
 
   # Convert inputs into targets.
-  $master_target                    = peadm::get_targets($master_host, 1)
+  $master_target                    = peadm::get_targets($primary_host, 1)
   $master_replica_target            = peadm::get_targets($master_replica_host, 1)
   $puppetdb_database_target         = peadm::get_targets($puppetdb_database_host, 1)
   $puppetdb_database_replica_target = peadm::get_targets($puppetdb_database_replica_host, 1)
@@ -217,7 +217,7 @@ plan peadm::upgrade (
 
     # If necessary, add missing cert extensions to compilers
     run_plan('peadm::util::add_cert_extensions', $convert_targets,
-      master_host => $master_target,
+      primary_host => $master_target,
       extensions  => {
         'pp_auth_role' => 'pe_compiler',
       },
@@ -228,11 +228,11 @@ plan peadm::upgrade (
     # successfully classify and update
     apply($master_target) {
       class { 'peadm::setup::node_manager_yaml':
-        master_host => $master_target.peadm::target_name(),
+        primary_host => $master_target.peadm::target_name(),
       }
 
       class { 'peadm::setup::node_manager':
-        master_host                      => $master_target.peadm::target_name(),
+        primary_host                     => $master_target.peadm::target_name(),
         master_replica_host              => $master_replica_target.peadm::target_name(),
         puppetdb_database_host           => $puppetdb_database_target.peadm::target_name(),
         puppetdb_database_replica_host   => $puppetdb_database_replica_target.peadm::target_name(),

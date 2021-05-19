@@ -25,7 +25,7 @@ services:
     container_name: pe-std.puppet.vm
     stop_signal: SIGRTMIN+3
     labels:
-      com.puppet.role: "master_host"
+      com.puppet.role: "primary_host"
     tmpfs:
       - /run
       - /tmp

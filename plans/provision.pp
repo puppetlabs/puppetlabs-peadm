@@ -16,7 +16,7 @@
 #
 plan peadm::provision (
   # Standard
-  Peadm::SingleTargetSpec           $master_host,
+  Peadm::SingleTargetSpec           $primary_host,
   Optional[Peadm::SingleTargetSpec] $master_replica_host = undef,
 
   # Large
@@ -55,7 +55,7 @@ plan peadm::provision (
 
   $install_result = run_plan('peadm::action::install',
     # Standard
-    master_host                    => $master_host,
+    primary_host                    => $primary_host,
     master_replica_host            => $master_replica_host,
 
     # Large
@@ -87,7 +87,7 @@ plan peadm::provision (
 
   $configure_result = run_plan('peadm::action::configure',
     # Standard
-    master_host                      => $master_host,
+    primary_host                      => $primary_host,
     master_replica_host              => $master_replica_host,
 
     # Large

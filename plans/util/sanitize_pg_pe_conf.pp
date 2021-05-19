@@ -1,12 +1,12 @@
 plan peadm::util::sanitize_pg_pe_conf (
   TargetSpec              $targets,
-  Peadm::SingleTargetSpec $master_host,
+  Peadm::SingleTargetSpec $primary_host,
 ) {
-  $master_target = get_target($master_host)
+  $master_target = get_target($primary_host)
 
   $path = '/etc/puppetlabs/enterprise/conf.d/pe.conf'
   # Ensure the pe.conf file on PostgreSQL nodes has the needed values for
-  # puppet_master_host and database_host
+  # puppet_primary_host and database_host
   run_task('peadm::read_file', $targets,
     path => $path,
   ).map |$result| {

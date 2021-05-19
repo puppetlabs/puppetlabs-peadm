@@ -20,7 +20,7 @@
 #
 plan peadm::action::install (
   # Standard
-  Peadm::SingleTargetSpec           $master_host,
+  Peadm::SingleTargetSpec           $primary_host,
   Optional[Peadm::SingleTargetSpec] $master_replica_host = undef,
 
   # Large
@@ -52,7 +52,7 @@ plan peadm::action::install (
   peadm::validate_version($version)
 
   # Convert inputs into targets.
-  $master_target                    = peadm::get_targets($master_host, 1)
+  $master_target                    = peadm::get_targets($primary_host, 1)
   $master_replica_target            = peadm::get_targets($master_replica_host, 1)
   $puppetdb_database_target         = peadm::get_targets($puppetdb_database_host, 1)
   $puppetdb_database_replica_target = peadm::get_targets($puppetdb_database_replica_host, 1)
@@ -60,7 +60,7 @@ plan peadm::action::install (
 
   # Ensure input valid for a supported architecture
   $arch = peadm::validate_architecture(
-    $master_host,
+    $primary_host,
     $master_replica_host,
     $puppetdb_database_host,
     $puppetdb_database_replica_host,

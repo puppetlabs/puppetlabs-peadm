@@ -1,7 +1,7 @@
 {
   "version": "2019.4.0",
   "console_password": "puppetlabs",
-  "master_host": "pe-master-1830cd-0.us-west1-a.c.reidmv-peadm.internal",
+  "primary_host": "pe-master-1830cd-0.us-west1-a.c.reidmv-peadm.internal",
   "master_replica_host": "pe-master-1830cd-1.us-west1-b.c.reidmv-peadm.internal",
   "puppetdb_database_host": "pe-psql-1830cd-0.us-west1-a.c.reidmv-peadm.internal",
   "puppetdb_database_replica_host": "pe-psql-1830cd-1.us-west1-b.c.reidmv-peadm.internal",
