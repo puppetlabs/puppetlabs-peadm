@@ -172,7 +172,7 @@ plan peadm::action::install (
   # Upload the pe.conf files to the hosts that need them, and ensure correctly
   # configured certnames. Right now for these hosts we need to do that by
   # staging a puppet.conf file.
-  parallelize(['master', 'puppetdb_database', 'puppetdb_database_replica']) |$var| {
+  parallelize(['primary', 'puppetdb_database', 'puppetdb_database_replica']) |$var| {
     $target  = getvar("${var}_target", [])
     $pe_conf = getvar("${var}_pe_conf")
 
