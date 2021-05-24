@@ -149,7 +149,7 @@ class peadm::setup::node_manager (
       variables => { 'peadm_replica' => true },
     }
 
-    node_group { 'PE Primary ter B':
+    node_group { 'PE Primary B':
       ensure => present,
       parent => 'PE Infrastructure',
       rule   => ['and',
