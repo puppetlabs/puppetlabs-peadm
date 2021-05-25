@@ -27,11 +27,11 @@ describe 'peadm::validate_architecture' do
 
   it {
     is_expected.to run.with_params(primary_host)
-                      .and_return('high-availability' => false, 'architecture' => 'standard')
+                      .and_return('disaster-recovery' => false, 'architecture' => 'standard')
   }
   it {
     is_expected.to run.with_params(primary_host, primary_replica_host)
-                      .and_return('high-availability' => true, 'architecture' => 'standard')
+                      .and_return('disaster-recovery' => true, 'architecture' => 'standard')
   }
 
   it do
@@ -42,7 +42,7 @@ describe 'peadm::validate_architecture' do
       nil,
       compiler_hosts,
     )
-                      .and_return('high-availability' => true, 'architecture' => 'large')
+                      .and_return('disaster-recovery' => true, 'architecture' => 'large')
   end
 
   it do
@@ -53,7 +53,7 @@ describe 'peadm::validate_architecture' do
       nil,
       compiler_hosts,
     )
-                      .and_return('high-availability' => false, 'architecture' => 'large')
+                      .and_return('disaster-recovery' => false, 'architecture' => 'large')
   end
 
   it do
@@ -64,7 +64,7 @@ describe 'peadm::validate_architecture' do
       puppetdb_database_replica_host,
       compiler_hosts,
     )
-                      .and_return('high-availability' => true, 'architecture' => 'extra-large')
+                      .and_return('disaster-recovery' => true, 'architecture' => 'extra-large')
   end
 
   it do
@@ -75,6 +75,6 @@ describe 'peadm::validate_architecture' do
       nil,
       compiler_hosts,
     )
-                      .and_return('high-availability' => false, 'architecture' => 'extra-large')
+                      .and_return('disaster-recovery' => false, 'architecture' => 'extra-large')
   end
 end

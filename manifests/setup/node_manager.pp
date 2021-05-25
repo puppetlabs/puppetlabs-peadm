@@ -14,11 +14,11 @@
 #   service. Typically this is a load balancer.
 # @param internal_compiler_a_pool_address
 #   A load balancer address directing traffic to any of the "A" pool
-#   compilers. This is used for DR/HA configuration in large and extra large
+#   compilers. This is used for DR configuration in large and extra large
 #   architectures.
 # @param internal_compiler_b_pool_address
 #   A load balancer address directing traffic to any of the "B" pool
-#   compilers. This is used for DR/HA configuration in large and extra large
+#   compilers. This is used for DR configuration in large and extra large
 #   architectures.
 #
 class peadm::setup::node_manager (
@@ -110,7 +110,7 @@ class peadm::setup::node_manager (
     },
   }
 
-  # Configure the A pool for compilers. There are up to two pools for HA, each
+  # Configure the A pool for compilers. There are up to two pools for DR, each
   # having an affinity for one "availability zone" or the other.
   node_group { 'PE Compiler Group A':
     ensure  => 'present',
@@ -140,7 +140,7 @@ class peadm::setup::node_manager (
   # supplied
   if $primary_replica_host {
     # We need to ensure this group provides the peadm_replica variable.
-    node_group { 'PE HA Replica':
+    node_group { 'PE DR Replica':
       ensure    => 'present',
       parent    => 'PE Infrastructure',
       classes   => {

@@ -97,7 +97,7 @@ Note: it is assumed that the Puppet primary is in cluster A when the upgrade sta
 
 * Stop the `puppet` service on all PE infrastructure nodes to prevent normal automatic runs from interfering with the upgrade process
 
-**Phase 2: upgrade HA cluster A**
+**Phase 2: upgrade DR cluster A**
 
 1. Shut down the `pe-puppetdb` service on the compilers in cluster A
 2. If different from the primary, run the `install-puppet-enterprise` script for the new PE version on the PuppetDB PostgreSQL node for cluster A
@@ -106,7 +106,7 @@ Note: it is assumed that the Puppet primary is in cluster A when the upgrade sta
 5. If different from the primary, Run `puppet agent -t` on the PuppetDB PostgreSQL node for cluster A
 6. Perform the compiler upgrade using `puppet infra upgrade compiler` for the compilers in cluster A
 
-**Phase 3: upgrade HA cluster B**
+**Phase 3: upgrade DR cluster B**
 
 1. Shut down the `pe-puppetdb` service on the compilers in cluster B
 2. If different from the primary (replica), run the `install-puppet-enterprise` script for the new PE version on the PuppetDB PostgreSQL node for cluster B

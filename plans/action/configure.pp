@@ -1,15 +1,15 @@
-# @summary Configure first-time classification and HA setup
+# @summary Configure first-time classification and DR setup
 #
 # @param compiler_pool_address 
 #   The service address used by agents to connect to compilers, or the Puppet
 #   service. Typically this is a load balancer.
 # @param internal_compiler_a_pool_address
 #   A load balancer address directing traffic to any of the "A" pool
-#   compilers. This is used for DR/HA configuration in large and extra large
+#   compilers. This is used for DR configuration in large and extra large
 #   architectures.
 # @param internal_compiler_b_pool_address
 #   A load balancer address directing traffic to any of the "B" pool
-#   compilers. This is used for DR/HA configuration in large and extra large
+#   compilers. This is used for DR configuration in large and extra large
 #   architectures.
 #
 plan peadm::action::configure (
@@ -89,7 +89,7 @@ plan peadm::action::configure (
     }
   }
 
-  if $arch['high-availability'] {
+  if $arch['disaster-recovery'] {
     # Run the PE Replica Provision
     run_task('peadm::provision_replica', $primary_target,
       master_replica => $primary_replica_target.peadm::target_name(),

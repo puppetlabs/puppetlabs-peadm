@@ -1,9 +1,9 @@
 # @summary This plan exists to account for a scenario where a PE XL
 # architecture is in use, but code manager is not.
 #
-# The PE HA solution technically requires code manager be enabled and running.
+# The PE DR solution technically requires code manager be enabled and running.
 # However, in unusual circumstances, it may not be possible for a customer to
-# actually use code manager. This plan allows HA to be used by leaving
+# actually use code manager. This plan allows DR to be used by leaving
 # file-sync turned on, but directing file-sync to deploy code to a
 # non-standard, unused directory. This leaves the Puppet codedir available for
 # management via an alternative means.

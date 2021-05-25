@@ -97,7 +97,7 @@ plan peadm::action::install (
   ])
 
   # Clusters A and B are used to divide PuppetDB availability for compilers
-  if $arch['high-availability'] {
+  if $arch['disaster-recovery'] {
     $compiler_a_targets = $compiler_targets.filter |$index,$target| { $index % 2 == 0 }
     $compiler_b_targets = $compiler_targets.filter |$index,$target| { $index % 2 != 0 }
   }

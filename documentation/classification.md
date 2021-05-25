@@ -2,7 +2,7 @@
 
 ## Overview
 
-This reference implementation uses four non-default node classification groups to implement the Extra Large HA architecture. Intentionally, classification of default, out-of-box node groups is not modified. This allows normal commands such as `puppet infrastructure enable replica` to behave more or less exactly as they would in Standard or Large architecture deployments.
+This reference implementation uses four non-default node classification groups to implement the Extra Large DR architecture. Intentionally, classification of default, out-of-box node groups is not modified. This allows normal commands such as `puppet infrastructure enable replica` to behave more or less exactly as they would in Standard or Large architecture deployments.
 
 This image shows a fully expanded view of the PE Infrastructure node group, highlighting the new additions made to support the Extra Large architecture.
 

@@ -10,13 +10,13 @@ When provisioning a new PE stack using peadm, there are several different host p
 
 * Standard
     - primary
-* Standard with HA
+* Standard with DR
     - primary
     - primary-replica
 * Large
     - primary
     - compilers
-* Large with HA
+* Large with DR
     - primary
     - primary-replica
     - compilers
@@ -24,7 +24,7 @@ When provisioning a new PE stack using peadm, there are several different host p
     - primary
     - pdb-database
     - compilers (optional)
-* Extra Large with HA
+* Extra Large with DR
     - primary
     - primary-replica
     - pdb-database
@@ -83,7 +83,7 @@ groups:
         uri: 10.234.14.131
 ```
 
-Example params.json Bolt parameters file (shown: Extra Large with HA):
+Example params.json Bolt parameters file (shown: Extra Large with DR):
 
 ```json
 {

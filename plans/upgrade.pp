@@ -5,11 +5,11 @@
 #   service. Typically this is a load balancer.
 # @param internal_compiler_a_pool_address
 #   A load balancer address directing traffic to any of the "A" pool
-#   compilers. This is used for DR/HA configuration in large and extra large
+#   compilers. This is used for DR configuration in large and extra large
 #   architectures.
 # @param internal_compiler_b_pool_address
 #   A load balancer address directing traffic to any of the "B" pool
-#   compilers. This is used for DR/HA configuration in large and extra large
+#   compilers. This is used for DR configuration in large and extra large
 #   architectures.
 #
 plan peadm::upgrade (
@@ -104,7 +104,7 @@ plan peadm::upgrade (
       | HEREDOC
   }
 
-  # Determine which compilers are associated with which HA group
+  # Determine which compilers are associated with which DR group
   $compiler_m1_targets = $compiler_targets.filter |$target| {
     ($cert_extensions[$target.name][peadm::oid('peadm_availability_group')]
       == $cert_extensions[$primary_target[0].name][peadm::oid('peadm_availability_group')])
@@ -279,7 +279,7 @@ plan peadm::upgrade (
     # doesn't deal well with the PuppetDB database being on a separate node.
     # So, move it aside before running the upgrade.
     $pdbapps = '/opt/puppetlabs/server/apps/puppetdb/cli/apps'
-    $workaround_delete_reports = $arch['high-availability'] and $version =~ SemVerRange('>= 2019.8')
+    $workaround_delete_reports = $arch['disaster-recovery'] and $version =~ SemVerRange('>= 2019.8')
     if $workaround_delete_reports {
       run_command(@("COMMAND"/$), $primary_replica_target)
         if [ -e ${pdbapps}/delete-reports -a ! -h ${pdbapps}/delete-reports ]

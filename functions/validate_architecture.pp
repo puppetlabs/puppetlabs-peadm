@@ -11,23 +11,23 @@ function peadm::validate_architecture (
     !!($puppetdb_database_host),
     !!($puppetdb_database_replica_host),
   ] {
-    [true, false, false, false]: { # Standard or Large, no HA
-      ({ 'high-availability' => false, 'architecture' => $compiler_hosts ? {
+    [true, false, false, false]: { # Standard or Large, no DR
+      ({ 'disaster-recovery' => false, 'architecture' => $compiler_hosts ? {
         undef   => 'standard',
         default => 'large',
       }})
     }
-    [true, true, false, false]: {  # Standard or Large, HA
-      ({ 'high-availability' => true, 'architecture' => $compiler_hosts ? {
+    [true, true, false, false]: {  # Standard or Large, DR
+      ({ 'disaster-recovery' => true, 'architecture' => $compiler_hosts ? {
         undef   => 'standard',
         default => 'large',
       }})
     }
-    [true, false, true, false]: {  # Extra Large, no HA
-      ({ 'high-availability' => false, 'architecture' => 'extra-large' })
+    [true, false, true, false]: {  # Extra Large, no DR
+      ({ 'disaster-recovery' => false, 'architecture' => 'extra-large' })
     }
-    [true, true, true, true]: {    # Extra Large, HA
-      ({ 'high-availability' => true,  'architecture' => 'extra-large' })
+    [true, true, true, true]: {    # Extra Large, DR
+      ({ 'disaster-recovery' => true,  'architecture' => 'extra-large' })
     }
     default: {                     # Invalid
       out::message(inline_epp(@(HEREDOC)))
@@ -49,13 +49,13 @@ function peadm::validate_architecture (
         Supported architectures include:
           Standard
             - primary
-          Standard with HA
+          Standard with DR
             - primary
             - primary-replica
           Large
             - primary
             - compilers
-          Large with HA
+          Large with DR
             - primary
             - primary-replica
             - compilers
@@ -63,7 +63,7 @@ function peadm::validate_architecture (
             - primary
             - pdb-database
             - compilers (optional)
-          Extra Large with HA
+          Extra Large with DR
             - primary
             - primary-replica
             - pdb-database

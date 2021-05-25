@@ -87,7 +87,7 @@ plan peadm::convert (
   # Clusters A and B are used to divide PuppetDB availability for compilers. If
   # the compilers given already have peadm_availability_group facts designating
   # them A or B, use that. Otherwise, divide them by modulus of 2.
-  if $arch['high-availability'] {
+  if $arch['disaster-recovery'] {
     $compiler_a_targets = $compiler_targets.filter |$index,$target| {
       $exts = $cert_extensions[$target.peadm::target_name()]
       if ($exts[peadm::oid('peadm_availability_group')] in ['A', 'B']) {
