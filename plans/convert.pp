@@ -68,7 +68,7 @@ plan peadm::convert (
     path => '/opt/puppetlabs/server/pe_version',
   )[0][content].chomp
 
-  # Figure out if this PE deployment has been configured with peadm or pe_xl
+  # Figure out if this PE cluster has been configured with peadm or pe_xl
   # before
   $previously_configured_by_peadm = $all_targets.any |$target| {
     $exts = $cert_extensions[$target.peadm::target_name()]
@@ -77,7 +77,7 @@ plan peadm::convert (
 
   if (!$previously_configured_by_peadm and ($pe_version =~ SemVerRange('< 2019.7.0'))) {
     fail_plan(@("EOL"/L))
-      PE deployment cannot be converted! PE deployment must be a deployment \
+      PE cluster cannot be converted! PE cluster must be a deployment \
       created by pe_xl, by an older version of peadm, or be PE version \
       2019.7.0 or newer. Detected PE version ${pe_version}, and did not detect \
       signs that the deployment was previously created by peadm/pe_xl.
