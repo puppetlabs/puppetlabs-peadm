@@ -7,11 +7,11 @@
 #   service. Typically this is a load balancer.
 # @param internal_compiler_a_pool_address
 #   A load balancer address directing traffic to any of the "A" pool
-#   compilers. This is used for DR/HA configuration in large and extra large
+#   compilers. This is used for DR configuration in large and extra large
 #   architectures.
 # @param internal_compiler_b_pool_address
 #   A load balancer address directing traffic to any of the "B" pool
-#   compilers. This is used for DR/HA configuration in large and extra large
+#   compilers. This is used for DR configuration in large and extra large
 #   architectures.
 #
 plan peadm::provision (
