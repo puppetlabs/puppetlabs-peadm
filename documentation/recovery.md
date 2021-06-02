@@ -26,7 +26,7 @@ This procedure uses the following placeholder references.
         curl -k https://<primary-server-fqdn>:8140/packages/current/install.bash \
           | bash -s -- \
               main:certname=<replacement-replica-fqdn> \
-              extension_requests:1.3.6.1.4.1.34380.1.1.9812=puppet/master \
+              extension_requests:1.3.6.1.4.1.34380.1.1.9812=puppet/server \
               extension_requests:1.3.6.1.4.1.34380.1.1.9813=<replacement-avail-group-letter>
 
         puppet agent -t

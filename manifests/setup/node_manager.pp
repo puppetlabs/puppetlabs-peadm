@@ -1,8 +1,8 @@
-# This profile is not intended to be continously enforced on PE masters.
+# This profile is not intended to be continously enforced on PE primaries.
 # Rather, it describes state to enforce as a boostrap action, preparing the
 # Puppet Enterprise console with a sane default environment configuration.
 #
-# This class will be applied during master bootstrap using e.g.
+# This class will be applied during primary bootstrap using e.g.
 #
 #     puppet apply \
 #       --exec 'class { "peadm::setup::node_manager":
@@ -14,34 +14,34 @@
 #   service. Typically this is a load balancer.
 # @param internal_compiler_a_pool_address
 #   A load balancer address directing traffic to any of the "A" pool
-#   compilers. This is used for DR/HA configuration in large and extra large
+#   compilers. This is used for DR configuration in large and extra large
 #   architectures.
 # @param internal_compiler_b_pool_address
 #   A load balancer address directing traffic to any of the "B" pool
-#   compilers. This is used for DR/HA configuration in large and extra large
+#   compilers. This is used for DR configuration in large and extra large
 #   architectures.
 #
 class peadm::setup::node_manager (
   # Standard
-  String[1] $master_host,
+  String[1] $primary_host,
 
   # High Availability
-  Optional[String[1]] $master_replica_host            = undef,
+  Optional[String[1]] $primary_replica_host            = undef,
 
   # Common
   Optional[String[1]] $compiler_pool_address            = undef,
-  Optional[String[1]] $internal_compiler_a_pool_address = $master_host,
-  Optional[String[1]] $internal_compiler_b_pool_address = $master_replica_host,
+  Optional[String[1]] $internal_compiler_a_pool_address = $primary_host,
+  Optional[String[1]] $internal_compiler_b_pool_address = $primary_replica_host,
 
   # For the next two parameters, the default values are appropriate when
   # deploying Standard or Large architectures. These values only need to be
   # specified differently when deploying an Extra Large architecture.
 
   # Specify when using Extra Large
-  String[1]           $puppetdb_database_host         = $master_host,
+  String[1]           $puppetdb_database_host         = $primary_host,
 
   # Specify when using Extra Large AND High Availability
-  Optional[String[1]] $puppetdb_database_replica_host = $master_replica_host,
+  Optional[String[1]] $puppetdb_database_replica_host = $primary_replica_host,
 ) {
 
   # Preserve existing user data and classes values. We only need to make sure
@@ -72,13 +72,13 @@ class peadm::setup::node_manager (
     default => { 'pe_repo' => { 'compile_master_pool_address' => $compiler_pool_address } },
   }
 
-  node_group { 'PE Master':
+  node_group { 'PE Primary':
     parent    => 'PE Infrastructure',
     data      => $compiler_pool_address_data,
     variables => { 'pe_master' => true },
     rule      => ['or',
       ['and', ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler']],
-      ['=', 'name', $master_host],
+      ['=', 'name', $primary_host],
     ],
   }
 
@@ -87,17 +87,17 @@ class peadm::setup::node_manager (
   node_group { 'PE Database':
     rule => ['or',
       ['and', ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/puppetdb-database']],
-      ['=', 'name', $master_host],
+      ['=', 'name', $primary_host],
     ]
   }
 
   # Create data-only groups to store PuppetDB PostgreSQL database configuration
-  # information specific to the master and master replica nodes.
-  node_group { 'PE Master A':
+  # information specific to the primary and primary replica nodes.
+  node_group { 'PE Primary A':
     ensure => present,
     parent => 'PE Infrastructure',
     rule   => ['and',
-      ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/master'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/server'],
       ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'A'],
     ],
     data   => {
@@ -110,7 +110,7 @@ class peadm::setup::node_manager (
     },
   }
 
-  # Configure the A pool for compilers. There are up to two pools for HA, each
+  # Configure the A pool for compilers. There are up to two pools for DR, each
   # having an affinity for one "availability zone" or the other.
   node_group { 'PE Compiler Group A':
     ensure  => 'present',
@@ -136,11 +136,11 @@ class peadm::setup::node_manager (
     },
   }
 
-  # Create the replica and B groups if a replica master and database host are
+  # Create the replica and B groups if a replica primary and database host are
   # supplied
-  if $master_replica_host {
+  if $primary_replica_host {
     # We need to ensure this group provides the peadm_replica variable.
-    node_group { 'PE HA Replica':
+    node_group { 'PE DR Replica':
       ensure    => 'present',
       parent    => 'PE Infrastructure',
       classes   => {
@@ -149,11 +149,11 @@ class peadm::setup::node_manager (
       variables => { 'peadm_replica' => true },
     }
 
-    node_group { 'PE Master B':
+    node_group { 'PE Primary B':
       ensure => present,
       parent => 'PE Infrastructure',
       rule   => ['and',
-        ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/master'],
+        ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/server'],
         ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'B'],
       ],
       data   => {

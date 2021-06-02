@@ -7,17 +7,17 @@
 #   service. Typically this is a load balancer.
 # @param internal_compiler_a_pool_address
 #   A load balancer address directing traffic to any of the "A" pool
-#   compilers. This is used for DR/HA configuration in large and extra large
+#   compilers. This is used for DR configuration in large and extra large
 #   architectures.
 # @param internal_compiler_b_pool_address
 #   A load balancer address directing traffic to any of the "B" pool
-#   compilers. This is used for DR/HA configuration in large and extra large
+#   compilers. This is used for DR configuration in large and extra large
 #   architectures.
 #
 plan peadm::provision (
   # Standard
-  Peadm::SingleTargetSpec           $master_host,
-  Optional[Peadm::SingleTargetSpec] $master_replica_host = undef,
+  Peadm::SingleTargetSpec           $primary_host,
+  Optional[Peadm::SingleTargetSpec] $primary_replica_host = undef,
 
   # Large
   Optional[TargetSpec]              $compiler_hosts = undef,
@@ -55,8 +55,8 @@ plan peadm::provision (
 
   $install_result = run_plan('peadm::action::install',
     # Standard
-    master_host                    => $master_host,
-    master_replica_host            => $master_replica_host,
+    primary_host                    => $primary_host,
+    primary_replica_host            => $primary_replica_host,
 
     # Large
     compiler_hosts                 => $compiler_hosts,
@@ -87,8 +87,8 @@ plan peadm::provision (
 
   $configure_result = run_plan('peadm::action::configure',
     # Standard
-    master_host                      => $master_host,
-    master_replica_host              => $master_replica_host,
+    primary_host                      => $primary_host,
+    primary_replica_host              => $primary_replica_host,
 
     # Large
     compiler_hosts                   => $compiler_hosts,

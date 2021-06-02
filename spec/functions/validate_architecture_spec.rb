@@ -9,10 +9,10 @@ describe 'peadm::validate_architecture' do
   let(:pre_condition) do
     'type TargetSpec = Variant[String[1], Target, Array[TargetSpec]]'
   end
-  let(:master_host) do
+  let(:primary_host) do
     'puppet-std.puppet.vm'
   end
-  let(:master_replica_host) do
+  let(:primary_replica_host) do
     'pup-replica.puppet.vm'
   end
   let(:puppetdb_database_host) do
@@ -26,55 +26,55 @@ describe 'peadm::validate_architecture' do
   end
 
   it {
-    is_expected.to run.with_params(master_host)
-                      .and_return('high-availability' => false, 'architecture' => 'standard')
+    is_expected.to run.with_params(primary_host)
+                      .and_return('disaster-recovery' => false, 'architecture' => 'standard')
   }
   it {
-    is_expected.to run.with_params(master_host, master_replica_host)
-                      .and_return('high-availability' => true, 'architecture' => 'standard')
+    is_expected.to run.with_params(primary_host, primary_replica_host)
+                      .and_return('disaster-recovery' => true, 'architecture' => 'standard')
   }
 
   it do
     is_expected.to run.with_params(
-      master_host,
-      master_replica_host,
+      primary_host,
+      primary_replica_host,
       nil,
       nil,
       compiler_hosts,
     )
-                      .and_return('high-availability' => true, 'architecture' => 'large')
+                      .and_return('disaster-recovery' => true, 'architecture' => 'large')
   end
 
   it do
     is_expected.to run.with_params(
-      master_host,
+      primary_host,
       nil,
       nil,
       nil,
       compiler_hosts,
     )
-                      .and_return('high-availability' => false, 'architecture' => 'large')
+                      .and_return('disaster-recovery' => false, 'architecture' => 'large')
   end
 
   it do
     is_expected.to run.with_params(
-      master_host,
-      master_replica_host,
+      primary_host,
+      primary_replica_host,
       puppetdb_database_host,
       puppetdb_database_replica_host,
       compiler_hosts,
     )
-                      .and_return('high-availability' => true, 'architecture' => 'extra-large')
+                      .and_return('disaster-recovery' => true, 'architecture' => 'extra-large')
   end
 
   it do
     is_expected.to run.with_params(
-      master_host,
+      primary_host,
       nil,
       puppetdb_database_host,
       nil,
       compiler_hosts,
     )
-                      .and_return('high-availability' => false, 'architecture' => 'extra-large')
+                      .and_return('disaster-recovery' => false, 'architecture' => 'extra-large')
   end
 end

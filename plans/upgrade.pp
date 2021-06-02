@@ -5,17 +5,17 @@
 #   service. Typically this is a load balancer.
 # @param internal_compiler_a_pool_address
 #   A load balancer address directing traffic to any of the "A" pool
-#   compilers. This is used for DR/HA configuration in large and extra large
+#   compilers. This is used for DR configuration in large and extra large
 #   architectures.
 # @param internal_compiler_b_pool_address
 #   A load balancer address directing traffic to any of the "B" pool
-#   compilers. This is used for DR/HA configuration in large and extra large
+#   compilers. This is used for DR configuration in large and extra large
 #   architectures.
 #
 plan peadm::upgrade (
   # Standard
-  Peadm::SingleTargetSpec           $master_host,
-  Optional[Peadm::SingleTargetSpec] $master_replica_host = undef,
+  Peadm::SingleTargetSpec           $primary_host,
+  Optional[Peadm::SingleTargetSpec] $primary_replica_host = undef,
 
   # Large
   Optional[TargetSpec]              $compiler_hosts      = undef,
@@ -49,30 +49,30 @@ plan peadm::upgrade (
 
   # Ensure input valid for a supported architecture
   $arch = peadm::validate_architecture(
-    $master_host,
-    $master_replica_host,
+    $primary_host,
+    $primary_replica_host,
     $puppetdb_database_host,
     $puppetdb_database_replica_host,
     $compiler_hosts,
   )
 
   # Convert inputs into targets.
-  $master_target                    = peadm::get_targets($master_host, 1)
-  $master_replica_target            = peadm::get_targets($master_replica_host, 1)
+  $primary_target                   = peadm::get_targets($primary_host, 1)
+  $primary_replica_target           = peadm::get_targets($primary_replica_host, 1)
   $puppetdb_database_target         = peadm::get_targets($puppetdb_database_host, 1)
   $puppetdb_database_replica_target = peadm::get_targets($puppetdb_database_replica_host, 1)
   $compiler_targets                 = peadm::get_targets($compiler_hosts)
 
   $all_targets = peadm::flatten_compact([
-    $master_target,
+    $primary_target,
     $puppetdb_database_target,
-    $master_replica_target,
+    $primary_replica_target,
     $puppetdb_database_replica_target,
     $compiler_targets,
   ])
 
   $pe_installer_targets = peadm::flatten_compact([
-    $master_target,
+    $primary_target,
     $puppetdb_database_target,
     $puppetdb_database_replica_target,
   ])
@@ -88,8 +88,8 @@ plan peadm::upgrade (
     ($name in $compiler_targets.map |$t| { $t.name }) and ($exts['pp_auth_role'] == undef)
   }.keys
 
-  # Determine PE version currently installed on master
-  $current_pe_version = run_task('peadm::read_file', $master_target,
+  # Determine PE version currently installed on primary
+  $current_pe_version = run_task('peadm::read_file', $primary_target,
     path => '/opt/puppetlabs/server/pe_build',
   ).first['content']
 
@@ -104,28 +104,28 @@ plan peadm::upgrade (
       | HEREDOC
   }
 
-  # Determine which compilers are associated with which HA group
+  # Determine which compilers are associated with which DR group
   $compiler_m1_targets = $compiler_targets.filter |$target| {
     ($cert_extensions[$target.name][peadm::oid('peadm_availability_group')]
-      == $cert_extensions[$master_target[0].name][peadm::oid('peadm_availability_group')])
+      == $cert_extensions[$primary_target[0].name][peadm::oid('peadm_availability_group')])
   }
 
   $compiler_m2_targets = $compiler_targets.filter |$target| {
     ($cert_extensions[$target.name][peadm::oid('peadm_availability_group')]
-      == $cert_extensions[$master_replica_target[0].name][peadm::oid('peadm_availability_group')])
+      == $cert_extensions[$primary_replica_target[0].name][peadm::oid('peadm_availability_group')])
   }
 
-  $master_target.peadm::fail_on_transport('pcp')
+  $primary_target.peadm::fail_on_transport('pcp')
 
-  $platform = run_task('peadm::precheck', $master_target).first['platform']
+  $platform = run_task('peadm::precheck', $primary_target).first['platform']
   $tarball_filename = "puppet-enterprise-${version}-${platform}.tar.gz"
   $tarball_source   = "https://s3.amazonaws.com/pe-builds/released/${version}/${tarball_filename}"
   $upload_tarball_path = "/tmp/${tarball_filename}"
 
   peadm::plan_step('preparation') || {
     # Support for running over the orchestrator transport relies on Bolt being
-    # executed from the master using the local transport. For now, fail the plan
-    # if the orchestrator is being used for the master.
+    # executed from the primary using the local transport. For now, fail the plan
+    # if the orchestrator is being used for the primary.
     if $download_mode == 'bolthost' {
       # Download the PE tarball on the nodes that need it
       run_plan('peadm::util::retrieve_and_upload', $pe_installer_targets,
@@ -150,7 +150,7 @@ plan peadm::upgrade (
     # that are known to need it.
     $profile_database_puppetdb_hosts = {
       'puppet_enterprise::profile::database::puppetdb_hosts' => (
-        $compiler_targets + $master_target + $master_replica_target
+        $compiler_targets + $primary_target + $primary_replica_target
       ).map |$t| { $t.peadm::target_name() },
     }
 
@@ -170,7 +170,7 @@ plan peadm::upgrade (
         default => $current_pe_conf.parsehocon(),
       } + {
         'console_admin_password'                => 'not used',
-        'puppet_enterprise::puppet_master_host' => $master_target.peadm::target_name(),
+        'puppet_enterprise::puppet_master_host' => $primary_target.peadm::target_name(),
         'puppet_enterprise::database_host'      => $target.peadm::target_name(),
       } + $profile_database_puppetdb_hosts).to_json_pretty()
 
@@ -188,36 +188,36 @@ plan peadm::upgrade (
       puppet_service_ensure => 'stopped',
     )
 
-    run_task('peadm::pe_install', $master_target,
+    run_task('peadm::pe_install', $primary_target,
       tarball               => $upload_tarball_path,
       puppet_service_ensure => 'stopped',
     )
 
     # If in use, wait until orchestrator service is healthy to proceed
     if $all_targets.any |$target| { $target.protocol == 'pcp' } {
-      peadm::wait_until_service_ready('orchestrator-service', $master_target)
+      peadm::wait_until_service_ready('orchestrator-service', $primary_target)
       wait_until_available($all_targets, wait_time => 120)
     }
 
     # Installer-driven upgrade will de-configure auth access for compilers.
     # Re-run Puppet immediately to fully re-enable
     run_task('peadm::puppet_runonce', peadm::flatten_compact([
-      $master_target,
+      $primary_target,
       $puppetdb_database_target,
     ]))
   }
 
   peadm::plan_step('upgrade-node-groups') || {
-    # The master could restart orchestration services again, in which case we
+    # The primary could restart orchestration services again, in which case we
     # would have to wait for nodes to reconnect
     if $all_targets.any |$target| { $target.protocol == 'pcp' } {
-      peadm::wait_until_service_ready('orchestrator-service', $master_target)
+      peadm::wait_until_service_ready('orchestrator-service', $primary_target)
       wait_until_available($all_targets, wait_time => 120)
     }
 
     # If necessary, add missing cert extensions to compilers
     run_plan('peadm::util::add_cert_extensions', $convert_targets,
-      master_host => $master_target,
+      primary_host => $primary_target,
       extensions  => {
         'pp_auth_role' => 'pe_compiler',
       },
@@ -226,14 +226,14 @@ plan peadm::upgrade (
     # Update classification. This needs to be done now because if we don't, and
     # the PE Compiler node groups are wrong, then the compilers won't be able to
     # successfully classify and update
-    apply($master_target) {
+    apply($primary_target) {
       class { 'peadm::setup::node_manager_yaml':
-        master_host => $master_target.peadm::target_name(),
+        primary_host => $primary_target.peadm::target_name(),
       }
 
       class { 'peadm::setup::node_manager':
-        master_host                      => $master_target.peadm::target_name(),
-        master_replica_host              => $master_replica_target.peadm::target_name(),
+        primary_host                     => $primary_target.peadm::target_name(),
+        primary_replica_host             => $primary_replica_target.peadm::target_name(),
         puppetdb_database_host           => $puppetdb_database_target.peadm::target_name(),
         puppetdb_database_replica_host   => $puppetdb_database_replica_target.peadm::target_name(),
         compiler_pool_address            => $compiler_pool_address,
@@ -246,7 +246,7 @@ plan peadm::upgrade (
 
   peadm::plan_step('upgrade-primary-compilers') || {
     # Upgrade the compiler group A targets
-    run_task('peadm::puppet_infra_upgrade', $master_target,
+    run_task('peadm::puppet_infra_upgrade', $primary_target,
       type       => 'compiler',
       targets    => $compiler_m1_targets.map |$t| { $t.peadm::target_name() },
       token_file => $token_file,
@@ -269,9 +269,9 @@ plan peadm::upgrade (
     #
     # Because the steps following involve performing orchestrated actions and
     # `puppet infra upgrade` cannot handle orchestration services restarting,
-    # also run Puppet immediately on the master.
+    # also run Puppet immediately on the primary.
     run_task('peadm::puppet_runonce', peadm::flatten_compact([
-      $master_target,
+      $primary_target,
       $puppetdb_database_replica_target,
     ]))
 
@@ -279,9 +279,9 @@ plan peadm::upgrade (
     # doesn't deal well with the PuppetDB database being on a separate node.
     # So, move it aside before running the upgrade.
     $pdbapps = '/opt/puppetlabs/server/apps/puppetdb/cli/apps'
-    $workaround_delete_reports = $arch['high-availability'] and $version =~ SemVerRange('>= 2019.8')
+    $workaround_delete_reports = $arch['disaster-recovery'] and $version =~ SemVerRange('>= 2019.8')
     if $workaround_delete_reports {
-      run_command(@("COMMAND"/$), $master_replica_target)
+      run_command(@("COMMAND"/$), $primary_replica_target)
         if [ -e ${pdbapps}/delete-reports -a ! -h ${pdbapps}/delete-reports ]
         then
           mv ${pdbapps}/delete-reports ${pdbapps}/delete-reports.original
@@ -290,16 +290,16 @@ plan peadm::upgrade (
         | COMMAND
     }
 
-    # Upgrade the master replica.
-    run_task('peadm::puppet_infra_upgrade', $master_target,
+    # Upgrade the primary replica.
+    run_task('peadm::puppet_infra_upgrade', $primary_target,
       type       => 'replica',
-      targets    => $master_replica_target.map |$t| { $t.peadm::target_name() },
+      targets    => $primary_replica_target.map |$t| { $t.peadm::target_name() },
       token_file => $token_file,
     )
 
     # Return the delete-reports CLI app to its original state
     if $workaround_delete_reports {
-      run_command(@("COMMAND"/$), $master_replica_target)
+      run_command(@("COMMAND"/$), $primary_replica_target)
         if [ -e ${pdbapps}/delete-reports.original ]
         then
           mv ${pdbapps}/delete-reports.original ${pdbapps}/delete-reports
@@ -310,7 +310,7 @@ plan peadm::upgrade (
 
   peadm::plan_step('upgrade-replica-compilers') || {
     # Upgrade the compiler group B targets
-    run_task('peadm::puppet_infra_upgrade', $master_target,
+    run_task('peadm::puppet_infra_upgrade', $primary_target,
       type       => 'compiler',
       targets    => $compiler_m2_targets.map |$t| { $t.peadm::target_name() },
       token_file => $token_file,

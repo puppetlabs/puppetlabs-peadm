@@ -1,7 +1,7 @@
 plan peadm::convert (
   # Standard
-  Peadm::SingleTargetSpec           $master_host,
-  Optional[Peadm::SingleTargetSpec] $master_replica_host = undef,
+  Peadm::SingleTargetSpec           $primary_host,
+  Optional[Peadm::SingleTargetSpec] $primary_replica_host = undef,
 
   # Large
   Optional[TargetSpec]              $compiler_hosts = undef,
@@ -11,7 +11,7 @@ plan peadm::convert (
   Optional[Peadm::SingleTargetSpec] $puppetdb_database_replica_host = undef,
 
   # Common Configuration
-  String                            $compiler_pool_address            = $master_host,
+  String                            $compiler_pool_address            = $primary_host,
   Optional[String]                  $internal_compiler_a_pool_address = undef,
   Optional[String]                  $internal_compiler_b_pool_address = undef,
   Array[String]                     $dns_alt_names                    = [ ],
@@ -31,15 +31,15 @@ plan peadm::convert (
   # TODO: read and validate convertable PE version
 
   # Convert inputs into targets.
-  $master_target                    = peadm::get_targets($master_host, 1)
-  $master_replica_target            = peadm::get_targets($master_replica_host, 1)
+  $primary_target                   = peadm::get_targets($primary_host, 1)
+  $primary_replica_target           = peadm::get_targets($primary_replica_host, 1)
   $puppetdb_database_replica_target = peadm::get_targets($puppetdb_database_replica_host, 1)
   $compiler_targets                 = peadm::get_targets($compiler_hosts)
   $puppetdb_database_target         = peadm::get_targets($puppetdb_database_host, 1)
 
   $all_targets = peadm::flatten_compact([
-    $master_target,
-    $master_replica_target,
+    $primary_target,
+    $primary_replica_target,
     $puppetdb_database_replica_target,
     $compiler_targets,
     $puppetdb_database_target,
@@ -47,8 +47,8 @@ plan peadm::convert (
 
   # Ensure input valid for a supported architecture
   $arch = peadm::validate_architecture(
-    $master_host,
-    $master_replica_host,
+    $primary_host,
+    $primary_replica_host,
     $puppetdb_database_host,
     $puppetdb_database_replica_host,
     $compiler_hosts,
@@ -64,11 +64,11 @@ plan peadm::convert (
   }
 
   # Know what version of PE the current targets are
-  $pe_version = run_task('peadm::read_file', $master_target,
+  $pe_version = run_task('peadm::read_file', $primary_target,
     path => '/opt/puppetlabs/server/pe_version',
   )[0][content].chomp
 
-  # Figure out if this PE deployment has been configured with peadm or pe_xl
+  # Figure out if this PE cluster has been configured with peadm or pe_xl
   # before
   $previously_configured_by_peadm = $all_targets.any |$target| {
     $exts = $cert_extensions[$target.peadm::target_name()]
@@ -77,7 +77,7 @@ plan peadm::convert (
 
   if (!$previously_configured_by_peadm and ($pe_version =~ SemVerRange('< 2019.7.0'))) {
     fail_plan(@("EOL"/L))
-      PE deployment cannot be converted! PE deployment must be a deployment \
+      PE cluster cannot be converted! PE cluster must be a deployment \
       created by pe_xl, by an older version of peadm, or be PE version \
       2019.7.0 or newer. Detected PE version ${pe_version}, and did not detect \
       signs that the deployment was previously created by peadm/pe_xl.
@@ -87,7 +87,7 @@ plan peadm::convert (
   # Clusters A and B are used to divide PuppetDB availability for compilers. If
   # the compilers given already have peadm_availability_group facts designating
   # them A or B, use that. Otherwise, divide them by modulus of 2.
-  if $arch['high-availability'] {
+  if $arch['disaster-recovery'] {
     $compiler_a_targets = $compiler_targets.filter |$index,$target| {
       $exts = $cert_extensions[$target.peadm::target_name()]
       if ($exts[peadm::oid('peadm_availability_group')] in ['A', 'B']) {
@@ -124,15 +124,15 @@ plan peadm::convert (
   peadm::plan_step('convert-primary') || {
     # If PE version is older than 2019.7
     if (versioncmp($pe_version, '2019.7.0') < 0) {
-      apply($master_target) {
+      apply($primary_target) {
         include peadm::setup::convert_pre20197
       }
     }
 
-    run_plan('peadm::util::add_cert_extensions', $master_target,
-      master_host => $master_target,
+    run_plan('peadm::util::add_cert_extensions', $primary_target,
+      primary_host => $primary_target,
       extensions  => {
-        peadm::oid('peadm_role')               => 'puppet/master',
+        peadm::oid('peadm_role')               => 'puppet/server',
         peadm::oid('peadm_availability_group') => 'A',
       },
     )
@@ -142,15 +142,15 @@ plan peadm::convert (
     # If the orchestrator is in use, get certs fully straightened up before
     # proceeding
     if $all_targets.any |$target| { $target.protocol == 'pcp' } {
-      run_task('peadm::puppet_runonce', $master_target)
-      peadm::wait_until_service_ready('orchestrator-service', $master_target)
+      run_task('peadm::puppet_runonce', $primary_target)
+      peadm::wait_until_service_ready('orchestrator-service', $primary_target)
       wait_until_available($all_targets, wait_time => 120)
     }
 
-    run_plan('peadm::util::add_cert_extensions', $master_replica_target,
-      master_host => $master_target,
+    run_plan('peadm::util::add_cert_extensions', $primary_replica_target,
+      primary_host => $primary_target,
       extensions  => {
-        peadm::oid('peadm_role')               => 'puppet/master',
+        peadm::oid('peadm_role')               => 'puppet/server',
         peadm::oid('peadm_availability_group') => 'B',
       },
     )
@@ -158,7 +158,7 @@ plan peadm::convert (
 
   peadm::plan_step('convert-database') || {
     run_plan('peadm::util::add_cert_extensions', $puppetdb_database_target,
-      master_host => $master_target,
+      primary_host => $primary_target,
       extensions  => {
         peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
         peadm::oid('peadm_availability_group') => 'A',
@@ -168,7 +168,7 @@ plan peadm::convert (
 
   peadm::plan_step('convert-database-replica') || {
     run_plan('peadm::util::add_cert_extensions', $puppetdb_database_replica_target,
-      master_host => $master_target,
+      primary_host => $primary_target,
       extensions  => {
         peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
         peadm::oid('peadm_availability_group') => 'B',
@@ -178,7 +178,7 @@ plan peadm::convert (
 
   peadm::plan_step('convert-compilers-a') || {
     run_plan('peadm::util::add_cert_extensions', $compiler_a_targets,
-      master_host => $master_target,
+      primary_host => $primary_target,
       extensions  => {
         peadm::oid('pp_auth_role')             => 'pe_compiler',
         peadm::oid('peadm_availability_group') => 'A',
@@ -188,7 +188,7 @@ plan peadm::convert (
 
   peadm::plan_step('convert-compilers-b') || {
     run_plan('peadm::util::add_cert_extensions', $compiler_b_targets,
-      master_host => $master_target,
+      primary_host => $primary_target,
       extensions  => {
         peadm::oid('pp_auth_role')             => 'pe_compiler',
         peadm::oid('peadm_availability_group') => 'B',
@@ -202,14 +202,14 @@ plan peadm::convert (
     # the existing groups are correct enough to function until the upgrade is
     # performed.
     if (versioncmp($pe_version, '2019.7.0') >= 0) {
-      apply($master_target) {
+      apply($primary_target) {
         class { 'peadm::setup::node_manager_yaml':
-          master_host => $master_target.peadm::target_name(),
+          primary_host => $primary_target.peadm::target_name(),
         }
 
         class { 'peadm::setup::node_manager':
-          master_host                      => $master_target.peadm::target_name(),
-          master_replica_host              => $master_replica_target.peadm::target_name(),
+          primary_host                     => $primary_target.peadm::target_name(),
+          primary_replica_host             => $primary_replica_target.peadm::target_name(),
           puppetdb_database_host           => $puppetdb_database_target.peadm::target_name(),
           puppetdb_database_replica_host   => $puppetdb_database_replica_target.peadm::target_name(),
           compiler_pool_address            => $compiler_pool_address,
@@ -230,10 +230,10 @@ plan peadm::convert (
 
   peadm::plan_step('finalize') || {
     # Run Puppet on all targets to ensure catalogs and exported resources fully
-    # up-to-date. Run on master first in case puppet server restarts, 'cause
+    # up-to-date. Run on primary first in case puppet server restarts, 'cause
     # that would cause the runs to fail on all the rest.
-    run_task('peadm::puppet_runonce', $master_target)
-    run_task('peadm::puppet_runonce', $all_targets - $master_target)
+    run_task('peadm::puppet_runonce', $primary_target)
+    run_task('peadm::puppet_runonce', $all_targets - $primary_target)
   }
 
   return("Conversion to peadm Puppet Enterprise ${arch['architecture']} completed.")

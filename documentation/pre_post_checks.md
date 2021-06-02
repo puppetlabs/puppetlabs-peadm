@@ -38,7 +38,7 @@ Note that if you are using Litmus against a host once the agent is installed (no
 groups:
 - name: peserver
   nodes:
-  - master.puppet.example.net
+  - primary.puppet.example.net
   features: ['puppet-agent']
   config:
     transport: ssh
@@ -60,7 +60,7 @@ groups:
       private-key: "~/.ssh/example.pem"
 - name: ha
   nodes:
-  - ha-master.puppet.example.net
+  - ha-primary.puppet.example.net
   features: ['puppet-agent']  
   config:
     transport: ssh

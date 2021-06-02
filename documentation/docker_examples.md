@@ -1,5 +1,5 @@
 ## Docker Based Examples
-This module provides docker compose files for the various architectures for experimentation purposes. This gives you the ability to stand up an entire PE stack in order to learn how this module and HA works. If you have docker and docker-compose you can start up a full Puppet architecture with a single command.  Please note that Puppet does not support PE on containers in production.  
+This module provides docker compose files for the various architectures for experimentation purposes. This gives you the ability to stand up an entire PE stack in order to learn how this module and DR works. If you have docker and docker-compose you can start up a full Puppet architecture with a single command.  Please note that Puppet does not support PE on containers in production.  
 
 In order to decouple Bolt from a dev system, a special bolt container is created that will run all the bolt commands.  This is
 required to achieve maximum portability.  Should you want to run bolt commands against the PE stack you must
@@ -10,9 +10,10 @@ Example: `docker-compose run --entrypoint=/bin/bash bolt`
 ### Requirements
 To run the container based examples you will need the following requirements:
 
-2. Docker
-3. Docker compose
-4. 16GB memory, 24GB+ for XL and XL-HA architectures
+1. Docker
+2. Docker compose
+3. realpath (brew install coureutils on mac)
+4. 16GB memory, 24GB+ for XL and XL-DR architectures
 5. CPU with many cores (Tested with Core i7 6700)
 
 ### Starting the example

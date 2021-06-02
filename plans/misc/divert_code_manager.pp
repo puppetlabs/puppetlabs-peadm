@@ -1,9 +1,9 @@
 # @summary This plan exists to account for a scenario where a PE XL
 # architecture is in use, but code manager is not.
 #
-# The PE HA solution technically requires code manager be enabled and running.
+# The PE DR solution technically requires code manager be enabled and running.
 # However, in unusual circumstances, it may not be possible for a customer to
-# actually use code manager. This plan allows HA to be used by leaving
+# actually use code manager. This plan allows DR to be used by leaving
 # file-sync turned on, but directing file-sync to deploy code to a
 # non-standard, unused directory. This leaves the Puppet codedir available for
 # management via an alternative means.
@@ -11,7 +11,7 @@
 # This is a stop-gap at best. This should not be attempted without advisement.
 #
 plan peadm::misc::divert_code_manager (
-  $master_host,
+  $primary_host,
 ) {
 
   notice(@(HEREDOC))
@@ -21,7 +21,7 @@ plan peadm::misc::divert_code_manager (
     This will allow /etc/puppetlabs/code to be managed manually
     | HEREDOC
 
-  run_task('peadm::divert_code_manager', $master_host)
+  run_task('peadm::divert_code_manager', $primary_host)
 
   notice(@(HEREDOC))
     Remember to enforce this configuration in your Puppet code with a Collector Override. E.g.

@@ -33,8 +33,8 @@ As a services-led tool, Puppet Enterprise customers who are advised to start usi
 The normal usage pattern for peadm is as follows.
 
 1. Users set up a Bolt host from which they can run peadm plans. The Bolt host can be any machine that has ssh access to all of the PE nodes.
-2. Users run the `peadm::provision` plan to bootstrap a new PE deployment. Depending on the architecture chosen, peadm may create some node groups in the classifier to set parameters on the built-in `puppet_enterprise` module, tuning it for large or extra large architectures.
-3. Users use and operate their PE deployment as normal. The peadm module is not used again until the next upgrade.
+2. Users run the `peadm::provision` plan to bootstrap a new PE cluster. Depending on the architecture chosen, peadm may create some node groups in the classifier to set parameters on the built-in `puppet_enterprise` module, tuning it for large or extra large architectures.
+3. Users use and operate their PE cluster as normal. The peadm module is not used again until the next upgrade.
 4. When it is time to upgrade, users run the `peadm::upgrade` plan from their Bolt host to accelerate and aid in the upgrade process.
 
 ### What peadm affects
@@ -44,8 +44,8 @@ The normal usage pattern for peadm is as follows.
 
 ### What peadm does not affect
 
-* The peadm module is not required to exist or be present outside of the point(s) in time it is used to create a new PE deployment, or upgrade an existing deployment. No new Puppet classes or other persistent content not provided out-of-box by PE itself is applied to PE infrastructure nodes by the peadm module.
-* Having used the peadm module to provision or to upgrade a PE deployment is not known to affect or curtail the ability to use any normal, documented PE procedures, e.g. failover to a replica, or manual upgrade of a deployment.
+* The peadm module is not required to exist or be present outside of the point(s) in time it is used to create a new PE cluster, or upgrade an existing cluster. No new Puppet classes or other persistent content not provided out-of-box by PE itself is applied to PE infrastructure nodes by the peadm module.
+* Having used the peadm module to provision or to upgrade a PE cluster is not known to affect or curtail the ability to use any normal, documented PE procedures, e.g. failover to a replica, or manual upgrade of a cluster.
 
 ### Requirements
 

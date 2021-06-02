@@ -42,7 +42,7 @@ services:
     hostname: pe-lg.puppet.vm
     container_name: pe-lg.puppet.vm
     labels:
-      com.puppet.role: "master_host"
+      com.puppet.role: "primary_host"
     stop_signal: SIGRTMIN+3
     tmpfs:
       - /run

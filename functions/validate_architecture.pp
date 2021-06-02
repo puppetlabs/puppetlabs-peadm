@@ -1,40 +1,40 @@
 function peadm::validate_architecture (
-  TargetSpec                 $master_host,
-  Variant[TargetSpec, Undef] $master_replica_host = undef,
+  TargetSpec                 $primary_host,
+  Variant[TargetSpec, Undef] $primary_replica_host = undef,
   Variant[TargetSpec, Undef] $puppetdb_database_host = undef,
   Variant[TargetSpec, Undef] $puppetdb_database_replica_host = undef,
   Variant[TargetSpec, Undef] $compiler_hosts = undef,
 )  >> Hash {
   $result = case [
-    !!($master_host),
-    !!($master_replica_host),
+    !!($primary_host),
+    !!($primary_replica_host),
     !!($puppetdb_database_host),
     !!($puppetdb_database_replica_host),
   ] {
-    [true, false, false, false]: { # Standard or Large, no HA
-      ({ 'high-availability' => false, 'architecture' => $compiler_hosts ? {
+    [true, false, false, false]: { # Standard or Large, no DR
+      ({ 'disaster-recovery' => false, 'architecture' => $compiler_hosts ? {
         undef   => 'standard',
         default => 'large',
       }})
     }
-    [true, true, false, false]: {  # Standard or Large, HA
-      ({ 'high-availability' => true, 'architecture' => $compiler_hosts ? {
+    [true, true, false, false]: {  # Standard or Large, DR
+      ({ 'disaster-recovery' => true, 'architecture' => $compiler_hosts ? {
         undef   => 'standard',
         default => 'large',
       }})
     }
-    [true, false, true, false]: {  # Extra Large, no HA
-      ({ 'high-availability' => false, 'architecture' => 'extra-large' })
+    [true, false, true, false]: {  # Extra Large, no DR
+      ({ 'disaster-recovery' => false, 'architecture' => 'extra-large' })
     }
-    [true, true, true, true]: {    # Extra Large, HA
-      ({ 'high-availability' => true,  'architecture' => 'extra-large' })
+    [true, true, true, true]: {    # Extra Large, DR
+      ({ 'disaster-recovery' => true,  'architecture' => 'extra-large' })
     }
     default: {                     # Invalid
       out::message(inline_epp(@(HEREDOC)))
         Invalid architecture! Recieved:
-          - master
-        <% if $master_replica_host { -%>
-          - master-replica
+          - primary
+        <% if $primary_replica_host { -%>
+          - primary-replica
         <% } -%>
         <% if $puppetdb_database_host { -%>
           - pdb-database
@@ -48,24 +48,24 @@ function peadm::validate_architecture (
 
         Supported architectures include:
           Standard
-            - master
-          Standard with HA
-            - master
-            - master-replica
+            - primary
+          Standard with DR
+            - primary
+            - primary-replica
           Large
-            - master
+            - primary
             - compilers
-          Large with HA
-            - master
-            - master-replica
+          Large with DR
+            - primary
+            - primary-replica
             - compilers
           Extra Large
-            - master
+            - primary
             - pdb-database
             - compilers (optional)
-          Extra Large with HA
-            - master
-            - master-replica
+          Extra Large with DR
+            - primary
+            - primary-replica
             - pdb-database
             - pdb-database-replica
             - compilers (optional)
