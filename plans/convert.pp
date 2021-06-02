@@ -132,7 +132,7 @@ plan peadm::convert (
     run_plan('peadm::util::add_cert_extensions', $primary_target,
       primary_host => $primary_target,
       extensions  => {
-        peadm::oid('peadm_role')               => 'puppet/primary',
+        peadm::oid('peadm_role')               => 'puppet/server',
         peadm::oid('peadm_availability_group') => 'A',
       },
     )
@@ -150,7 +150,7 @@ plan peadm::convert (
     run_plan('peadm::util::add_cert_extensions', $primary_replica_target,
       primary_host => $primary_target,
       extensions  => {
-        peadm::oid('peadm_role')               => 'puppet/primary',
+        peadm::oid('peadm_role')               => 'puppet/server',
         peadm::oid('peadm_availability_group') => 'B',
       },
     )

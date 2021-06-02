@@ -212,7 +212,7 @@ plan peadm::action::install (
     if ($target in $primary_target) {
       run_plan('peadm::util::insert_csr_extension_requests', $target,
         extension_requests => {
-          peadm::oid('peadm_role')               => 'puppet/primary',
+          peadm::oid('peadm_role')               => 'puppet/server',
           peadm::oid('peadm_availability_group') => 'A'
         }
       )
@@ -340,7 +340,7 @@ plan peadm::action::install (
       run_task('peadm::agent_install', $target,
         server        => $primary_target.peadm::target_name(),
         install_flags => $common_install_flags + [
-          "extension_requests:${peadm::oid('peadm_role')}=puppet/primary",
+          "extension_requests:${peadm::oid('peadm_role')}=puppet/server",
           "extension_requests:${peadm::oid('peadm_availability_group')}=B",
         ],
       )

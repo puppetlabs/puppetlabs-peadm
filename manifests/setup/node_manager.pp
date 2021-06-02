@@ -97,7 +97,7 @@ class peadm::setup::node_manager (
     ensure => present,
     parent => 'PE Infrastructure',
     rule   => ['and',
-      ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/primary'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/server'],
       ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'A'],
     ],
     data   => {
@@ -153,7 +153,7 @@ class peadm::setup::node_manager (
       ensure => present,
       parent => 'PE Infrastructure',
       rule   => ['and',
-        ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/primary'],
+        ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/server'],
         ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'B'],
       ],
       data   => {
