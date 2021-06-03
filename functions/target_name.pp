@@ -3,10 +3,16 @@ function peadm::target_name(
 ) >> Variant[String, Undef] {
   case $target {
     Target: {
-      $target.name
+      $target.vars['certname'] ? {
+        default => $target.vars['certname'],
+        undef   => $target.name
+      }
     }
     Array[Target,1,1]: {
-      $target[0].name
+      $target[0].vars['certname'] ? {
+        default => $target[0].vars['certname'],
+        undef   => $target[0].name
+      }
     }
     Array[Target,0,0]: {
       undef

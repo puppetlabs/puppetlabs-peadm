@@ -122,14 +122,15 @@ plan peadm::action::install (
   # Validate that the name given for each system is both a resolvable name AND
   # the configured hostname, and that all systems return the same platform
   $precheck_results.each |$result| {
-    if $result.target.name != $result['hostname'] {
+    $name = $result.target.peadm::target_name()
+    if ($name != $result['hostname']) {
       warning(@("HEREDOC"))
-        WARNING: Target name / hostname mismatch: target ${result.target.name} reports ${result['hostname']}
+        WARNING: Target name / hostname mismatch: target ${name} reports ${result['hostname']}
                  Certificate name will be set to target name. Please ensure target name is correct and resolvable
         |-HEREDOC
     }
-    if $result['platform'] != $platform {
-      fail_plan("Platform mismatch: target ${result.target.name} reports '${result['platform']}; expected ${platform}'")
+    if ($result['platform'] != $platform) {
+      fail_plan("Platform mismatch: target ${name} reports '${result['platform']}; expected ${platform}'")
     }
   }
 
@@ -264,7 +265,7 @@ plan peadm::action::install (
   }
 
   # Configure autosigning for the puppetdb database hosts 'cause they need it
-  $autosign_conf = $database_targets.reduce('') |$memo,$target| { "${target.name}\n${memo}" }
+  $autosign_conf = $database_targets.reduce('') |$memo,$target| { "${target.peadm::target_name}\n${memo}" }
   run_task('peadm::mkdir_p_file', $primary_target,
     path    => '/etc/puppetlabs/puppet/autosign.conf',
     owner   => 'pe-puppet',
@@ -349,7 +350,7 @@ plan peadm::action::install (
     # Ensure certificate requests have been submitted, then run Puppet
     unless ($target in $database_targets) {
       run_task('peadm::submit_csr', $target)
-      run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$target.name] } )
+      run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$target.peadm::target_name] } )
       run_task('peadm::puppet_runonce', $target)
     }
   }
