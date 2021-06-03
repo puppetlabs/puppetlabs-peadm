@@ -74,14 +74,14 @@ plan peadm::action::configure (
 
   apply($primary_target) {
     class { 'peadm::setup::node_manager_yaml':
-      primary_host => $primary_target.peadm::target_name(),
+      primary_host => $primary_target.peadm::certname(),
     }
 
     class { 'peadm::setup::node_manager':
-      primary_host                     => $primary_target.peadm::target_name(),
-      primary_replica_host             => $primary_replica_target.peadm::target_name(),
-      puppetdb_database_host           => $puppetdb_database_target.peadm::target_name(),
-      puppetdb_database_replica_host   => $puppetdb_database_replica_target.peadm::target_name(),
+      primary_host                     => $primary_target.peadm::certname(),
+      primary_replica_host             => $primary_replica_target.peadm::certname(),
+      puppetdb_database_host           => $puppetdb_database_target.peadm::certname(),
+      puppetdb_database_replica_host   => $puppetdb_database_replica_target.peadm::certname(),
       compiler_pool_address            => $compiler_pool_address,
       internal_compiler_a_pool_address => $internal_compiler_a_pool_address,
       internal_compiler_b_pool_address => $internal_compiler_b_pool_address,
@@ -92,7 +92,7 @@ plan peadm::action::configure (
   if $arch['disaster-recovery'] {
     # Run the PE Replica Provision
     run_task('peadm::provision_replica', $primary_target,
-      master_replica => $primary_replica_target.peadm::target_name(),
+      master_replica => $primary_replica_target.peadm::certname(),
       token_file     => $token_file,
 
       # Race condition, where the provision command checks PuppetDB status and

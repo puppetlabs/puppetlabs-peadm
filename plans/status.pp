@@ -20,7 +20,7 @@ plan peadm::status(
   # returns the data in a hash 
   $stack_status = $results.reduce({}) | $res, $item | {
     $data = $item.value[output]
-    $stack_name = $item.target.peadm::target_name()
+    $stack_name = $item.target.peadm::certname()
     $status = peadm::determine_status($data, $colors).merge(stack_name => $stack_name )
     $res.merge({ $stack_name => $status })
   }

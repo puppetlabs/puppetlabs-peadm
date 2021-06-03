@@ -1,4 +1,4 @@
-function peadm::target_name(
+function peadm::certname(
   Variant[Target, Array[Target,0,1]] $target,
 ) >> Variant[String, Undef] {
   case $target {
@@ -18,7 +18,7 @@ function peadm::target_name(
       undef
     }
     default: {
-      fail('Unexpected input type to peadm::target_name function')
+      fail('Unexpected input type to peadm::certname function')
     }
   }
 }
