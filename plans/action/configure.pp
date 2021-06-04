@@ -92,13 +92,13 @@ plan peadm::action::configure (
   if $arch['disaster-recovery'] {
     # Run the PE Replica Provision
     run_task('peadm::provision_replica', $primary_target,
-      master_replica => $primary_replica_target.peadm::certname(),
-      token_file     => $token_file,
+      primary_replica => $primary_replica_target.peadm::certname(),
+      token_file      => $token_file,
 
       # Race condition, where the provision command checks PuppetDB status and
       # probably gets "starting", but fails out because that's not "running".
       # Can remove flag when that issue is fixed.
-      legacy         => true,
+      legacy          => true,
     )
   }
 
