@@ -25,7 +25,7 @@ plan peadm::action::configure (
   Optional[Peadm::SingleTargetSpec] $puppetdb_database_replica_host = undef,
 
   # Common Configuration
-  String           $compiler_pool_address = $primary_host,
+  String           $compiler_pool_address = $primary_host.peadm::certname(),
   Optional[String] $internal_compiler_a_pool_address = undef,
   Optional[String] $internal_compiler_b_pool_address = undef,
   Optional[String] $token_file = undef,

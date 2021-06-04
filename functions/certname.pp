@@ -1,5 +1,5 @@
 function peadm::certname(
-  Variant[Target, Array[Target,0,1]] $target,
+  Variant[Target, Array[Target,0,1], String] $target,
 ) >> Variant[String, Undef] {
   case $target {
     Target: {
@@ -16,6 +16,9 @@ function peadm::certname(
     }
     Array[Target,0,0]: {
       undef
+    }
+    String: {
+      $target
     }
     default: {
       fail('Unexpected input type to peadm::certname function')
