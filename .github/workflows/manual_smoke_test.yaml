@@ -1,5 +1,5 @@
 ---
-name: "Smoke test"
+name: "Manual smoke test"
 
 on:
   workflow_dispatch:
