@@ -1,5 +1,5 @@
 ---
-name: "Manual smoke test"
+name: "Pull Request test"
 
 on:
   pull_request:
