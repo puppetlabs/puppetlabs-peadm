@@ -11,8 +11,8 @@ plan peadm::util::sanitize_pg_pe_conf (
     path => $path,
   ).map |$result| {
     $sanitized = $result['content'].loadjson() + {
-      'puppet_enterprise::puppet_master_host' => $primary_target.peadm::target_name(),
-      'puppet_enterprise::database_host'      => $result.target.peadm::target_name(),
+      'puppet_enterprise::puppet_master_host' => $primary_target.peadm::certname(),
+      'puppet_enterprise::database_host'      => $result.target.peadm::certname(),
     }
     # Return the result of file_content_upload. There is only one target
     peadm::file_content_upload($sanitized, $path, $result.target)[0]

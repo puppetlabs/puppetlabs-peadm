@@ -5,7 +5,7 @@ require 'spec_helper'
 # TODO: test the error case, however due to an issue with boltspec
 # and functions we cannot do this right now.
 # https://github.com/puppetlabs/bolt/issues/1688
-describe 'peadm::target_name' do
+describe 'peadm::certname' do
   let(:target) do
     ['test-vm.puppet.vm']
   end

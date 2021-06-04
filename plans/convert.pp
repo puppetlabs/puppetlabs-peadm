@@ -56,11 +56,11 @@ plan peadm::convert (
 
   out::message('# Gathering information')
 
-  # Get trusted fact information for all compilers. Use peadm::target_name() as
+  # Get trusted fact information for all compilers. Use peadm::certname() as
   # the hash key because the apply block below will break trying to parse the
   # $compiler_extensions variable if it has Target-type hash keys.
   $cert_extensions = run_task('peadm::trusted_facts', $all_targets).reduce({}) |$memo,$result| {
-    $memo + { $result.target.peadm::target_name() => $result['extensions'] }
+    $memo + { $result.target.peadm::certname() => $result['extensions'] }
   }
 
   # Know what version of PE the current targets are
@@ -71,7 +71,7 @@ plan peadm::convert (
   # Figure out if this PE cluster has been configured with peadm or pe_xl
   # before
   $previously_configured_by_peadm = $all_targets.any |$target| {
-    $exts = $cert_extensions[$target.peadm::target_name()]
+    $exts = $cert_extensions[$target.peadm::certname()]
     $exts[peadm::oid('peadm_role')] or String($exts[peadm::oid('pp_role')]) =~ /pe_xl|peadm/
   }
 
@@ -89,7 +89,7 @@ plan peadm::convert (
   # them A or B, use that. Otherwise, divide them by modulus of 2.
   if $arch['disaster-recovery'] {
     $compiler_a_targets = $compiler_targets.filter |$index,$target| {
-      $exts = $cert_extensions[$target.peadm::target_name()]
+      $exts = $cert_extensions[$target.peadm::certname()]
       if ($exts[peadm::oid('peadm_availability_group')] in ['A', 'B']) {
         $exts[peadm::oid('peadm_availability_group')] == 'A'
       }
@@ -101,7 +101,7 @@ plan peadm::convert (
       }
     }
     $compiler_b_targets = $compiler_targets.filter |$index,$target| {
-      $exts = $cert_extensions[$target.peadm::target_name()]
+      $exts = $cert_extensions[$target.peadm::certname()]
       if ($exts[peadm::oid('peadm_availability_group')] in ['A', 'B']) {
         $exts[peadm::oid('peadm_availability_group')] == 'B'
       }
@@ -204,14 +204,14 @@ plan peadm::convert (
     if (versioncmp($pe_version, '2019.7.0') >= 0) {
       apply($primary_target) {
         class { 'peadm::setup::node_manager_yaml':
-          primary_host => $primary_target.peadm::target_name(),
+          primary_host => $primary_target.peadm::certname(),
         }
 
         class { 'peadm::setup::node_manager':
-          primary_host                     => $primary_target.peadm::target_name(),
-          primary_replica_host             => $primary_replica_target.peadm::target_name(),
-          puppetdb_database_host           => $puppetdb_database_target.peadm::target_name(),
-          puppetdb_database_replica_host   => $puppetdb_database_replica_target.peadm::target_name(),
+          primary_host                     => $primary_target.peadm::certname(),
+          primary_replica_host             => $primary_replica_target.peadm::certname(),
+          puppetdb_database_host           => $puppetdb_database_target.peadm::certname(),
+          puppetdb_database_replica_host   => $puppetdb_database_replica_target.peadm::certname(),
           compiler_pool_address            => $compiler_pool_address,
           internal_compiler_a_pool_address => $internal_compiler_a_pool_address,
           internal_compiler_b_pool_address => $internal_compiler_b_pool_address,

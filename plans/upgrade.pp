@@ -151,7 +151,7 @@ plan peadm::upgrade (
     $profile_database_puppetdb_hosts = {
       'puppet_enterprise::profile::database::puppetdb_hosts' => (
         $compiler_targets + $primary_target + $primary_replica_target
-      ).map |$t| { $t.peadm::target_name() },
+      ).map |$t| { $t.peadm::certname() },
     }
 
     # Ensure the pe.conf files on the PostgreSQL node(s) are correct. This file
@@ -170,8 +170,8 @@ plan peadm::upgrade (
         default => $current_pe_conf.parsehocon(),
       } + {
         'console_admin_password'                => 'not used',
-        'puppet_enterprise::puppet_master_host' => $primary_target.peadm::target_name(),
-        'puppet_enterprise::database_host'      => $target.peadm::target_name(),
+        'puppet_enterprise::puppet_master_host' => $primary_target.peadm::certname(),
+        'puppet_enterprise::database_host'      => $target.peadm::certname(),
       } + $profile_database_puppetdb_hosts).to_json_pretty()
 
       write_file($pe_conf, '/etc/puppetlabs/enterprise/conf.d/pe.conf', $target)
@@ -228,14 +228,14 @@ plan peadm::upgrade (
     # successfully classify and update
     apply($primary_target) {
       class { 'peadm::setup::node_manager_yaml':
-        primary_host => $primary_target.peadm::target_name(),
+        primary_host => $primary_target.peadm::certname(),
       }
 
       class { 'peadm::setup::node_manager':
-        primary_host                     => $primary_target.peadm::target_name(),
-        primary_replica_host             => $primary_replica_target.peadm::target_name(),
-        puppetdb_database_host           => $puppetdb_database_target.peadm::target_name(),
-        puppetdb_database_replica_host   => $puppetdb_database_replica_target.peadm::target_name(),
+        primary_host                     => $primary_target.peadm::certname(),
+        primary_replica_host             => $primary_replica_target.peadm::certname(),
+        puppetdb_database_host           => $puppetdb_database_target.peadm::certname(),
+        puppetdb_database_replica_host   => $puppetdb_database_replica_target.peadm::certname(),
         compiler_pool_address            => $compiler_pool_address,
         internal_compiler_a_pool_address => $internal_compiler_a_pool_address,
         internal_compiler_b_pool_address => $internal_compiler_b_pool_address,
@@ -248,7 +248,7 @@ plan peadm::upgrade (
     # Upgrade the compiler group A targets
     run_task('peadm::puppet_infra_upgrade', $primary_target,
       type       => 'compiler',
-      targets    => $compiler_m1_targets.map |$t| { $t.peadm::target_name() },
+      targets    => $compiler_m1_targets.map |$t| { $t.peadm::certname() },
       token_file => $token_file,
     )
   }
@@ -293,7 +293,7 @@ plan peadm::upgrade (
     # Upgrade the primary replica.
     run_task('peadm::puppet_infra_upgrade', $primary_target,
       type       => 'replica',
-      targets    => $primary_replica_target.map |$t| { $t.peadm::target_name() },
+      targets    => $primary_replica_target.map |$t| { $t.peadm::certname() },
       token_file => $token_file,
     )
 
@@ -312,7 +312,7 @@ plan peadm::upgrade (
     # Upgrade the compiler group B targets
     run_task('peadm::puppet_infra_upgrade', $primary_target,
       type       => 'compiler',
-      targets    => $compiler_m2_targets.map |$t| { $t.peadm::target_name() },
+      targets    => $compiler_m2_targets.map |$t| { $t.peadm::certname() },
       token_file => $token_file,
     )
   }

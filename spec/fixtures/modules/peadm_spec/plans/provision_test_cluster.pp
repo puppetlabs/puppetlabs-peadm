@@ -1,7 +1,7 @@
 plan peadm_spec::provision_test_cluster (
-  $architecture = 'standard',
-  $provider = 'provision_service',
-  $image = 'rhel-7',
+  $provider,
+  $architecture,
+  $image,
 ) {
 
   $nodes =
@@ -13,28 +13,29 @@ plan peadm_spec::provision_test_cluster (
         ['primary', 'replica']
       }
       'large': {
-        ['primary', 'compiler-1']
+        ['primary', 'compiler']
       }
       'large-with-dr': {
-        ['primary', 'compiler-1',
-         'replica', 'compiler-2']
+        ['primary', 'compiler',
+         'replica', 'compiler']
       }
       'extra-large': {
-        ['primary', 'primary-pdb-postgresql', 'compiler-1']
+        ['primary', 'primary-pdb-postgresql', 'compiler']
       }
       'extra-large-with-dr': {
-        ['primary', 'primary-pdb-postgresql', 'compiler-1',
-         'replica', 'replica-pdb-postgresql', 'compiler-2']
+        ['primary', 'primary-pdb-postgresql', 'compiler',
+         'replica', 'replica-pdb-postgresql', 'compiler']
       }
     }
 
   $provision_results =
     # This SHOULD be `parallelize() || {}`. However, provision::* is entirely
     # side-effect based, and not at all parallel-safe.
-    $nodes.each |$target| {
+    $nodes.each |$role| {
       run_task("provision::${provider}", 'localhost',
-        action    => 'provision',
-        platform  => $image,
+        action   => 'provision',
+        platform => $image,
+        vars     => "role: ${role}"
       )
     }
 

@@ -122,14 +122,15 @@ plan peadm::action::install (
   # Validate that the name given for each system is both a resolvable name AND
   # the configured hostname, and that all systems return the same platform
   $precheck_results.each |$result| {
-    if $result.target.name != $result['hostname'] {
+    $name = $result.target.peadm::certname()
+    if ($name != $result['hostname']) {
       warning(@("HEREDOC"))
-        WARNING: Target name / hostname mismatch: target ${result.target.name} reports ${result['hostname']}
+        WARNING: Target name / hostname mismatch: target ${name} reports ${result['hostname']}
                  Certificate name will be set to target name. Please ensure target name is correct and resolvable
         |-HEREDOC
     }
-    if $result['platform'] != $platform {
-      fail_plan("Platform mismatch: target ${result.target.name} reports '${result['platform']}; expected ${platform}'")
+    if ($result['platform'] != $platform) {
+      fail_plan("Platform mismatch: target ${name} reports '${result['platform']}; expected ${platform}'")
     }
   }
 
@@ -141,14 +142,14 @@ plan peadm::action::install (
   $puppetdb_database_temp_config = {
     'puppet_enterprise::profile::database::puppetdb_hosts' => (
       $compiler_targets + $primary_target + $primary_replica_target
-    ).map |$t| { $t.peadm::target_name() },
+    ).map |$t| { $t.peadm::certname() },
   }
 
   $primary_pe_conf = peadm::generate_pe_conf({
     'console_admin_password'                                          => $console_password,
-    'puppet_enterprise::puppet_master_host'                           => $primary_target.peadm::target_name(),
+    'puppet_enterprise::puppet_master_host'                           => $primary_target.peadm::certname(),
     'pe_install::puppet_master_dnsaltnames'                           => $dns_alt_names,
-    'puppet_enterprise::puppetdb_database_host'                       => $puppetdb_database_target.peadm::target_name(),
+    'puppet_enterprise::puppetdb_database_host'                       => $puppetdb_database_target.peadm::certname(),
     'puppet_enterprise::profile::master::code_manager_auto_configure' => true,
     'puppet_enterprise::profile::master::r10k_remote'                 => $r10k_remote,
     'puppet_enterprise::profile::master::r10k_private_key'            => $r10k_private_key ? {
@@ -159,14 +160,14 @@ plan peadm::action::install (
 
   $puppetdb_database_pe_conf = peadm::generate_pe_conf({
     'console_admin_password'                => 'not used',
-    'puppet_enterprise::puppet_master_host' => $primary_target.peadm::target_name(),
-    'puppet_enterprise::database_host'      => $puppetdb_database_target.peadm::target_name(),
+    'puppet_enterprise::puppet_master_host' => $primary_target.peadm::certname(),
+    'puppet_enterprise::database_host'      => $puppetdb_database_target.peadm::certname(),
   } + $puppetdb_database_temp_config + $pe_conf_data)
 
   $puppetdb_database_replica_pe_conf = peadm::generate_pe_conf({
     'console_admin_password'                => 'not used',
-    'puppet_enterprise::puppet_master_host' => $primary_target.peadm::target_name(),
-    'puppet_enterprise::database_host'      => $puppetdb_database_replica_target.peadm::target_name(),
+    'puppet_enterprise::puppet_master_host' => $primary_target.peadm::certname(),
+    'puppet_enterprise::database_host'      => $puppetdb_database_replica_target.peadm::certname(),
   } + $puppetdb_database_temp_config + $pe_conf_data)
 
   # Upload the pe.conf files to the hosts that need them, and ensure correctly
@@ -181,7 +182,7 @@ plan peadm::action::install (
       path    => '/etc/puppetlabs/puppet/puppet.conf',
       content => @("HEREDOC"),
         [main]
-        certname = ${target.peadm::target_name()}
+        certname = ${target.peadm::certname()}
         | HEREDOC
     )
   }
@@ -264,7 +265,7 @@ plan peadm::action::install (
   }
 
   # Configure autosigning for the puppetdb database hosts 'cause they need it
-  $autosign_conf = $database_targets.reduce('') |$memo,$target| { "${target.name}\n${memo}" }
+  $autosign_conf = $database_targets.reduce('') |$memo,$target| { "${target.peadm::certname}\n${memo}" }
   run_task('peadm::mkdir_p_file', $primary_target,
     path    => '/etc/puppetlabs/puppet/autosign.conf',
     owner   => 'pe-puppet',
@@ -310,7 +311,7 @@ plan peadm::action::install (
     $common_install_flags = [
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
-      "main:certname=${target.peadm::target_name()}",
+      "main:certname=${target.peadm::certname()}",
     ]
 
     # Database targets don't need agent installed, they just need to run Puppet
@@ -320,7 +321,7 @@ plan peadm::action::install (
     # Everything else needs an agent installed and cert signed
     elsif ($target in $compiler_a_targets) {
       run_task('peadm::agent_install', $target,
-        server        => $primary_target.peadm::target_name(),
+        server        => $primary_target.peadm::certname(),
         install_flags => $common_install_flags + [
           "extension_requests:${peadm::oid('pp_auth_role')}=pe_compiler",
           "extension_requests:${peadm::oid('peadm_availability_group')}=A",
@@ -329,7 +330,7 @@ plan peadm::action::install (
     }
     elsif ($target in $compiler_b_targets) {
       run_task('peadm::agent_install', $target,
-        server        => $primary_target.peadm::target_name(),
+        server        => $primary_target.peadm::certname(),
         install_flags => $common_install_flags + [
           "extension_requests:${peadm::oid('pp_auth_role')}=pe_compiler",
           "extension_requests:${peadm::oid('peadm_availability_group')}=B",
@@ -338,7 +339,7 @@ plan peadm::action::install (
     }
     elsif ($target in $primary_replica_target) {
       run_task('peadm::agent_install', $target,
-        server        => $primary_target.peadm::target_name(),
+        server        => $primary_target.peadm::certname(),
         install_flags => $common_install_flags + [
           "extension_requests:${peadm::oid('peadm_role')}=puppet/server",
           "extension_requests:${peadm::oid('peadm_availability_group')}=B",
@@ -349,7 +350,7 @@ plan peadm::action::install (
     # Ensure certificate requests have been submitted, then run Puppet
     unless ($target in $database_targets) {
       run_task('peadm::submit_csr', $target)
-      run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$target.name] } )
+      run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$target.peadm::certname] } )
       run_task('peadm::puppet_runonce', $target)
     }
   }
