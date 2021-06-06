@@ -69,6 +69,11 @@ jobs:
         timeout-minutes: 15
         run: |
           echo ::group::=== SPEC PREP ===
+            mkdir -p $HOME/.ssh
+            echo 'Host *'                      >  $HOME/.ssh/config
+            echo '    ServerAliveInterval 150' >> $HOME/.ssh/config
+            echo '    ServerAliveCountMax 2'   >> $HOME/.ssh/config
+
             buildevents cmd $TRACE_ID $STEP_ID 'rake spec_prep' -- \
               bundle exec rake spec_prep
 
