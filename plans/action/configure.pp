@@ -44,7 +44,7 @@ plan peadm::action::configure (
   $puppetdb_database_target         = peadm::get_targets($puppetdb_database_host, 1)
 
   # Ensure input valid for a supported architecture
-  $arch = peadm::validate_architecture(
+  $arch = peadm::assert_supported_architecture(
     $primary_host,
     $primary_replica_host,
     $puppetdb_database_host,

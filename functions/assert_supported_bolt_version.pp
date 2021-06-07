@@ -1,9 +1,10 @@
 # Checks if the current Bolt version matches the SemVerRange defined in $supported_bolt_version
 # Fails the calling plan if false, does nothing if true.
 # Accepts a parameter for the $supported_bolt_version for unit testing purposes
-function peadm::check_bolt_version(
+function peadm::assert_supported_bolt_version (
+  # No arguments
+) >> Struct[{'supported' => Boolean}] {
   $supported_bolt_version = '>= 3.9.1 < 4.0.0'
-) {
   $supported = (peadm::bolt_version() =~ SemVerRange($supported_bolt_version))
 
   unless $supported {
@@ -16,4 +17,6 @@ function peadm::check_bolt_version(
 
       | REASON
   }
+
+  return({ 'supported' => $supported })
 }

@@ -49,7 +49,7 @@ plan peadm::action::install (
   String                $stagingdir    = '/tmp',
   Enum[direct,bolthost] $download_mode = 'bolthost',
 ) {
-  peadm::validate_version($version)
+  peadm::assert_supported_pe_version($version)
 
   # Convert inputs into targets.
   $primary_target                   = peadm::get_targets($primary_host, 1)
@@ -59,7 +59,7 @@ plan peadm::action::install (
   $compiler_targets                 = peadm::get_targets($compiler_hosts)
 
   # Ensure input valid for a supported architecture
-  $arch = peadm::validate_architecture(
+  $arch = peadm::assert_supported_architecture(
     $primary_host,
     $primary_replica_host,
     $puppetdb_database_host,

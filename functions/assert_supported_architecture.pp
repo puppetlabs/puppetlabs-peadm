@@ -1,4 +1,4 @@
-function peadm::validate_architecture (
+function peadm::assert_supported_architecture (
   TargetSpec                 $primary_host,
   Variant[TargetSpec, Undef] $primary_replica_host = undef,
   Variant[TargetSpec, Undef] $puppetdb_database_host = undef,
@@ -76,5 +76,5 @@ function peadm::validate_architecture (
   }
 
   # Return value
-  $result
+  return({ 'supported' =>  true } + $result)
 }
