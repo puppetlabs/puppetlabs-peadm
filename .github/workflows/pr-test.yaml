@@ -12,7 +12,7 @@ env:
 
 jobs:
   smoke-test:
-    name: "Install test: ${{matrix.architecture}}, ${{matrix.image}}, PE ${{matrix.version}}"
+    name: "Install test: ${{ matrix.architecture }}, ${{ matrix.image }}, PE ${{ matrix.version }}"
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true
@@ -63,13 +63,13 @@ jobs:
         if: ${{ always() }}
         run: |
           buildevents step $TRACE_ID $STEP_ID $STEP_START 'Set up environment'
-          echo STEP_ID=${{matrix.architecture}}-${{matrix.image}}-provision >> $GITHUB_ENV
+          echo STEP_ID=${{ matrix.architecture }}-${{ matrix.image }}-provision >> $GITHUB_ENV
           echo STEP_START=$(date +%s) >> $GITHUB_ENV
 
       - name: 'Provision test cluster'
         timeout-minutes: 15
         run: |
-          echo ::group::=== SPEC PREP ===
+          echo ::group::=== PREP ===
             mkdir -p $HOME/.ssh
             echo 'Host *'                      >  $HOME/.ssh/config
             echo '    ServerAliveInterval 150' >> $HOME/.ssh/config
@@ -84,8 +84,8 @@ jobs:
               bundle exec bolt plan run peadm_spec::provision_test_cluster \
                 --modulepath spec/fixtures/modules \
                 provider=provision_service \
-                image=${{matrix.image}} \
-                architecture=${{matrix.architecture}}
+                image=${{ matrix.image }} \
+                architecture=${{ matrix.architecture }}
 
           echo ::endgroup::
           echo ::group::=== REQUEST ===
@@ -101,7 +101,7 @@ jobs:
         if: ${{ always() }}
         run: |
           buildevents step $TRACE_ID $STEP_ID $STEP_START 'Provision test cluster'
-          echo STEP_ID=${{matrix.architecture}}-${{matrix.image}}-install >> $GITHUB_ENV
+          echo STEP_ID=${{ matrix.architecture }}-${{ matrix.image }}-install >> $GITHUB_ENV
           echo STEP_START=$(date +%s) >> $GITHUB_ENV
 
       - name: 'Install PE on test cluster'
@@ -111,14 +111,14 @@ jobs:
             bundle exec bolt plan run peadm_spec::install_test_cluster \
               --inventoryfile spec/fixtures/litmus_inventory.yaml \
               --modulepath spec/fixtures/modules \
-              architecture=${{matrix.architecture}} \
-              version=${{matrix.version}}
+              architecture=${{ matrix.architecture }} \
+              version=${{ matrix.version }}
 
       - name: "Honeycomb: Record install time"
         if: ${{ always() }}
         run: |
           buildevents step $TRACE_ID $STEP_ID $STEP_START 'Install PE on test cluster'
-          echo STEP_ID=${{matrix.architecture}}-${{matrix.image}}-tear_down >> $GITHUB_ENV
+          echo STEP_ID=${{ matrix.architecture }}-${{ matrix.image }}-tear_down >> $GITHUB_ENV
           echo STEP_START=$(date +%s) >> $GITHUB_ENV
 
       - name: 'Tear down test cluster'
