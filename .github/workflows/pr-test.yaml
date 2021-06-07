@@ -12,7 +12,7 @@ env:
 
 jobs:
   smoke-test:
-    name: "Install test: ${{matrix.architecture}}, ${{matrix.image}}, PE ${{matrix.pe-version}}"
+    name: "Install test: ${{matrix.architecture}}, ${{matrix.image}}, PE ${{matrix.version}}"
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true
@@ -20,14 +20,15 @@ jobs:
       BUILDEVENT_FILE: '../buildevents.txt'
     strategy:
       fail-fast: false
-    matrix:
-      architecture:
-        - standard
-        - large
-      version:
-        - 2019.8.5
-      image:
-        - centos-7
+      matrix:
+        architecture:
+          - standard-with-dr
+          - large
+          - extra-large-with-dr
+        version:
+          - 2019.8.5
+        image:
+          - centos-7
 
     steps:
       - name: "Honeycomb: Start recording"
@@ -111,7 +112,7 @@ jobs:
               --inventoryfile spec/fixtures/litmus_inventory.yaml \
               --modulepath spec/fixtures/modules \
               architecture=${{matrix.architecture}} \
-              version=${{matrix.pe-version}}
+              version=${{matrix.version}}
 
       - name: "Honeycomb: Record install time"
         if: ${{ always() }}
