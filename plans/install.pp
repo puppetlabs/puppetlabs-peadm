@@ -14,7 +14,7 @@
 #   compilers. This is used for DR configuration in large and extra large
 #   architectures.
 #
-plan peadm::provision (
+plan peadm::install (
   # Standard
   Peadm::SingleTargetSpec           $primary_host,
   Optional[Peadm::SingleTargetSpec] $primary_replica_host = undef,
@@ -49,9 +49,9 @@ plan peadm::provision (
   Optional[String]                  $stagingdir    = undef,
   Enum[direct,bolthost]             $download_mode = 'bolthost',
 ) {
-  peadm::check_bolt_version()
+  peadm::assert_supported_bolt_version()
 
-  peadm::validate_version($version)
+  peadm::assert_supported_pe_version($version)
 
   $install_result = run_plan('peadm::action::install',
     # Standard

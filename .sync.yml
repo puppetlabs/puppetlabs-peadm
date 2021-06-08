@@ -26,3 +26,6 @@ spec/spec_helper.rb:
     - '.plan_cache.json'
     - '.resource_types/'
     - 'bolt-debug.log'
+    - '!spec/fixtures/modules' # Have to reset this one to correctly not ignore peadm_spec
+    - 'spec/fixtures/modules/*'
+    - '!spec/fixtures/modules/peadm_spec'
