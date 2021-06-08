@@ -3,20 +3,20 @@
 # @param compiler_host _ The hostname and certname of the new compiler
 # @param dns_alt_names _ A comma_separated list of DNS alt names for the compiler
 # @param primary_host _ The hostname and certname of the primary Puppet server
-# @param postgresql_server_host _ The hostname and certname of the PE-PostgreSQL server with availability group $avail_group_letter
+# @param puppetdb_database_host _ The hostname and certname of the PE-PostgreSQL server with availability group $avail_group_letter
 plan peadm::add_compiler(
   Enum['A', 'B'] $avail_group_letter,
   Optional[String[1]] $dns_alt_names = undef,
   Peadm::SingleTargetSpec $compiler_host,
   Peadm::SingleTargetSpec $primary_host,
-  Peadm::SingleTargetSpec $postgresql_server_host,
+  Peadm::SingleTargetSpec $puppetdb_database_host,
 ){
   $compiler_target          = peadm::get_targets($compiler_host, 1)
   $primary_target           = peadm::get_targets($primary_host, 1)
-  $postgresql_server_target = peadm::get_targets($postgresql_server_host, 1)
+  $postgresql_server_target = peadm::get_targets($puppetdb_database_host, 1)
 
   # Stop puppet.service
-  run_command('systemctl stop puppet.service', $postgresql_server_target)
+  run_command('systemctl stop puppet.service', $puppetdb_database_target)
 
   # Add the following two lines to /opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf
   # 
@@ -35,7 +35,7 @@ plan peadm::add_compiler(
   }
 
   # Reload pe-postgresql.service
-  run_command('systemctl reload pe-postgresql.service', $postgresql_server_target)
+  run_command('systemctl reload pe-postgresql.service', $puppetdb_database_target)
 
   # Install the puppet agent making sure to specify an availability group letter, A or B, as an extension request.
   $dns_alt_names_flag = $dns_alt_names? {
@@ -77,11 +77,11 @@ plan peadm::add_compiler(
     },
   )
 
-  # On <postgresql-server-host> run the puppet agent
-  run_task('peadm::puppet_runonce', $postgresql_server_target)
+  # On <puppetdb_database_host> run the puppet agent
+  run_task('peadm::puppet_runonce', $puppetdb_database_target)
 
-  # On <postgresql-server-host> start puppet.service
-  run_command('systemctl start puppet.service', $postgresql_server_target)
+  # On <puppetdb_database_host> start puppet.service
+  run_command('systemctl start puppet.service', $puppetdb_database_target)
 
   return("Adding or replacing compiler ${$compiler_target.peadm::certname()} succeeded.")
 
