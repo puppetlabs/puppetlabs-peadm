@@ -11,9 +11,9 @@ plan peadm::add_compiler(
   Peadm::SingleTargetSpec $primary_host,
   Peadm::SingleTargetSpec $postgresql_server_host,
 ){
-  $compiler_target                  = peadm::get_targets($compiler_host, 1)
-  $primary_target                   = peadm::get_targets($primary_host, 1)
-  $postgresql_server_target         = peadm::get_targets($postgresql_server_host, 1)
+  $compiler_target          = peadm::get_targets($compiler_host, 1)
+  $primary_target           = peadm::get_targets($primary_host, 1)
+  $postgresql_server_target = peadm::get_targets($postgresql_server_host, 1)
 
   # Stop puppet.service
   run_command('systemctl stop puppet.service', $postgresql_server_target)
@@ -26,11 +26,11 @@ plan peadm::add_compiler(
   apply($postgresql_server_target) {
     file_line { 'pe-puppetdb-pe-puppetdb-map':
       path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf',
-      line => "pe-puppetdb-pe-puppetdb-map ${compiler_target.peadm::target_name()} pe-puppetdb",
+      line => "pe-puppetdb-pe-puppetdb-map ${compiler_target.peadm::certname()} pe-puppetdb",
     }
     file_line { 'pe-puppetdb-pe-puppetdb-migrator-map':
       path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf',
-      line => "pe-puppetdb-pe-puppetdb-migrator-map ${compiler_target.peadm::target_name()} pe-puppetdb-migrator",
+      line => "pe-puppetdb-pe-puppetdb-migrator-map ${compiler_target.peadm::certname()} pe-puppetdb-migrator",
     }
   }
 
@@ -45,11 +45,11 @@ plan peadm::add_compiler(
 
   # we first assume that there is no agent installed on the node. If there is, nothing will happen.
   run_task('peadm::agent_install', $compiler_target,
-    server        => $primary_target.peadm::target_name(),
+    server        => $primary_target.peadm::certname(),
     install_flags => $dns_alt_names_flag + [
       "extension_requests:${peadm::oid('pp_auth_role')}=pe_compiler",
       "extension_requests:${peadm::oid('peadm_availability_group')}=${avail_group_letter}",
-      "main:certname=${compiler_target.peadm::target_name()}",
+      "main:certname=${compiler_target.peadm::certname()}",
     ],
   )
 
@@ -60,7 +60,7 @@ plan peadm::add_compiler(
   run_task('peadm::submit_csr', $compiler_target, {'_catch_errors' => true})
 
   # On primary, if necessary, sign the certificate request
-  run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$compiler_target.peadm::target_name()] } )
+  run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$compiler_target.peadm::certname()] } )
 
   # On <compiler-host>, run the puppet agent 
   run_task('peadm::puppet_runonce', $compiler_target)
@@ -68,7 +68,7 @@ plan peadm::add_compiler(
   # If there was already a signed cert, force the certificate extensions we want
   # TODO: update peadm::util::add_cert_extensions to take care of dns alt names
   run_plan('peadm::util::add_cert_extensions', $compiler_target,
-    primary_host => $primary_target.peadm::target_name(),
+    primary_host => $primary_target.peadm::certname(),
     extensions  => {
       peadm::oid('pp_auth_role')               => 'pe_compiler',
       peadm::oid('peadm_availability_group') => $avail_group_letter,
@@ -81,6 +81,6 @@ plan peadm::add_compiler(
   # On <postgresql-server-host> start puppet.service
   run_command('systemctl start puppet.service', $postgresql_server_target)
 
-  return("Adding or replacing compiler ${$compiler_target.peadm::target_name()} succeeded.")
+  return("Adding or replacing compiler ${$compiler_target.peadm::certname()} succeeded.")
 
 }
