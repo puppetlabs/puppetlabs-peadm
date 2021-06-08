@@ -13,7 +13,7 @@ plan peadm::add_compiler(
 ){
   $compiler_target          = peadm::get_targets($compiler_host, 1)
   $primary_target           = peadm::get_targets($primary_host, 1)
-  $postgresql_server_target = peadm::get_targets($puppetdb_database_host, 1)
+  $puppetdb_database_target = peadm::get_targets($puppetdb_database_host, 1)
 
   # Stop puppet.service
   run_command('systemctl stop puppet.service', $puppetdb_database_target)
