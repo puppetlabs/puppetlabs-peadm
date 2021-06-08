@@ -1,3 +1,5 @@
+# Set up the node_manager.yaml file in the temporary Bolt confdir so that
+# node_group resources may be used during Bolt apply runs
 class peadm::setup::node_manager_yaml (
   String $primary_host
 ) {

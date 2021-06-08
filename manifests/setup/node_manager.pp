@@ -124,7 +124,9 @@ class peadm::setup::node_manager (
         'database_host' => $puppetdb_database_host,
       },
       'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_b_pool_address].filter |$_| { $_ }, # lint:ignore:single_quote_string_with_variables
+        # lint:ignore:single_quote_string_with_variables
+        'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_b_pool_address].filter |$_| { $_ },
+        # lint:endignore
         'puppetdb_port' => [8081],
       }
     },
@@ -178,7 +180,9 @@ class peadm::setup::node_manager (
           'database_host' => $puppetdb_database_replica_host,
         },
         'puppet_enterprise::profile::master'   => {
-          'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_a_pool_address], # lint:ignore:single_quote_string_with_variables
+          # lint:ignore:single_quote_string_with_variables
+          'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_a_pool_address],
+          # lint:endignore
           'puppetdb_port' => [8081],
         }
       },
