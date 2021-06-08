@@ -23,7 +23,7 @@ plan peadm::add_compiler(
   # pe-puppetdb-pe-puppetdb-map <new-compiler-host> pe-puppetdb
   # pe-puppetdb-pe-puppetdb-migrator-map <new-compiler-host> pe-puppetdb-migrator
 
-  apply($postgresql_server_target) {
+  apply($puppetdb_database_target) {
     file_line { 'pe-puppetdb-pe-puppetdb-map':
       path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf',
       line => "pe-puppetdb-pe-puppetdb-map ${compiler_target.peadm::certname()} pe-puppetdb",
