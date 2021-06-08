@@ -14,7 +14,7 @@
 #   compilers. This is used for DR configuration in large and extra large
 #   architectures.
 #
-plan peadm::provision (
+plan peadm::install (
   # Standard
   Peadm::SingleTargetSpec           $primary_host,
   Optional[Peadm::SingleTargetSpec] $primary_replica_host = undef,

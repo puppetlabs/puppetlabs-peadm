@@ -50,7 +50,7 @@ plan peadm_spec::install_test_cluster (
     }
 
   $install_result =
-    run_plan("peadm::provision", $arch_params + $common_params)
+    run_plan("peadm::install", $arch_params + $common_params)
 
   return($install_result)
 }
