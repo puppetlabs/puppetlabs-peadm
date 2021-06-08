@@ -13,7 +13,7 @@ plan peadm::util::insert_csr_extension_requests (
 
     # If we're merging extension requests, existing requests will be preserved.
     # If we're not merging, only ours will be used; existing requests will be
-    # overritten.
+    # overwritten.
     $csr_file_data = $merge ? {
       true  => $csr_attributes_data.deep_merge({'extension_requests' => $extension_requests}),
       false => ($csr_attributes_data + {'extension_requests' => $extension_requests}),
