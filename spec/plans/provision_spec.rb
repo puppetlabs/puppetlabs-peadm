@@ -11,4 +11,11 @@ describe 'peadm::provision' do
   before(:all) do
     BoltSpec::Plans.init
   end
+
+
+  it 'minimum variables to run' do
+    expect_plan('peadm::action::install')
+    expect_plan('peadm::action::configure')
+    expect(run_plan('peadm::provision', 'primary_host' => 'primary', 'console_password' => 'puppetlabs')).to be_ok
+  end
 end
