@@ -2,7 +2,7 @@
 # @param avail_group_letter _ Either A or B; whichever of the two letter designations the compiler is being assigned to
 # @param compiler_host _ The hostname and certname of the new compiler
 # @param dns_alt_names _ A comma_separated list of DNS alt names for the compiler
-# @param primary_server_host _ The hostname and certname of the primary Puppet server
+# @param primary_host _ The hostname and certname of the primary Puppet server
 # @param postgresql_server_host _ The hostname and certname of the PE-PostgreSQL server with availability group $avail_group_letter
 plan peadm::add_compiler(
   Enum['A', 'B'] $avail_group_letter,
@@ -54,9 +54,11 @@ plan peadm::add_compiler(
   )
 
   # On <compiler-host>, run the puppet agent 
+  # ignoring errors to simplify logic
   run_task('peadm::puppet_runonce', $compiler_target, {'_catch_errors' => true})
 
   # If necessary, manually submit a CSR
+  # ignoring errors to simplify logic
   run_task('peadm::submit_csr', $compiler_target, {'_catch_errors' => true})
 
   # On primary, if necessary, sign the certificate request
