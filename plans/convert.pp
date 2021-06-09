@@ -217,6 +217,8 @@ plan peadm::convert (
           internal_compiler_b_pool_address => $internal_compiler_b_pool_address,
           require                          => Class['peadm::setup::node_manager_yaml'],
         }
+
+        include peadm::setup::convert_node_manager
       }
     }
     else {
