@@ -72,7 +72,10 @@ class peadm::setup::node_manager (
     default => { 'pe_repo' => { 'compile_master_pool_address' => $compiler_pool_address } },
   }
 
-  node_group { 'PE Primary':
+  # We do not call this node group PE Primary because it is modifying a
+  # built-in group, rather than creating a new one. And, as of PE 2021.1, the
+  # name is still PE Master.
+  node_group { 'PE Master':
     parent    => 'PE Infrastructure',
     data      => $compiler_pool_address_data,
     variables => { 'pe_master' => true },
