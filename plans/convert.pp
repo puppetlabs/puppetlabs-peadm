@@ -55,7 +55,7 @@ plan peadm::convert (
   # Get trusted fact information for all compilers. Use peadm::certname() as
   # the hash key because the apply block below will break trying to parse the
   # $compiler_extensions variable if it has Target-type hash keys.
-  $cert_extensions = run_task('peadm::trusted_facts', $all_targets).reduce({}) |$memo,$result| {
+  $cert_extensions = run_task('peadm::cert_data', $all_targets).reduce({}) |$memo,$result| {
     $memo + { $result.target.peadm::certname() => $result['extensions'] }
   }
 

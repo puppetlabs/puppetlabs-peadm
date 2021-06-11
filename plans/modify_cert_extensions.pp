@@ -12,7 +12,7 @@ plan peadm::modify_cert_extensions (
 
   # TODO: convert $add and $remove to OIDs, if friendly names have been given
 
-  $primary_certname = run_task('peadm::trusted_facts', $primary_target).first['certname']
+  $primary_certname = run_task('peadm::cert_data', $primary_target).first['certname']
 
   # Do the primary first, if it's in the list
   if ($primary_target in $all_targets) {

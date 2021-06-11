@@ -16,7 +16,7 @@ plan peadm::subplans::modify_cert_extensions (
   }
 
   # Figure out some information from the existing certificate
-  $certdata = run_task('peadm::trusted_facts', $target).first.value
+  $certdata = run_task('peadm::cert_data', $target).first.value
   $certname = $certdata['certname']
   $target_is_primary = ($certname == $primary_certname)
 

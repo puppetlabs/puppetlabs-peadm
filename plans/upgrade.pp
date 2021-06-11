@@ -79,8 +79,8 @@ plan peadm::upgrade (
 
   out::message('# Gathering information')
 
-  # Gather trusted facts from all systems
-  $cert_extensions = run_task('peadm::trusted_facts', $all_targets).reduce({}) |$memo,$result| {
+  # Gather certificate extension information from all systems
+  $cert_extensions = run_task('peadm::cert_data', $all_targets).reduce({}) |$memo,$result| {
     $memo + { $result.target.name => $result['extensions'] }
   }
 
