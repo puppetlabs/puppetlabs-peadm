@@ -53,7 +53,10 @@ plan peadm::subplans::modify_cert_extensions (
   unless $ca_clean_result.ok {
     # fail the plan unless it's a known circumstance in which it's okay to proceed.
     # Scenario 1: the primary's cert can't be cleaned because it's already revoked.
-    unless ($target_is_primary and $ca_clean_result[merged_output] =~ /certificate revoked/) {
+    # Scenario 2: the primary's cert can't be cleaned because it's been deleted.
+    unless ($target_is_primary and (
+              $ca_clean_result[merged_output] =~ /certificate revoked/ or
+              $ca_clean_result[merged_output] =~ /Could not find 'hostcert'/)) {
       fail_plan($ca_clean_result)
     }
   }
@@ -76,11 +79,9 @@ plan peadm::subplans::modify_cert_extensions (
   }
   else {
     # PRIMARY cert regeneration
-    # Store the node's current dns-alt-names, for use as a flag restoring
-    # them later
-    $alt_names_flag = $certdata['dns-alt-names'] ? {
-      undef   => '',
-      default => "--subject-alt-names ${certdata['dns-alt-names'].join(',')}",
+    $alt_names = $certdata['dns-alt-names'].empty ? {
+      true  => $certdata['certname'],
+      false => $certdata['dns-alt-names'].join(','),
     }
 
     # The docs are broken, and the process is unclean. Sadface.
@@ -91,11 +92,12 @@ plan peadm::subplans::modify_cert_extensions (
         /etc/puppetlabs/puppet/ssl/private_keys/${certname}.pem \
         /etc/puppetlabs/puppet/ssl/public_keys/${certname}.pem \
         /etc/puppetlabs/puppet/ssl/certificate_requests/${certname}.pem \
+        /etc/puppetlabs/puppet/ssl/ca/signed/${certname}.pem \
       |-HEREDOC
     run_command(@("HEREDOC"/L), $target)
       /opt/puppetlabs/bin/puppetserver ca generate \
         --certname ${certname} \
-        ${alt_names_flag} \
+        --subject-alt-names ${alt_names} \
         --ca-client
       |-HEREDOC
     run_task('service', $target, {action => 'start', name => 'pe-puppetserver'})
