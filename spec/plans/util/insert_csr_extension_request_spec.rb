@@ -1,4 +1,4 @@
-# spec/spec_helper.rb
+require 'spec_helper'
 
 describe 'peadm::util::insert_csr_extension_requests' do
   include BoltSpec::Plans
