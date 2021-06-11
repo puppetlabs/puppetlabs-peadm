@@ -1,16 +1,7 @@
 # spec/spec_helper.rb
 
-# Load the BoltSpec library
-require 'bolt_spec/plans'
-
 describe 'peadm::util::add_cert_extensions' do
-  # Include the BoltSpec library functions
   include BoltSpec::Plans
-
-  # Configure Puppet and Bolt before running any tests
-  before(:each) do
-    BoltSpec::Plans.init
-  end
 
   describe 'basic functionality' do
     it 'runs successfully against multiple targets' do

@@ -1,16 +1,7 @@
 # spec/spec_helper.rb
 
-# Load the BoltSpec library
-require 'bolt_spec/plans'
-
 describe 'peadm::action::configure' do
-  # Include the BoltSpec library functions
   include BoltSpec::Plans
-
-  # Configure Puppet and Bolt before running any tests
-  before(:each) do
-    BoltSpec::Plans.init
-  end
 
   describe 'Standard architecture without DR' do
     it 'runs successfully' do
