@@ -17,12 +17,8 @@ plan peadm::convert (
   Array[String]                     $dns_alt_names                    = [ ],
 
   Optional[Enum[
-    'convert-primary',
-    'convert-replica',
-    'convert-database',
-    'convert-database-replica',
-    'convert-compilers-a',
-    'convert-compilers-b',
+    'modify-primary-certs',
+    'modify-infra-certs',
     'convert-node-groups',
     'finalize']] $begin_at_step = undef,
 ) {
@@ -121,7 +117,7 @@ plan peadm::convert (
   # Modify csr_attributes.yaml and insert the peadm-specific OIDs to identify
   # each server's role and availability group
 
-  peadm::plan_step('convert-primary') || {
+  peadm::plan_step('modify-primary-cert') || {
     # If PE version is older than 2019.7
     if (versioncmp($pe_version, '2019.7.0') < 0) {
       apply($primary_target) {
@@ -129,16 +125,16 @@ plan peadm::convert (
       }
     }
 
-    run_plan('peadm::util::add_cert_extensions', $primary_target,
+    run_plan('peadm::modify_cert_extensions', $primary_target,
       primary_host => $primary_target,
-      extensions  => {
+      add          => {
         peadm::oid('peadm_role')               => 'puppet/server',
         peadm::oid('peadm_availability_group') => 'A',
       },
     )
   }
 
-  peadm::plan_step('convert-replica') || {
+  peadm::plan_step('modify-infra-certs') || {
     # If the orchestrator is in use, get certs fully straightened up before
     # proceeding
     if $all_targets.any |$target| { $target.protocol == 'pcp' } {
@@ -147,53 +143,57 @@ plan peadm::convert (
       wait_until_available($all_targets, wait_time => 120)
     }
 
-    run_plan('peadm::util::add_cert_extensions', $primary_replica_target,
-      primary_host => $primary_target,
-      extensions  => {
-        peadm::oid('peadm_role')               => 'puppet/server',
-        peadm::oid('peadm_availability_group') => 'B',
+    # Kick off all the cert modification jobs in parallel
+    $background_cert_jobs = [
+      background('modify-replica-cert') || {
+        run_plan('peadm::modify_cert_extensions', $primary_replica_target,
+          primary_host => $primary_target,
+          add          => {
+            peadm::oid('peadm_role')               => 'puppet/server',
+            peadm::oid('peadm_availability_group') => 'B',
+          },
+        )
       },
-    )
-  }
+      background('modify-primary-postgresql-cert') || {
+        run_plan('peadm::modify_cert_extensions', $puppetdb_database_target,
+          primary_host => $primary_target,
+          add          => {
+            peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
+            peadm::oid('peadm_availability_group') => 'A',
+          },
+        )
+      },
+      background('modify-replica-postgresql-cert') || {
+        run_plan('peadm::modify_cert_extensions', $puppetdb_database_replica_target,
+          primary_host => $primary_target,
+          add          => {
+            peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
+            peadm::oid('peadm_availability_group') => 'B',
+          },
+        )
+      },
+      background('modify-compilers-a-certs') || {
+        run_plan('peadm::modify_cert_extensions', $compiler_a_targets,
+          primary_host => $primary_target,
+          add          => {
+            peadm::oid('pp_auth_role')             => 'pe_compiler',
+            peadm::oid('peadm_availability_group') => 'A',
+          },
+        )
+      },
+      background('modify-compilers-b-certs') || {
+        run_plan('peadm::modify_cert_extensions', $compiler_b_targets,
+          primary_host => $primary_target,
+          add          => {
+            peadm::oid('pp_auth_role')             => 'pe_compiler',
+            peadm::oid('peadm_availability_group') => 'B',
+          },
+        )
+      },
+    ]
 
-  peadm::plan_step('convert-database') || {
-    run_plan('peadm::util::add_cert_extensions', $puppetdb_database_target,
-      primary_host => $primary_target,
-      extensions  => {
-        peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
-        peadm::oid('peadm_availability_group') => 'A',
-      },
-    )
-  }
-
-  peadm::plan_step('convert-database-replica') || {
-    run_plan('peadm::util::add_cert_extensions', $puppetdb_database_replica_target,
-      primary_host => $primary_target,
-      extensions  => {
-        peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
-        peadm::oid('peadm_availability_group') => 'B',
-      },
-    )
-  }
-
-  peadm::plan_step('convert-compilers-a') || {
-    run_plan('peadm::util::add_cert_extensions', $compiler_a_targets,
-      primary_host => $primary_target,
-      extensions  => {
-        peadm::oid('pp_auth_role')             => 'pe_compiler',
-        peadm::oid('peadm_availability_group') => 'A',
-      },
-    )
-  }
-
-  peadm::plan_step('convert-compilers-b') || {
-    run_plan('peadm::util::add_cert_extensions', $compiler_b_targets,
-      primary_host => $primary_target,
-      extensions  => {
-        peadm::oid('pp_auth_role')             => 'pe_compiler',
-        peadm::oid('peadm_availability_group') => 'B',
-      },
-    )
+    # Wait for all the cert modification jobs to complete
+    wait($background_cert_jobs)
   }
 
   peadm::plan_step('convert-node-groups') || {
