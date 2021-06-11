@@ -84,7 +84,7 @@ plan peadm::util::add_cert_extensions (
       run_command(@("HEREDOC"/L), $target)
         ${puppet} ssl download_cert --certname ${certname} || \
         ${puppet} certificate find --ca-location remote ${certname}
-        | HEREDOC
+        |-HEREDOC
     }
     else {
       # MASTER cert regeneration
