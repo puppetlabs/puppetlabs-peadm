@@ -1,4 +1,4 @@
-# spec/spec_helper.rb
+require 'spec_helper'
 
 describe 'peadm::install' do
   include BoltSpec::Plans
