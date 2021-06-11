@@ -1,8 +1,8 @@
 # @return [Boolean] true if the version is supported, raise error otherwise
 # @param [String] the version number to check
-function peadm::validate_version(
+function peadm::assert_supported_pe_version (
   String $version,
-) >> Boolean {
+) >> Struct[{'supported' => Boolean}] {
   $supported = ($version =~ SemVerRange('>= 2019.7.0 <= 2021.0.0'))
 
   unless $supported {
@@ -17,5 +17,6 @@ function peadm::validate_version(
 
       | REASON
   }
-  $supported
+
+  return({ 'supported' => $supported })
 }

@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-describe 'peadm::validate_version' do
+describe 'peadm::assert_supported_pe_version' do
   context 'invalid PE versions' do
     it 'rejects PE versions that are too new' do
       is_expected.to run.with_params('2021.1.0').and_raise_error(Puppet::ParseError, %r{This\ version\ of\ the})
@@ -15,15 +15,15 @@ describe 'peadm::validate_version' do
 
   context 'valid PE versions' do
     it 'accepts the minimum supported version' do
-      is_expected.to run.with_params('2019.7.0').and_return(true)
+      is_expected.to run.with_params('2019.7.0').and_return({ 'supported' => true })
     end
 
     it 'accepts the newest supported version number' do
-      is_expected.to run.with_params('2021.0.0').and_return(true)
+      is_expected.to run.with_params('2021.0.0').and_return({ 'supported' => true })
     end
 
     it 'accepts a version in the middle' do
-      is_expected.to run.with_params('2019.8.4').and_return(true)
+      is_expected.to run.with_params('2019.8.4').and_return({ 'supported' => true })
     end
   end
 end

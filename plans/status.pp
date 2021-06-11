@@ -14,7 +14,7 @@ plan peadm::status(
   Boolean $summarize = true,
   Boolean $colors = $format ? { json => false, default => true }
 ) {
-  peadm::check_bolt_version()
+  peadm::assert_supported_bolt_version()
 
   $results = run_task('peadm::infrastatus', $targets, { format => 'json'})
   # returns the data in a hash 

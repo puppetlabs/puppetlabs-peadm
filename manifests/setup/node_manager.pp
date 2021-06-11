@@ -72,7 +72,10 @@ class peadm::setup::node_manager (
     default => { 'pe_repo' => { 'compile_master_pool_address' => $compiler_pool_address } },
   }
 
-  node_group { 'PE Primary':
+  # We do not call this node group PE Primary because it is modifying a
+  # built-in group, rather than creating a new one. And, as of PE 2021.1, the
+  # name is still PE Master.
+  node_group { 'PE Master':
     parent    => 'PE Infrastructure',
     data      => $compiler_pool_address_data,
     variables => { 'pe_master' => true },
@@ -124,7 +127,9 @@ class peadm::setup::node_manager (
         'database_host' => $puppetdb_database_host,
       },
       'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_b_pool_address].filter |$_| { $_ }, # lint:ignore:single_quote_string_with_variables
+        # lint:ignore:single_quote_string_with_variables
+        'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_b_pool_address].filter |$_| { $_ },
+        # lint:endignore
         'puppetdb_port' => [8081],
       }
     },
@@ -178,7 +183,9 @@ class peadm::setup::node_manager (
           'database_host' => $puppetdb_database_replica_host,
         },
         'puppet_enterprise::profile::master'   => {
-          'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_a_pool_address], # lint:ignore:single_quote_string_with_variables
+          # lint:ignore:single_quote_string_with_variables
+          'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_a_pool_address],
+          # lint:endignore
           'puppetdb_port' => [8081],
         }
       },
