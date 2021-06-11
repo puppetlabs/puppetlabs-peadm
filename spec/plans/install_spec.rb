@@ -3,7 +3,7 @@
 # Load the BoltSpec library
 require 'bolt_spec/plans'
 
-describe 'peadm::misc::divert_code_manager' do
+describe 'peadm::install' do
   # Include the BoltSpec library functions
   include BoltSpec::Plans
 
@@ -13,9 +13,10 @@ describe 'peadm::misc::divert_code_manager' do
   end
 
   describe 'basic functionality' do
-    it 'runs successfully' do
-      expect_task('peadm::divert_code_manager')
-      expect(run_plan('peadm::misc::divert_code_manager', 'primary_host' => 'primary')).to be_ok
+    it 'runs successfully with the minimum required parameters' do
+      expect_plan('peadm::action::install')
+      expect_plan('peadm::action::configure')
+      expect(run_plan('peadm::install', 'primary_host' => 'primary', 'console_password' => 'puppetlabs')).to be_ok
     end
   end
 end
