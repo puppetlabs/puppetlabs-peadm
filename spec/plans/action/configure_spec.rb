@@ -1,4 +1,4 @@
-# spec/spec_helper.rb
+require 'spec_helper'
 
 describe 'peadm::action::configure' do
   include BoltSpec::Plans

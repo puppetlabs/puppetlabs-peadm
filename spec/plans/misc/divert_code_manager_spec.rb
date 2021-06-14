@@ -1,4 +1,4 @@
-# spec/spec_helper.rb
+require 'spec_helper'
 
 describe 'peadm::misc::divert_code_manager' do
   include BoltSpec::Plans
