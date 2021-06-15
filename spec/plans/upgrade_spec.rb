@@ -1,4 +1,4 @@
-# spec/spec_helper.rb
+require 'spec_helper'
 
 describe 'peadm::upgrade' do
   # Include the BoltSpec library functions
@@ -10,7 +10,7 @@ describe 'peadm::upgrade' do
 
   it 'minimum variables to run' do
     allow_out_message
-    expect_task('peadm::trusted_facts').return_for_targets(
+    expect_task('peadm::cert_data').return_for_targets(
       'primary' => trustedjson,
     )
     expect_task('peadm::read_file').always_return({ 'content' => 'mock' })
@@ -18,7 +18,7 @@ describe 'peadm::upgrade' do
     expect_plan('peadm::util::retrieve_and_upload')
     expect_command('systemctl stop puppet')
     allow_task('peadm::puppet_runonce')
-    expect_plan('peadm::util::add_cert_extensions')
+    expect_plan('peadm::modify_cert_extensions')
     allow_apply
     expect_task('peadm::pe_install')
     allow_task('peadm::puppet_infra_upgrade')

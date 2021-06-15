@@ -216,9 +216,9 @@ plan peadm::upgrade (
     }
 
     # If necessary, add missing cert extensions to compilers
-    run_plan('peadm::util::add_cert_extensions', $convert_targets,
+    run_plan('peadm::modify_cert_extensions', $convert_targets,
       primary_host => $primary_target,
-      extensions  => {
+      add          => {
         'pp_auth_role' => 'pe_compiler',
       },
     )
