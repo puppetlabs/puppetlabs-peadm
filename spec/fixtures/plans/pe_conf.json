@@ -1,0 +1,29 @@
+{
+  "puppet_enterprise::profile::master::java_args": { 
+    "Xmx": "2048m",
+    "Xms": "512m"
+  },
+  "puppet_enterprise::profile::console::java_args": {
+    "Xmx": "768m",
+    "Xms": "256m"
+  },
+  "puppet_enterprise::profile::orchestrator::java_args": {
+    "Xmx": "768m",
+    "Xms": "256m"
+  },
+  "puppet_enterprise::profile::puppetdb::java_args": {
+    "Xmx": "768m",
+    "Xms": "256m"
+  },
+  "console_admin_password": "puppetlabs",
+  "puppet_enterprise::puppet_master_host": "pe-server-d8b317-0.us-west1-a.c.davidsand.internal",
+  "puppet_enterprise::database_host": "pe-server-d8b317-0.us-west1-a.c.davidsand.internal",
+  "pe_install::puppet_master_dnsaltnames": [
+    "puppet",
+    "pe-server-d8b317-0.us-west1-a.c.davidsand.internal"
+  ],
+  "puppet_enterprise::profile::master::code_manager_auto_configure": true,
+  "puppet_enterprise::profile::database::puppetdb_hosts": [
+    "pe-server-d8b317-0.us-west1-a.c.davidsand.internal"
+  ]
+}
