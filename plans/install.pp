@@ -23,7 +23,7 @@ plan peadm::install (
   Optional[TargetSpec]              $compiler_hosts = undef,
 
   # Extra Large
-  Optional[Peadm::SingleTargetSpec] $primary_postgresql_host         = undef,
+  Optional[Peadm::SingleTargetSpec] $primary_postgresql_host = undef,
   Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
 
   # Common Configuration

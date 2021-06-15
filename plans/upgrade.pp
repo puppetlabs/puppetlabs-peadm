@@ -21,7 +21,7 @@ plan peadm::upgrade (
   Optional[TargetSpec]              $compiler_hosts      = undef,
 
   # Extra Large
-  Optional[Peadm::SingleTargetSpec] $primary_postgresql_host         = undef,
+  Optional[Peadm::SingleTargetSpec] $primary_postgresql_host = undef,
   Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
 
   # Common Configuration
@@ -57,9 +57,9 @@ plan peadm::upgrade (
   )
 
   # Convert inputs into targets.
-  $primary_target                   = peadm::get_targets($primary_host, 1)
-  $replica_target           = peadm::get_targets($replica_host, 1)
-  $primary_postgresql_target         = peadm::get_targets($primary_postgresql_host, 1)
+  $primary_target            = peadm::get_targets($primary_host, 1)
+  $replica_target            = peadm::get_targets($replica_host, 1)
+  $primary_postgresql_target = peadm::get_targets($primary_postgresql_host, 1)
   $replica_postgresql_target = peadm::get_targets($replica_postgresql_host, 1)
   $compiler_targets                 = peadm::get_targets($compiler_hosts)
 
