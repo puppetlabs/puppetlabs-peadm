@@ -1,4 +1,5 @@
-# spec/spec_helper.rb
+require 'spec_helper'
+
 describe 'peadm::util::retrieve_and_upload' do
   # Include the BoltSpec library functions
   include BoltSpec::Plans
@@ -10,13 +11,33 @@ describe 'peadm::util::retrieve_and_upload' do
       'local://localhost' => { 'size' => '2' },
       'primary' => { 'size' => 'null' },
     )
-    expect_upload('/tmp/download').with_destination('/tmp/upload').with_params({}).return do |targets, source, destination, _params|
-      results = targets.map do |target|
-        Bolt::Result.new(target, value: { 'path' => File.join(destination, source) })
+
+    #########
+    ## <🤮>
+    # rubocop:disable AnyInstance
+    allow(Pathname).to receive(:new).and_call_original
+    allow(Puppet::FileSystem).to receive(:exist?).and_call_original
+    allow_any_instance_of(BoltSpec::Plans::MockExecutor).to receive(:module_file_id).and_call_original
+
+    mockpath = instance_double('Pathname', absolute?: true)
+    allow(Pathname).to receive(:new).with('/tmp/download').and_return(mockpath)
+    allow(Puppet::FileSystem).to receive(:exist?).with('/tmp/download').and_return(true)
+    allow_any_instance_of(BoltSpec::Plans::MockExecutor).to(receive(:module_file_id))
+                                                        .with('/tmp/download')
+                                                        .and_return('/tmp/download')
+
+    expect_upload('/tmp/download')
+      .with_destination('/tmp/upload')
+      .return do |targets:, source:, destination:, **_kwargs|
+        results = targets.map do |target|
+          Bolt::Result.new(target, value: { 'path' => File.join(destination, source) })
+        end
+        Bolt::ResultSet.new(results)
       end
 
-      Bolt::ResultSet.new(results)
-    end
+    # rubocop:enable AnyInstance
+    ## </🤮>
+    ##########
 
     expect(run_plan('peadm::util::retrieve_and_upload', 'nodes' => 'primary', 'source' => '/tmp/source', 'upload_path' => '/tmp/upload', 'local_path' => '/tmp/download')).to be_ok
   end
