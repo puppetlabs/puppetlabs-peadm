@@ -14,8 +14,6 @@ describe 'peadm::modify_cert_extensions' do
       end
 
       it 'runs successfully ' do
-        pending('a BoltSpec bug related to parallelize() being fixed')
-
         allow_task('peadm::cert_data').always_return({ 'certname' => 'primary' })
         expect_plan('peadm::subplans::modify_cert_extensions').be_called_times(3)
 
