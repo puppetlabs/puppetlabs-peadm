@@ -1,13 +1,8 @@
-# spec/spec_helper.rb
-
-# Load the BoltSpec library
-require 'bolt_spec/plans'
+require 'spec_helper'
 
 describe 'peadm::action::install' do
   # Include the BoltSpec library functions
   include BoltSpec::Plans
-
-  # something needs done here for the function
 
   it 'minimum variables to run' do
     allow_task('peadm::precheck').return_for_targets(
@@ -26,10 +21,32 @@ describe 'peadm::action::install' do
     expect_task('peadm::code_manager')
     expect_task('peadm::puppet_runonce').be_called_times(2)
     expect_task('peadm::wait_until_service_ready')
-    #  expect(run_plan('peadm::action::install', 'primary_host' => 'primary', 'console_password' => 'puppetlabs')).to be_ok
-    #### Currently functions are not mockable in bolt testing as per
-    #### https://github.com/puppetlabs/bolt/issues/1812 to work around us use
-    #### above testing you can comment out function peadm::file_content_upload
-    #### in the puppet code and uncomment the expect above to test and confirm
+
+    #########
+    ## <🤮>
+    # rubocop:disable AnyInstance
+    allow(Tempfile).to receive(:new).and_call_original
+    allow(Pathname).to receive(:new).and_call_original
+    allow(Puppet::FileSystem).to receive(:exist?).and_call_original
+    allow_any_instance_of(BoltSpec::Plans::MockExecutor).to receive(:module_file_id).and_call_original
+
+    mockfile = instance_double('Tempfile', path: '/mock', write: nil, flush: nil, close: nil, unlink: nil)
+    mockpath = instance_double('Pathname', absolute?: true)
+    allow(Tempfile).to receive(:new).with('peadm').and_return(mockfile)
+    allow(Pathname).to receive(:new).with('/mock').and_return(mockpath)
+    allow(Puppet::FileSystem).to receive(:exist?).with('/mock').and_return(true)
+    allow_any_instance_of(BoltSpec::Plans::MockExecutor).to receive(:module_file_id).with('/mock').and_return('/mock')
+
+    allow_upload('/mock')
+    # rubocop:enable AnyInstance
+    ## </🤮>
+    ##########
+
+    params = {
+      'primary_host' => 'primary',
+      'console_password' => 'puppetlabs',
+    }
+
+    expect(run_plan('peadm::action::install', params)).to be_ok
   end
 end
