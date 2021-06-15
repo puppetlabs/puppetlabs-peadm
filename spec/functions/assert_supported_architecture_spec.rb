@@ -12,13 +12,13 @@ describe 'peadm::assert_supported_architecture' do
   let(:primary_host) do
     'puppet-std.puppet.vm'
   end
-  let(:primary_replica_host) do
+  let(:replica_host) do
     'pup-replica.puppet.vm'
   end
-  let(:puppetdb_database_host) do
+  let(:primary_postgresql_host) do
     'pup-db.puppet.vm'
   end
-  let(:puppetdb_database_replica_host) do
+  let(:replica_postgresql_host) do
     'pup-db-replica.puppet.vm'
   end
   let(:compiler_hosts) do
@@ -32,7 +32,7 @@ describe 'peadm::assert_supported_architecture' do
                                   'architecture' => 'standard')
   }
   it {
-    is_expected.to run.with_params(primary_host, primary_replica_host)
+    is_expected.to run.with_params(primary_host, replica_host)
                       .and_return('supported' => true,
                                   'disaster-recovery' => true,
                                   'architecture' => 'standard')
@@ -40,7 +40,7 @@ describe 'peadm::assert_supported_architecture' do
 
   it do
     is_expected.to run.with_params(primary_host,
-                                   primary_replica_host,
+                                   replica_host,
                                    nil,
                                    nil,
                                    compiler_hosts)
@@ -62,9 +62,9 @@ describe 'peadm::assert_supported_architecture' do
 
   it do
     is_expected.to run.with_params(primary_host,
-                                   primary_replica_host,
-                                   puppetdb_database_host,
-                                   puppetdb_database_replica_host,
+                                   replica_host,
+                                   primary_postgresql_host,
+                                   replica_postgresql_host,
                                    compiler_hosts)
                       .and_return('supported' => true,
                                   'disaster-recovery' => true,
@@ -74,7 +74,7 @@ describe 'peadm::assert_supported_architecture' do
   it do
     is_expected.to run.with_params(primary_host,
                                    nil,
-                                   puppetdb_database_host,
+                                   primary_postgresql_host,
                                    nil,
                                    compiler_hosts)
                       .and_return('supported' => true,

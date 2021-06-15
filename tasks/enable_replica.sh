@@ -14,7 +14,7 @@ set -e
 env PATH="/opt/puppetlabs/bin:${PATH}" \
     USER="$USER" \
     HOME="$HOME" \
-    puppet infrastructure enable replica "$PT_primary_replica" \
+    puppet infrastructure enable replica "$PT_replica" \
       --skip-agent-config \
       --topology mono-with-compile \
       --yes --token-file "$TOKEN_FILE"

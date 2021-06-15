@@ -14,17 +14,17 @@ fi
 set -e
 
 if [ "$PT_legacy" = "false" ]; then
-  puppet infrastructure provision replica "$PT_primary_replica" \
+  puppet infrastructure provision replica "$PT_replica" \
     --yes --token-file "$TOKEN_FILE" \
     --skip-agent-config \
     --topology mono-with-compile \
     --enable
 
 elif [ "$PT_legacy" = "true" ]; then
-  puppet infrastructure provision replica "$PT_primary_replica" \
+  puppet infrastructure provision replica "$PT_replica" \
     --token-file "$TOKEN_FILE"
 
-  puppet infrastructure enable replica "$PT_primary_replica" \
+  puppet infrastructure enable replica "$PT_replica" \
     --yes --token-file "$TOKEN_FILE" \
     --skip-agent-config \
     --topology mono-with-compile

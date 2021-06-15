@@ -1,8 +1,8 @@
 {
     "primary_host": "pe-xl-core-0.puppet.vm",
-    "puppetdb_database_host": "pe-xl-db-0.puppet.vm",
-    "puppetdb_database_replica_host": "pe-xl-db-1.puppet.vm",
-    "primary_replica_host": "pe-xl-core-1.puppet.vm",
+    "primary_postgresql_host": "pe-xl-db-0.puppet.vm",
+    "replica_postgresql_host": "pe-xl-db-1.puppet.vm",
+    "replica_host": "pe-xl-core-1.puppet.vm",
     "compiler_hosts": ["pe-xl-compiler-0.puppet.vm"],
     "version": "2019.8.5"
 }

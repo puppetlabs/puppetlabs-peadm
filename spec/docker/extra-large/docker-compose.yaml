@@ -32,7 +32,7 @@ services:
     image: pe-base
     privileged: true # required for systemd
     labels:
-      com.puppet.role: "puppetdb_database_host"
+      com.puppet.role: "primary_postgresql_host"
     ports:
       - "22"
     hostname: pe-xl-db-0.puppet.vm

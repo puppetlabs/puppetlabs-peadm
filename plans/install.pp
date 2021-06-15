@@ -17,14 +17,14 @@
 plan peadm::install (
   # Standard
   Peadm::SingleTargetSpec           $primary_host,
-  Optional[Peadm::SingleTargetSpec] $primary_replica_host = undef,
+  Optional[Peadm::SingleTargetSpec] $replica_host = undef,
 
   # Large
   Optional[TargetSpec]              $compiler_hosts = undef,
 
   # Extra Large
-  Optional[Peadm::SingleTargetSpec] $puppetdb_database_host         = undef,
-  Optional[Peadm::SingleTargetSpec] $puppetdb_database_replica_host = undef,
+  Optional[Peadm::SingleTargetSpec] $primary_postgresql_host         = undef,
+  Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
 
   # Common Configuration
   String                            $console_password,
@@ -55,15 +55,15 @@ plan peadm::install (
 
   $install_result = run_plan('peadm::action::install',
     # Standard
-    primary_host                    => $primary_host,
-    primary_replica_host            => $primary_replica_host,
+    primary_host                   => $primary_host,
+    replica_host                   => $replica_host,
 
     # Large
     compiler_hosts                 => $compiler_hosts,
 
     # Extra Large
-    puppetdb_database_host         => $puppetdb_database_host,
-    puppetdb_database_replica_host => $puppetdb_database_replica_host,
+    primary_postgresql_host        => $primary_postgresql_host,
+    replica_postgresql_host        => $replica_postgresql_host,
 
     # Common Configuration
     version                        => $version,
@@ -87,15 +87,15 @@ plan peadm::install (
 
   $configure_result = run_plan('peadm::action::configure',
     # Standard
-    primary_host                      => $primary_host,
-    primary_replica_host              => $primary_replica_host,
+    primary_host                     => $primary_host,
+    replica_host                     => $replica_host,
 
     # Large
     compiler_hosts                   => $compiler_hosts,
 
     # Extra Large
-    puppetdb_database_host           => $puppetdb_database_host,
-    puppetdb_database_replica_host   => $puppetdb_database_replica_host,
+    primary_postgresql_host          => $primary_postgresql_host,
+    replica_postgresql_host          => $replica_postgresql_host,
 
     # Common Configuration
     compiler_pool_address            => $compiler_pool_address,

@@ -1,6 +1,6 @@
 {
   "primary_host": "pe-std.puppet.vm",
-  "primary_replica_host": "pe-std-replica.puppet.vm",
+  "replica_host": "pe-std-replica.puppet.vm",
   "console_password": "puppetlabs",
   "dns_alt_names": [ "puppet", "pe-std.puppet.vm" ],
   "version": "2019.8.5"

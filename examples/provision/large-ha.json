@@ -2,7 +2,7 @@
   "version": "2019.4.0",
   "console_password": "puppetlabs",
   "primary_host": "pe-master-1830cd-0.us-west1-a.c.reidmv-peadm.internal",
-  "primary_replica_host": "pe-master-1830cd-1.us-west1-b.c.reidmv-peadm.internal",
+  "replica_host": "pe-master-1830cd-1.us-west1-b.c.reidmv-peadm.internal",
 
 
   "compiler_pool_address": "puppet.pe-compiler-lb-1830cd.il4.us-west1.lb.reidmv-peadm.internal",

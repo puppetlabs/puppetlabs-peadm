@@ -1,6 +1,6 @@
 {
   "primary_host": "pe-xl-core-0.puppet.vm",
-  "puppetdb_database_host": "pe-xl-db-0.puppet.vm",
+  "primary_postgresql_host": "pe-xl-db-0.puppet.vm",
   "compiler_hosts": ["pe-xl-compiler-0.puppet.vm"],
   "console_password": "puppetlabs",
   "dns_alt_names": [ "puppet", "pe-xl-core-0.puppet.vm" ],
