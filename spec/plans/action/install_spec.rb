@@ -11,7 +11,7 @@ describe 'peadm::action::install' do
         'platform' => 'el-7.11-x86_64'
       },
     )
-    expect_task('peadm::mkdir_p_file').be_called_times(4)
+    expect_task('peadm::mkdir_p_file').be_called_times(5)
     expect_plan('peadm::util::retrieve_and_upload')
     expect_task('peadm::read_file')
     expect_task('peadm::pe_install')
