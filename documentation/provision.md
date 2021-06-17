@@ -88,9 +88,9 @@ Example params.json Bolt parameters file (shown: Extra Large with DR):
 ```json
 {
   "primary_host": "pe-xl-core-0.lab1.puppet.vm",
-  "puppetdb_database_host": "pe-xl-core-1.lab1.puppet.vm",
-  "primary_replica_host": "pe-xl-core-2.lab1.puppet.vm",
-  "puppetdb_database_replica_host": "pe-xl-core-3.lab1.puppet.vm",
+  "primary_postgresql_host": "pe-xl-core-1.lab1.puppet.vm",
+  "replica_host": "pe-xl-core-2.lab1.puppet.vm",
+  "replica_postgresql_host": "pe-xl-core-3.lab1.puppet.vm",
   "compiler_hosts": [
     "pe-xl-compiler-0.lab1.puppet.vm",
     "pe-xl-compiler-1.lab1.puppet.vm"
@@ -147,7 +147,7 @@ A parameters JSON file can then reference the target names, which will become th
 ```json
 {
   "primary_host": "pe-xl-core-0.lab1.puppet.vm",
-  "primary_replica_host": "pe-xl-core-1.lab1.puppet.vm",
+  "replica_host": "pe-xl-core-1.lab1.puppet.vm",
 
   "console_password": "puppetlabs",
   "dns_alt_names": [ "puppet", "puppet.lab1.puppet.vm" ],

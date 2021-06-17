@@ -3,7 +3,7 @@
   "console_password": "puppetlabs",
   "primary_host": "pe-master-1830cd-0.us-west1-a.c.reidmv-peadm.internal",
 
-  "puppetdb_database_host": "pe-psql-1830cd-0.us-west1-a.c.reidmv-peadm.internal",
+  "primary_postgresql_host": "pe-psql-1830cd-0.us-west1-a.c.reidmv-peadm.internal",
 
   "compiler_pool_address": "puppet.pe-compiler-lb-1830cd.il4.us-west1.lb.reidmv-peadm.internal",
   "compiler_hosts": [

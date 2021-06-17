@@ -32,7 +32,7 @@ services:
         HOST: 'pe-lg-replica.puppet.vm'
     entrypoint: /sbin/init
     labels:
-      com.puppet.role: "primary_replica_host"
+      com.puppet.role: "replica_host"
     image: pe-base
     privileged: true # required for systemd
     ports:

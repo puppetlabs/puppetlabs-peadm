@@ -139,6 +139,15 @@ jobs:
             echo STEP_START=$(date +%s) >> $GITHUB_ENV
           echo ::endgroup::
 
+      - name: 'Wait as long as the file ${HOME}/pause file is present'
+        if: ${{ always() }}
+        run: |
+          while [ -f "${HOME}/pause" ] ; do
+            echo "${HOME}/pause present, sleeping for 60 seconds..."
+            sleep 60
+          done 
+          echo "${HOME}/pause absent, continuing workflow."
+
       - name: 'Tear down test cluster'
         if: ${{ always() }}
         continue-on-error: true

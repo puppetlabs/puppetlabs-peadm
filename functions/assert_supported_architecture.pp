@@ -1,15 +1,15 @@
 function peadm::assert_supported_architecture (
   TargetSpec                 $primary_host,
-  Variant[TargetSpec, Undef] $primary_replica_host = undef,
-  Variant[TargetSpec, Undef] $puppetdb_database_host = undef,
-  Variant[TargetSpec, Undef] $puppetdb_database_replica_host = undef,
+  Variant[TargetSpec, Undef] $replica_host = undef,
+  Variant[TargetSpec, Undef] $primary_postgresql_host = undef,
+  Variant[TargetSpec, Undef] $replica_postgresql_host = undef,
   Variant[TargetSpec, Undef] $compiler_hosts = undef,
 )  >> Hash {
   $result = case [
     !!($primary_host),
-    !!($primary_replica_host),
-    !!($puppetdb_database_host),
-    !!($puppetdb_database_replica_host),
+    !!($replica_host),
+    !!($primary_postgresql_host),
+    !!($replica_postgresql_host),
   ] {
     [true, false, false, false]: { # Standard or Large, no DR
       ({ 'disaster-recovery' => false, 'architecture' => $compiler_hosts ? {
@@ -33,13 +33,13 @@ function peadm::assert_supported_architecture (
       out::message(inline_epp(@(HEREDOC)))
         Invalid architecture! Recieved:
           - primary
-        <% if $primary_replica_host { -%>
+        <% if $replica_host { -%>
           - primary-replica
         <% } -%>
-        <% if $puppetdb_database_host { -%>
+        <% if $primary_postgresql_host { -%>
           - pdb-database
         <% } -%>
-        <% if $puppetdb_database_replica_host { -%>
+        <% if $replica_postgresql_host { -%>
           - pdb-database-replica
         <% } -%>
         <% if $compiler_hosts { -%>

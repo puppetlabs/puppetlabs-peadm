@@ -26,22 +26,22 @@ class peadm::setup::node_manager (
   String[1] $primary_host,
 
   # High Availability
-  Optional[String[1]] $primary_replica_host            = undef,
+  Optional[String[1]] $replica_host                     = undef,
 
   # Common
   Optional[String[1]] $compiler_pool_address            = undef,
   Optional[String[1]] $internal_compiler_a_pool_address = $primary_host,
-  Optional[String[1]] $internal_compiler_b_pool_address = $primary_replica_host,
+  Optional[String[1]] $internal_compiler_b_pool_address = $replica_host,
 
   # For the next two parameters, the default values are appropriate when
   # deploying Standard or Large architectures. These values only need to be
   # specified differently when deploying an Extra Large architecture.
 
   # Specify when using Extra Large
-  String[1]           $puppetdb_database_host         = $primary_host,
+  String[1]           $primary_postgresql_host         = $primary_host,
 
   # Specify when using Extra Large AND High Availability
-  Optional[String[1]] $puppetdb_database_replica_host = $primary_replica_host,
+  Optional[String[1]] $replica_postgresql_host         = $replica_host,
 ) {
 
   # Preserve existing user data and classes values. We only need to make sure
@@ -105,10 +105,10 @@ class peadm::setup::node_manager (
     ],
     data   => {
       'puppet_enterprise::profile::primary_master_replica' => {
-        'database_host_puppetdb' => $puppetdb_database_host,
+        'database_host_puppetdb' => $primary_postgresql_host,
       },
       'puppet_enterprise::profile::puppetdb'               => {
-        'database_host' => $puppetdb_database_host,
+        'database_host' => $primary_postgresql_host,
       },
     },
   }
@@ -124,7 +124,7 @@ class peadm::setup::node_manager (
     ],
     classes => {
       'puppet_enterprise::profile::puppetdb' => {
-        'database_host' => $puppetdb_database_host,
+        'database_host' => $primary_postgresql_host,
       },
       'puppet_enterprise::profile::master'   => {
         # lint:ignore:single_quote_string_with_variables
@@ -143,7 +143,7 @@ class peadm::setup::node_manager (
 
   # Create the replica and B groups if a replica primary and database host are
   # supplied
-  if $primary_replica_host {
+  if $replica_host {
     # We need to ensure this group provides the peadm_replica variable.
     node_group { 'PE DR Replica':
       ensure    => 'present',
@@ -163,10 +163,10 @@ class peadm::setup::node_manager (
       ],
       data   => {
         'puppet_enterprise::profile::primary_master_replica' => {
-          'database_host_puppetdb' => $puppetdb_database_replica_host,
+          'database_host_puppetdb' => $replica_postgresql_host,
         },
         'puppet_enterprise::profile::puppetdb'               => {
-          'database_host' => $puppetdb_database_replica_host,
+          'database_host' => $replica_postgresql_host,
         },
       },
     }
@@ -180,7 +180,7 @@ class peadm::setup::node_manager (
       ],
       classes => {
         'puppet_enterprise::profile::puppetdb' => {
-          'database_host' => $puppetdb_database_replica_host,
+          'database_host' => $replica_postgresql_host,
         },
         'puppet_enterprise::profile::master'   => {
           # lint:ignore:single_quote_string_with_variables

@@ -3,27 +3,27 @@
 # @param compiler_host _ The hostname and certname of the new compiler
 # @param dns_alt_names _ A comma_separated list of DNS alt names for the compiler
 # @param primary_host _ The hostname and certname of the primary Puppet server
-# @param puppetdb_database_host _ The hostname and certname of the PE-PostgreSQL server with availability group $avail_group_letter
+# @param primary_postgresql_host _ The hostname and certname of the PE-PostgreSQL server with availability group $avail_group_letter
 plan peadm::add_compiler(
   Enum['A', 'B'] $avail_group_letter,
   Optional[String[1]] $dns_alt_names = undef,
   Peadm::SingleTargetSpec $compiler_host,
   Peadm::SingleTargetSpec $primary_host,
-  Peadm::SingleTargetSpec $puppetdb_database_host,
+  Peadm::SingleTargetSpec $primary_postgresql_host,
 ){
-  $compiler_target          = peadm::get_targets($compiler_host, 1)
-  $primary_target           = peadm::get_targets($primary_host, 1)
-  $puppetdb_database_target = peadm::get_targets($puppetdb_database_host, 1)
+  $compiler_target           = peadm::get_targets($compiler_host, 1)
+  $primary_target            = peadm::get_targets($primary_host, 1)
+  $primary_postgresql_target = peadm::get_targets($primary_postgresql_host, 1)
 
   # Stop puppet.service
-  run_command('systemctl stop puppet.service', $puppetdb_database_target)
+  run_command('systemctl stop puppet.service', $primary_postgresql_target)
 
   # Add the following two lines to /opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf
   # 
   # pe-puppetdb-pe-puppetdb-map <new-compiler-host> pe-puppetdb
   # pe-puppetdb-pe-puppetdb-migrator-map <new-compiler-host> pe-puppetdb-migrator
 
-  apply($puppetdb_database_target) {
+  apply($primary_postgresql_target) {
     file_line { 'pe-puppetdb-pe-puppetdb-map':
       path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf',
       line => "pe-puppetdb-pe-puppetdb-map ${compiler_target.peadm::certname()} pe-puppetdb",
@@ -35,7 +35,7 @@ plan peadm::add_compiler(
   }
 
   # Reload pe-postgresql.service
-  run_command('systemctl reload pe-postgresql.service', $puppetdb_database_target)
+  run_command('systemctl reload pe-postgresql.service', $primary_postgresql_target)
 
   # Install the puppet agent making sure to specify an availability group letter, A or B, as an extension request.
   $dns_alt_names_flag = $dns_alt_names? {
@@ -77,11 +77,11 @@ plan peadm::add_compiler(
     },
   )
 
-  # On <puppetdb_database_host> run the puppet agent
-  run_task('peadm::puppet_runonce', $puppetdb_database_target)
+  # On <primary_postgresql_host> run the puppet agent
+  run_task('peadm::puppet_runonce', $primary_postgresql_target)
 
-  # On <puppetdb_database_host> start puppet.service
-  run_command('systemctl start puppet.service', $puppetdb_database_target)
+  # On <primary_postgresql_host> start puppet.service
+  run_command('systemctl start puppet.service', $primary_postgresql_target)
 
   return("Adding or replacing compiler ${$compiler_target.peadm::certname()} succeeded.")
 
