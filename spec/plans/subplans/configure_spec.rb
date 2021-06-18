@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe 'peadm::action::configure' do
+describe 'peadm::subplans::configure' do
   include BoltSpec::Plans
 
   describe 'Standard architecture without DR' do
@@ -13,7 +13,7 @@ describe 'peadm::action::configure' do
       expect_task('peadm::provision_replica').not_be_called
       expect_task('peadm::code_manager').not_be_called
 
-      expect(run_plan('peadm::action::configure', 'primary_host' => 'primary')).to be_ok
+      expect(run_plan('peadm::subplans::configure', 'primary_host' => 'primary')).to be_ok
     end
   end
 end

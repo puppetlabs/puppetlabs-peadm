@@ -1,3 +1,5 @@
+# @api private
+#
 # @summary Perform initial installation of Puppet Enterprise Extra Large
 #
 # @param r10k_remote
@@ -18,7 +20,7 @@
 #   Config data to plane into pe.conf when generated on all hosts, this can be
 #   used for tuning data etc.
 #
-plan peadm::action::install (
+plan peadm::subplans::install (
   # Standard
   Peadm::SingleTargetSpec           $primary_host,
   Optional[Peadm::SingleTargetSpec] $replica_host             = undef,
