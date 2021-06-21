@@ -53,7 +53,7 @@ plan peadm::install (
 
   peadm::assert_supported_pe_version($version)
 
-  $install_result = run_plan('peadm::action::install',
+  $install_result = run_plan('peadm::subplans::install',
     # Standard
     primary_host                   => $primary_host,
     replica_host                   => $replica_host,
@@ -85,7 +85,7 @@ plan peadm::install (
     download_mode                  => $download_mode,
   )
 
-  $configure_result = run_plan('peadm::action::configure',
+  $configure_result = run_plan('peadm::subplans::configure',
     # Standard
     primary_host                     => $primary_host,
     replica_host                     => $replica_host,

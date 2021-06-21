@@ -12,7 +12,7 @@
 #   compilers. This is used for DR configuration in large and extra large
 #   architectures.
 #
-plan peadm::action::configure (
+plan peadm::subplans::configure (
   # Standard
   Peadm::SingleTargetSpec           $primary_host,
   Optional[Peadm::SingleTargetSpec] $replica_host = undef,

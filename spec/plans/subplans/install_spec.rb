@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe 'peadm::action::install' do
+describe 'peadm::subplans::install' do
   # Include the BoltSpec library functions
   include BoltSpec::Plans
 
@@ -47,6 +47,6 @@ describe 'peadm::action::install' do
       'console_password' => 'puppetlabs',
     }
 
-    expect(run_plan('peadm::action::install', params)).to be_ok
+    expect(run_plan('peadm::subplans::install', params)).to be_ok
   end
 end
