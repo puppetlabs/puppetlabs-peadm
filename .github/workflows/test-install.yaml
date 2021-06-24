@@ -1,5 +1,5 @@
 ---
-name: "Manual install test"
+name: "Install test"
 
 on:
   workflow_dispatch:
@@ -26,8 +26,8 @@ env:
   HONEYCOMB_DATASET: litmus tests
 
 jobs:
-  smoke-test:
-    name: "${{ matrix.architecture }}, ${{ matrix.image }}, PE ${{ matrix.version }}"
+  test-install:
+    name: "PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}"
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true

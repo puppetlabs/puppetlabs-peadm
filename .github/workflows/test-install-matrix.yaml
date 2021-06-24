@@ -1,5 +1,5 @@
 ---
-name: "Install matrix"
+name: "Install test matrix"
 
 on:
   pull_request:
@@ -12,7 +12,7 @@ env:
   HONEYCOMB_DATASET: litmus tests
 
 jobs:
-  smoke-test:
+  test-install:
     name: "PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}"
     runs-on: ubuntu-20.04
     env:
