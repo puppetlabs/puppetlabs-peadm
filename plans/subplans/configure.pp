@@ -94,11 +94,6 @@ plan peadm::subplans::configure (
     run_task('peadm::provision_replica', $primary_target,
       replica    => $replica_target.peadm::certname(),
       token_file => $token_file,
-
-      # Race condition, where the provision command checks PuppetDB status and
-      # probably gets "starting", but fails out because that's not "running".
-      # Can remove flag when that issue is fixed.
-      legacy     => true,
     )
   }
 
