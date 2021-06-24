@@ -1,10 +1,11 @@
 ---
-name: "Pull Request test"
+name: "Install matrix"
 
 on:
   pull_request:
     branches: [main]
     types: [review_requested]
+  workflow_dispatch: {}
 
 env:
   HONEYCOMB_WRITEKEY: 7f3c63a70eecc61d635917de46bea4e6
@@ -12,7 +13,7 @@ env:
 
 jobs:
   smoke-test:
-    name: "Install test: ${{ matrix.architecture }}, ${{ matrix.image }}, PE ${{ matrix.version }}"
+    name: "PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}"
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true
