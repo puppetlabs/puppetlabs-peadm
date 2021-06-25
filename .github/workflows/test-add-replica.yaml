@@ -1,5 +1,5 @@
 ---
-name: "Test add_replica plan"
+name: "Add Replica test"
 
 on:
   workflow_dispatch:
@@ -15,15 +15,19 @@ on:
       version:
         description: 'PE version to install'
         required: true
-        default: '2019.8.5'
+        default: '2019.8.7'
+      ssh-debugging:
+        description: 'Boolean; whether or not to pause for ssh debugging'
+        required: true
+        default: 'false'
 
 env:
   HONEYCOMB_WRITEKEY: 7f3c63a70eecc61d635917de46bea4e6
   HONEYCOMB_DATASET: litmus tests
 
 jobs:
-  smoke-test:
-    name: "${{ matrix.architecture }}, ${{ matrix.image }}, PE ${{ matrix.version }}"
+  test-add-replica:
+    name: "PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}"
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true
@@ -41,6 +45,7 @@ jobs:
 
     steps:
       - name: 'Start SSH session'
+        if: ${{ github.event.inputs.ssh-debugging == 'true' }}
         uses: luchihoratiu/debug-via-ssh@main
         with:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
@@ -83,7 +88,7 @@ jobs:
             echo STEP_START=$(date +%s) >> $GITHUB_ENV
           echo ::endgroup::
 
-      - name: 'Provision test cluster'
+      - name: 'Provision test cluster (specified architecture with added DR)'
         timeout-minutes: 15
         run: |
           echo ::group::prepare
@@ -140,15 +145,15 @@ jobs:
           echo ::endgroup::
 
       - name: 'Run add_replica plan'
-        timeout-minutes: 10
+        timeout-minutes: 30
         run: |
           buildevents cmd $TRACE_ID $STEP_ID 'bolt plan run peadm_spec::add_replica' -- \
-            bundle exec bolt plan run peadm_spec::add_replica \
+            bundle exec bolt plan run peadm_spec::add_replica -v \
               --inventoryfile spec/fixtures/litmus_inventory.yaml \
               --modulepath spec/fixtures/modules
-              
+
       - name: 'Wait as long as the file ${HOME}/pause file is present'
-        if: ${{ always() }}
+        if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
         run: |
           while [ -f "${HOME}/pause" ] ; do
             echo "${HOME}/pause present, sleeping for 60 seconds..."
