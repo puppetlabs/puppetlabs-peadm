@@ -47,15 +47,12 @@ plan peadm::add_compiler(
   run_task('peadm::agent_install', $compiler_target,
     server        => $primary_target.peadm::certname(),
     install_flags => $dns_alt_names_flag + [
+      '--puppet-service-ensure', 'stopped',
       "extension_requests:${peadm::oid('pp_auth_role')}=pe_compiler",
       "extension_requests:${peadm::oid('peadm_availability_group')}=${avail_group_letter}",
       "main:certname=${compiler_target.peadm::certname()}",
     ],
   )
-
-  # On <compiler-host>, run the puppet agent 
-  # ignoring errors to simplify logic
-  run_task('peadm::puppet_runonce', $compiler_target, {'_catch_errors' => true})
 
   # If necessary, manually submit a CSR
   # ignoring errors to simplify logic
@@ -63,9 +60,6 @@ plan peadm::add_compiler(
 
   # On primary, if necessary, sign the certificate request
   run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$compiler_target.peadm::certname()] } )
-
-  # On <compiler-host>, run the puppet agent 
-  run_task('peadm::puppet_runonce', $compiler_target)
 
   # If there was already a signed cert, force the certificate extensions we want
   # TODO: update peadm::util::add_cert_extensions to take care of dns alt names
@@ -77,11 +71,17 @@ plan peadm::add_compiler(
     },
   )
 
+  # On <compiler-host>, run the puppet agent
+  run_task('peadm::puppet_runonce', $compiler_target)
+
   # On <primary_postgresql_host> run the puppet agent
   run_task('peadm::puppet_runonce', $primary_postgresql_target)
 
   # On <primary_postgresql_host> start puppet.service
-  run_command('systemctl start puppet.service', $primary_postgresql_target)
+  run_command('systemctl start puppet.service', peadm::flatten_compact([
+    $primary_postgresql_target,
+    $compiler_target,
+  ])
 
   return("Adding or replacing compiler ${$compiler_target.peadm::certname()} succeeded.")
 
