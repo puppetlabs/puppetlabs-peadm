@@ -19,6 +19,7 @@ jobs:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
       BUILDEVENT_FILE: '../buildevents.txt'
+      LANG: 'en_US.UTF-8'
     strategy:
       fail-fast: false
       matrix:
