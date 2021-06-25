@@ -33,23 +33,23 @@ As a services-led tool, Puppet Enterprise customers who are advised to start usi
 The normal usage pattern for peadm is as follows.
 
 1. Users set up a Bolt host from which they can run peadm plans. The Bolt host can be any machine that has ssh access to all of the PE nodes.
-2. Users run the `peadm::provision` plan to bootstrap a new PE cluster. Depending on the architecture chosen, peadm may create some node groups in the classifier to set parameters on the built-in `puppet_enterprise` module, tuning it for large or extra large architectures.
+2. Users run the `peadm::install` plan to bootstrap a new PE cluster. Depending on the architecture chosen, peadm may create some node groups in the classifier to set parameters on the built-in `puppet_enterprise` module, tuning it for large or extra large architectures.
 3. Users use and operate their PE cluster as normal. The peadm module is not used again until the next upgrade.
 4. When it is time to upgrade, users run the `peadm::upgrade` plan from their Bolt host to accelerate and aid in the upgrade process.
 
 ### What peadm affects
 
-* The `peadm::provision` plan adds a number of custom OID trusted facts to the certificates of PE infrastructure nodes as it deploys them. These trusted facts are later used by the plans to quickly and correctly identify nodes in particular roles.
+* The `peadm::install` plan adds a number of custom OID trusted facts to the certificates of PE infrastructure nodes as it deploys them. These trusted facts are later used by the plans to quickly and correctly identify nodes in particular roles.
 * Up to four node groups may be created to help configure `puppet_enterprise` class parameters for PE infrastructure roles. The most notable configuration is the designation of compilers as being either "A" or "B" nodes for availability.
 
 ### What peadm does not affect
 
 * The peadm module is not required to exist or be present outside of the point(s) in time it is used to create a new PE cluster, or upgrade an existing cluster. No new Puppet classes or other persistent content not provided out-of-box by PE itself is applied to PE infrastructure nodes by the peadm module.
-* Having used the peadm module to provision or to upgrade a PE cluster is not known to affect or curtail the ability to use any normal, documented PE procedures, e.g. failover to a replica, or manual upgrade of a cluster.
+* Having used the peadm module to install or to upgrade a PE cluster is not known to affect or curtail the ability to use any normal, documented PE procedures, e.g. failover to a replica, or manual upgrade of a cluster.
 
 ### Requirements
 
-* Puppet Enterprise 2019.8.1 or newer (tested with PE 2021.0)
+* Puppet Enterprise 2019.8.1 or newer (tested with PE 2021.2)
 * Bolt 3.10.0 or newer (tested with Bolt 3.10.0)
 * EL 7, EL 8, Ubuntu 18.04, or Ubuntu 20.04
 * Classifier Data enabled. This PE feature is enabled by default on new installs, but can be disabled by users if they remove the relevant configuration from their global hiera.yaml file. See the [PE docs](https://puppet.com/docs/pe/latest/config_console.html#task-5039) for more information.
@@ -58,7 +58,7 @@ The normal usage pattern for peadm is as follows.
 
 Follow the links below to usage instructions for each peadm plan.
 
-* [Provision](documentation/provision.md)
+* [Install](documentation/install.md)
 * [Upgrade](documentation/upgrade.md)
 * [Convert](documentation/convert.md)
 * [Status](documentation/status.md)
