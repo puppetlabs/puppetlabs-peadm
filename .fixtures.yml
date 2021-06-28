@@ -16,3 +16,4 @@ fixtures:
     container_inventory: 'https://gitlab.com/nwops/bolt-container_inventory'
   symlinks:
     "peadm": "#{source_dir}"
+    "peadm_spec": "#{source_dir}/spec/acceptance/peadm_spec"
