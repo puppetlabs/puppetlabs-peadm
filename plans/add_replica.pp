@@ -1,3 +1,5 @@
+# @api private
+#   This plan is still in development and currently considered experimental.
 # @summary Replace a replica host for a Standard or Large architecture.
 #   Supported use cases:
 #   1: The existing replica is broken, we have a fresh new VM we want to provision the replica to.
