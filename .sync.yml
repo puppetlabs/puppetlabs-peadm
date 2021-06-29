@@ -12,7 +12,7 @@ Gemfile:
 Rakefile:
   changelog_since_tag: '2.5.0'
   extras:
-    - 'PuppetSyntax.exclude_paths = ["spec/acceptance/**/plans/**/*.pp", "vendor/**/*"]'
+    - 'PuppetSyntax.exclude_paths = ["plans/**/*.pp", "spec/acceptance/**/plans/**/*.pp", "vendor/**/*"]'
 spec/spec_helper.rb:
     mock_with: ':rspec'
 .gitignore:
