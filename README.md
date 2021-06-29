@@ -58,21 +58,21 @@ The normal usage pattern for peadm is as follows.
 
 Follow the links below to usage instructions for each peadm plan.
 
-* [Install](documentation/install.md)
-* [Upgrade](documentation/upgrade.md)
-* [Convert](documentation/convert.md)
-* [Status](documentation/status.md)
+* [Install](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/install.md)
+* [Upgrade](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/upgrade.md)
+* [Convert](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/convert.md)
+* [Status](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/status.md)
 
 ## Reference
 
 Additional documentation and information pertaining to various aspects or elements of peadm.
 
-* [DR Component Recovery](documentation/recovery.md)
+* [DR Component Recovery](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/recovery.md)
 * [PE Architecture Documentation](https://puppet.com/docs/pe/latest/choosing_an_architecture.html)
-* [Classification](documentation/classification.md)
-* [Architectures](documentation/architectures.md)
-* [Testing](documentation/pre_post_checks.md)
-* [Docker Based Examples](documentation/docker_examples.md)
+* [Classification](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/classification.md)
+* [Architectures](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/architectures.md)
+* [Testing](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/pre_post_checks.md)
+* [Docker Based Examples](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/docker_examples.md)
 
 ## Getting Help
 
