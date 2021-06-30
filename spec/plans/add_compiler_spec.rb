@@ -10,17 +10,20 @@ describe 'peadm::add_compiler' do
   end
 
   describe 'basic functionality' do
-    let(:params) { { 
-      'primary_host' => 'primary',
-      'compiler_host' => 'compiler',
-      'avail_group_letter' => 'A',
-      'primary_postgresql_host' => 'primary_postgresql',
-    } }
+    let(:params) do
+      {
+        'primary_host' => 'primary',
+        'compiler_host' => 'compiler',
+        'avail_group_letter' => 'A',
+        'primary_postgresql_host' => 'primary_postgresql',
+      }
+    end
+
     let(:certdata) { { 'certname' => 'primary', 'extensions' => { '1.3.6.1.4.1.34380.1.1.9813' => 'A' } } }
 
     it 'runs successfully when no alt-names are specified' do
       allow_standard_non_returning_calls
-      expect_plan('peadm::modify_cert_extensions').always_return('mock'=>'mock')
+      expect_plan('peadm::modify_cert_extensions').always_return('mock' => 'mock')
       expect_task('peadm::agent_install')
         .with_params({ 'server'        => 'primary',
                        'install_flags' => [
@@ -28,11 +31,10 @@ describe 'peadm::add_compiler' do
                          'extension_requests:1.3.6.1.4.1.34380.1.3.13=pe_compiler',
                          'extension_requests:1.3.6.1.4.1.34380.1.1.9813=A',
                          'main:certname=compiler'
-                         ] 
-                      })
+                       ] })
 
       # {"install_flags"=>
-      #   ["--puppet-service-ensure", "stopped", 
+      #   ["--puppet-service-ensure", "stopped",
       #   "extension_requests:1.3.6.1.4.1.34380.1.3.13=pe_compiler", "extension_requests:1.3.6.1.4.1.34380.1.1.9813=A", "main:certname=compiler"], "server"=>"primary"}
 
       expect(run_plan('peadm::add_compiler', params)).to be_ok
@@ -42,9 +44,10 @@ describe 'peadm::add_compiler' do
       let(:params2) do
         params.merge({ 'dns_alt_names' => 'foo,bar' })
       end
+
       it 'runs successfully when alt-names are specified' do
         allow_standard_non_returning_calls
-        expect_plan('peadm::modify_cert_extensions').always_return('mock'=>'mock')
+        expect_plan('peadm::modify_cert_extensions').always_return('mock' => 'mock')
         expect_task('peadm::agent_install')
           .with_params({ 'server'        => 'primary',
                          'install_flags' => [
@@ -53,8 +56,7 @@ describe 'peadm::add_compiler' do
                            'extension_requests:1.3.6.1.4.1.34380.1.3.13=pe_compiler',
                            'extension_requests:1.3.6.1.4.1.34380.1.1.9813=A',
                            'main:certname=compiler'
-                          ] 
-                        })
+                         ] })
 
         expect(run_plan('peadm::add_compiler', params2)).to be_ok
       end
