@@ -42,7 +42,7 @@ plan peadm::add_compiler(
   # Install the puppet agent making sure to specify an availability group letter, A or B, as an extension request.
   $dns_alt_names_flag = $dns_alt_names? {
     undef   => [],
-    default => "main:dns_alt_names=${dns_alt_names}",
+    default => ["main:dns_alt_names=${dns_alt_names}"],
   }
 
   # we first assume that there is no agent installed on the node. If there is, nothing will happen.
@@ -65,10 +65,10 @@ plan peadm::add_compiler(
 
   # If there was already a signed cert, force the certificate extensions we want
   # TODO: update peadm::util::add_cert_extensions to take care of dns alt names
-  run_plan('peadm::util::add_cert_extensions', $compiler_target,
+  run_plan('peadm::modify_cert_extensions', $compiler_target,
     primary_host => $primary_target.peadm::certname(),
-    extensions  => {
-      peadm::oid('pp_auth_role')               => 'pe_compiler',
+    add  => {
+      peadm::oid('pp_auth_role')             => 'pe_compiler',
       peadm::oid('peadm_availability_group') => $avail_group_letter,
     },
   )

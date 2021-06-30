@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe 'peadm::install' do
+describe 'peadm::add_replica' do
   include BoltSpec::Plans
 
   def allow_standard_non_returning_calls
