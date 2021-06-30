@@ -5,11 +5,12 @@ describe 'peadm::subplans::configure' do
 
   describe 'Standard architecture without DR' do
     it 'runs successfully' do
-      expect_task('peadm::read_file').always_return({ 'content' => 'mock' })
-      expect_task('peadm::puppet_runonce')
-      expect_command('systemctl start puppet')
       allow_apply
+      allow_any_task
+      allow_any_plan
+      allow_any_command
 
+      expect_task('peadm::read_file').always_return({ 'content' => 'mock' })
       expect_task('peadm::provision_replica').not_be_called
       expect_task('peadm::code_manager').not_be_called
 
