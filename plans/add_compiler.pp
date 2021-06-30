@@ -83,7 +83,7 @@ plan peadm::add_compiler(
   run_command('systemctl start puppet.service', peadm::flatten_compact([
     $primary_postgresql_target,
     $compiler_target,
-  ])
+  ]))
 
   return("Adding or replacing compiler ${$compiler_target.peadm::certname()} succeeded.")
 
