@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.0.1](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.0.1) (2021-06-30)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.0.0...v3.0.1)
+
+### Fixed
+
+- Add missing parenthesis to add\_compiler plan [\#177](https://github.com/puppetlabs/puppetlabs-peadm/pull/177) ([timidri](https://github.com/timidri))
+- Use absolute links so they render properly on the Forge [\#175](https://github.com/puppetlabs/puppetlabs-peadm/pull/175) ([binford2k](https://github.com/binford2k))
+
 ## [v3.0.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.0.0) (2021-06-29)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/2.5.0...v3.0.0)
