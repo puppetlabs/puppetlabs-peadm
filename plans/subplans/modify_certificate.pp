@@ -1,10 +1,11 @@
 # @api private
-plan peadm::subplans::modify_cert_extensions (
+plan peadm::subplans::modify_certificate (
   Peadm::SingleTargetSpec $targets,
   TargetSpec              $primary_host,
   String                  $primary_certname,
-  Hash                    $add = { },
-  Array                   $remove = [ ],
+  Hash                    $add_extensions = { },
+  Array                   $remove_extensions = [ ],
+  Optional[Array]         $dns_alt_names = undef,
 ) {
   $target = get_target($targets)
   $primary_target = get_target($primary_host)
@@ -21,14 +22,17 @@ plan peadm::subplans::modify_cert_extensions (
   $target_is_primary = ($certname == $primary_certname)
 
   # These vars represent what the extensions currently are, vs. what they should be
+  $existing_alt_names = certdata['dns-alt-names'].split(',')
   $existing_exts = $certdata['extensions'].filter |$k,$v| { $k =~ /^1\.3\.6\.1\.4\.1\.34380\.1(?!\.3\.39)/ }
-  $desired_exts = $existing_exts.filter |$k,$v| { !($k in $remove) } + $add
+  $desired_exts = $existing_exts.filter |$k,$v| { !($k in $remove_extensions) } + $add_extensions
 
   # If the existing certificate meets all the requirements, there's no need
   # to regenerate it. Skip it and move on to the next.
   if ($certdata['certificate-exists']
       and ($desired_exts.all |$key,$val| { $existing_exts[$key] == $val })
-      and !($remove.any |$key| { $key in $existing_exts.keys })) {
+      and !($remove_extensions.any |$key| { $key in $existing_exts.keys })
+      and ($dns_alt_names == undef or !($dns_alt_names.all |$name| { $name in $existing_alt_names }))
+  ) {
     out::message("${certname} already has requested extensions; certificate will not be re-issued")
     return('Skipped')
   }
@@ -65,7 +69,7 @@ plan peadm::subplans::modify_cert_extensions (
   unless ($target_is_primary) {
     # CLIENT cert regeneration
     run_task('peadm::ssl_clean', $target, certname => $certname)
-    run_task('peadm::submit_csr', $target)
+    run_task('peadm::submit_csr', $target, dns_alt_names => $dns_alt_names)
     run_task('peadm::sign_csr', $primary_target, certnames => [$certname])
 
     # Use a command instead of a task so that this works for Puppet 5 agents
