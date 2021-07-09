@@ -4,6 +4,7 @@ plan peadm::modify_certificate (
   Hash                    $add_extensions = { },
   Array                   $remove_extensions = [ ],
   Optional[Array]         $dns_alt_names = undef,
+  Boolean                 $force_regenerate = false,
 ) {
   $all_targets = peadm::get_targets($targets)
   $primary_target = get_target($primary_host)
@@ -24,6 +25,7 @@ plan peadm::modify_certificate (
       add_extensions    => $add_extensions,
       remove_extensions => $remove_extensions,
       dns_alt_names     => $dns_alt_names,
+      force_regenerate  => $force_regenerate,
     )
   }
 
@@ -35,6 +37,7 @@ plan peadm::modify_certificate (
       add_extensions    => $add_extensions,
       remove_extensions => $remove_extensions,
       dns_alt_names     => $dns_alt_names,
+      force_regenerate  => $force_regenerate,
     )
   }
 
