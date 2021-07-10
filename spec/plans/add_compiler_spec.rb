@@ -23,7 +23,7 @@ describe 'peadm::add_compiler' do
 
     it 'runs successfully when no alt-names are specified' do
       allow_standard_non_returning_calls
-      expect_plan('peadm::modify_cert_extensions').always_return('mock' => 'mock')
+      expect_plan('peadm::modify_certificate').always_return('mock' => 'mock')
       expect_task('peadm::agent_install')
         .with_params({ 'server'        => 'primary',
                        'install_flags' => [
@@ -47,7 +47,7 @@ describe 'peadm::add_compiler' do
 
       it 'runs successfully when alt-names are specified' do
         allow_standard_non_returning_calls
-        expect_plan('peadm::modify_cert_extensions').always_return('mock' => 'mock')
+        expect_plan('peadm::modify_certificate').always_return('mock' => 'mock')
         expect_task('peadm::agent_install')
           .with_params({ 'server'        => 'primary',
                          'install_flags' => [

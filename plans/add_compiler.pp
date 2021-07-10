@@ -65,9 +65,9 @@ plan peadm::add_compiler(
 
   # If there was already a signed cert, force the certificate extensions we want
   # TODO: update peadm::util::add_cert_extensions to take care of dns alt names
-  run_plan('peadm::modify_cert_extensions', $compiler_target,
-    primary_host => $primary_target.peadm::certname(),
-    add  => {
+  run_plan('peadm::modify_certificate', $compiler_target,
+    primary_host   => $primary_target.peadm::certname(),
+    add_extensions => {
       peadm::oid('pp_auth_role')             => 'pe_compiler',
       peadm::oid('peadm_availability_group') => $avail_group_letter,
     },
