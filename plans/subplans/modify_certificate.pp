@@ -30,11 +30,11 @@ plan peadm::subplans::modify_certificate (
 
   # If the existing certificate meets all the requirements, there's no need
   # to regenerate it. Skip it and move on to the next.
-  if ($certdata['certificate-exists']
-      and ($desired_alt_names == $existing_alt_names)
-      and ($desired_exts.all |$key,$val| { $existing_exts[$key] == $val })
-      and !($remove_extensions.any |$key| { $key in $existing_exts.keys })
-      and !$force_regenerate)
+  if ($certdata['certificate-exists'] and
+      ($desired_alt_names == $existing_alt_names) and
+      ($desired_exts.all |$key,$val| { $existing_exts[$key] == $val }) and
+      !($remove_extensions.any |$key| { $key in $existing_exts.keys }) and
+      !$force_regenerate)
   {
     out::message("${certname} already has requested modifications; certificate will not be re-issued")
     return('Skipped')
@@ -65,9 +65,9 @@ plan peadm::subplans::modify_certificate (
     # fail the plan unless it's a known circumstance in which it's okay to proceed.
     # Scenario 1: the primary's cert can't be cleaned because it's already revoked.
     # Scenario 2: the primary's cert can't be cleaned because it's been deleted.
-    unless ($target_is_primary
-            and ($ca_clean_result[merged_output] =~ /certificate revoked/
-                 or $ca_clean_result[merged_output] =~ /Could not find 'hostcert'/))
+    unless ($target_is_primary and
+            ($ca_clean_result[merged_output] =~ /certificate revoked/ or
+              $ca_clean_result[merged_output] =~ /Could not find 'hostcert'/))
     {
       fail_plan($ca_clean_result)
     }

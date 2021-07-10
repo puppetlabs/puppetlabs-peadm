@@ -11,8 +11,11 @@ plan peadm::modify_cert_extensions (
     Please use peadm::modify_certificate instead.
     | EOS
 
-  return(run_plan('peadm::modify_certificate', $targets,
-           primary_host      => $primary_host,
-           add_extensions    => $add,
-           remove_extensions => $remove))
+  return(
+    run_plan('peadm::modify_certificate', $targets,
+      primary_host      => $primary_host,
+      add_extensions    => $add,
+      remove_extensions => $remove,
+    )
+  )
 }
