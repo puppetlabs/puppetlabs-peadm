@@ -14,8 +14,8 @@ describe 'peadm::modify_cert_extensions' do
       end
 
       it 'runs successfully ' do
-        allow_task('peadm::cert_data').always_return({ 'certname' => 'primary' })
-        expect_plan('peadm::subplans::modify_cert_extensions').be_called_times(3)
+        allow_out_message
+        expect_plan('peadm::modify_certificate').always_return({})
 
         expect(run_plan('peadm::modify_cert_extensions', params)).to be_ok
       end
