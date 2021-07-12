@@ -1,10 +1,12 @@
 # @api private
-plan peadm::subplans::modify_cert_extensions (
+plan peadm::subplans::modify_certificate (
   Peadm::SingleTargetSpec $targets,
   TargetSpec              $primary_host,
   String                  $primary_certname,
-  Hash                    $add = { },
-  Array                   $remove = [ ],
+  Hash                    $add_extensions = { },
+  Array                   $remove_extensions = [ ],
+  Optional[Array]         $dns_alt_names = undef,
+  Boolean                 $force_regenerate = false,
 ) {
   $target = get_target($targets)
   $primary_target = get_target($primary_host)
@@ -22,16 +24,25 @@ plan peadm::subplans::modify_cert_extensions (
 
   # These vars represent what the extensions currently are, vs. what they should be
   $existing_exts = $certdata['extensions'].filter |$k,$v| { $k =~ /^1\.3\.6\.1\.4\.1\.34380\.1(?!\.3\.39)/ }
-  $desired_exts = $existing_exts.filter |$k,$v| { !($k in $remove) } + $add
+  $desired_exts = $existing_exts.filter |$k,$v| { !($k in $remove_extensions) } + $add_extensions
+  $existing_alt_names = ($certdata['dns-alt-names'] - $certdata['certname']).sort
+  $desired_alt_names = (pick($dns_alt_names, $existing_alt_names) - $certdata['certname']).sort
 
   # If the existing certificate meets all the requirements, there's no need
   # to regenerate it. Skip it and move on to the next.
-  if ($certdata['certificate-exists']
-      and ($desired_exts.all |$key,$val| { $existing_exts[$key] == $val })
-      and !($remove.any |$key| { $key in $existing_exts.keys })) {
-    out::message("${certname} already has requested extensions; certificate will not be re-issued")
+  if ($certdata['certificate-exists'] and
+      ($desired_alt_names == $existing_alt_names) and
+      ($desired_exts.all |$key,$val| { $existing_exts[$key] == $val }) and
+      !($remove_extensions.any |$key| { $key in $existing_exts.keys }) and
+      !$force_regenerate)
+  {
+    out::message("${certname} already has requested modifications; certificate will not be re-issued")
     return('Skipped')
   }
+
+  # The new subjectAltNames for the regenerated cert should be the common name
+  # plus whatever other names are specified
+  $alt_names = [$certdata['certname']] + $desired_alt_names
 
   # Everything starts the same; we always stop the agent and revoke the
   # existing cert. We use `run_command` in case the master is 2019.x but
@@ -54,9 +65,10 @@ plan peadm::subplans::modify_cert_extensions (
     # fail the plan unless it's a known circumstance in which it's okay to proceed.
     # Scenario 1: the primary's cert can't be cleaned because it's already revoked.
     # Scenario 2: the primary's cert can't be cleaned because it's been deleted.
-    unless ($target_is_primary and (
-              $ca_clean_result[merged_output] =~ /certificate revoked/ or
-              $ca_clean_result[merged_output] =~ /Could not find 'hostcert'/)) {
+    unless ($target_is_primary and
+            ($ca_clean_result[merged_output] =~ /certificate revoked/ or
+              $ca_clean_result[merged_output] =~ /Could not find 'hostcert'/))
+    {
       fail_plan($ca_clean_result)
     }
   }
@@ -65,7 +77,7 @@ plan peadm::subplans::modify_cert_extensions (
   unless ($target_is_primary) {
     # CLIENT cert regeneration
     run_task('peadm::ssl_clean', $target, certname => $certname)
-    run_task('peadm::submit_csr', $target)
+    run_task('peadm::submit_csr', $target, dns_alt_names => $alt_names)
     run_task('peadm::sign_csr', $primary_target, certnames => [$certname])
 
     # Use a command instead of a task so that this works for Puppet 5 agents
@@ -79,11 +91,6 @@ plan peadm::subplans::modify_cert_extensions (
   }
   else {
     # PRIMARY cert regeneration
-    $alt_names = $certdata['dns-alt-names'].empty ? {
-      true  => $certdata['certname'],
-      false => $certdata['dns-alt-names'].join(','),
-    }
-
     # The docs are broken, and the process is unclean. Sadface.
     run_task('service', $target, {action => 'stop', name => 'pe-puppetserver'})
     run_command(@("HEREDOC"/L), $target)
@@ -97,7 +104,7 @@ plan peadm::subplans::modify_cert_extensions (
     run_command(@("HEREDOC"/L), $target)
       /opt/puppetlabs/bin/puppetserver ca generate \
         --certname ${certname} \
-        --subject-alt-names ${alt_names} \
+        --subject-alt-names ${alt_names.join(',')} \
         --ca-client
       |-HEREDOC
     run_task('service', $target, {action => 'start', name => 'pe-puppetserver'})

@@ -1,6 +1,11 @@
 {
   "description": "Submit a certificate signing request",
-  "parameters": { },
+  "parameters": {
+    "dns_alt_names": {
+      "type": "Optional[Array[String]]",
+      "description": "DNS Alternative Names to request for the certificate"
+    }
+  },
   "input_method": "stdin",
   "implementations": [
     {"name": "submit_csr.rb"}

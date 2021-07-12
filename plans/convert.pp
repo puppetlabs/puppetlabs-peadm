@@ -125,9 +125,9 @@ plan peadm::convert (
       }
     }
 
-    run_plan('peadm::modify_cert_extensions', $primary_target,
-      primary_host => $primary_target,
-      add          => {
+    run_plan('peadm::modify_certificate', $primary_target,
+      primary_host   => $primary_target,
+      add_extensions => {
         peadm::oid('peadm_role')               => 'puppet/server',
         peadm::oid('peadm_availability_group') => 'A',
       },
@@ -146,45 +146,45 @@ plan peadm::convert (
     # Kick off all the cert modification jobs in parallel
     $background_cert_jobs = [
       background('modify-replica-cert') || {
-        run_plan('peadm::modify_cert_extensions', $replica_target,
-          primary_host => $primary_target,
-          add          => {
+        run_plan('peadm::modify_certificate', $replica_target,
+          primary_host   => $primary_target,
+          add_extensions => {
             peadm::oid('peadm_role')               => 'puppet/server',
             peadm::oid('peadm_availability_group') => 'B',
           },
         )
       },
       background('modify-primary-postgresql-cert') || {
-        run_plan('peadm::modify_cert_extensions', $primary_postgresql_target,
-          primary_host => $primary_target,
-          add          => {
+        run_plan('peadm::modify_certificate', $primary_postgresql_target,
+          primary_host   => $primary_target,
+          add_extensions => {
             peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
             peadm::oid('peadm_availability_group') => 'A',
           },
         )
       },
       background('modify-replica-postgresql-cert') || {
-        run_plan('peadm::modify_cert_extensions', $replica_postgresql_target,
-          primary_host => $primary_target,
-          add          => {
+        run_plan('peadm::modify_certificate', $replica_postgresql_target,
+          primary_host   => $primary_target,
+          add_extensions => {
             peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
             peadm::oid('peadm_availability_group') => 'B',
           },
         )
       },
       background('modify-compilers-a-certs') || {
-        run_plan('peadm::modify_cert_extensions', $compiler_a_targets,
-          primary_host => $primary_target,
-          add          => {
+        run_plan('peadm::modify_certificate', $compiler_a_targets,
+          primary_host   => $primary_target,
+          add_extensions => {
             peadm::oid('pp_auth_role')             => 'pe_compiler',
             peadm::oid('peadm_availability_group') => 'A',
           },
         )
       },
       background('modify-compilers-b-certs') || {
-        run_plan('peadm::modify_cert_extensions', $compiler_b_targets,
-          primary_host => $primary_target,
-          add          => {
+        run_plan('peadm::modify_certificate', $compiler_b_targets,
+          primary_host   => $primary_target,
+          add_extensions => {
             peadm::oid('pp_auth_role')             => 'pe_compiler',
             peadm::oid('peadm_availability_group') => 'B',
           },
