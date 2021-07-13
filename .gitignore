@@ -32,6 +32,3 @@
 .plan_cache.json
 .resource_types/
 bolt-debug.log
-!spec/fixtures/modules
-spec/fixtures/modules/*
-!spec/fixtures/modules/peadm_spec
