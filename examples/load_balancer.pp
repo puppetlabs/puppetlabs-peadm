@@ -1,6 +1,10 @@
 # @summary Example class for PE compiler load balancer
 #
-class peadm::load_balancer {
+# This is a sample, not functional, demonstrating approximately what it would
+# take to configure HA Proxy as a load balancer for Puppet Enterprise.
+#
+# lint:ignore:autoloader_layout
+class load_balancer {
 
   class { 'haproxy':
     global_options   => {
@@ -59,3 +63,4 @@ class peadm::load_balancer {
   }
 
 }
+# lint:endignore
