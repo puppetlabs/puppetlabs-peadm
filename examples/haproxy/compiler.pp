@@ -1,6 +1,7 @@
 # @summary Example class for PE compiler load balancing
 #
-class peadm::compiler {
+# lint:ignore:autoloader_layout
+class examples::compiler {
 
   @@haproxy::balancermember { "${::clientcert}_puppetserver_listener":
     listening_service => 'puppetserver',
@@ -19,3 +20,4 @@ class peadm::compiler {
   }
 
 }
+# lint:endignore
