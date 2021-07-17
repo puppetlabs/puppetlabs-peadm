@@ -41,7 +41,7 @@ class peadm::setup::node_manager (
   String[1]           $primary_postgresql_host         = $primary_host,
 
   # Specify when using Extra Large AND High Availability
-  Optional[String[1]] $replica_postgresql_host         = $replica_host,
+  Optional[String[1]] $replica_postgresql_host         = pick($replica_host, 'not-configured'),
 ) {
 
   # Preserve existing user data and classes values. We only need to make sure
@@ -141,61 +141,62 @@ class peadm::setup::node_manager (
     },
   }
 
-  # Create the replica and B groups if a replica primary and database host are
-  # supplied
-  if $replica_host {
-    # We need to ensure this group provides the peadm_replica variable.
-    node_group { 'PE DR Replica':
-      ensure    => 'present',
-      parent    => 'PE Infrastructure',
-      classes   => {
-        'puppet_enterprise::profile::primary_master_replica' => { }
-      },
-      variables => { 'peadm_replica' => true },
-    }
+  # Always create the replica and B groups, even if a replica primary and
+  # database host are not supplied. This consistency enables the
+  # peadm::get_cluster_roles task to reliably return the currently configured
+  # PEAdm roles.
 
-    node_group { 'PE Primary B':
-      ensure => present,
-      parent => 'PE Infrastructure',
-      rule   => ['and',
-        ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/server'],
-        ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'B'],
-      ],
-      data   => {
-        'puppet_enterprise::profile::primary_master_replica' => {
-          'database_host_puppetdb' => $replica_postgresql_host,
-        },
-        'puppet_enterprise::profile::puppetdb'               => {
-          'database_host' => $replica_postgresql_host,
-        },
-      },
-    }
+  # We need to ensure this group provides the peadm_replica variable.
+  node_group { 'PE DR Replica':
+    ensure    => 'present',
+    parent    => 'PE Infrastructure',
+    classes   => {
+      'puppet_enterprise::profile::primary_master_replica' => { }
+    },
+    variables => { 'peadm_replica' => true },
+  }
 
-    node_group { 'PE Compiler Group B':
-      ensure  => 'present',
-      parent  => 'PE Compiler',
-      rule    => ['and',
-        ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler'],
-        ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'B'],
-      ],
-      classes => {
-        'puppet_enterprise::profile::puppetdb' => {
-          'database_host' => $replica_postgresql_host,
-        },
-        'puppet_enterprise::profile::master'   => {
-          # lint:ignore:single_quote_string_with_variables
-          'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_a_pool_address],
-          # lint:endignore
-          'puppetdb_port' => [8081],
-        }
+  node_group { 'PE Primary B':
+    ensure => present,
+    parent => 'PE Infrastructure',
+    rule   => ['and',
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/server'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'B'],
+    ],
+    data   => {
+      'puppet_enterprise::profile::primary_master_replica' => {
+        'database_host_puppetdb' => $replica_postgresql_host,
       },
-      data    => {
-        # Workaround for GH-118
-        'puppet_enterprise::profile::master::puppetdb' => {
-          'ha_enabled_replicas' => [ ],
-        },
+      'puppet_enterprise::profile::puppetdb'               => {
+        'database_host' => $replica_postgresql_host,
       },
-    }
+    },
+  }
+
+  node_group { 'PE Compiler Group B':
+    ensure  => 'present',
+    parent  => 'PE Compiler',
+    rule    => ['and',
+      ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'B'],
+    ],
+    classes => {
+      'puppet_enterprise::profile::puppetdb' => {
+        'database_host' => $replica_postgresql_host,
+      },
+      'puppet_enterprise::profile::master'   => {
+        # lint:ignore:single_quote_string_with_variables
+        'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_a_pool_address],
+        # lint:endignore
+        'puppetdb_port' => [8081],
+      }
+    },
+    data    => {
+      # Workaround for GH-118
+      'puppet_enterprise::profile::master::puppetdb' => {
+        'ha_enabled_replicas' => [ ],
+      },
+    },
   }
 
 }
