@@ -1,0 +1,5 @@
+{
+  "description": "Return a hash of currently configured PEAdm cluster node roles",
+  "parameters": { },
+  "input_method": "stdin"
+}
