@@ -138,7 +138,7 @@ class peadm::setup::node_manager (
   # PEAdm roles.
 
   # We need to ensure this group provides the peadm_replica variable.
-  node_group { 'PE DR Replica':
+  node_group { 'PE HA Replica':
     ensure    => 'present',
     parent    => 'PE Infrastructure',
     classes   => {
