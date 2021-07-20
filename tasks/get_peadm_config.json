@@ -1,0 +1,5 @@
+{
+  "description": "Run on a PE primary node to return the currently configured PEAdm parameters",
+  "parameters": { },
+  "input_method": "stdin"
+}

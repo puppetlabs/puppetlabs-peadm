@@ -31,8 +31,8 @@ class peadm::setup::node_manager (
   Optional[String[1]] $postgresql_b_host                = $server_b_host,
 
   Optional[String[1]] $compiler_pool_address            = undef,
-  Optional[String[1]] $internal_compiler_a_pool_address = $postgresql_a_host,
-  Optional[String[1]] $internal_compiler_b_pool_address = $postgresql_b_host,
+  Optional[String[1]] $internal_compiler_a_pool_address = $server_a_host,
+  Optional[String[1]] $internal_compiler_b_pool_address = $server_b_host,
 ) {
 
   # "Not-configured" placeholder string. This will be used in places where we
