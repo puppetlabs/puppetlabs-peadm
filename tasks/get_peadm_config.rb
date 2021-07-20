@@ -10,16 +10,56 @@ require 'puppet'
 class GetPEAdmConfig
   def initialize(params); end
 
+  def execute!
+    puts config.to_json
+  end
+
+  def config
+    # Compute values
+    primary = groups.pinned('PE Master')
+    replica = groups.pinned('PE HA Replica')
+    server_a = server('puppet/server', 'A')
+    server_b = server('puppet/server', 'B')
+    primary_letter = primary.eql?(server_a) ? 'A' : 'B'
+    replica_letter = primary_letter.eql?('A') ? 'B' : 'A'
+    postgresql = {
+      'A' => server('puppet/puppetdb-database', 'A'),
+      'B' => server('puppet/puppetdb-database', 'B'),
+    }
+
+    # Build and return the task output
+    {
+      'params' => {
+        'primary_host' => primary,
+        'replica_host' => replica,
+        'primary_postgresql_host' => postgresql[primary_letter],
+        'replica_postgresql_host' => postgresql[replica_letter],
+        'compilers' => compilers,
+        'compiler_pool_address' => groups.dig('PE Master', 'config_data', 'pe_repo', 'compile_master_pool_address'),
+        'internal_compiler_a_pool_address' => groups.dig('PE Compiler Group A', 'classes', 'puppet_enterprise::profile::master', 'puppetdb_host')[1],
+        'internal_compiler_b_pool_address' => groups.dig('PE Compiler Group B', 'classes', 'puppet_enterprise::profile::master', 'puppetdb_host')[1],
+      },
+      'role-letter' => {
+        'server' => {
+          'A' => server_a,
+          'B' => server_b,
+        },
+        'postgresql' => {
+          'A' => postgresql['A'],
+          'B' => postgresql['B'],
+        },
+      },
+    }
+  end
+
   # Returns a GetPEAdmConfig::NodeGroups object created from the /groups object
   # returned by the classifier
   def groups
-    return @groups unless @groups.nil?
-
-    console_services = https(4433)
-    response = console_services.get('/classifier-api/v1/groups')
-
-    groups = JSON.parse(response.body)
-    @groups = NodeGroup.new(groups)
+    @groups ||= begin
+                  net = https(4433)
+                  res = net.get('/classifier-api/v1/groups')
+                  NodeGroup.new(JSON.parse(res.body))
+                end
   end
 
   # Returns a list of compiler certnames, based on a PuppetDB query
@@ -28,60 +68,21 @@ class GetPEAdmConfig
     pdb_query(query).map { |n| n['certname'] }
   end
 
-  def server(letter)
+  def server(role, letter)
     query = 'inventory[certname] { '\
-            '  trusted.extensions."1.3.6.1.4.1.34380.1.1.9812" = "puppet/server" and ' \
+            '  trusted.extensions."1.3.6.1.4.1.34380.1.1.9812" = "' + role + '" and ' \
             '  trusted.extensions."1.3.6.1.4.1.34380.1.1.9813" = "' + letter + '"}'
 
     server = pdb_query(query).map { |n| n['certname'] }
-    raise "More than one #{letter} server found!" unless server.size <= 1
+    raise "More than one #{letter} #{role} server found!" unless server.size <= 1
     server.first
-  end
-
-  def postgresql_server(letter)
-    query = 'inventory[certname] { '\
-            '  trusted.extensions."1.3.6.1.4.1.34380.1.1.9812" = "puppet/puppetdb-database" and ' \
-            '  trusted.extensions."1.3.6.1.4.1.34380.1.1.9813" = "' + letter + '"}'
-
-    server = pdb_query(query).map { |n| n['certname'] }
-    raise "More than one #{letter} postgresql server found!" unless server.size <= 1
-    server.first
-  end
-
-  def config
-    server_conf = {
-      'primary_host' => groups.pinned('PE Master'),
-      'replica_host' => groups.pinned('PE HA Replica'),
-      'server_a_host' => server('A'),
-      'server_b_host' => server('B'),
-    }
-
-    primary_letter = server_conf['primary_host'] == server_conf['server_a_host'] ? 'A' : 'B'
-    replica_letter = primary_letter == 'A' ? 'B' : 'A'
-
-    remaining_conf = {
-      'primary_postgresql_host' => postgresql_server(primary_letter),
-      'replica_postgresql_host' => postgresql_server(replica_letter),
-      'postgresql_a_host' => groups.dig('PE Primary A', 'config_data', 'puppet_enterprise::profile::puppetdb', 'database_host'),
-      'postgresql_b_host' => groups.dig('PE Primary B', 'config_data', 'puppet_enterprise::profile::puppetdb', 'database_host'),
-      'compilers' => compilers,
-      'compiler_pool_address' => groups.dig('PE Master', 'config_data', 'pe_repo', 'compile_master_pool_address'),
-      'internal_compiler_a_pool_address' => groups.dig('PE Compiler Group A', 'classes', 'puppet_enterprise::profile::master', 'puppetdb_host')[1],
-      'internal_compiler_b_pool_address' => groups.dig('PE Compiler Group B', 'classes', 'puppet_enterprise::profile::master', 'puppetdb_host')[1],
-    }
-
-    server_conf.merge(remaining_conf)
-  end
-
-  def execute!
-    puts config.to_json
   end
 
   def https(port)
     https = Net::HTTP.new('localhost', port)
     https.use_ssl = true
-    https.cert = OpenSSL::X509::Certificate.new(File.read(Puppet.settings[:hostcert]))
-    https.key = OpenSSL::PKey::RSA.new(File.read(Puppet.settings[:hostprivkey]))
+    https.cert = @cert ||= OpenSSL::X509::Certificate.new(File.read(Puppet.settings[:hostcert]))
+    https.key = @key ||= OpenSSL::PKey::RSA.new(File.read(Puppet.settings[:hostprivkey]))
     https.verify_mode = OpenSSL::SSL::VERIFY_NONE
     https
   end
