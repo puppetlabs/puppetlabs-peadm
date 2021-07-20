@@ -34,7 +34,7 @@ class GetPEAdmConfig
         'replica_host' => replica,
         'primary_postgresql_host' => postgresql[primary_letter],
         'replica_postgresql_host' => postgresql[replica_letter],
-        'compilers' => compilers,
+        'compilers' => compilers.map { |c| c['certname'] },
         'compiler_pool_address' => groups.dig('PE Master', 'config_data', 'pe_repo', 'compile_master_pool_address'),
         'internal_compiler_a_pool_address' => groups.dig('PE Compiler Group A', 'classes', 'puppet_enterprise::profile::master', 'puppetdb_host', 1),
         'internal_compiler_b_pool_address' => groups.dig('PE Compiler Group B', 'classes', 'puppet_enterprise::profile::master', 'puppetdb_host', 1),
@@ -48,6 +48,10 @@ class GetPEAdmConfig
           'A' => postgresql['A'],
           'B' => postgresql['B'],
         },
+        'compilers' => {
+          'A' => compilers.select { |c| c['letter'] == 'A' }.map { |c| c['certname'] },
+          'B' => compilers.select { |c| c['letter'] == 'B' }.map { |c| c['certname'] },
+        }
       },
     }
   end
@@ -56,16 +60,22 @@ class GetPEAdmConfig
   # returned by the classifier
   def groups
     @groups ||= begin
-                  net = https(4433)
-                  res = net.get('/classifier-api/v1/groups')
-                  NodeGroup.new(JSON.parse(res.body))
-                end
+      net = https(4433)
+      res = net.get('/classifier-api/v1/groups')
+      NodeGroup.new(JSON.parse(res.body))
+    end
   end
 
-  # Returns a list of compiler certnames, based on a PuppetDB query
+  # Returns a list of compiler certnames and letters, based on a PuppetDB query
   def compilers
-    query = 'inventory[certname] { trusted.extensions.pp_auth_role = "pe_compiler" }'
-    pdb_query(query).map { |n| n['certname'] }
+    @compilers ||= begin
+      pdb_query('inventory[certname,trusted.extensions] { trusted.extensions.pp_auth_role = "pe_compiler" }').map do |c|
+        {
+          'certname' => c['certname'],
+          'letter'   => c.dig('trusted.extensions', '1.3.6.1.4.1.34380.1.1.9813'),
+        }
+      end
+    end
   end
 
   def server(role, letter)
