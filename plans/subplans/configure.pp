@@ -79,9 +79,10 @@ plan peadm::subplans::configure (
 
     class { 'peadm::setup::node_manager':
       primary_host                     => $primary_target.peadm::certname(),
-      replica_host                     => $replica_target.peadm::certname(),
-      primary_postgresql_host          => $primary_postgresql_target.peadm::certname(),
-      replica_postgresql_host          => $replica_postgresql_target.peadm::certname(),
+      server_a_host                    => $primary_target.peadm::certname(),
+      server_b_host                    => $replica_target.peadm::certname(),
+      postgresql_a_host                => $primary_postgresql_target.peadm::certname(),
+      postgresql_b_host                => $replica_postgresql_target.peadm::certname(),
       compiler_pool_address            => $compiler_pool_address,
       internal_compiler_a_pool_address => $internal_compiler_a_pool_address,
       internal_compiler_b_pool_address => $internal_compiler_b_pool_address,

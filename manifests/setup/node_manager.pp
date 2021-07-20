@@ -22,27 +22,22 @@
 #   architectures.
 #
 class peadm::setup::node_manager (
-  # Standard
   String[1] $primary_host,
 
-  # High Availability
-  Optional[String[1]] $replica_host                     = undef,
+  Optional[String[1]] $server_a_host                    = undef,
+  Optional[String[1]] $server_b_host                    = undef,
 
-  # Common
+  String[1]           $postgresql_a_host                = $server_a_host,
+  Optional[String[1]] $postgresql_b_host                = $server_b_host,
+
   Optional[String[1]] $compiler_pool_address            = undef,
-  Optional[String[1]] $internal_compiler_a_pool_address = $primary_host,
-  Optional[String[1]] $internal_compiler_b_pool_address = $replica_host,
-
-  # For the next two parameters, the default values are appropriate when
-  # deploying Standard or Large architectures. These values only need to be
-  # specified differently when deploying an Extra Large architecture.
-
-  # Specify when using Extra Large
-  String[1]           $primary_postgresql_host         = $primary_host,
-
-  # Specify when using Extra Large AND High Availability
-  Optional[String[1]] $replica_postgresql_host         = $replica_host,
+  Optional[String[1]] $internal_compiler_a_pool_address = $postgresql_a_host,
+  Optional[String[1]] $internal_compiler_b_pool_address = $postgresql_b_host,
 ) {
+
+  # "Not-configured" placeholder string. This will be used in places where we
+  # cannot set an explicit null, and need to supply some kind of value.
+  $notconf = 'not-configured'
 
   # Preserve existing user data and classes values. We only need to make sure
   # the values we care about are present; we don't need to remove anything
@@ -64,9 +59,9 @@ class peadm::setup::node_manager (
     ],
   }
 
-  # We modify PE Master to add, as data, the compiler_pool_address only.
-  # Because the group does not have any data by default this does not impact
-  # out-of-box configuration of the group.
+  # We modify PE Master to add, as data, the compiler_pool_address only. Some
+  # users may set this value via Hiera, so we don't want to always require it
+  # being set in the console.
   $compiler_pool_address_data = $compiler_pool_address ? {
     undef   => undef,
     default => { 'pe_repo' => { 'compile_master_pool_address' => $compiler_pool_address } },
@@ -79,14 +74,10 @@ class peadm::setup::node_manager (
     parent    => 'PE Infrastructure',
     data      => $compiler_pool_address_data,
     variables => { 'pe_master' => true },
-    rule      => ['or',
-      ['and', ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler']],
-      ['=', 'name', $primary_host],
-    ],
   }
 
-  # This group should pin master, puppetdb_database, and puppetdb_database_replica,
-  # but only if provided (and not just the default).
+  # This group should pin the primary, and also map to any pe-postgresql nodes
+  # which are part of the architecture.
   node_group { 'PE Database':
     rule => ['or',
       ['and', ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/puppetdb-database']],
@@ -105,10 +96,10 @@ class peadm::setup::node_manager (
     ],
     data   => {
       'puppet_enterprise::profile::primary_master_replica' => {
-        'database_host_puppetdb' => $primary_postgresql_host,
+        'database_host_puppetdb' => pick($postgresql_a_host, $notconf),
       },
       'puppet_enterprise::profile::puppetdb'               => {
-        'database_host' => $primary_postgresql_host,
+        'database_host' => pick($postgresql_a_host, $notconf)
       },
     },
   }
@@ -124,7 +115,7 @@ class peadm::setup::node_manager (
     ],
     classes => {
       'puppet_enterprise::profile::puppetdb' => {
-        'database_host' => $primary_postgresql_host,
+        'database_host' => pick($postgresql_a_host, $notconf),
       },
       'puppet_enterprise::profile::master'   => {
         # lint:ignore:single_quote_string_with_variables
@@ -141,61 +132,62 @@ class peadm::setup::node_manager (
     },
   }
 
-  # Create the replica and B groups if a replica primary and database host are
-  # supplied
-  if $replica_host {
-    # We need to ensure this group provides the peadm_replica variable.
-    node_group { 'PE DR Replica':
-      ensure    => 'present',
-      parent    => 'PE Infrastructure',
-      classes   => {
-        'puppet_enterprise::profile::primary_master_replica' => { }
-      },
-      variables => { 'peadm_replica' => true },
-    }
+  # Always create the replica and B groups, even if a replica primary and
+  # database host are not supplied. This consistency enables the
+  # peadm::get_cluster_roles task to reliably return the currently configured
+  # PEAdm roles.
 
-    node_group { 'PE Primary B':
-      ensure => present,
-      parent => 'PE Infrastructure',
-      rule   => ['and',
-        ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/server'],
-        ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'B'],
-      ],
-      data   => {
-        'puppet_enterprise::profile::primary_master_replica' => {
-          'database_host_puppetdb' => $replica_postgresql_host,
-        },
-        'puppet_enterprise::profile::puppetdb'               => {
-          'database_host' => $replica_postgresql_host,
-        },
-      },
-    }
+  # We need to ensure this group provides the peadm_replica variable.
+  node_group { 'PE HA Replica':
+    ensure    => 'present',
+    parent    => 'PE Infrastructure',
+    classes   => {
+      'puppet_enterprise::profile::primary_master_replica' => { }
+    },
+    variables => { 'peadm_replica' => true },
+  }
 
-    node_group { 'PE Compiler Group B':
-      ensure  => 'present',
-      parent  => 'PE Compiler',
-      rule    => ['and',
-        ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler'],
-        ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'B'],
-      ],
-      classes => {
-        'puppet_enterprise::profile::puppetdb' => {
-          'database_host' => $replica_postgresql_host,
-        },
-        'puppet_enterprise::profile::master'   => {
-          # lint:ignore:single_quote_string_with_variables
-          'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_a_pool_address],
-          # lint:endignore
-          'puppetdb_port' => [8081],
-        }
+  node_group { 'PE Primary B':
+    ensure => present,
+    parent => 'PE Infrastructure',
+    rule   => ['and',
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/server'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'B'],
+    ],
+    data   => {
+      'puppet_enterprise::profile::primary_master_replica' => {
+        'database_host_puppetdb' => pick($postgresql_b_host, $notconf),
       },
-      data    => {
-        # Workaround for GH-118
-        'puppet_enterprise::profile::master::puppetdb' => {
-          'ha_enabled_replicas' => [ ],
-        },
+      'puppet_enterprise::profile::puppetdb'               => {
+        'database_host' => pick($postgresql_b_host, $notconf),
       },
-    }
+    },
+  }
+
+  node_group { 'PE Compiler Group B':
+    ensure  => 'present',
+    parent  => 'PE Compiler',
+    rule    => ['and',
+      ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'B'],
+    ],
+    classes => {
+      'puppet_enterprise::profile::puppetdb' => {
+        'database_host' => pick($postgresql_b_host, $notconf),
+      },
+      'puppet_enterprise::profile::master'   => {
+        # lint:ignore:single_quote_string_with_variables
+        'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_a_pool_address].filter |$_| { $_ },
+        # lint:endignore
+        'puppetdb_port' => [8081],
+      }
+    },
+    data    => {
+      # Workaround for GH-118
+      'puppet_enterprise::profile::master::puppetdb' => {
+        'ha_enabled_replicas' => [ ],
+      },
+    },
   }
 
 }
