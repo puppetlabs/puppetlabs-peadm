@@ -15,6 +15,7 @@ env PATH="/opt/puppetlabs/bin:${PATH}" \
     USER="$USER" \
     HOME="$HOME" \
     puppet infrastructure enable replica "$PT_replica" \
+      --color false \
       --skip-agent-config \
       --topology mono-with-compile \
       --yes --token-file "$TOKEN_FILE"
