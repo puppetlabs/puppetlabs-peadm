@@ -15,6 +15,7 @@ set -e
 
 if [ "$PT_legacy" = "false" ]; then
   puppet infrastructure provision replica "$PT_replica" \
+    --color false \
     --yes --token-file "$TOKEN_FILE" \
     --skip-agent-config \
     --topology mono-with-compile \
@@ -22,9 +23,11 @@ if [ "$PT_legacy" = "false" ]; then
 
 elif [ "$PT_legacy" = "true" ]; then
   puppet infrastructure provision replica "$PT_replica" \
+    --color false \
     --token-file "$TOKEN_FILE"
 
   puppet infrastructure enable replica "$PT_replica" \
+    --color false \
     --yes --token-file "$TOKEN_FILE" \
     --skip-agent-config \
     --topology mono-with-compile

@@ -21,7 +21,7 @@ class PuppetInfraUpgrade
     exit 0 if @targets.empty?
     token_file = @token_file || File.join(Etc.getpwuid.dir, '.puppetlabs', 'token')
 
-    cmd = ['/opt/puppetlabs/bin/puppet-infrastructure', '--render-as', 'json', 'upgrade']
+    cmd = ['/opt/puppetlabs/bin/puppet-infrastructure', '--color', 'false', '--render-as', 'json', 'upgrade']
     cmd << '--token-file' << token_file unless @token_file.nil?
     cmd << @type << @targets.join(',')
 
