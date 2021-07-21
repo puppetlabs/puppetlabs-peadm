@@ -1,4 +1,5 @@
 # @api private
+# @private true
 plan peadm::subplans::modify_certificate (
   Peadm::SingleTargetSpec $targets,
   TargetSpec              $primary_host,
