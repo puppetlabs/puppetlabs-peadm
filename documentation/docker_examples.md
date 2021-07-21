@@ -12,7 +12,7 @@ To run the container based examples you will need the following requirements:
 
 1. Docker
 2. Docker compose
-3. realpath (brew install coureutils on mac)
+3. realpath (brew install coreutils on mac)
 4. 16GB memory, 24GB+ for XL and XL-DR architectures
 5. CPU with many cores (Tested with Core i7 6700)
 
