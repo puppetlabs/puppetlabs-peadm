@@ -1,3 +1,6 @@
+# @api private
+# @private true
+#
 # @summary Configure first-time classification and DR setup
 #
 # @param compiler_pool_address 

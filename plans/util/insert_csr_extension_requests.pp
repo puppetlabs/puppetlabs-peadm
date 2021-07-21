@@ -1,3 +1,5 @@
+# @api private
+# @private true
 plan peadm::util::insert_csr_extension_requests (
   TargetSpec $targets,
   Hash       $extension_requests,

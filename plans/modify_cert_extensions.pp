@@ -1,4 +1,5 @@
 # @api private
+# @private true
 plan peadm::modify_cert_extensions (
   TargetSpec              $targets,
   Peadm::SingleTargetSpec $primary_host,
