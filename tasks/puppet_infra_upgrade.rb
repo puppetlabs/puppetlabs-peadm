@@ -51,7 +51,7 @@ class PuppetInfraUpgrade
 
     request = Net::HTTP::Post.new(inventory_uri.request_uri)
     request['Content-Type'] = 'application/json'
-    request['X-Authentication'] = token
+    request['X-Authentication'] = token.chomp
     request.body = body
 
     request
