@@ -6,7 +6,7 @@
 #  https://puppet.com/docs/pe/2019.8/uninstalling.html
 
 if [ -x "$(command -v /opt/puppetlabs/bin/puppet-enterprise-uninstaller)" ]; then
-    sudo /opt/puppetlabs/bin/puppet-enterprise-uninstaller -d -p -y
+    /opt/puppetlabs/bin/puppet-enterprise-uninstaller -d -p -y
 else
     echo 'Error: puppet-enterprise-uninstaller is not available on this target.'
     exit 1
