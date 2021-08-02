@@ -5,4 +5,4 @@
 #  and the command-line flags, visit:
 #  https://puppet.com/docs/pe/2019.8/uninstalling.html
 
-sudo ./puppet-enterprise-uninstaller -d -p -y
+sudo /opt/puppetlabs/bin/puppet-enterprise-uninstaller -d -p -y
