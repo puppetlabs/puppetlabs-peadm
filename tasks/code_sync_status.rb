@@ -73,6 +73,7 @@ for environment in environmentstocheck
     puts "#{environment} in sync"
   else
     puts "#{environment} out of sync"
+  end
 end
 if scriptstatus
   puts "All environments in sync"
