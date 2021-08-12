@@ -28,12 +28,12 @@ environments  = JSON.parse(response.body)['file-sync-storage-service']['status']
 environmentstocheck = Array.new
 
 # If all was passed as an argument we check all visible environments
-if params['requestedenvironments'].any?{ |s| s.casecmp("all")==0 }
+if params['environments'].any?{ |s| s.casecmp("all")==0 }
   puts "Checking all deployed environments"
   environmentstocheck = environments
 # Else check each requested environment to confirm its a visible environment
 else
-  for environment in params['requestedenvironments']
+  for environment in params['environments']
     if environments.any?{ |s| s.casecmp("#{environment}")==0 }
       puts "Environment #{environment} is visible and will be checked"
       environmentstocheck << environment
