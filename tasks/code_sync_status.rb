@@ -10,8 +10,6 @@ require 'logger'
 #   Hash
 #     Array requestedenvironments
 params = JSON.parse(STDIN.read)
-logger = Logger.new(STDOUT)
-logger.level = Logger::DEBUG
 
 # Only debug level includes code sync details
 uri = URI.parse('https://localhost:8140/status/v1/services?level=debug')
@@ -29,13 +27,11 @@ environmentstocheck = Array.new
 
 # If all was passed as an argument we check all visible environments
 if params['environments'].any?{ |s| s.casecmp("all")==0 }
-  logger.debug("Checking all deployed environments")
   environmentstocheck = environments
 # Else check each requested environment to confirm its a visible environment
 else
   for environment in params['environments']
     if environments.any?{ |s| s.casecmp("#{environment}")==0 }
-        logger.debug("Environment #{environment} is visible and will be checked")
       environmentstocheck << environment
     else
         logger.error("Environment #{environment} is not visible and will not be checked")
@@ -47,13 +43,12 @@ results = {}
 scriptstatus = true
 for environment in environmentstocheck
   results[environment] = {}
-# The status of this environment assume its good until we hit a failure
+  # The status of this environment assume its good until we hit a failure
   environmentmatch = true
   # Find the commit ID of the environment accroding to the file sync service
   primarycommit = JSON.parse(response.body)['file-sync-storage-service']['status']['repos']['puppet-code']['submodules']["#{environment}"]['latest_commit']['message'][32..71]
   results[environment]['latest_commit']
   for server in servers do
-    logger.debug("Checking #{server}")
     results[environment][server] = {}
     # Find the commit ID of the server we are checking for this environment 
     servercommit = JSON.parse(response.body)['file-sync-storage-service']['status']['clients']["#{server}"]['repos']['puppet-code']['submodules']["#{environment}"]['latest_commit']['message'][32..71]   
@@ -61,32 +56,27 @@ for environment in environmentstocheck
     results [environment][server][servercommit] = {}   
     # Check if it matches and if not mark the environment and script as having a server not in sync on an environment
     if servercommit == primarycommit
-      logger.debug("#{server} in sync for #{environment}")
       results [environment][server]['sync'] = true  
     else
-      logger.error("#{server} out of sync for #{environment}")
       results [environment][server]['sync'] = false
       environmentmatch = false
       scriptstatus = false
     end
   end
+  # write to the result json if its a match for the environment
   if environmentmatch
-    logger.debug("#{environment} in sync")
     results [environment]['sync'] = true
   else
-    logger.error("#{environment} out of sync")
     results [environment]['sync'] = false
   end
 end
+# Write to the result json if for all environments checked if its a match
 if scriptstatus
-    logger.debug("All environments in sync")
     results['sync'] = true
     puts results.to_json
     exit 0
-else
-    
+else    
     results['sync'] = false
     puts results.to_json
-    logger.error("Not all environments were in sync")
     exit 1
 end
