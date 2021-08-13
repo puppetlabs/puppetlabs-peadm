@@ -11,7 +11,7 @@ require 'logger'
 #     Array requestedenvironments
 params = JSON.parse(STDIN.read)
 $logger = Logger.new(STDOUT)
-$logger.level = ($params['debug']) ? Logger::DEBUG : Logger::INFO
+$logger.level = Logger::DEBUG
 
 # Only debug level includes code sync details
 uri = URI.parse('https://localhost:8140/status/v1/services?level=debug')
