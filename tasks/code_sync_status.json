@@ -6,7 +6,7 @@
     "environments": {
       "type": "Array",
       "description": "A list of environments to check, pass a single value of all for all",
-      "default": "[all]"
+      "default": ["all"]
     }
   },
   "input_method": "stdin"
