@@ -4,7 +4,6 @@
 require 'net/https'
 require 'uri'
 require 'json'
-require 'logger'
 
 # Parameters expected:
 #   Hash
@@ -34,7 +33,7 @@ else
     if environments.any?{ |s| s.casecmp("#{environment}")==0 }
       environmentstocheck << environment
     else
-        logger.error("Environment #{environment} is not visible and will not be checked")
+      raise "Environment #{environment} is not visible and will not be checked"
     end
   end
 end
