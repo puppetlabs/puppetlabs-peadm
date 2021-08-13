@@ -51,6 +51,9 @@ for environment in environmentstocheck
     results[environment][server] = {}
     # Find the commit ID of the server we are checking for this environment 
     servercommit = JSON.parse(response.body)['file-sync-storage-service']['status']['clients']["#{server}"]['repos']['puppet-code']['submodules']["#{environment}"]['latest_commit']['message'][32..71]   
+    rescue NoMethodError => e
+      raise $!.class, "#{server} does not have #{environment} visible #{$!}"
+    end
     # Error check here that it is not the default no code manager message and it at least vageuly looks like a sha1 /\b([a-f0-9]{40})\b/
     results [environment][server]['commit'] = servercommit  
     # Check if it matches and if not mark the environment and script as having a server not in sync on an environment
