@@ -47,13 +47,13 @@ for environment in environmentstocheck
   environmentmatch = true
   # Find the commit ID of the environment accroding to the file sync service
   primarycommit = JSON.parse(response.body)['file-sync-storage-service']['status']['repos']['puppet-code']['submodules']["#{environment}"]['latest_commit']['message'][32..71]
-  results[environment]['latest_commit']
+  results[environment]['latest_commit'] = primarycommit
   for server in servers do
     results[environment][server] = {}
     # Find the commit ID of the server we are checking for this environment 
     servercommit = JSON.parse(response.body)['file-sync-storage-service']['status']['clients']["#{server}"]['repos']['puppet-code']['submodules']["#{environment}"]['latest_commit']['message'][32..71]   
     # Error check here that it is not the default no code manager message and it at least vageuly looks like a sha1 /\b([a-f0-9]{40})\b/
-    results [environment][server][servercommit] = {}   
+    results [environment][server]['commit'] = servercommit  
     # Check if it matches and if not mark the environment and script as having a server not in sync on an environment
     if servercommit == primarycommit
       results [environment][server]['sync'] = true  
@@ -65,18 +65,18 @@ for environment in environmentstocheck
   end
   # write to the result json if its a match for the environment
   if environmentmatch
-    results [environment]['sync'] = true
+    results [environment]['in_sync'] = true
   else
-    results [environment]['sync'] = false
+    results [environment]['in_sync'] = false
   end
 end
 # Write to the result json if for all environments checked if its a match
 if scriptstatus
-    results['sync'] = true
+    results['in_sync'] = true
     puts results.to_json
     exit 0
 else    
-    results['sync'] = false
+    results['in_sync'] = false
     puts results.to_json
     exit 1
 end
