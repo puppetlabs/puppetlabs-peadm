@@ -42,7 +42,7 @@ else
     end
   end
 end
-results {}
+results = {}
 # Run status of the script assume its good until it we hit a failure
 scriptstatus = true
 for environment in environmentstocheck
