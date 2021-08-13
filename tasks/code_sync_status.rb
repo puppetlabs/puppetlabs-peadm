@@ -80,12 +80,12 @@ for environment in environmentstocheck
 end
 if scriptstatus
     logger.debug("All environments in sync")
-    results[sync] = true
+    results['sync'] = true
     puts results.to_json
     exit 0
 else
     
-    results[sync] = false
+    results['sync'] = false
     puts results.to_json
     logger.error("Not all environments were in sync")
     exit 1
