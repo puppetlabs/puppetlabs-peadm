@@ -9,7 +9,7 @@ require 'logger'
 # Parameters expected:
 #   Hash
 #     Array requestedenvironments
-$params = JSON.parse(STDIN.read)
+params = JSON.parse(STDIN.read)
 #$logger = Logger.new(STDOUT)
 #$logger.level = ($params['debug']) ? Logger::DEBUG : Logger::INFO
 
