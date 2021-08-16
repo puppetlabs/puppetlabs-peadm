@@ -15,7 +15,12 @@ To run the container based examples you will need the following requirements:
 3. realpath (brew install coreutils on mac)
 4. 16GB memory, 24GB+ for XL and XL-DR architectures
 5. CPU with many cores (Tested with Core i7 6700)
-6. If using docker desktop ensure resources are set (the default of 2gb ram and 1gb swap on mac are inaqequate)
+6. If using docker desktop ensure resources are set (the default of 2GB ram and 1GB swap on mac are inadequate)
+    - As a reference, we tested with the below settings:
+       - Resources -> Advanced
+          - CPUs: 6
+          - Memory: 16 GB
+          - Swap: 2 GB
 ![docker_resources](images/docker_resources.png)
 
 ### Starting the example
