@@ -22,7 +22,7 @@ do
   cd $dir
   docker-compose up -d --build 
   # nohup /usr/bin/live_audit.sh /root/bolt_scripts /tmp/backup &
-  pdk bundle exec bolt plan run peadm::provision --concurrency 2 \
+  pdk bundle exec bolt plan run peadm::install --concurrency 2 \
   --inventory $inventory_path \
   --modulepath=$fixtures_path \
   --params @${dir}/params.json \

@@ -15,15 +15,22 @@ To run the container based examples you will need the following requirements:
 3. realpath (brew install coreutils on mac)
 4. 16GB memory, 24GB+ for XL and XL-DR architectures
 5. CPU with many cores (Tested with Core i7 6700)
+6. If using docker desktop ensure resources are set (the default of 2GB ram and 1GB swap on mac are inadequate)
+    - As a reference, we tested with the below settings:
+       - Resources -> Advanced
+          - CPUs: 6
+          - Memory: 16 GB
+          - Swap: 2 GB
+![docker_resources](images/docker_resources.png)
 
 ### Starting the example
-We have provided a provision.sh script to help making these examples simple.
+We have provided a install.sh script to help making these examples simple.
 To use perform the following:
 
 1. cd spec/docker
-2. bash provision.sh
+2. bash install.sh
 3. select desired architecture when prompted (ie. extra-large-ha )
-4. Wait 10-20 minutes for provisioning to complete
+4. Wait 10-20 minutes for installing to complete
 
 ```
 Please choose a PE architecture to build: 
@@ -40,7 +47,7 @@ In order to stop and remove the containers you will need to perform the followin
 3. docker-compose down
 
 ### Logging into the console
-You can login to the PE Console after successful provision.  However, first you will need to 
+You can login to the PE Console after successful install.  However, first you will need to 
 grab the mapped port number of the PE console.  The port numbers are mapped dynamically as to not
 cause port conflicts on your system. To see how the ports are mapped you can view them via:
 
@@ -68,7 +75,7 @@ You can also bypass ssh and run docker exec or docker-compose exec
 This will run an interactive bash shell in the running container.
 
 ### Upgrades
-There is also a upgrade.sh script that is similar to the provision.sh script.  This script will upgrade an already provisioned PE stack to the version specified in the update_params.json file.
+There is also a upgrade.sh script that is similar to the install.sh script.  This script will upgrade an already installed PE stack to the version specified in the update_params.json file.
 
 ## Attaching agent containers
 Because we are using containers we can start up numerous container instances and attach them all to the same PE stack.  In a matter of minutes you can easily attach hunders of new nodes to the PE stack (if resources allow). This is very useful for testing out scenarios involving different puppet versions or operating systems and even features like the orchestrator. 
@@ -119,10 +126,10 @@ At this time we have not added documention for starting a container with systemd
 
 
 ### Other notes
-1. The provision plan is not fully idempotent.
+1. The install plan is not fully idempotent.
 2. Some tasks may fail when run due to resource constraints.
-3. You can rerun the provision.sh script on the same architecture without destroying the containers.  This can sometimes complete the provision process successfully. 
-4. Rerunning the provision script may result in errors due to idempotency issues with tasks and plans.
+3. You can rerun the install.sh script on the same architecture without destroying the containers.  This can sometimes complete the install process successfully. 
+4. Rerunning the install script may result in errors due to idempotency issues with tasks and plans.
 5. Please remember you are starting the equilivent of 3-6 VMs on a single system.  
 6. You can use top to view all the processes being run in the containers.
 7. Docker will use the privilege mode option when running these examples (systemd support)
