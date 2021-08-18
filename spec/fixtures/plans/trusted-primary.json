@@ -1,0 +1,13 @@
+{
+  "certname" : "primary",
+  "extensions" : {
+    "1.3.6.1.4.1.34380.1.3.39" : "true",
+    "1.3.6.1.4.1.34380.1.1.9812" : "puppet/primary",
+    "1.3.6.1.4.1.34380.1.1.9813" : "A"
+  },
+  "dns-alt-names" : [
+    "pe-server-d8b317-0.us-west1-a.c.davidsand.internal",
+    "pe-server-d8b317-0.us-west1-a.c.davidsand.internal",
+    "puppet"
+  ]
+}
