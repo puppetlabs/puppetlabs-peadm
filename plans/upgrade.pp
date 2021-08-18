@@ -95,7 +95,8 @@ plan peadm::upgrade (
 
   # Ensure needed trusted facts are available
   if $cert_extensions.any |$_,$cert| {
-    [peadm::oid('peadm_role'), 'pp_auth_role'].all |$ext| { $cert[$ext] == undef }
+    [peadm::oid('peadm_role'), 'pp_auth_role'].all |$ext| { $cert[$ext] == undef } or
+    $cert[peadm::oid('peadm_availability_group')] == undef
   } {
     fail_plan(@(HEREDOC/L))
       Required trusted facts are not present; upgrade cannot be completed. If \
@@ -106,13 +107,13 @@ plan peadm::upgrade (
 
   # Determine which compilers are associated with which DR group
   $compiler_m1_targets = $compiler_targets.filter |$target| {
-    ($cert_extensions[$target][peadm::oid('peadm_availability_group')]
-      == $cert_extensions[$primary_target[0]][peadm::oid('peadm_availability_group')])
+    ($cert_extensions.dig($target, peadm::oid('peadm_availability_group'))
+      == $cert_extensions.dig($primary_target[0], peadm::oid('peadm_availability_group')))
   }
 
   $compiler_m2_targets = $compiler_targets.filter |$target| {
-    ($cert_extensions[$target][peadm::oid('peadm_availability_group')]
-      == $cert_extensions[$replica_target[0]][peadm::oid('peadm_availability_group')])
+    ($cert_extensions.dig($target, peadm::oid('peadm_availability_group'))
+      == $cert_extensions.dig($replica_target[0], peadm::oid('peadm_availability_group')))
   }
 
   $primary_target.peadm::fail_on_transport('pcp')
