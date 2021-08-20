@@ -60,6 +60,7 @@ class CodeSyncStatus
       # Check if it matches and if not mark the environment not in sync on an environment
       results[server]['sync'] = servercommit == primarycommit
     end
+    results['sync'] = results.all? { |_k, v| v['sync'] == true }
     results
   end
 
