@@ -54,7 +54,7 @@ class CodeSyncStatus
     servers.each do |server|
       results[server] = {}
       # Find the commit ID of the server we are checking for this environment
-      servercommit = statuscall.body['file-sync-storage-service']['status']['clients'][server.to_s]['repos']['puppet-code']['submodules'][environment.to_s]['latest_commit']['message'][32..71] # rubocop:disable LineLength
+      servercommit = statuscall.body['file-sync-storage-service']['status']['clients'][server.to_s]['repos']['puppet-code']['submodules'][environment.to_s]['latest_commit']['message'][32..71]
       results[server]['commit'] = servercommit
       # Check if it matches and if not mark the environment not in sync on an environment
       results[server]['sync'] = servercommit == primarycommit
@@ -66,7 +66,7 @@ class CodeSyncStatus
     # Get list of servers from filesync service
     servers = statuscall['file-sync-storage-service']['status']['clients'].keys
     # Get list of environments from filesync service
-    environments = statuscall'file-sync-storage-service']['status']['repos']['puppet-code']['submodules'].keys
+    environments = statuscall['file-sync-storage-service']['status']['repos']['puppet-code']['submodules'].keys
     # Process this list of environments and validate against visible environments
     environmentstocheck = checkenvironmentlist(environments, params['environments'])
     # For each environment get the syncronisation information of the servers
