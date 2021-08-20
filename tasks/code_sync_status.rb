@@ -13,7 +13,7 @@ class CodeSyncStatus
   end
 
   def execute!
-    puts syncstatus.to_json
+    puts sync_status.to_json
   end
 
   def https_client
@@ -25,21 +25,21 @@ class CodeSyncStatus
     client
   end
 
-  def apistatus
+  def api_status
     status = https_client
     # Only debug level includes code sync details
     status_request = Net::HTTP::Get.new('/status/v1/services?level=debug')
     JSON.parse(status.request(status_request).body)
   end
 
-  def checkenvironmentlist(environments, requestedenvironments)
+  def check_environment_list(environments, request_environments)
     environmentstocheck = []
     # If all was passed as an argument we check all visible environments
-    if requestedenvironments.any? { |s| s.casecmp('all') == 0 }
+    if request_environments.any? { |s| s.casecmp('all') == 0 }
       environmentstocheck = environments
     # Else check each requested environment to confirm its a visible environment
     else
-      requestedenvironments.each do |environment|
+      request_environments.each do |environment|
         environments.any? { |s| s.casecmp(environment.to_s) == 0 } || raise("Environment #{environment} is not visible and will not be checked")
         environmentstocheck << environment
       end
@@ -47,16 +47,16 @@ class CodeSyncStatus
     environmentstocheck
   end
 
-  def checkenvironmentcode(environment, servers, statuscall)
+  def check_environment_code(environment, servers, status_call)
     # Find the commit ID of the environment according to the file sync service
-    primarycommit = statuscall['file-sync-storage-service']['status']['repos']['puppet-code']['submodules'][environment.to_s]['latest_commit']['message'][32..71]
+    primarycommit = status_call['file-sync-storage-service']['status']['repos']['puppet-code']['submodules'][environment.to_s]['latest_commit']['message'][32..71]
     results = {}
     results['latest_commit'] = primarycommit
     results['servers'] = {}
     servers.each do |server|
       results['servers'][server] = {}
       # Find the commit ID of the server we are checking for this environment
-      servercommit = statuscall['file-sync-storage-service']['status']['clients'][server.to_s]['repos']['puppet-code']['submodules'][environment.to_s]['latest_commit']['message'][32..71]
+      servercommit = status_call['file-sync-storage-service']['status']['clients'][server.to_s]['repos']['puppet-code']['submodules'][environment.to_s]['latest_commit']['message'][32..71]
       results['servers'][server]['commit'] = servercommit
       # Check if it matches and if not mark the environment not in sync on an environment
       results['servers'][server]['sync'] = servercommit == primarycommit
@@ -65,18 +65,18 @@ class CodeSyncStatus
     results
   end
 
-  def syncstatus
-    statuscall = apistatus
+  def sync_status
+    status_call = api_status
     # Get list of servers from filesync service
-    servers = statuscall['file-sync-storage-service']['status']['clients'].keys
+    servers = status_call['file-sync-storage-service']['status']['clients'].keys
     # Get list of environments from filesync service
-    environments = statuscall['file-sync-storage-service']['status']['repos']['puppet-code']['submodules'].keys
+    environments = status_call['file-sync-storage-service']['status']['repos']['puppet-code']['submodules'].keys
     # Process this list of environments and validate against visible environments
-    environmentstocheck = checkenvironmentlist(environments, @params['environments'])
+    environmentstocheck = check_environment_list(environments, @params['environments'])
     results = {}
     # For each environment get the syncronisation information of the servers
     environmentstocheck.each do |environment|
-      results[environment] = checkenvironmentcode(environment, servers, statuscall)
+      results[environment] = check_environment_code(environment, servers, status_call)
     end
     # Confirm are all environments being checked in sync
     results['sync'] = results.all? { |_k, v| v['sync'] == true }
