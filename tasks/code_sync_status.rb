@@ -73,7 +73,7 @@ class CodeSyncStatus
     results = {}
     # For each environment get the syncronisation information of the servers
     environmentstocheck.each do |environment|
-      results[environment] = checkenvironmentcode(environment, servers, statusapi)
+      results[environment] = checkenvironmentcode(environment, servers, statuscall)
     end
     # Confirm are all environments being checked in sync
     results[insync] = results[environment].all? { |_k, v| v['insync'] == true }
