@@ -5,73 +5,82 @@ require 'net/https'
 require 'uri'
 require 'json'
 
-# Parameters expected:
-#   Hash
-#     Array requestedenvironments
-params = JSON.parse(STDIN.read)
 
-# Only debug level includes code sync details
-uri = URI.parse('https://localhost:8140/status/v1/services?level=debug')
-http = Net::HTTP.new(uri.host, uri.port)
-http.use_ssl = true
-http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-response = http.request(Net::HTTP::Get.new(uri.request_uri))
-# Fail with return code
-raise "API failure https://localhost:8140/status/v1/services returns #{response.code}" unless response.is_a? Net::HTTPSuccess
-# Get list of servers from filesync service
-servers = JSON.parse(response.body)['file-sync-storage-service']['status']['clients'].keys
-# Get list of environments from filesync service
-environments = JSON.parse(response.body)['file-sync-storage-service']['status']['repos']['puppet-code']['submodules'].keys
-environmentstocheck = []
+# CodeSyncStatus task class
+Class CodeSyncStatus
+  def initialize(params); 
+    @params = params
+  end  
 
-# If all was passed as an argument we check all visible environments
-if params['environments'].any? { |s| s.casecmp('all') == 0 }
-  environmentstocheck = environments
-# Else check each requested environment to confirm its a visible environment
-else
-  params['environments'].each do |environment|
-    environments.any? { |s| s.casecmp(environment.to_s) == 0 } || raise("Environment #{environment} is not visible and will not be checked")
-    environmentstocheck << environment
+  def execute!
+    puts syncstatus.to_json
   end
-end
-results = {}
-# Run status of the script assume its good until it we hit a failure
-scriptstatus = true
-environmentstocheck.each do |environment|
-  results[environment] = {}
-  # The status of this environment assume its good until we hit a failure
-  environmentmatch = true
-  # Find the commit ID of the environment accroding to the file sync service
-  primarycommit = JSON.parse(response.body)['file-sync-storage-service']['status']['repos']['puppet-code']['submodules'][environment.to_s]['latest_commit']['message'][32..71]
-  results[environment]['latest_commit'] = primarycommit
-  servers.each do |server|
-    results[environment][server] = {}
-    # Find the commit ID of the server we are checking for this environment
-    servercommit = JSON.parse(response.body)['file-sync-storage-service']['status']['clients'][server.to_s]['repos']['puppet-code']['submodules'][environment.to_s]['latest_commit']['message'][32..71]
-    results [environment][server]['commit'] = servercommit
-    # Check if it matches and if not mark the environment and script as having a server not in sync on an environment
-    if servercommit == primarycommit
-      results [environment][server]['sync'] = true
+
+  def https
+    https = Net::HTTP.new('localhost', '8140')
+    https.use_ssl = true
+    https.cert = @cert ||= OpenSSL::X509::Certificate.new(File.read(Puppet.settings[:hostcert]))
+    https.key = @key ||= OpenSSL::PKey::RSA.new(File.read(Puppet.settings[:hostprivkey]))
+    https.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    https
+  end
+
+  def apistatus
+    status = https()
+    # Only debug level includes code sync details
+    status_request= Net::HTTP::Get.new('status/v1/services?level=debug')
+    JSON.parse(status.request(status_request).body)
+  end
+
+  def checkenvironmentlist(environments,requestedenvironments)
+    environmentstocheck = []
+    # If all was passed as an argument we check all visible environments
+    if params['environments'].any? { |s| s.casecmp('all') == 0 }
+      environmentstocheck = environments
+    # Else check each requested environment to confirm its a visible environment
     else
-      results [environment][server]['sync'] = false
-      environmentmatch = false
-      scriptstatus = false
+      params['environments'].each do |environment|
+        environments.any? { |s| s.casecmp(environment.to_s) == 0 } || raise("Environment #{environment} is not visible and will not be checked")
+        environmentstocheck << environment
+      end
+    end
+    environmentstocheck
+  end
+
+  def checkenvironmentcode(environment,servers,statusapi)
+    # Find the commit ID of the environment according to the file sync service
+    primarycommit = JSON.parse(statusapi)['file-sync-storage-service']['status']['repos']['puppet-code']['submodules'][environment.to_s]['latest_commit']['message'][32..71]
+    results['latest_commit'] = primarycommit
+    servers.each do |server|
+      results[server] = {}
+      # Find the commit ID of the server we are checking for this environment
+      servercommit = JSON.parse(statusapi.body)['file-sync-storage-service']['status']['clients'][server.to_s]['repos']['puppet-code']['submodules'][environment.to_s]['latest_commit']['message'][32..71]
+      results[server]['commit'] = servercommit
+      # Check if it matches and if not mark the environment not in sync on an environment
+      results[server]['sync'] = servercommit == primarycommit
     end
   end
-  # write to the result json if its a match for the environment
-  results [environment]['in_sync'] = if environmentmatch
-                                       true
-                                     else
-                                       false
-                                     end
+
+  def syncstatus
+    statuscall = apistatus()
+    # Get list of servers from filesync service
+    servers = JSON.parse(statuscall)['file-sync-storage-service']['status']['clients'].keys
+    # Get list of environments from filesync service
+    environments = JSON.parse(statuscall)['file-sync-storage-service']['status']['repos']['puppet-code']['submodules'].keys
+    environmentstocheck = checkenvironmentlist(environments,params['environments'])
+    environmentstocheck.each do |environment|
+      results[environment] = checkenvironmentcode(environment,servers,statusapi)
+    end
+    results[insync] = results[environment].all? { |k,v| v["insync"] == true }
+    results
+  end
 end
-# Write to the result json if for all environments checked if its a match
-if scriptstatus
-  results['in_sync'] = true
-  puts results.to_json
-  exit 0
-else
-  results['in_sync'] = false
-  puts results.to_json
-  exit 1
+
+# Run the task unless an environment flag has been set, signaling not to. The
+# environment flag is used to disable auto-execution and enable Ruby unit
+# testing of this task.
+unless ENV['RSPEC_UNIT_TEST_MODE']
+  Puppet.initialize_settings
+  task = CodeSyncStatus.new(JSON.parse(STDIN.read))
+  task.execute!
 end
