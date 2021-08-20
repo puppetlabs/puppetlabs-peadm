@@ -60,6 +60,7 @@ class CodeSyncStatus
       # Check if it matches and if not mark the environment not in sync on an environment
       results[server]['sync'] = servercommit == primarycommit
     end
+    results
   end
 
   def syncstatus
@@ -76,7 +77,7 @@ class CodeSyncStatus
       results[environment] = checkenvironmentcode(environment, servers, statuscall)
     end
     # Confirm are all environments being checked in sync
-    #results['insync'] = results.all? { |_k, v| v['insync'] == true }
+    # results['insync'] = results.all? { |_k, v| v['insync'] == true }
     results
   end
 end
