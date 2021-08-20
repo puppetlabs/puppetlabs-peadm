@@ -32,14 +32,14 @@ class CodeSyncStatus
     JSON.parse(status.request(status_request).body)
   end
 
-  def checkenvironmentlist(environments, _requestedenvironments)
+  def checkenvironmentlist(environments, requestedenvironments)
     environmentstocheck = []
     # If all was passed as an argument we check all visible environments
-    if params['environments'].any? { |s| s.casecmp('all') == 0 }
+    if requestedenvironments.any? { |s| s.casecmp('all') == 0 }
       environmentstocheck = environments
     # Else check each requested environment to confirm its a visible environment
     else
-      params['environments'].each do |environment|
+      requestedenvironments.each do |environment|
         environments.any? { |s| s.casecmp(environment.to_s) == 0 } || raise("Environment #{environment} is not visible and will not be checked")
         environmentstocheck << environment
       end
