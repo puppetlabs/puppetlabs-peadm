@@ -68,7 +68,7 @@ class CodeSyncStatus
     # Get list of environments from filesync service
     environments = statuscall['file-sync-storage-service']['status']['repos']['puppet-code']['submodules'].keys
     # Process this list of environments and validate against visible environments
-    environmentstocheck = checkenvironmentlist(environments, params['environments'])
+    environmentstocheck = checkenvironmentlist(environments, @params['environments'])
     # For each environment get the syncronisation information of the servers
     environmentstocheck.each do |environment|
       results[environment] = checkenvironmentcode(environment, servers, statusapi)
