@@ -47,14 +47,14 @@ class CodeSyncStatus
     environmentstocheck
   end
 
-  def checkenvironmentcode(environment, servers, statusapi)
+  def checkenvironmentcode(environment, servers, statuscall)
     # Find the commit ID of the environment according to the file sync service
-    primarycommit = JSON.parse(statusapi)['file-sync-storage-service']['status']['repos']['puppet-code']['submodules'][environment.to_s]['latest_commit']['message'][32..71]
+    primarycommit = statuscall['file-sync-storage-service']['status']['repos']['puppet-code']['submodules'][environment.to_s]['latest_commit']['message'][32..71]
     results['latest_commit'] = primarycommit
     servers.each do |server|
       results[server] = {}
       # Find the commit ID of the server we are checking for this environment
-      servercommit = JSON.parse(statusapi.body)['file-sync-storage-service']['status']['clients'][server.to_s]['repos']['puppet-code']['submodules'][environment.to_s]['latest_commit']['message'][32..71] # rubocop:disable LineLength
+      servercommit = statuscall.body['file-sync-storage-service']['status']['clients'][server.to_s]['repos']['puppet-code']['submodules'][environment.to_s]['latest_commit']['message'][32..71] # rubocop:disable LineLength
       results[server]['commit'] = servercommit
       # Check if it matches and if not mark the environment not in sync on an environment
       results[server]['sync'] = servercommit == primarycommit
@@ -64,9 +64,9 @@ class CodeSyncStatus
   def syncstatus
     statuscall = apistatus
     # Get list of servers from filesync service
-    servers = JSON.parse(statuscall)['file-sync-storage-service']['status']['clients'].keys
+    servers = statuscall['file-sync-storage-service']['status']['clients'].keys
     # Get list of environments from filesync service
-    environments = JSON.parse(statuscall)['file-sync-storage-service']['status']['repos']['puppet-code']['submodules'].keys
+    environments = statuscall'file-sync-storage-service']['status']['repos']['puppet-code']['submodules'].keys
     # Process this list of environments and validate against visible environments
     environmentstocheck = checkenvironmentlist(environments, params['environments'])
     # For each environment get the syncronisation information of the servers
