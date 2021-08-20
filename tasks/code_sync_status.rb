@@ -77,7 +77,7 @@ class CodeSyncStatus
       results[environment] = checkenvironmentcode(environment, servers, statuscall)
     end
     # Confirm are all environments being checked in sync
-    results['insync'] = results.all? { |_k, v| v['insync'] == true }
+    results['sync'] = results.all? { |_k, v| v['sync'] == true }
     results
   end
 end
