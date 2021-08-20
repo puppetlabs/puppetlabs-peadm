@@ -50,6 +50,7 @@ class CodeSyncStatus
   def checkenvironmentcode(environment, servers, statuscall)
     # Find the commit ID of the environment according to the file sync service
     primarycommit = statuscall['file-sync-storage-service']['status']['repos']['puppet-code']['submodules'][environment.to_s]['latest_commit']['message'][32..71]
+    results = {}
     results['latest_commit'] = primarycommit
     servers.each do |server|
       results[server] = {}
@@ -69,6 +70,7 @@ class CodeSyncStatus
     environments = statuscall['file-sync-storage-service']['status']['repos']['puppet-code']['submodules'].keys
     # Process this list of environments and validate against visible environments
     environmentstocheck = checkenvironmentlist(environments, @params['environments'])
+    results = {}
     # For each environment get the syncronisation information of the servers
     environmentstocheck.each do |environment|
       results[environment] = checkenvironmentcode(environment, servers, statusapi)
