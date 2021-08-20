@@ -4,6 +4,7 @@
 require 'net/https'
 require 'uri'
 require 'json'
+require 'puppet'
 
 # CodeSyncStatus task class
 class CodeSyncStatus
