@@ -52,15 +52,16 @@ class CodeSyncStatus
     primarycommit = statuscall['file-sync-storage-service']['status']['repos']['puppet-code']['submodules'][environment.to_s]['latest_commit']['message'][32..71]
     results = {}
     results['latest_commit'] = primarycommit
+    results['servers'] = {}
     servers.each do |server|
-      results[server] = {}
+      results['servers'][server] = {}
       # Find the commit ID of the server we are checking for this environment
       servercommit = statuscall['file-sync-storage-service']['status']['clients'][server.to_s]['repos']['puppet-code']['submodules'][environment.to_s]['latest_commit']['message'][32..71]
-      results[server]['commit'] = servercommit
+      results['servers'][server]['commit'] = servercommit
       # Check if it matches and if not mark the environment not in sync on an environment
-      results[server]['sync'] = servercommit == primarycommit
+      results['servers'][server]['sync'] = servercommit == primarycommit
     end
-    results['sync'] = results.all? { |_k, v| v['sync'] == true }
+    results['sync'] = results['servers'].all? { |_k, v| v['sync'] == true }
     results
   end
 
