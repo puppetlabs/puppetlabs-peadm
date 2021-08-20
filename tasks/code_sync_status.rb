@@ -16,7 +16,7 @@ class CodeSyncStatus
     puts syncstatus.to_json
   end
 
-  def https
+  def https_client
     https = Net::HTTP.new('localhost', '8140')
     https.use_ssl = true
     https.cert = @cert ||= OpenSSL::X509::Certificate.new(File.read(Puppet.settings[:hostcert]))
@@ -26,7 +26,7 @@ class CodeSyncStatus
   end
 
   def apistatus
-    status = https
+    status = https_client
     # Only debug level includes code sync details
     status_request = Net::HTTP::Get.new('/status/v1/services?level=debug')
     JSON.parse(status.request(status_request).body)
