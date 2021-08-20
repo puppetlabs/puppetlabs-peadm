@@ -17,12 +17,12 @@ class CodeSyncStatus
   end
 
   def https_client
-    https = Net::HTTP.new('localhost', '8140')
-    https.use_ssl = true
-    https.cert = @cert ||= OpenSSL::X509::Certificate.new(File.read(Puppet.settings[:hostcert]))
-    https.key = @key ||= OpenSSL::PKey::RSA.new(File.read(Puppet.settings[:hostprivkey]))
-    https.verify_mode = OpenSSL::SSL::VERIFY_NONE
-    https
+    client = Net::HTTP.new('localhost', '8140')
+    client.use_ssl = true
+    client.cert = @cert ||= OpenSSL::X509::Certificate.new(File.read(Puppet.settings[:hostcert]))
+    client.key = @key ||= OpenSSL::PKey::RSA.new(File.read(Puppet.settings[:hostprivkey]))
+    client.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    client
   end
 
   def apistatus
