@@ -28,7 +28,7 @@ class CodeSyncStatus
   def apistatus
     status = https
     # Only debug level includes code sync details
-    status_request = Net::HTTP::Get.new('status/v1/services?level=debug')
+    status_request = Net::HTTP::Get.new('/status/v1/services?level=debug')
     JSON.parse(status.request(status_request).body)
   end
 
