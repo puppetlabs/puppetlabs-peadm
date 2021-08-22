@@ -1,0 +1,13 @@
+{
+  "puppet_task_version": 1,
+  "supports_noop": false,
+  "description": "A task to confirm code is in sync accross the cluster for clusters with code manager configured",
+  "parameters": {
+    "environments": {
+      "type": "Array",
+      "description": "A list of environments to check, pass a single value of all for all",
+      "default": ["all"]
+    }
+  },
+  "input_method": "stdin"
+}
