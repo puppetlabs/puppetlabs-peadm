@@ -50,7 +50,8 @@ class CodeSyncStatus
   end
 
   def check_environment_code(environment, servers, status_call)
-    # Find the commit ID of the environment according to the file sync service
+    # Find the commit ID of the environment according to the file sync service note expected message is of the format
+    # code-manager deploy signature: '93027145096d9f1e0b716b20b8129618d0a2c7e2'
     primarycommit = status_call.dig('file-sync-storage-service',
                                     'status',
                                     'repos',
@@ -64,8 +65,18 @@ class CodeSyncStatus
     results['servers'] = {}
     servers.each do |server|
       results['servers'][server] = {}
-      # Find the commit ID of the server we are checking for this environment
-      servercommit = status_call['file-sync-storage-service']['status']['clients'][server.to_s]['repos']['puppet-code']['submodules'][environment.to_s]['latest_commit']['message'][32..71]
+      # Find the commit ID of the server we are checking for this environment note expected message is of the format
+      # code-manager deploy signature: '93027145096d9f1e0b716b20b8129618d0a2c7e2'
+      servercommit = status_call.dig('file-sync-storage-service',
+        'status',
+        'clients',
+        server.to_s,
+        'repos',
+        'puppet-code',
+        'submodules',
+        environment.to_s,
+        'latest_commit',
+        'message').split("'").last
       results['servers'][server]['commit'] = servercommit
       # Check if it matches and if not mark the environment not in sync on an environment
       results['servers'][server]['sync'] = servercommit == primarycommit
