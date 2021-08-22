@@ -51,7 +51,14 @@ class CodeSyncStatus
 
   def check_environment_code(environment, servers, status_call)
     # Find the commit ID of the environment according to the file sync service
-    primarycommit = status_call['file-sync-storage-service']['status']['repos']['puppet-code']['submodules'][environment.to_s]['latest_commit']['message'][32..71]
+    primarycommit = status_call.dig('file-sync-storage-service',
+                                    'status',
+                                    'repos',
+                                    'puppet-code',
+                                    'submodules',
+                                    environment.to_s,
+                                    'latest_commit',
+                                    'message').split("'").last
     results = {}
     results['latest_commit'] = primarycommit
     results['servers'] = {}
