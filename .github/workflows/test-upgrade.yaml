@@ -1,34 +1,33 @@
 ---
-name: "Install upgrade"
+name: "Upgrade PE"
 
-on: push
-# on:
-#   workflow_dispatch:
-#     inputs:
-#       image:
-#         description: 'GCP image for test cluster'
-#         required: true
-#         default: 'centos-7'
-#       architecture:
-#         description: 'PE architecture to test'
-#         required: true
-#         default: 'standard'
-#       version:
-#         description: 'PE version to install'
-#         required: true
-#         default: '2019.8.7'
-#       version_to_upgrade:
-#         description: 'PE version to upgrade'
-#         required: true
-#         default: '2021.2.0'
-#       download_mode:
-#         description: 'peadm download_mode'
-#         required: false
-#         default: 'direct'
-#       ssh-debugging:
-#         description: 'Boolean; whether or not to pause for ssh debugging'
-#         required: true
-#         default: 'false'
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: 'GCP image for test cluster'
+        required: true
+        default: 'centos-7'
+      architecture:
+        description: 'PE architecture to test'
+        required: true
+        default: 'standard'
+      version:
+        description: 'PE version to install'
+        required: true
+        default: '2019.8.7'
+      version_to_upgrade:
+        description: 'PE version to upgrade'
+        required: true
+        default: '2021.2.0'
+      download_mode:
+        description: 'peadm download_mode'
+        required: false
+        default: 'direct'
+      ssh-debugging:
+        description: 'Boolean; whether or not to pause for ssh debugging'
+        required: true
+        default: 'false'
 
 env:
   HONEYCOMB_WRITEKEY: 7f3c63a70eecc61d635917de46bea4e6
