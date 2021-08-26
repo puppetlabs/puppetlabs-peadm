@@ -15,10 +15,6 @@ plan peadm_spec::upgrade_test_cluster(
   $replica_host = $t.filter |$n| { $n.vars['role'] == 'replica' }
   $replica_postgresql_host = $t.filter |$n| { $n.vars['role'] == 'replica-pdb-postgresql' }
 
-  if $replica_host == [] {
-    fail_plan('"replica" role missing from inventory, cannot continue')
-  }
-
   $params = {
     primary_host            => $primary_host,
     replica_host            => $replica_host,
