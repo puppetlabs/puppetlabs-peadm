@@ -27,5 +27,5 @@ plan peadm_spec::upgrade_test_cluster(
     version                 => $version,
   }
 
-  # run_plan('peadm::upgrade', $params)
+  run_plan('peadm::upgrade', $params)
 }
