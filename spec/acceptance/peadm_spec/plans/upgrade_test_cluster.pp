@@ -1,4 +1,5 @@
 plan peadm_spec::upgrade_test_cluster(
+  $architecture,
   $version,
   $download_mode
 ){
@@ -11,17 +12,44 @@ plan peadm_spec::upgrade_test_cluster(
     $target.set_var('certname', $fqdn.first['stdout'].chomp)
   }
 
-  $primary_host = $t.filter |$n| { $n.vars['role'] == 'primary' }
-  $replica_host = $t.filter |$n| { $n.vars['role'] == 'replica' }
-  $replica_postgresql_host = $t.filter |$n| { $n.vars['role'] == 'replica-pdb-postgresql' }
-
-  $params = {
-    primary_host            => $primary_host,
-    replica_host            => $replica_host,
-    replica_postgresql_host => $replica_postgresql_host ? { [] => undef, default => $replica_postgresql_host },
-    download_mode           => 'direct',
-    version                 => $version,
+  $common_params = {
+    download_mode    => $download_mode,
+    version          => $version,
   }
 
+  $arch_params =
+    case $architecture {
+      'standard': {{
+        primary_host => $t.filter |$n| { $n.vars['role'] == 'primary' },
+      }}
+      'standard-with-dr': {{
+        primary_host   => $t.filter |$n| { $n.vars['role'] == 'primary' },
+        replica_host   => $t.filter |$n| { $n.vars['role'] == 'replica' },
+      }}
+      'large': {{
+        primary_host   => $t.filter |$n| { $n.vars['role'] == 'primary' },
+        compiler_hosts => $t.filter |$n| { $n.vars['role'] == 'compiler' },
+      }}
+      'large-with-dr': {{
+        primary_host   => $t.filter |$n| { $n.vars['role'] == 'primary' },
+        replica_host   => $t.filter |$n| { $n.vars['role'] == 'replica' },
+        compiler_hosts => $t.filter |$n| { $n.vars['role'] == 'compiler' },
+      }}
+      'extra-large': {{
+        primary_host            => $t.filter |$n| { $n.vars['role'] == 'primary' },
+        primary_postgresql_host => $t.filter |$n| { $n.vars['role'] == 'primary-pdb-postgresql' },
+        compiler_hosts          => $t.filter |$n| { $n.vars['role'] == 'compiler' },
+      }}
+      'extra-large-with-dr': {{
+        primary_host             => $t.filter |$n| { $n.vars['role'] == 'primary' },
+        primary_postgresql_host  => $t.filter |$n| { $n.vars['role'] == 'primary-pdb-postgresql' },
+        replica_host             => $t.filter |$n| { $n.vars['role'] == 'replica' },
+        replica_postgresql_host  => $t.filter |$n| { $n.vars['role'] == 'replica-pdb-postgresql' },
+        compiler_hosts           => $t.filter |$n| { $n.vars['role'] == 'compiler' },
+      }}
+      default: { fail('Invalid architecture!') }
+    }
+
+  $params = $arch_params + $common_params
   run_plan('peadm::upgrade', $params)
 }

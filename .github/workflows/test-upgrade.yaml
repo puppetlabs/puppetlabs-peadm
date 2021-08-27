@@ -175,6 +175,7 @@ jobs:
             bundle exec bolt plan run peadm_spec::upgrade_test_cluster \
               --inventoryfile spec/fixtures/litmus_inventory.yaml \
               --modulepath spec/fixtures/modules \
+              architecture=${{ matrix.architecture }} \
               download_mode=${{ matrix.download_mode }} \
               version=${{ matrix.version_to_upgrade }}
 
