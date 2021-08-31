@@ -203,10 +203,11 @@ plan peadm::subplans::install (
     )
   } else {
     # Download PE tarballs directly to nodes that need it
-    run_task('peadm::download', $pe_installer_targets,
+    $result = run_task('peadm::download', $pe_installer_targets,
       source => $pe_tarball_source,
       path   => $upload_tarball_path,
     )
+    out::message($result)
   }
 
   # Create csr_attributes.yaml files for the nodes that need them. Ensure that
