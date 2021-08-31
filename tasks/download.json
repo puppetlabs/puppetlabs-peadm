@@ -12,7 +12,7 @@
     "check_download": {
       "type": "Boolean",
       "description": "Whether to check the integrity of the downloaded file",
-      "default": false
+      "default": true
     }
   },
   "input_method": "environment",
