@@ -8,6 +8,11 @@
     "path": {
       "type": "String",
       "description": "Where to save the downloaded file"
+    },
+    "check_download": {
+      "type": "Boolean",
+      "description": "Whether to check the integrity of the downloaded file",
+      "default": false
     }
   },
   "input_method": "environment",

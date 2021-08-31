@@ -11,3 +11,32 @@ else
   printf '%s\n' "Downloading: ${PT_source}" >&2
   curl -f -L -o "$PT_path" "$PT_source"
 fi
+
+if [[ "$PT_check_download" != "true" ]]; then
+  exit 0
+fi
+
+if ! which gpg ; then
+  echo "gpg binary required in path for checking download"
+  exit 1
+fi
+echo "Importing Puppet gpg public key"
+gpg --keyserver hkp://keyserver.ubuntu.com:11371 --recv-key 4528B6CD9E61EF26
+if gpg --list-key --fingerprint 4528B6CD9E61EF26 | grep -q -E "D681 +1ED3 +ADEE +B844 +1AF5 +AA8F +4528 +B6CD +9E61 +EF26" ; then
+  echo "gpg public key imported successfully!"
+else
+  echo "Could not import gpg public key - wrong fingerprint"
+  exit 1
+fi
+sigpath=${PT_path}.asc
+sigsource=${PT_source}.asc
+echo "Downloading tarball signature from ${sigsource}"
+curl -f -L -o "${sigpath}" "${sigsource}"
+echo "Downloaded tarball signature to ${sigpath}"
+echo "Checking tarball signature at ${sigpath}"
+if gpg --verify "${sigpath}" "${PT_path}" | grep "Good signature" ; then
+  echo "Signature verification failed, please re-run the installation."
+  exit 1
+else
+  echo "Signature verification suceeded!"
+fi
