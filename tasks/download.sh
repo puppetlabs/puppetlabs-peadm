@@ -12,7 +12,7 @@ else
   curl -f -L -o "$PT_path" "$PT_source"
 fi
 
-if [[ "$PT_check_download" != "true" ]]; then
+if [[ "$PT_check_download" == "false" ]]; then
   exit 0
 fi
 
@@ -38,8 +38,8 @@ curl -f -L -o "${sigpath}" "${sigsource}"
 echo "Downloaded tarball signature to ${sigpath}."
 echo "Checking tarball signature at ${sigpath}..."
 if gpg --verify "${sigpath}" "${PT_path}" | grep "Good signature" ; then
+  echo "Signature verification suceeded."
+else
   echo "Signature verification failed, please re-run the installation."
   exit 1
-else
-  echo "Signature verification suceeded."
 fi
