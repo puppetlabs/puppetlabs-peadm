@@ -16,7 +16,7 @@ if [[ "$PT_check_download" == "false" ]]; then
   exit 0
 fi
 
-if ! which gpg ; then
+if ! which -s gpg ; then
   echo "gpg binary required in path for checking download. Skipping check."
   exit 0
 fi
@@ -37,8 +37,8 @@ echo "Downloading tarball signature from ${sigsource}..."
 curl -f -L -o "${sigpath}" "${sigsource}"
 echo "Downloaded tarball signature to ${sigpath}."
 echo "Checking tarball signature at ${sigpath}..."
-if gpg --verify "${sigpath}" "${PT_path}" | grep "Good signature" ; then
-  echo "Signature verification suceeded."
+if gpg --verify "${sigpath}" "${PT_path}" ; then
+  echo "Signature verification succeeded."
 else
   echo "Signature verification failed, please re-run the installation."
   exit 1
