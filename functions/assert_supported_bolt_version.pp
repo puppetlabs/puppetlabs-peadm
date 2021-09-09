@@ -4,7 +4,7 @@
 function peadm::assert_supported_bolt_version (
   # No arguments
 ) >> Struct[{'supported' => Boolean}] {
-  $supported_bolt_version = '>= 3.10.0 < 4.0.0'
+  $supported_bolt_version = '>= 3.17.0 < 4.0.0'
   $supported = (peadm::bolt_version() =~ SemVerRange($supported_bolt_version))
 
   unless $supported {
