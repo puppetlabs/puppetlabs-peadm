@@ -31,9 +31,10 @@ plan peadm::upgrade (
   Optional[String] $internal_compiler_b_pool_address = undef,
 
   # Other
-  Optional[String]      $token_file    = undef,
-  String                $stagingdir    = '/tmp',
-  Enum[direct,bolthost] $download_mode = 'bolthost',
+  Optional[String]      $token_file             = undef,
+  String                $stagingdir             = '/tmp',
+  Enum[direct,bolthost] $download_mode          = 'bolthost',
+  Boolean               $permit_unsafe_versions = false,
 
   Optional[Enum[
     'upgrade-primary',
@@ -45,7 +46,7 @@ plan peadm::upgrade (
 ) {
   peadm::assert_supported_bolt_version()
 
-  peadm::assert_supported_pe_version($version)
+  peadm::assert_supported_pe_version($version, $permit_unsafe_versions)
 
   # Ensure input valid for a supported architecture
   $arch = peadm::assert_supported_architecture(

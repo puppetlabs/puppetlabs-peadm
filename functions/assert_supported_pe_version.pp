@@ -2,10 +2,18 @@
 # @param [String] the version number to check
 function peadm::assert_supported_pe_version (
   String $version,
+  Boolean $permit_unsafe_versions = false,
 ) >> Struct[{'supported' => Boolean}] {
   $oldest = '2019.7'
   $newest = '2021.3'
-  $supported = ($version =~ SemVerRange(">= ${oldest} <= ${newest}"))
+  $supported = (($version =~ SemVerRange(">= ${oldest} <= ${newest}")) or $permit_unsafe_versions)
+
+  if $permit_unsafe_versions {
+    warning(@("WARN"/L))
+      WARNING: Permitting unsafe PE versions. This is not supported or tested.
+        Proceeding with this action could result in a broken PE Infrastructure.
+      | WARN
+  }
 
   unless $supported {
     fail(@("REASON"/L))
