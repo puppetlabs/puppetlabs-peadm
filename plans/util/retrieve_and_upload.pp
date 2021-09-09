@@ -1,5 +1,4 @@
 # @api private
-# @private true
 plan peadm::util::retrieve_and_upload(
   TargetSpec $nodes,
   String[1]  $source,

@@ -1,7 +1,6 @@
 # This plan is still in development and currently considered experimental.
 #
 # @api private
-# @private true
 #
 # @summary Replace a replica host for a Standard or Large architecture.
 #   Supported use cases:
