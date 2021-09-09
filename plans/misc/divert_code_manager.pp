@@ -1,5 +1,4 @@
 # @api private
-# @private true
 #
 # @summary This plan exists to account for a scenario where a PE XL
 # architecture is in use, but code manager is not.

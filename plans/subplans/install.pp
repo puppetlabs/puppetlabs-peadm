@@ -1,5 +1,4 @@
 # @api private
-# @private true
 #
 # @summary Perform initial installation of Puppet Enterprise Extra Large
 #

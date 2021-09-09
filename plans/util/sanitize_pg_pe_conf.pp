@@ -1,5 +1,4 @@
 # @api private
-# @private true
 plan peadm::util::sanitize_pg_pe_conf (
   TargetSpec              $targets,
   Peadm::SingleTargetSpec $primary_host,

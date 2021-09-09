@@ -1,7 +1,6 @@
 # This plan is in development and currently considered experimental.
 #
 # @api private
-# @private true
 #
 # @summary Add a new compiler to a PE architecture or replace an existing one with new configuration.
 # @param avail_group_letter _ Either A or B; whichever of the two letter designations the compiler is being assigned to
