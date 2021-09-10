@@ -81,7 +81,7 @@ plan peadm::upgrade (
 
   # Gather certificate extension information from all systems
   $cert_extensions = run_task('peadm::cert_data', $all_targets).reduce({}) |$memo,$result| {
-    $memo + { $result.target => $result['extensions'] }
+    $memo + { $result.target.peadm::certname => $result['extensions'] }
   }
 
   $convert_targets = $cert_extensions.filter |$name,$exts| {
@@ -107,13 +107,13 @@ plan peadm::upgrade (
 
   # Determine which compilers are associated with which DR group
   $compiler_m1_targets = $compiler_targets.filter |$target| {
-    ($cert_extensions.dig($target, peadm::oid('peadm_availability_group'))
-      == $cert_extensions.dig($primary_target[0], peadm::oid('peadm_availability_group')))
+    ($cert_extensions.dig($target.peadm::certname, peadm::oid('peadm_availability_group'))
+      == $cert_extensions.dig($primary_target[0].peadm::certname, peadm::oid('peadm_availability_group')))
   }
 
   $compiler_m2_targets = $compiler_targets.filter |$target| {
-    ($cert_extensions.dig($target, peadm::oid('peadm_availability_group'))
-      == $cert_extensions.dig($replica_target[0], peadm::oid('peadm_availability_group')))
+    ($cert_extensions.dig($target.peadm::certname, peadm::oid('peadm_availability_group'))
+      == $cert_extensions.dig($replica_target[0].peadm::certname, peadm::oid('peadm_availability_group')))
   }
 
   $primary_target.peadm::fail_on_transport('pcp')
