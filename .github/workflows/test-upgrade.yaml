@@ -1,5 +1,5 @@
 ---
-name: "Upgrade PE"
+name: "Upgrade test"
 
 on: push
 
@@ -49,10 +49,11 @@ jobs:
       matrix:
         architecture:
           - 'standard'
+          - 'extra-large-with-dr'
         version:
-          - '2019.8.7'
+          - '2019.8.8'
         version_to_upgrade:
-          - '2021.2.0'
+          - '2021.3.0'
         image:
           - 'centos-7'
         download_mode:
