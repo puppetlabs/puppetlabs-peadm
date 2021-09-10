@@ -1,13 +1,15 @@
+# This plan is in development and currently considered experimental.
+#
+# @api private
+#
 # @summary Single-entry-point plan for uninstalling Puppet Enterprise
-
 plan peadm::uninstall (
-  Peadm::SingleTargetSpec  $primary_host,
+  TargetSpec $targets,
 ) {
   peadm::assert_supported_bolt_version()
 
-  $primary_target = peadm::get_targets($primary_host, 1)
-  $uninstall_result = run_task('peadm::pe_uninstall', $primary_target)
+  $uninstall_results = run_task('peadm::pe_uninstall', $targets)
 
-  return([$uninstall_result])
+  return($uninstall_results)
 }
 
