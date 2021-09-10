@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.1.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.1.0) (2021-09-10)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.0.1...v3.1.0)
+
+### Added
+
+- Support PE 2021.3 [\#203](https://github.com/puppetlabs/puppetlabs-peadm/pull/203) ([reidmv](https://github.com/reidmv))
+- Add PE download signature checking [\#201](https://github.com/puppetlabs/puppetlabs-peadm/pull/201) ([timidri](https://github.com/timidri))
+- Add task to report on code synchronization status [\#196](https://github.com/puppetlabs/puppetlabs-peadm/pull/196) ([davidsandilands](https://github.com/davidsandilands))
+- Add an experimental peadm::uninstall plan [\#195](https://github.com/puppetlabs/puppetlabs-peadm/pull/195) ([mcka1n](https://github.com/mcka1n))
+- Remove hardcoded default memory configuration [\#194](https://github.com/puppetlabs/puppetlabs-peadm/pull/194) ([reidmv](https://github.com/reidmv))
+- Highlight user-facing plans by hiding internal plans from `bolt plan show` output [\#189](https://github.com/puppetlabs/puppetlabs-peadm/pull/189) ([reidmv](https://github.com/reidmv))
+- Add get\_peadm\_config task [\#187](https://github.com/puppetlabs/puppetlabs-peadm/pull/187) ([reidmv](https://github.com/reidmv))
+- Replace plan peadm::modify\_cert\_extensions with peadm::modify\_certificate [\#181](https://github.com/puppetlabs/puppetlabs-peadm/pull/181) ([reidmv](https://github.com/reidmv))
+
+### Fixed
+
+- Fix upgrade without replica [\#198](https://github.com/puppetlabs/puppetlabs-peadm/pull/198) ([reidmv](https://github.com/reidmv))
+- Fix upgrade bug for token files with newlines [\#193](https://github.com/puppetlabs/puppetlabs-peadm/pull/193) ([reidmv](https://github.com/reidmv))
+- Move load\_balancer class to examples [\#183](https://github.com/puppetlabs/puppetlabs-peadm/pull/183) ([reidmv](https://github.com/reidmv))
+- Fix GitHub README.md problem [\#182](https://github.com/puppetlabs/puppetlabs-peadm/pull/182) ([reidmv](https://github.com/reidmv))
+
 ## [v3.0.1](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.0.1) (2021-06-30)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.0.0...v3.0.1)
