@@ -1,4 +1,4 @@
-#pre and post flight testing
+# Pre and post flight testing
 
 The module as been updated to be supported by Puppetlabs [Litmus](https://github.com/puppetlabs/puppet_litmus/wiki/Overview-of-Litmus#provision).
 
@@ -8,7 +8,7 @@ Additionally some stand a lone preflight checks will be added presently.
 
 ## Setup
 
-The module as been converted to Litmus as the directions found at https://github.com/puppetlabs/puppet_litmus/wiki/Converting-a-module-to-use-Litmus that means the following files have been added.
+The module as been converted to Litmus as the directions found at https://puppetlabs.github.io/litmus/Converting-modules-to-use-Litmus.html that means the following files have been added.
 ``` shell
 \.
 ├── spec
@@ -23,7 +23,7 @@ An update to .gitignore for the Litmus generated `.rerun.json` has also been mad
 
 ## Usage
 
-Litmus can provision local testing via provisioning and generation of a Bolt inventory.yaml, see https://github.com/puppetlabs/puppet_litmus/wiki/Tutorial:-use-Litmus-to-execute-acceptance-tests-with-a-sample-module-(MoTD)#provision-a-target-to-test-against for an example. 
+Litmus can provision local testing via provisioning and generation of a Bolt inventory.yaml, see https://puppetlabs.github.io/litmus/Running-acceptance-tests.html for an example.
 
 ### Inventory 
 when testing locally with Vagrant or VMpooler you can use the `litmus:provision` rake task to generate an inventory.yml.
@@ -122,7 +122,7 @@ end
 
 ```
 
-For running the tests review the standard usage of Litmusfor installing and running tests https://github.com/puppetlabs/puppet_litmus/wiki/Tutorial:-use-Litmus-to-execute-acceptance-tests-with-a-sample-module-(MoTD)#run-the-tests
+For running the tests review the standard usage of Litmusfor installing and running tests https://puppetlabs.github.io/litmus/Running-acceptance-tests.html#6-run-the-motd-acceptance-tests
 remember we are doing these actions from within the context of the PDK `pdk bundle exec rake ` has several sub commands. 
 
 ```shell
