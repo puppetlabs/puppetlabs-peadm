@@ -9,10 +9,20 @@
       "type": "String",
       "description": "Where to save the downloaded file"
     },
-    "check_download": {
+    "verify_download": {
       "type": "Boolean",
       "description": "Whether to check the integrity of the downloaded file",
       "default": true
+    },
+    "key_id": {
+      "type": "String",
+      "description": "The GPG key ID to use when verifying the download",
+      "default": "4528B6CD9E61EF26"
+    },
+    "key_server": {
+      "type": "String",
+      "description": "The GPG keyserver to retrieve the GPG key from",
+      "default": "hkp://keyserver.ubuntu.com:11371"
     }
   },
   "input_method": "environment",
