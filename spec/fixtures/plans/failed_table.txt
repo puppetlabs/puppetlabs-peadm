@@ -1,12 +1,30 @@
-+-----------+------------------+--------------------------+--------+
-|                      Failed Service Status                       |
-+-----------+------------------+--------------------------+--------+
-| Stack     | Service          | Url                      | Status |
-+-----------+------------------+--------------------------+--------+
-| pnw_stack | file-sync-client | pe-std-replica.puppet.vm | [31mfailed[0m |
-| pnw_stack | master           | pe-std-replica.puppet.vm | [31mfailed[0m |
-| pnw_stack | classifier       | pe-std-replica.puppet.vm | [31mfailed[0m |
-| pnw_stack | rbac             | pe-std-replica.puppet.vm | [31mfailed[0m |
-| pnw_stack | activity         | pe-std-replica.puppet.vm | [31mfailed[0m |
-| pnw_stack | puppetdb         | pe-std-replica.puppet.vm | [31mfailed[0m |
-+-----------+------------------+--------------------------+--------+
++-----------------+------------------+--------------------------+--------+
+|                         Failed Service Status                          |
++-----------------+------------------+--------------------------+--------+
+| Cluster         | Service          | Url                      | Status |
++-----------------+------------------+--------------------------+--------+
+| pnw_stack       | file-sync-client | pe-std-replica.puppet.vm | [31mfailed[0m |
+| pnw_stack       | master           | pe-std-replica.puppet.vm | [31mfailed[0m |
+| pnw_stack       | classifier       | pe-std-replica.puppet.vm | [31mfailed[0m |
+| pnw_stack       | rbac             | pe-std-replica.puppet.vm | [31mfailed[0m |
+| pnw_stack       | activity         | pe-std-replica.puppet.vm | [31mfailed[0m |
+| pnw_stack       | puppetdb         | pe-std-replica.puppet.vm | [31mfailed[0m |
+| east_stack      | file-sync-client | pe-std-replica.puppet.vm | [31mfailed[0m |
+| east_stack      | master           | pe-std-replica.puppet.vm | [31mfailed[0m |
+| east_stack      | classifier       | pe-std-replica.puppet.vm | [31mfailed[0m |
+| east_stack      | rbac             | pe-std-replica.puppet.vm | [31mfailed[0m |
+| east_stack      | activity         | pe-std-replica.puppet.vm | [31mfailed[0m |
+| east_stack      | puppetdb         | pe-std-replica.puppet.vm | [31mfailed[0m |
+| west_stack      | file-sync-client | pe-std-replica.puppet.vm | [31mfailed[0m |
+| west_stack      | master           | pe-std-replica.puppet.vm | [31mfailed[0m |
+| west_stack      | classifier       | pe-std-replica.puppet.vm | [31mfailed[0m |
+| west_stack      | rbac             | pe-std-replica.puppet.vm | [31mfailed[0m |
+| west_stack      | activity         | pe-std-replica.puppet.vm | [31mfailed[0m |
+| west_stack      | puppetdb         | pe-std-replica.puppet.vm | [31mfailed[0m |
+| northeast_stack | file-sync-client | pe-std-replica.puppet.vm | [31mfailed[0m |
+| northeast_stack | master           | pe-std-replica.puppet.vm | [31mfailed[0m |
+| northeast_stack | classifier       | pe-std-replica.puppet.vm | [31mfailed[0m |
+| northeast_stack | rbac             | pe-std-replica.puppet.vm | [31mfailed[0m |
+| northeast_stack | activity         | pe-std-replica.puppet.vm | [31mfailed[0m |
+| northeast_stack | puppetdb         | pe-std-replica.puppet.vm | [31mfailed[0m |
++-----------------+------------------+--------------------------+--------+

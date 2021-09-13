@@ -10,37 +10,37 @@
   },
   "failed": [
     {
-      "Stack": "pnw_stack",
+      "Cluster": "pnw_stack",
       "Service": "file-sync-client",
       "Url": "pe-std-replica.puppet.vm",
       "Status": "failed"
     },
     {
-      "Stack": "pnw_stack",
+      "Cluster": "pnw_stack",
       "Service": "master",
       "Url": "pe-std-replica.puppet.vm",
       "Status": "failed"
     },
     {
-      "Stack": "pnw_stack",
+      "Cluster": "pnw_stack",
       "Service": "classifier",
       "Url": "pe-std-replica.puppet.vm",
       "Status": "failed"
     },
     {
-      "Stack": "pnw_stack",
+      "Cluster": "pnw_stack",
       "Service": "rbac",
       "Url": "pe-std-replica.puppet.vm",
       "Status": "failed"
     },
     {
-      "Stack": "pnw_stack",
+      "Cluster": "pnw_stack",
       "Service": "activity",
       "Url": "pe-std-replica.puppet.vm",
       "Status": "failed"
     },
     {
-      "Stack": "pnw_stack",
+      "Cluster": "pnw_stack",
       "Service": "puppetdb",
       "Url": "pe-std-replica.puppet.vm",
       "Status": "failed"
@@ -48,61 +48,61 @@
   ],
   "operational": [
     {
-      "Stack": "pnw_stack",
+      "Cluster": "pnw_stack",
       "Service": "code-manager-service",
       "Url": "pe-std.puppet.vm",
       "Status": "operational"
     },
     {
-      "Stack": "pnw_stack",
+      "Cluster": "pnw_stack",
       "Service": "file-sync-storage-service",
       "Url": "pe-std.puppet.vm",
       "Status": "operational"
     },
     {
-      "Stack": "pnw_stack",
+      "Cluster": "pnw_stack",
       "Service": "file-sync-client-service",
       "Url": "pe-std.puppet.vm",
       "Status": "operational"
     },
     {
-      "Stack": "pnw_stack",
+      "Cluster": "pnw_stack",
       "Service": "pe-master",
       "Url": "pe-std.puppet.vm",
       "Status": "operational"
     },
     {
-      "Stack": "pnw_stack",
+      "Cluster": "pnw_stack",
       "Service": "classifier-service",
       "Url": "pe-std.puppet.vm",
       "Status": "operational"
     },
     {
-      "Stack": "pnw_stack",
+      "Cluster": "pnw_stack",
       "Service": "rbac-service",
       "Url": "pe-std.puppet.vm",
       "Status": "operational"
     },
     {
-      "Stack": "pnw_stack",
+      "Cluster": "pnw_stack",
       "Service": "activity-service",
       "Url": "pe-std.puppet.vm",
       "Status": "operational"
     },
     {
-      "Stack": "pnw_stack",
+      "Cluster": "pnw_stack",
       "Service": "orchestrator-service",
       "Url": "pe-std.puppet.vm",
       "Status": "operational"
     },
     {
-      "Stack": "pnw_stack",
+      "Cluster": "pnw_stack",
       "Service": "broker-service",
       "Url": "pe-std.puppet.vm",
       "Status": "operational"
     },
     {
-      "Stack": "pnw_stack",
+      "Cluster": "pnw_stack",
       "Service": "puppetdb-status",
       "Url": "pe-std.puppet.vm",
       "Status": "operational"
