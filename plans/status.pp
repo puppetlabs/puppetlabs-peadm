@@ -38,8 +38,8 @@ plan peadm::status(
 
   # produce titles and headers for tables
   $table_title = "Overall Status: ${overall_status}"
-  $table_head = ['Stack', 'Status']
-  $service_table_head = ['Stack', 'Service', 'Url', 'Status']
+  $table_head = ['Cluster', 'Status']
+  $service_table_head = ['Cluster', 'Service', 'Url', 'Status']
 
   $stack_table_rows = $stack_status.map | $item | { [$item[0], $item[1][status]] }
   $passed_table_rows = $overall_passed_stacks.map | $item | { [$item[0], $item[1][status]] }
@@ -60,26 +60,29 @@ plan peadm::status(
 
   # print to table via out::message or return json output
   if $format == 'table' {
-    $summary_table = format::table({title => $table_title,
-                  head => $table_head,
-                  rows => $stack_table_rows,
-                  style => {width => 80}
-                  })
-    out::message($summary_table)
+    # Summary table
+    out::message(
+      format::table({
+        title => $table_title,
+        head  => $table_head,
+        rows  => $stack_table_rows}))
+
+    # Failed services table
     unless $bad_svc_rows.empty {
-      $failed_table = format::table({title => 'Failed Service Status',
-                  head => $service_table_head,
-                  rows => $bad_svc_rows[0]
-                  })
-      out::message($failed_table)
+      out::message(
+        format::table({
+          title => 'Failed Service Status',
+          head  => $service_table_head,
+          rows  => $bad_svc_rows.reduce([]) |$memo,$rows| { $memo + $rows }}))
     }
 
+    # Operational services table
     if $verbose and ! $good_svc_rows.empty {
-      $passed_table = format::table({title => 'Operational Service Status',
-                  head => $service_table_head,
-                  rows => $good_svc_rows[0]
-                  })
-      out::message($passed_table)
+      out::message(
+        format::table({
+          title => 'Operational Service Status',
+          head  => $service_table_head,
+          rows  => $good_svc_rows.reduce([]) |$memo,$rows| { $memo + $rows }}))
     }
   } else {
     if $summarize {

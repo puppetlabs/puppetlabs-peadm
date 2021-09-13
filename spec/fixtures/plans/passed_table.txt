@@ -1,16 +1,46 @@
-+-----------+---------------------------+------------------+-------------+
-|                       Operational Service Status                       |
-+-----------+---------------------------+------------------+-------------+
-| Stack     | Service                   | Url              | Status      |
-+-----------+---------------------------+------------------+-------------+
-| pnw_stack | code-manager-service      | pe-std.puppet.vm | [32moperational[0m |
-| pnw_stack | file-sync-storage-service | pe-std.puppet.vm | [32moperational[0m |
-| pnw_stack | file-sync-client-service  | pe-std.puppet.vm | [32moperational[0m |
-| pnw_stack | pe-master                 | pe-std.puppet.vm | [32moperational[0m |
-| pnw_stack | classifier-service        | pe-std.puppet.vm | [32moperational[0m |
-| pnw_stack | rbac-service              | pe-std.puppet.vm | [32moperational[0m |
-| pnw_stack | activity-service          | pe-std.puppet.vm | [32moperational[0m |
-| pnw_stack | orchestrator-service      | pe-std.puppet.vm | [32moperational[0m |
-| pnw_stack | broker-service            | pe-std.puppet.vm | [32moperational[0m |
-| pnw_stack | puppetdb-status           | pe-std.puppet.vm | [32moperational[0m |
-+-----------+---------------------------+------------------+-------------+
++-----------------+---------------------------+------------------+-------------+
+|                          Operational Service Status                          |
++-----------------+---------------------------+------------------+-------------+
+| Cluster         | Service                   | Url              | Status      |
++-----------------+---------------------------+------------------+-------------+
+| pnw_stack       | code-manager-service      | pe-std.puppet.vm | [32moperational[0m |
+| pnw_stack       | file-sync-storage-service | pe-std.puppet.vm | [32moperational[0m |
+| pnw_stack       | file-sync-client-service  | pe-std.puppet.vm | [32moperational[0m |
+| pnw_stack       | pe-master                 | pe-std.puppet.vm | [32moperational[0m |
+| pnw_stack       | classifier-service        | pe-std.puppet.vm | [32moperational[0m |
+| pnw_stack       | rbac-service              | pe-std.puppet.vm | [32moperational[0m |
+| pnw_stack       | activity-service          | pe-std.puppet.vm | [32moperational[0m |
+| pnw_stack       | orchestrator-service      | pe-std.puppet.vm | [32moperational[0m |
+| pnw_stack       | broker-service            | pe-std.puppet.vm | [32moperational[0m |
+| pnw_stack       | puppetdb-status           | pe-std.puppet.vm | [32moperational[0m |
+| east_stack      | code-manager-service      | pe-std.puppet.vm | [32moperational[0m |
+| east_stack      | file-sync-storage-service | pe-std.puppet.vm | [32moperational[0m |
+| east_stack      | file-sync-client-service  | pe-std.puppet.vm | [32moperational[0m |
+| east_stack      | pe-master                 | pe-std.puppet.vm | [32moperational[0m |
+| east_stack      | classifier-service        | pe-std.puppet.vm | [32moperational[0m |
+| east_stack      | rbac-service              | pe-std.puppet.vm | [32moperational[0m |
+| east_stack      | activity-service          | pe-std.puppet.vm | [32moperational[0m |
+| east_stack      | orchestrator-service      | pe-std.puppet.vm | [32moperational[0m |
+| east_stack      | broker-service            | pe-std.puppet.vm | [32moperational[0m |
+| east_stack      | puppetdb-status           | pe-std.puppet.vm | [32moperational[0m |
+| west_stack      | code-manager-service      | pe-std.puppet.vm | [32moperational[0m |
+| west_stack      | file-sync-storage-service | pe-std.puppet.vm | [32moperational[0m |
+| west_stack      | file-sync-client-service  | pe-std.puppet.vm | [32moperational[0m |
+| west_stack      | pe-master                 | pe-std.puppet.vm | [32moperational[0m |
+| west_stack      | classifier-service        | pe-std.puppet.vm | [32moperational[0m |
+| west_stack      | rbac-service              | pe-std.puppet.vm | [32moperational[0m |
+| west_stack      | activity-service          | pe-std.puppet.vm | [32moperational[0m |
+| west_stack      | orchestrator-service      | pe-std.puppet.vm | [32moperational[0m |
+| west_stack      | broker-service            | pe-std.puppet.vm | [32moperational[0m |
+| west_stack      | puppetdb-status           | pe-std.puppet.vm | [32moperational[0m |
+| northeast_stack | code-manager-service      | pe-std.puppet.vm | [32moperational[0m |
+| northeast_stack | file-sync-storage-service | pe-std.puppet.vm | [32moperational[0m |
+| northeast_stack | file-sync-client-service  | pe-std.puppet.vm | [32moperational[0m |
+| northeast_stack | pe-master                 | pe-std.puppet.vm | [32moperational[0m |
+| northeast_stack | classifier-service        | pe-std.puppet.vm | [32moperational[0m |
+| northeast_stack | rbac-service              | pe-std.puppet.vm | [32moperational[0m |
+| northeast_stack | activity-service          | pe-std.puppet.vm | [32moperational[0m |
+| northeast_stack | orchestrator-service      | pe-std.puppet.vm | [32moperational[0m |
+| northeast_stack | broker-service            | pe-std.puppet.vm | [32moperational[0m |
+| northeast_stack | puppetdb-status           | pe-std.puppet.vm | [32moperational[0m |
++-----------------+---------------------------+------------------+-------------+
