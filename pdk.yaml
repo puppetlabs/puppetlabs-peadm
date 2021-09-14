@@ -1,0 +1,3 @@
+---
+ignore:
+  - 'spec/acceptance/peadm_spec/plans/*'
