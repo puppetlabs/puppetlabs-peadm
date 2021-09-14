@@ -1,6 +1,6 @@
-# @summary Upgrade a peadm-managed PE cluster from one .z to the next
+# @summary Upgrade a PEAdm-managed cluster
 #
-# @param compiler_pool_address 
+# @param compiler_pool_address
 #   The service address used by agents to connect to compilers, or the Puppet
 #   service. Typically this is a load balancer.
 # @param internal_compiler_a_pool_address

@@ -1,4 +1,5 @@
-# Used during the peadm::convert plan
+# @api private
+# @summary Used during the peadm::convert plan
 class peadm::setup::convert_node_manager {
   require peadm::setup::node_manager
 

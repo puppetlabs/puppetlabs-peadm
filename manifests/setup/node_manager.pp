@@ -1,4 +1,7 @@
-# This profile is not intended to be continously enforced on PE primaries.
+# @api private
+# @summary Configures PEAdm's required node groups
+#
+# This class is not intended to be continously enforced on PE primaries.
 # Rather, it describes state to enforce as a boostrap action, preparing the
 # Puppet Enterprise console with a sane default environment configuration.
 #

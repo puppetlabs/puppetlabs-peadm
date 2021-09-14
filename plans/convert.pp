@@ -1,3 +1,8 @@
+# @summary Convert an existing PE cluster to a PEAdm-managed cluster
+#
+# This plan sets required certificate extensions on PE nodes, and configures
+# the required PE node groups to make an existing cluster compatible with
+# management using PEAdm.
 plan peadm::convert (
   # Standard
   Peadm::SingleTargetSpec           $primary_host,

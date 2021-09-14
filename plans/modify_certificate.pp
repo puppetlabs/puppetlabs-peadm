@@ -1,3 +1,7 @@
+# @summary Modify the certificate of one or more targets
+#
+# Certificates can be modified by adding extensions, removing extensions, or
+# setting DNS alternative names.
 plan peadm::modify_certificate (
   TargetSpec              $targets,
   Peadm::SingleTargetSpec $primary_host,
