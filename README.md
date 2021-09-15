@@ -17,16 +17,9 @@ The peadm module is able to deploy and manage Puppet Enterprise 2019.x Standard,
 
 ## Expectations and support
 
-The peadm module is intended to be used only by Puppet Enterprise customers actively working with and being guided by Puppet Customer Success teams—specifically, the Professional Services and Solutions Architecture teams. Independent use is not recommended for production environments without a comprehensive understanding of the peadm module.
+The peadm module is intended to be used only by Puppet Enterprise customers actively working with and being guided by Puppet Customer Success teams—specifically, the Professional Services and Solutions Architecture teams. Puppet Enterprise customers might be advised to begin using this tool after an introduction by their Technical Account manager (TAM) to the Solutions Architecture team or during a Professional Sevices (PS) engagement where the Puppet PS team aids and intructurs in the use of the tool. Independent use is not recommended for production environments without a comprehensive understanding of the peadm module.
 
-The peadm module is a services-led tool, and is **NOT** supported through Puppet Enterprise's standard or premium [support.puppet.com](https://support.puppet.com) service.
-
-As a services-led tool, Puppet Enterprise customers who are advised to start using this tool should get support for it through the following general process.
-
-1. Be introduced to the tool through a services engagement or by their Technical Account Manager (TAM).
-2. During Professional Services (PS) engagements, the Puppet PS team will aid and instruct in use of the tool.
-3. Outside of PS engagements, use TAM services to request assistance with problems encountered when using the tool, and to inform Puppet Customer Success (CS) teams of planned major maintenance or upgrades for which advisory services are needed.
-4. In the absence of a TAM, your Puppet account management team (Account Executive and Solutions Engineer) may be a fallback communication option for requesting assistance, or for informing CS teams of planned major maintenance for which advisory services are needed.
+The peadm module is a services-led tool that is **supported** through Puppet Enterprise's standard and premium [support.puppet.com](https://support.puppet.com) service.
 
 ## Overview
 
@@ -76,4 +69,5 @@ Additional documentation and information pertaining to various aspects or elemen
 
 ## Getting Help
 
-To get help with issues concerning this module, please make use of [issues](https://github.com/puppetlabs/puppetlabs-peadm/issues) in the project on GitHub.
+* If you find bugs with this module, please make use of [issues](https://github.com/puppetlabs/puppetlabs-peadm/issues) in the project on GitHub
+* If you are a Puppet Enterprise (PE) customer that uses peadm to manage a deployment of PE and are currently having an outage or need assistance troubleshooting another issue, e.g. upgrades, contact the [Support Team](https://support.puppet.com)
