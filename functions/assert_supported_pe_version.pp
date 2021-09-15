@@ -1,3 +1,4 @@
+# @summary Assert that the PE version given is supported by PEAdm
 # @return [Boolean] true if the version is supported, raise error otherwise
 # @param [String] the version number to check
 function peadm::assert_supported_pe_version (

@@ -1,3 +1,4 @@
+# @api private
 # @summary Defines configuration needed for converting PE 2018
 #
 class peadm::setup::convert_pre20197 {

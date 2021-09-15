@@ -1,5 +1,10 @@
-# Set up the node_manager.yaml file in the temporary Bolt confdir so that
-# node_group resources may be used during Bolt apply runs
+# @api private
+# @summary Set up the node_manager.yaml file in the temporary Bolt confdir
+#
+# This configuration permits node_group resources to be used during Bolt apply
+# runs. It is necessary to do it this way because node_manager requires a
+# configuration file, located in $confdir. But, when Bolt applies a catalog, it
+# does so using a unique, dynamic $confdir.
 class peadm::setup::node_manager_yaml (
   String $primary_host
 ) {

@@ -1,3 +1,4 @@
+# @summary Assert that the architecture given is a supported one
 function peadm::assert_supported_architecture (
   TargetSpec                 $primary_host,
   Variant[TargetSpec, Undef] $replica_host = undef,

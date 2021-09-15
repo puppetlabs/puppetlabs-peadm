@@ -1,3 +1,12 @@
+# @summary Return the certname of the given target-like input
+#
+# This function accepts a variety of data types which could represent single
+# targets, and returns the certname corresponding to the input.
+#
+# For Target objects, or arrays of a single Target object, a "certname" var can
+# be set, which determines that target's certname. Otherwise, the target's name
+# is its certname. For strings, the certname is equal to the string. Undef
+# input returns undef.
 function peadm::certname(
   Variant[Target,
           String,

@@ -1,6 +1,4 @@
-# @summary Single-entry-point plan for installation and configuration of a new
-#   Puppet Enterprise Extra Large cluster.  This plan accepts all parameters
-#   used by its sub-plans, and invokes them in order.
+# @summary Install a new PE cluster
 #
 # @param compiler_pool_address 
 #   The service address used by agents to connect to compilers, or the Puppet

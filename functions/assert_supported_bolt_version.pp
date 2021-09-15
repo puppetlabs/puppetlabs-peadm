@@ -1,3 +1,5 @@
+# @summary Assert that the Bolt executable running PEAdm is a supported version
+#
 # Checks if the current Bolt version matches the SemVerRange defined in $supported_bolt_version
 # Fails the calling plan if false, does nothing if true.
 # Accepts a parameter for the $supported_bolt_version for unit testing purposes
