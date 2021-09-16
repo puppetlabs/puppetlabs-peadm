@@ -34,7 +34,7 @@ jobs:
         persist-credentials: false
 
     - name: "PDK Release prep"
-      uses: docker://puppet/iac_release:ci
+      uses: docker://puppet/iac_release:2.3.0-pre7
       with:
         args: 'release prep --force'
       env:
