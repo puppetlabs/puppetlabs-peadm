@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.2.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.2.0) (2021-09-20)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.1.0...v3.2.0)
+
+### Added
+
+- Add auto-generated REFERENCE.md documentation [\#211](https://github.com/puppetlabs/puppetlabs-peadm/pull/211) ([reidmv](https://github.com/reidmv))
+- Make PEAdm a Puppet supported module [\#199](https://github.com/puppetlabs/puppetlabs-peadm/pull/199) ([ody](https://github.com/ody))
+
+### Fixed
+
+- Update documentation to reference supported PE version [\#213](https://github.com/puppetlabs/puppetlabs-peadm/pull/213) ([reidmv](https://github.com/reidmv))
+- Fix output of peadm::status when used with multiple clusters [\#209](https://github.com/puppetlabs/puppetlabs-peadm/pull/209) ([reidmv](https://github.com/reidmv))
+
 ## [v3.1.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.1.0) (2021-09-10)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.0.1...v3.1.0)
