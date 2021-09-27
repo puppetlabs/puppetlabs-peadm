@@ -35,8 +35,17 @@ verify-file() {
 }
 
 download() {
+  local tmp_file_name="pe-tmp-file"
+
   printf '%s\n' "Downloading: ${1}"
-  curl -s -f -L -o "$2" "$1"
+  tmp_file=$(mktemp -p /tmp/ "$tmp_file_name")
+  curl -s -f -L -o ${tmp_file} "$1"
+  if [tar -tzf ${tmp_file} >/dev/null]; then
+    mv ${tmp_file} "$2"
+  else
+    echo "Puppet Enterprise download failed: Invalid tarball"
+    rm ${tmp_file}
+  fi
 }
 
 download-size-verify() {
