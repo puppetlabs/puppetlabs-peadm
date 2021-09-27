@@ -38,7 +38,7 @@ download() {
   local tmp_file_name="pe-tmp-file"
 
   printf '%s\n' "Downloading: ${1}"
-  tmp_file=$(mktemp -p /tmp/ "$tmp_file_name")
+  tmp_file=$(mktemp "peadm-download")
   echo "Temporary file created at: ${tmp_file}"
   curl -s -f -L -o ${tmp_file} "$1"
   if [ tar -tzf "${tmp_file}" >/dev/null ]; then
