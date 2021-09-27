@@ -35,8 +35,6 @@ verify-file() {
 }
 
 download() {
-  local tmp_file_name="pe-tmp-file"
-
   printf '%s\n' "Downloading: ${1}"
   tmp_file=$(mktemp "peadm-download")
   echo "Temporary file created at: ${tmp_file}"
@@ -45,7 +43,7 @@ download() {
     mv "${tmp_file}" "$2"
   else
     echo "Puppet Enterprise download failed: Invalid tarball"
-    echo "|_ Temporary: ${tmp_file}"
+    echo "|_ Removing temporary file: ${tmp_file}"
     rm "${tmp_file}"
   fi
 }
