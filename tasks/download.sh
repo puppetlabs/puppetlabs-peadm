@@ -41,7 +41,7 @@ download() {
   tmp_file=$(mktemp -p /tmp/ "$tmp_file_name")
   echo "Temporary file created at: ${tmp_file}"
   curl -s -f -L -o ${tmp_file} "$1"
-  if [tar -tzf ${tmp_file} >/dev/null]; then
+  if [ tar -tzf "${tmp_file}" >/dev/null ]; then
     mv ${tmp_file} "$2"
   else
     echo "Puppet Enterprise download failed: Invalid tarball"
