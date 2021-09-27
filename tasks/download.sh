@@ -46,7 +46,7 @@ download() {
   else
     echo "Puppet Enterprise download failed: Invalid tarball"
     echo "|_ Temporary: ${tmp_file}"
-    rm ${tmp_file}
+    rm "${tmp_file}"
   fi
 }
 
