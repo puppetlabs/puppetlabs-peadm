@@ -39,12 +39,14 @@ download() {
   tmp_file=$(mktemp "peadm-download")
   echo "Temporary file created at: ${tmp_file}"
   curl -s -f -L -o ${tmp_file} "$1"
-  if [ tar -tzf "${tmp_file}" >/dev/null ]; then
+  if [[ tar -tzf "${tmp_file}" >/dev/null ]]; then
     mv "${tmp_file}" "$2"
+    return 0
   else
     echo "Puppet Enterprise download failed: Invalid tarball"
     echo "|_ Removing temporary file: ${tmp_file}"
     rm "${tmp_file}"
+    return 1
   fi
 }
 
