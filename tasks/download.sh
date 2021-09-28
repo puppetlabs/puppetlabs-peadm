@@ -36,7 +36,7 @@ verify-file() {
 
 download() {
   printf '%s\n' "Downloading: ${1}"
-  tmp_file=$(mktemp "peadm-download.XXX")
+  tmp_file=$(mktemp)
   echo "Temporary file created at: ${tmp_file}"
 
   if curl -s -f -L -o ${tmp_file} "$1"; then
