@@ -38,13 +38,13 @@ download() {
   printf '%s\n' "Downloading: ${1}"
   tmp_file=$(mktemp "peadm-download.XXX")
   echo "Temporary file created at: ${tmp_file}"
-  download_file=$(curl -s -f -L -o ${tmp_file} "$1")
-  if [[ -z "$download_file" ]]; then
+
+  if curl -s -f -L -o ${tmp_file} "$1"; then
     mv "${tmp_file}" "$2"
     return 0
   else
     echo "Error: Curl has failed to download the file"
-    echo "|_ Removing temporary file: ${tmp_file}"
+    echo "Removing temporary file: ${tmp_file}"
     rm "${tmp_file}"
     return 1
   fi
