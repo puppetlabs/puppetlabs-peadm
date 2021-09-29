@@ -48,10 +48,11 @@ plan peadm::subplans::install (
   Optional[String]     $license_key_content = undef,
 
   # Other
-  String                $stagingdir    = '/tmp',
-  Enum[direct,bolthost] $download_mode = 'bolthost',
+  String                $stagingdir             = '/tmp',
+  Enum[direct,bolthost] $download_mode          = 'bolthost',
+  Boolean               $permit_unsafe_versions = false,
 ) {
-  peadm::assert_supported_pe_version($version)
+  peadm::assert_supported_pe_version($version, $permit_unsafe_versions)
 
   # Convert inputs into targets.
   $primary_target            = peadm::get_targets($primary_host, 1)

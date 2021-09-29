@@ -44,12 +44,13 @@ plan peadm::install (
   Optional[String]                  $license_key_content = undef,
 
   # Other
-  Optional[String]                  $stagingdir    = undef,
-  Enum[direct,bolthost]             $download_mode = 'bolthost',
+  Optional[String]                  $stagingdir             = undef,
+  Enum[direct,bolthost]             $download_mode          = 'bolthost',
+  Boolean                           $permit_unsafe_versions = false,
 ) {
   peadm::assert_supported_bolt_version()
 
-  peadm::assert_supported_pe_version($version)
+  peadm::assert_supported_pe_version($version, $permit_unsafe_versions)
 
   $install_result = run_plan('peadm::subplans::install',
     # Standard
@@ -81,6 +82,7 @@ plan peadm::install (
     # Other
     stagingdir                     => $stagingdir,
     download_mode                  => $download_mode,
+    permit_unsafe_versions         => $permit_unsafe_versions,
   )
 
   $configure_result = run_plan('peadm::subplans::configure',
