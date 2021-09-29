@@ -6,7 +6,7 @@ function peadm::assert_supported_pe_version (
 ) >> Struct[{'supported' => Boolean}] {
   $oldest = '2019.7'
   $newest = '2021.3'
-  $supported = (($version =~ SemVerRange(">= ${oldest} <= ${newest}")) or $permit_unsafe_versions)
+  $supported = ($version =~ SemVerRange(">= ${oldest} <= ${newest}"))
 
   if $permit_unsafe_versions {
     warning(@("WARN"/L))
@@ -15,7 +15,12 @@ function peadm::assert_supported_pe_version (
       | WARN
   }
 
-  unless $supported {
+  if (!$supported and $permit_unsafe_versions) {
+    warning(@("WARN"/L))
+      WARNING: PE version ${version} is NOT SUPPORTED!
+      | WARN
+  }
+  elsif (!$supported) {
     fail(@("REASON"/L))
       This version of the puppetlabs-peadm module does not support PE ${version}.
 

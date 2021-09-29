@@ -29,11 +29,11 @@ describe 'peadm::assert_supported_pe_version' do
 
   context 'unsafe versions' do
     it 'accepts PE versions that are too old' do
-      is_expected.to run.with_params('2018.1.0', true).and_return({ 'supported' => true })
+      is_expected.to run.with_params('2018.1.0', true).and_return({ 'supported' => false })
     end
 
     it 'accepts PE versions that are too new' do
-      is_expected.to run.with_params('2035.0.0', true).and_return({ 'supported' => true })
+      is_expected.to run.with_params('2035.0.0', true).and_return({ 'supported' => false })
     end
 
     it 'accepts PE versions that are in the supported range' do
