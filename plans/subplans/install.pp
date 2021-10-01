@@ -192,17 +192,24 @@ plan peadm::subplans::install (
 
   $pe_tarball_name     = "puppet-enterprise-${version}-${platform}.tar.gz"
   $pe_tarball_source   = "https://s3.amazonaws.com/pe-builds/released/${version}/${pe_tarball_name}"
-  $upload_tarball_path = "/tmp/${pe_tarball_name}"
 
   if $download_mode == 'bolthost' {
+    $upload_tarball_path = "/tmp/${pe_tarball_name}"
     # Download the PE tarball and send it to the nodes that need it
+    # Currently there is no control where the upload to the host goes as
+    # it is hardcoded to /tmp.  The bolthost will always download to 
+    # the staging directory.
     run_plan('peadm::util::retrieve_and_upload', $pe_installer_targets,
       source      => $pe_tarball_source,
       local_path  => "${stagingdir}/${pe_tarball_name}",
       upload_path => $upload_tarball_path,
     )
   } else {
+    $upload_tarball_path = "${stagingdir}/${pe_tarball_name}"
+
     # Download PE tarballs directly to nodes that need it
+    # If using a different staging directory put the tarball there
+    # The staging directory better exist though
     run_task('peadm::download', $pe_installer_targets,
       source => $pe_tarball_source,
       path   => $upload_tarball_path,
