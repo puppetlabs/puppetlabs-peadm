@@ -3,9 +3,15 @@
   "primary_postgresql_host": "pe-xl-db-0.puppet.vm",
   "replica_postgresql_host": "pe-xl-db-1.puppet.vm",
   "replica_host": "pe-xl-core-1.puppet.vm",
-  "compiler_hosts": ["pe-xl-compiler-0.puppet.vm"],
+  "compiler_hosts": [
+    "pe-xl-compiler-0.puppet.vm"
+  ],
   "console_password": "puppetlabs",
-  "dns_alt_names": [ "puppet", "pe-xl-core-0.puppet.vm", "puppet-xl.vm" ],
+  "dns_alt_names": [
+    "puppet",
+    "pe-xl-core-0.puppet.vm",
+    "puppet-xl.vm"
+  ],
   "version": "2019.8.5",
   "compiler_pool_address": "puppet-xl.vm"
 }

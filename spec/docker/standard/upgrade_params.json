@@ -1,5 +1,4 @@
 {
-    "primary_host": "pe-std.puppet.vm",
-    "version": "2019.8.5"
+  "primary_host": "pe-std.puppet.vm",
+  "version": "2019.8.8"
 }
-  

@@ -50,7 +50,8 @@ services:
       - /run
       - /tmp
     volumes:
-      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'        
+      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'
+       
   large_aio:
     build:
       dockerfile: 'Dockerfile'
@@ -78,3 +79,5 @@ services:
       - /tmp
     volumes:
       - '/sys/fs/cgroup:/sys/fs/cgroup:ro'    
+       
+

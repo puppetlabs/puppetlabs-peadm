@@ -1,6 +1,7 @@
 {
-    "primary_host": "pe-lg.puppet.vm",
-    "compiler_hosts": ["pe-lg-compiler-0.puppet.vm"],
-    "version": "2019.8.5"
+  "primary_host": "pe-lg.puppet.vm",
+  "compiler_hosts": [
+    "pe-lg-compiler-0.puppet.vm"
+  ],
+  "version": "2019.8.8"
 }
-  
