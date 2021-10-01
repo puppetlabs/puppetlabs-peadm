@@ -37,14 +37,15 @@ verify-file() {
 download() {
   printf '%s\n' "Downloading: ${1}"
   tmp_file=$(mktemp)
-  echo "Temporary file created at: ${tmp_file}"
+  echo "Downloading to temporary file ${tmp_file}"
 
   if curl -s -f -L -o ${tmp_file} "$1"; then
+    echo "Moving ${tmp_file} to target path ${2}"
     mv "${tmp_file}" "$2"
     return 0
   else
     echo "Error: Curl has failed to download the file"
-    echo "Removing temporary file: ${tmp_file}"
+    echo "Removing temporary file ${tmp_file}"
     rm "${tmp_file}"
     return 1
   fi
