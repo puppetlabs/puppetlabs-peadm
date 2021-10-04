@@ -14,14 +14,9 @@
       "description": "Whether to check the integrity of the downloaded file",
       "default": true
     },
-    "key_id": {
-      "type": "String",
-      "description": "The GPG key ID to use when verifying the download",
-      "default": "4528B6CD9E61EF26"
-    },
     "key_server": {
       "type": "String",
-      "description": "The GPG keyserver to retrieve the GPG key from",
+      "description": "The GPG keyserver to retrieve GPG keys from",
       "default": "hkp://keyserver.ubuntu.com:11371"
     }
   },

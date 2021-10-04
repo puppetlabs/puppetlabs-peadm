@@ -8,6 +8,7 @@ EX_UNAVAILABLE=69
 verify-file() {
   local sig="$1"
   local doc="$2"
+  local keyid
 
   # The GPG binary is required to be present in order to perform file download
   # verification. If it is not present, return EX_UNAVAILABLE.
@@ -19,8 +20,12 @@ verify-file() {
   # The verification key must be present, or it must be possible to download it
   # from the keyserver to perform file verification. If it is not present,
   # return EX_UNAVAILABLE.
-  if ! { gpg --list-keys "$PT_key_id" || gpg --keyserver "$PT_key_server" --recv-key "$PT_key_id"; } then
-    echo "Unable to download verification key ${PT_key_id}"
+  keyid=$(gpg --list-packets --with-colons "$sig" | awk '/:signature packet:/{print $NF; exit 0}')
+  if [[ -z "$keyid" ]]; then
+    echo "Unable to determine verification key from ${sig}"
+    return "$EX_UNAVAILABLE"
+  elif ! { gpg --list-keys "$keyid" || gpg --keyserver "$PT_key_server" --recv-key "$keyid"; } then
+    echo "Unable to download verification key ${keyid}"
     return "$EX_UNAVAILABLE"
   fi
 
@@ -37,14 +42,15 @@ verify-file() {
 download() {
   printf '%s\n' "Downloading: ${1}"
   tmp_file=$(mktemp)
-  echo "Temporary file created at: ${tmp_file}"
+  echo "Downloading to temporary file ${tmp_file}"
 
   if curl -s -f -L -o ${tmp_file} "$1"; then
+    echo "Moving ${tmp_file} to target path ${2}"
     mv "${tmp_file}" "$2"
     return 0
   else
     echo "Error: Curl has failed to download the file"
-    echo "Removing temporary file: ${tmp_file}"
+    echo "Removing temporary file ${tmp_file}"
     rm "${tmp_file}"
     return 1
   fi
