@@ -98,9 +98,12 @@ class CodeSyncStatus
     environmentstocheck.each do |environment|
       results[environment] = check_environment_code(environment, servers, status_call)
     end
+
     # Confirm are all environments being checked in sync
-    results['sync'] = results.all? { |_k, v| v['sync'] == true }
-    results
+    {
+      'environments' => results,
+      'sync' => results.all? { |_k, v| v['sync'] == true },
+    }
   end
 end
 # Run the task unless an environment flag has been set, signaling not to. The
