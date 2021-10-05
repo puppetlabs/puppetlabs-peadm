@@ -46,8 +46,13 @@ download() {
 
   if curl -s -f -L -o ${tmp_file} "$1"; then
     echo "Moving ${tmp_file} to target path ${2}"
-    mv "${tmp_file}" "$2"
-    return 0
+
+    # Perform the move. If it doesn't work, clean up and return an error
+    if ! mv "${tmp_file}" "$2"; then
+      echo "Failed to move ${tmp_file} to ${2}! Deleting temporary file"
+      rm "${tmp_file}"
+      return 1
+    fi
   else
     echo "Error: Curl has failed to download the file"
     echo "Removing temporary file ${tmp_file}"
@@ -94,7 +99,7 @@ download-signature-verify() {
     download-size-verify "$source" "$path"
   elif [[ "$verify_exit" -eq "1" ]]; then
     echo "$verify_output"
-    download "$source" "$path"
+    download "$source" "$path" || return 1
     echo "Verifying ${path}..."
     verify-file "${path}.asc" "$path"
   fi
