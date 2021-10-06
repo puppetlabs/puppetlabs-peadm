@@ -33,6 +33,10 @@ When installing a new PE cluster using peadm, there are several different host p
 
 Supplying a combination of host parameters which does not match one of the supported architectures above will result in an unsupported architecture error.
 
+## Requirements
+
+* Puppet must not be installed on any of the target PE cluster hosts prior to beginning install.
+
 ## Usage
 
 ### Bolt 3 usage
