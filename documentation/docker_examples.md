@@ -1,17 +1,12 @@
 ## Docker Based Examples
 This module provides docker compose files for the various architectures for experimentation purposes. This gives you the ability to stand up an entire PE stack in order to learn how this module and DR works. If you have docker and docker-compose you can start up a full Puppet architecture with a single command.  Please note that Puppet does not support PE on containers in production.  
 
-In order to decouple Bolt from a dev system, a special bolt container is created that will run all the bolt commands.  This is
-required to achieve maximum portability.  Should you want to run bolt commands against the PE stack you must
-first login to this bolt container via ssh, docker or docker-compose.
-
-Example: `docker-compose run --entrypoint=/bin/bash bolt`
-
 ### Requirements
 To run the container based examples you will need the following requirements:
 
 1. Docker
 2. Docker compose
+3. Bolt 3.18+
 3. realpath (brew install coreutils on mac)
 4. 16GB memory, 24GB+ for XL and XL-DR architectures
 5. CPU with many cores (Tested with Core i7 6700)
@@ -45,6 +40,8 @@ In order to stop and remove the containers you will need to perform the followin
 1. cd spec/docker
 2. `cd <chosen architecture>` 
 3. docker-compose down
+
+Alternative you can run something similar like: `docker-compose --project-directory=large down`
 
 ### Logging into the console
 You can login to the PE Console after successful install.  However, first you will need to 
@@ -108,6 +105,8 @@ docker inspect pe-xl-core-0.puppet.vm -f "{{json .NetworkSettings.Networks }}" |
 }
 ```
 
+You can also run `docker inspect pe-xl-core-0.puppet.vm -f "{{json .HostConfig.NetworkMode }}" | sed -e 's/^"//' -e 's/"$//'`
+
 **NOTE** In these example you may see the use of `jq`.  This is a [cli utility for parsing JSON](https://stedolan.github.io/jq/).  I recommend installing it.  As a alternative you can pipe output to `python -m json.tool`.
 
 ### Starting agent containers
@@ -122,8 +121,38 @@ Example:
 For most tasks these images are great.  However, if you wish to use puppet orchestrator with the pcp transport. The one requirement is that all images used must be systemd aware, otherwise pxp will not start. If you do not plan on using pcp 
 there is no need for containers with systemd.
 
-At this time we have not added documention for starting a container with systemd.  Instructions coming soon.
+You can use the the custom image `pe-base` built with the docker cluster named pe-base.  This is a centos:7 image that you can use to generate tens or hundreds of agents.  (Resources permitting).  You will also want to run the docker run command with additonal flags.
 
+`docker run -d -t --hostname=pe-std-agent1.puppet.vm --network=pe-std_default --privileged --label=pe-std-agent,docker-example-agent" -v /sys/fs/cgroup:/sys/fs/cgroup:ro pe-base"`
+
+Once you have created the container you will obviously want to install the puppet agent
+
+`docker exec -ti $CONTAINER_ID sh -c "curl -k https://${PE_SERVER}:8140/packages/current/install.bash | bash && puppet agent -t"`
+
+Accept the cert in the console and run the puppet agent again on the agent container.
+
+Login interactively if you wish: `docker exec -ti $CONTAINER_ID /bin/bash`
+
+Take a look at the spec/docker/Dockerfile for examples of how to setup systemd in a container.
+
+
+### Cleaning up
+Before you run docker-compose down inside the cluster type directory you will need to stop and remove
+all the agent containers if created.
+
+This can be done like so:
+
+```bash
+# base name is the name of the primary hostname without domain
+PE_CLUSTER_TYPE=standard
+BASE_NAME=pe-std
+docker stop $(docker ps -q -f label="${BASE_NAME}-agent")
+docker rm $(docker ps -a -q -f label="${BASE_NAME}-agent")
+# The docker-compose down command cannot be run until the agents have been removed
+cd spec/docker/${PE_CLUSTER_TYPE}
+docker-compose down
+
+```
 
 ### Other notes
 1. The install plan is not fully idempotent.
@@ -134,3 +163,5 @@ At this time we have not added documention for starting a container with systemd
 6. You can use top to view all the processes being run in the containers.
 7. Docker will use the privilege mode option when running these examples (systemd support)
 8. Systemd is running inside these containers!  The real systemd, not the fake one.
+
+If you see errors regarding peadmin::puppet_runonce, just run the install or upgrade script again.  Might have to perform multiple times for resource constrained docker hosts.
