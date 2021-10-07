@@ -69,4 +69,6 @@ services:
       - /run
       - /tmp
     volumes:
-      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'    
+      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'
+       
+    

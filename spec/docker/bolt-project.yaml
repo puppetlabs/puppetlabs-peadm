@@ -1,0 +1,12 @@
+---
+name: peadm_docker_examples
+modules: 
+  - name: nwops/container_inventory
+    version_requirement: ">= 0.1.1"
+  - name: puppetlabs/stdlib
+    version_requirement: ">= 6.5.0 < 8.0.0"
+  - puppetlabs/ruby_task_helper
+  - WhatsARanjit/node_manager
+  - puppetlabs/apply_helpers
+  - puppetlabs/bolt_shim
+  - puppet/format

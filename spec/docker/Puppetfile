@@ -1,0 +1,13 @@
+# This Puppetfile is managed by Bolt. Do not edit.
+# For more information, see https://pup.pt/bolt-modules
+
+# The following directive installs modules to the managed moduledir.
+moduledir '.modules'
+
+mod 'puppet/format', '1.0.0'
+mod 'puppetlabs/bolt_shim', '0.3.2'
+mod 'puppetlabs/apply_helpers', '0.3.0'
+mod 'WhatsARanjit/node_manager', '0.7.5'
+mod 'puppetlabs/ruby_task_helper', '0.5.1'
+mod 'puppetlabs/stdlib', '7.1.0'
+mod 'nwops/container_inventory', '0.1.1'

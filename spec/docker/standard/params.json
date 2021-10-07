@@ -1,7 +1,9 @@
 {
   "primary_host": "pe-std.puppet.vm",
   "console_password": "puppetlabs",
-  "dns_alt_names": [ "puppet", "pe-std.puppet.vm" ],
-  "version": "2019.8.5",
-  "r10k_remote": "https://gitlab.com/nwops/control-repo.git"
+  "dns_alt_names": [
+    "puppet",
+    "pe-std.puppet.vm"
+  ],
+  "version": "2019.8.8"
 }

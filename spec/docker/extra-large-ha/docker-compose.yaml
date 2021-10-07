@@ -66,7 +66,9 @@ services:
       - /run
       - /tmp
     volumes:
-      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'       
+      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'  
+       
+     
   pe_xl_core_1:
     restart: always
     depends_on:
@@ -96,7 +98,9 @@ services:
       - /run
       - /tmp
     volumes:
-      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'      
+      - '/sys/fs/cgroup:/sys/fs/cgroup:ro' 
+       
+     
   pe_xl_core_0:
     restart: always
     build:
@@ -124,4 +128,6 @@ services:
       - /run
       - /tmp
     volumes:
-      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'    
+      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'
+       
+    
