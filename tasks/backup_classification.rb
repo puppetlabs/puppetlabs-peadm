@@ -32,7 +32,7 @@ class BackupClassification
     classification = https_client
     classification_request = Net::HTTP::Get.new('/status/v1/services?level=debug')  
     
-    JSON.parse(classification.request(classification_request).body)S
+    JSON.parse(classification.request(classification_request).body)
   end
 
 end
