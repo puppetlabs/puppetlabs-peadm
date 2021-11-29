@@ -14,7 +14,7 @@ class BackupClassification
 
   def execute!
     File.write(@params['file'],return_classification)
-    puts "Classification written to @params['file']".to_json
+    puts "Classification written to " + @params['file'].to_json
   end 
 
   private
