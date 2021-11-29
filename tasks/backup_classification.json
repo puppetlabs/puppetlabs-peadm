@@ -3,10 +3,10 @@
   "supports_noop": false,
   "description": "A task to call the classification api and write to file",
   "parameters": {
-    "file": {
+    "directory": {
       "type": "String",
-      "description": "The file to write the classification output to. Directory must exist",
-      "default": "/tmp/classification_backup.json"
+      "description": "The directory to write the classification output to. Directory must exist",
+      "default": "/tmp/"
     }
   },
   "input_method": "stdin"
