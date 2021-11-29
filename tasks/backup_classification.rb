@@ -6,7 +6,7 @@ require 'uri'
 require 'json'
 require 'puppet'
 
-# CodeSyncStatus task class
+# BackupClassiciation task class
 class BackupClassification
   def initialize(params)
     @params = params
