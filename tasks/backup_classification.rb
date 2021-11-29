@@ -14,7 +14,7 @@ class BackupClassification
 
   def execute!
     File.write(@params['file'],return_classification)
-    puts "Classification written to @params['file']"
+    puts "Classification written to @params['file']".to_json
   end 
 
   private
@@ -34,5 +34,13 @@ class BackupClassification
     
     JSON.parse(classification.request(classification_request).body)
   end
+
+# Run the task unless an environment flag has been set, signaling not to. The
+# environment flag is used to disable auto-execution and enable Ruby unit
+# testing of this task.
+unless ENV['RSPEC_UNIT_TEST_MODE']
+  Puppet.initialize_settings
+  task = BackupClassification.new(JSON.parse(STDIN.read))
+  task.execute!
 
 end
