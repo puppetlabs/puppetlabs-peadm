@@ -13,9 +13,9 @@ class BackupClassification
   end
 
   def execute!
-    File.write("#{@params['directory']}classification_backup.json",return_classification)
+    File.write("#{@params['directory']}classification_backup.json", return_classification)
     puts "Classification written to #{@params['directory']}classification_backup.json"
-  end 
+  end
 
   private
 
@@ -30,8 +30,8 @@ class BackupClassification
 
   def return_classification
     classification = https_client
-    classification_request = Net::HTTP::Get.new('/status/v1/services?level=debug')  
-    
+    classification_request = Net::HTTP::Get.new('/status/v1/services?level=debug')
+
     JSON.parse(classification.request(classification_request).body)
   end
 end
