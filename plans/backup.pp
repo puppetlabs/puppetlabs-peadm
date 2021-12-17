@@ -23,7 +23,7 @@ plan peadm::backup (
   Boolean                            $backup_classification  = true,
   String                             $backup_directory       = '/tmp/'
 ){
-  $database_to_backup = [ '$backup_orchestrator', 'backup_activity', '$backup_activity', '$backup_puppetdb']
+  $database_to_backup = [ $backup_orchestrator, $backup_activity, $backup_rbac, $backup_puppetdb]
   $database_names     = [ 'pe-orchestrator' , 'pe-activity' , 'pe-rbac' , 'pe-puppetdb' ]
 
   # Convert inputs into targets.
