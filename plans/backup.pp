@@ -53,5 +53,5 @@ plan peadm::backup (
   }
   $database_backup=pe-activity
   out::message("# Backing up database ${database_backup}")
-  run_command("sudo -u pe-postgres /opt/puppetlabs/server/bin/pg_dump -Fc \"${database_backup}\" -f \"${backup_directory}/${database_backup}_$(date +%Y%m%d%S).bin\" || echo \"Failed to dump database ${database_backup}\"")
+  run_command("sudo -u pe-postgres /opt/puppetlabs/server/bin/pg_dump -Fc \"${database_backup}\" -f \"${backup_directory}/${database_backup}_$(date +%Y%m%d%S).bin\" || echo \"Failed to dump database ${database_backup}\"" , $primary_target)
 }
