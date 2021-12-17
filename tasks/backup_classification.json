@@ -4,7 +4,7 @@
   "description": "A task to call the classification api and write to file",
   "parameters": {
     "directory": {
-      "type": "Pattern[^\/.+\/$]",
+      "type": "String",
       "description": "The directory to write the classification output to. Directory must exist",
       "default": "/tmp/"
     }
