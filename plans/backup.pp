@@ -51,4 +51,7 @@ plan peadm::backup (
     out::message('# Backing up ca and ssl certificates')
     run_command("/opt/puppetlabs/bin/puppet-backup create --dir=${backup_directory} --scope=certs", $primary_target)
   }
+  $database_backup=pe-activity
+  out::message("# Backing up database ${database_backup}")
+  run_command("sudo -u pe-postgres /opt/puppetlabs/server/bin/pg_dump -Fc \"${database_backup}\" -f \"${backup_directory}/${database_backup}_$(date +%Y%m%d%S).bin\" || echo \"Failed to dump database ${database_backup}\"")
 }
