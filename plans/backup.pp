@@ -43,7 +43,7 @@ plan peadm::backup (
   if $backup_classification {
     out::message('# Backing up classification')
     run_task('peadm::backup_classification', $primary_host,
-    directory => '$backup_directory',
+    directory => $backup_directory,
     )
   }
 
