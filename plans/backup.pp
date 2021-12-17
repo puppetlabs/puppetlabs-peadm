@@ -23,15 +23,15 @@ plan peadm::backup (
   Boolean                            $backup_classification  = true,
   String                             $backup_directory       = '/tmp/'
 ){
+  # Create an array of the names of databases and whether they have to be backed up to use in a lambda later
   $database_to_backup = [ $backup_orchestrator, $backup_activity, $backup_rbac, $backup_puppetdb]
   $database_names     = [ 'pe-orchestrator' , 'pe-activity' , 'pe-rbac' , 'pe-puppetdb' ]
-
-  # Convert inputs into targets.
-  $primary_target                   = peadm::get_targets($primary_host, 1)
-  $replica_target                   = peadm::get_targets($replica_host, 1)
-  $replica_postgresql_target        = peadm::get_targets($replica_postgresql_host, 1)
-  $compiler_targets                 = peadm::get_targets($compiler_hosts)
-  $primary_postgresql_target        = peadm::get_targets($primary_postgresql_host, 1)
+  if $primary_postgresql_host {
+  $database_backup_server = $primary_postgresql_host
+  } else {
+  $database_backup_server = $primary_host
+  }
+  peadm::assert_supported_bolt_version()
 
   # Ensure input valid for a supported architecture
   $arch = peadm::assert_supported_architecture(
@@ -57,11 +57,7 @@ plan peadm::backup (
   $database_to_backup.each |Integer $index, Boolean $value | {
     if $value {
     out::message("# Backing up database ${database_names[$index]}")
-    run_command("sudo -u pe-postgres /opt/puppetlabs/server/bin/pg_dump -Fc \"${database_names[$index]}\" -f \"${backup_directory}/${database_names[$index]}_$(date +%Y%m%d%S).bin\" || echo \"Failed to dump database ${database_names[$index]}\"" , $primary_target)
+    run_command("sudo -u pe-postgres /opt/puppetlabs/server/bin/pg_dump -Fc \"${database_names[$index]}\" -f \"${backup_directory}/${database_names[$index]}_$(date +%Y%m%d%S).bin\" || echo \"Failed to dump database ${database_names[$index]}\"" , $database_backup_server)
     }
   }
-
-# $database_backup=pe-activity
-# out::message("# Backing up database ${database_backup}")
-# run_command("sudo -u pe-postgres /opt/puppetlabs/server/bin/pg_dump -Fc \"${database_backup}\" -f \"${backup_directory}/${database_backup}_$(date +%Y%m%d%S).bin\" || echo \"Failed to dump database ${database_backup}\"" , $primary_target)
 }
