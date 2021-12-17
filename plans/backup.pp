@@ -54,7 +54,7 @@ plan peadm::backup (
     run_command("/opt/puppetlabs/bin/puppet-backup create --dir=${backup_directory} --scope=certs", $primary_target)
   }
 
-  $database_to_backup.each |Integer $index, String $value | {
+  $database_to_backup.each |Integer $index, Boolean $value | {
     if $value {
     out::message("# Backing up database ${database_names[$index]}")
     run_command("sudo -u pe-postgres /opt/puppetlabs/server/bin/pg_dump -Fc \"${database_names[$index]}\" -f \"${backup_directory}/${database_names[$index]}_$(date +%Y%m%d%S).bin\" || echo \"Failed to dump database ${database_names[$index]}\"" , $primary_target)
