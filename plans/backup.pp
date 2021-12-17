@@ -23,6 +23,8 @@ plan peadm::backup (
   Boolean                            $backup_classification  = true,
   String                             $backup_directory       = '/tmp/'
 ){
+  $database_to_backup = [ '$backup_orchestrator', 'backup_activity', '$backup_activity', '$backup_puppetdb']
+  $database_names     = [ 'pe-orchestrator' , 'pe-activity' , 'pe-rbac' , 'pe-puppetdb' ]
 
   # Convert inputs into targets.
   $primary_target                   = peadm::get_targets($primary_host, 1)
@@ -51,7 +53,15 @@ plan peadm::backup (
     out::message('# Backing up ca and ssl certificates')
     run_command("/opt/puppetlabs/bin/puppet-backup create --dir=${backup_directory} --scope=certs", $primary_target)
   }
-  $database_backup=pe-activity
-  out::message("# Backing up database ${database_backup}")
-  run_command("sudo -u pe-postgres /opt/puppetlabs/server/bin/pg_dump -Fc \"${database_backup}\" -f \"${backup_directory}/${database_backup}_$(date +%Y%m%d%S).bin\" || echo \"Failed to dump database ${database_backup}\"" , $primary_target)
+
+  $database_to_backup.each |Integer $index, String $value | {
+    if $value {
+    out::message("# Backing up database ${database_names[$index]}")
+    run_command("sudo -u pe-postgres /opt/puppetlabs/server/bin/pg_dump -Fc \"${database_names[$index]}\" -f \"${backup_directory}/${database_names[$index]}_$(date +%Y%m%d%S).bin\" || echo \"Failed to dump database ${database_names[$index]}\"" , $primary_target)
+    }
+  }
+
+# $database_backup=pe-activity
+# out::message("# Backing up database ${database_backup}")
+# run_command("sudo -u pe-postgres /opt/puppetlabs/server/bin/pg_dump -Fc \"${database_backup}\" -f \"${backup_directory}/${database_backup}_$(date +%Y%m%d%S).bin\" || echo \"Failed to dump database ${database_backup}\"" , $primary_target)
 }
