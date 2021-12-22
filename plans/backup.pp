@@ -21,7 +21,7 @@ plan peadm::backup (
   Boolean                            $backup_ca_ssl          = true,
   Boolean                            $backup_puppetdb        = false,
   Boolean                            $backup_classification  = true,
-  Stdlib::Absolutepath               $backup_directory       = '/tmp'
+  String                             $backup_directory       = '/tmp'
 ){
   # Create an array of the names of databases and whether they have to be backed up to use in a lambda later
   $database_to_backup = [ $backup_orchestrator, $backup_activity, $backup_rbac, $backup_puppetdb]
