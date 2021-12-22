@@ -21,16 +21,19 @@ plan peadm::backup (
   Boolean                            $backup_ca_ssl          = true,
   Boolean                            $backup_puppetdb        = false,
   Boolean                            $backup_classification  = true,
-  String                             $backup_directory       = '/tmp/'
+  String                             $backup_directory       = '/tmp'
 ){
   # Create an array of the names of databases and whether they have to be backed up to use in a lambda later
   $database_to_backup = [ $backup_orchestrator, $backup_activity, $backup_rbac, $backup_puppetdb]
   $database_names     = [ 'pe-orchestrator' , 'pe-activity' , 'pe-rbac' , 'pe-puppetdb' ]
+  
+  # Database backups should take place on the postgress server
   if $primary_postgresql_host {
-  $database_backup_server = $primary_postgresql_host
+    $database_backup_server = $primary_postgresql_host
   } else {
-  $database_backup_server = $primary_host
+    $database_backup_server = $primary_host
   }
+  
   peadm::assert_supported_bolt_version()
 
   # Ensure input valid for a supported architecture

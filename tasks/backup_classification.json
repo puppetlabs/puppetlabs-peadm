@@ -6,7 +6,7 @@
     "directory": {
       "type": "String",
       "description": "The directory to write the classification output to. Directory must exist",
-      "default": "/tmp/"
+      "default": "/tmp"
     }
   },
   "input_method": "stdin"
