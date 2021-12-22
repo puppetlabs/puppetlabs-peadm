@@ -13,8 +13,8 @@ class BackupClassification
   end
 
   def execute!
-    File.write("#{@params['directory']}classification_backup.json", return_classification)
-    puts "Classification written to #{@params['directory']}classification_backup.json"
+    File.write("#{@params['directory']}/classification_backup.json", return_classification)
+    puts "Classification written to #{@params['directory']}/classification_backup.json"
   end
 
   private
