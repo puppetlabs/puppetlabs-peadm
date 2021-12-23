@@ -26,14 +26,14 @@ plan peadm::backup (
   # Create an array of the names of databases and whether they have to be backed up to use in a lambda later
   $database_to_backup = [ $backup_orchestrator, $backup_activity, $backup_rbac, $backup_puppetdb]
   $database_names     = [ 'pe-orchestrator' , 'pe-activity' , 'pe-rbac' , 'pe-puppetdb' ]
-  
+
   # Database backups should take place on the postgress server
   if $primary_postgresql_host {
     $database_backup_server = $primary_postgresql_host
   } else {
     $database_backup_server = $primary_host
   }
-  
+
   peadm::assert_supported_bolt_version()
 
   # Ensure input valid for a supported architecture
@@ -60,7 +60,7 @@ plan peadm::backup (
   $database_to_backup.each |Integer $index, Boolean $value | {
     if $value {
     out::message("# Backing up database ${database_names[$index]}")
-    run_command("sudo -u pe-postgres /opt/puppetlabs/server/bin/pg_dump -Fc \"${database_names[$index]}\" -f \"${backup_directory}/${database_names[$index]}_$(date +%Y%m%d%S).bin\" || echo \"Failed to dump database ${database_names[$index]}\"" , $database_backup_server)
+    run_command("sudo -u pe-postgres /opt/puppetlabs/server/bin/pg_dump -Fc \"${database_names[$index]}\" -f \"${backup_directory}/${database_names[$index]}_$(date +%Y%m%d%S).bin\" || echo \"Failed to dump database ${database_names[$index]}\"" , $database_backup_server) # lint:ignore:140chars
     }
   }
 }
