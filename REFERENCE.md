@@ -165,7 +165,7 @@ Type: Puppet Language
 
 Assert that the PE version given is supported by PEAdm
 
-#### `peadm::assert_supported_pe_version(String $version)`
+#### `peadm::assert_supported_pe_version(String $version, Boolean $permit_unsafe_versions = false)`
 
 The peadm::assert_supported_pe_version function.
 
@@ -180,6 +180,12 @@ version number to check
 ##### `version`
 
 Data type: `String`
+
+
+
+##### `permit_unsafe_versions`
+
+Data type: `Boolean`
 
 
 
@@ -861,17 +867,11 @@ Data type: `Boolean`
 
 Whether to check the integrity of the downloaded file
 
-##### `key_id`
-
-Data type: `String`
-
-The GPG key ID to use when verifying the download
-
 ##### `key_server`
 
 Data type: `String`
 
-The GPG keyserver to retrieve the GPG key from
+The GPG keyserver to retrieve GPG keys from
 
 ### <a name="enable_replica"></a>`enable_replica`
 
@@ -1330,6 +1330,7 @@ The following parameters are available in the `peadm::install` plan:
 * [`license_key_content`](#license_key_content)
 * [`stagingdir`](#stagingdir)
 * [`download_mode`](#download_mode)
+* [`permit_unsafe_versions`](#permit_unsafe_versions)
 
 ##### <a name="compiler_pool_address"></a>`compiler_pool_address`
 
@@ -1410,7 +1411,7 @@ Data type: `String`
 
 
 
-Default value: `'2019.8.5'`
+Default value: `'2019.8.8'`
 
 ##### <a name="dns_alt_names"></a>`dns_alt_names`
 
@@ -1491,6 +1492,14 @@ Data type: `Enum[direct,bolthost]`
 
 
 Default value: `'bolthost'`
+
+##### <a name="permit_unsafe_versions"></a>`permit_unsafe_versions`
+
+Data type: `Boolean`
+
+
+
+Default value: ``false``
 
 ### <a name="peadmmodify_certificate"></a>`peadm::modify_certificate`
 
@@ -1632,6 +1641,7 @@ The following parameters are available in the `peadm::upgrade` plan:
 * [`token_file`](#token_file)
 * [`stagingdir`](#stagingdir)
 * [`download_mode`](#download_mode)
+* [`permit_unsafe_versions`](#permit_unsafe_versions)
 * [`begin_at_step`](#begin_at_step)
 
 ##### <a name="compiler_pool_address"></a>`compiler_pool_address`
@@ -1730,6 +1740,14 @@ Data type: `Enum[direct,bolthost]`
 
 
 Default value: `'bolthost'`
+
+##### <a name="permit_unsafe_versions"></a>`permit_unsafe_versions`
+
+Data type: `Boolean`
+
+
+
+Default value: ``false``
 
 ##### <a name="begin_at_step"></a>`begin_at_step`
 
