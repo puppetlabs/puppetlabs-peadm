@@ -42,8 +42,8 @@ The normal usage pattern for peadm is as follows.
 
 ### Requirements
 
-* Puppet Enterprise 2019.8.1 or newer (tested with PE 2021.3)
-* Bolt 3.17.0 or newer (tested with Bolt 3.17.0)
+* Puppet Enterprise 2019.8.1 or newer (tested with PE 2021.4)
+* Bolt 3.17.0 or newer (tested with Bolt 3.21.0)
 * EL 7, EL 8, Ubuntu 18.04, or Ubuntu 20.04
 * Classifier Data enabled. This PE feature is enabled by default on new installs, but can be disabled by users if they remove the relevant configuration from their global hiera.yaml file. See the [PE docs](https://puppet.com/docs/pe/latest/config_console.html#task-5039) for more information.
 
