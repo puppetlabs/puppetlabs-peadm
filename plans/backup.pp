@@ -54,7 +54,7 @@ plan peadm::backup (
 
   if $backup_ca_ssl {
     out::message('# Backing up ca and ssl certificates')
-    run_command("/opt/puppetlabs/bin/puppet-backup create --dir=${backup_directory} --scope=certs", $primary_host)
+    run_command("/opt/puppetlabs/bin/puppet-backup create --dir=${output_directory} --scope=certs", $primary_host)
   }
 
   $database_to_backup.each |Integer $index, Boolean $value | {
