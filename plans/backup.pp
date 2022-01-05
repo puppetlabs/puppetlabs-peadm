@@ -62,19 +62,19 @@ plan peadm::backup (
   if $backup_classification {
     out::message('# Backing up classification')
     run_task('peadm::backup_classification', $primary_host,
-    directory => $output_directory,
+    directory => $backup_directory,
     )
   }
 
   if $backup_ca_ssl {
     out::message('# Backing up ca and ssl certificates')
-    run_command("/opt/puppetlabs/bin/puppet-backup create --dir=${output_directory} --scope=certs", $primary_host)
+    run_command("/opt/puppetlabs/bin/puppet-backup create --dir=${backup_directory} --scope=certs", $primary_host)
   }
 
   $database_to_backup.each |Integer $index, Boolean $value | {
     if $value {
     out::message("# Backing up database ${database_names[$index]}")
-    run_command("sudo -u pe-postgres /opt/puppetlabs/server/bin/pg_dump -Fc \"${database_names[$index]}\" -f \"${output_directory}/${database_names[$index]}_$(date +%Y%m%d%S).bin\" || echo \"Failed to dump database ${database_names[$index]}\"" , $database_backup_server) # lint:ignore:140chars
+    run_command("sudo -u pe-postgres /opt/puppetlabs/server/bin/pg_dump -Fc \"${database_names[$index]}\" -f \"${backup_directory}/${database_names[$index]}_$(date +%Y%m%d%S).bin\" || echo \"Failed to dump database ${database_names[$index]}\"" , $database_backup_server) # lint:ignore:140chars
     }
   }
 }
