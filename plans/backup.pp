@@ -23,6 +23,20 @@ plan peadm::backup (
   Boolean                            $backup_classification  = true,
   String                             $output_directory       = '/tmp',
 ){
+
+  $timestamp = Timestamp.new().strftime('%F')
+  $backup_directory = "${output_directory}/pe-backup-${timestamp}"
+  # Create backup folder
+  # use an apply with file resource and timestamp
+  apply_prep($primary_host)
+  apply($primary_host){
+    file { $backup_directory :
+      ensure => 'directory',
+      owner  => 'root',
+      group  => 'pe-postgres',
+      mode   => '0770'
+    }
+  }
   # Create an array of the names of databases and whether they have to be backed up to use in a lambda later
   $database_to_backup = [ $backup_orchestrator, $backup_activity, $backup_rbac, $backup_puppetdb]
   $database_names     = [ 'pe-orchestrator' , 'pe-activity' , 'pe-rbac' , 'pe-puppetdb' ]
