@@ -103,7 +103,7 @@ Example params.json Bolt parameters file (shown: Extra Large with DR):
   "console_password": "puppetlabs",
   "dns_alt_names": [ "puppet", "puppet.lab1.puppet.vm" ],
   "compiler_pool_address": "puppet.lab1.puppet.vm",
-  "version": "2021.3.0"
+  "version": "2021.4.0"
 }
 ```
 
@@ -115,7 +115,7 @@ The peadm::install plan downloads installation content from an online repository
 
 The default staging directory is `/tmp`. If a different staging dir is being used, it can be specified using the `stagingdir` parameter to the peadm::install plan.
 
-The content needed is the PE installation tarball for the target version. The installation content should be in the staging dir, and should have its original name. E.g. `/tmp/puppet-enterprise-2021.3.0-el-7-x86_64.tar.gz`.
+The content needed is the PE installation tarball for the target version. The installation content should be in the staging dir, and should have its original name. E.g. `/tmp/puppet-enterprise-2021.4.0-el-7-x86_64.tar.gz`.
 
 Installation content can be downloaded from [https://puppet.com/try-puppet/puppet-enterprise/download/](https://puppet.com/try-puppet/puppet-enterprise/download/).
 

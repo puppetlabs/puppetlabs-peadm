@@ -15,7 +15,7 @@ on:
       version:
         description: 'PE version to install'
         required: true
-        default: '2021.3.0'
+        default: '2021.4.0'
       ssh-debugging:
         description: 'Boolean; whether or not to pause for ssh debugging'
         required: true
