@@ -24,7 +24,7 @@ plan peadm::backup (
   String                             $output_directory       = '/tmp',
 ){
 
-  $timestamp = Timestamp.new().strftime('%F')
+  $timestamp = Timestamp.new().strftime('%F_%T')
   $backup_directory = "${output_directory}/pe-backup-${timestamp}"
   # Create backup folder
   # use an apply with file resource and timestamp
