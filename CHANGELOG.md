@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.3.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.3.0) (2022-01-05)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.2.0...v3.3.0)
+
+### Added
+
+- Support PE 2021.4 [\#229](https://github.com/puppetlabs/puppetlabs-peadm/pull/229) ([reidmv](https://github.com/reidmv))
+- Add development and testing option to permit installing unsupported PE versions [\#204](https://github.com/puppetlabs/puppetlabs-peadm/pull/204) ([jarretlavallee](https://github.com/jarretlavallee))
+
+### Fixed
+
+- Fail agent\_install if agent is already installed [\#223](https://github.com/puppetlabs/puppetlabs-peadm/pull/223) ([reidmv](https://github.com/reidmv))
+- Catch mv errors when downloading [\#220](https://github.com/puppetlabs/puppetlabs-peadm/pull/220) ([reidmv](https://github.com/reidmv))
+- Determine validation key from asc signature file [\#219](https://github.com/puppetlabs/puppetlabs-peadm/pull/219) ([reidmv](https://github.com/reidmv))
+- Improve reliability of downloading PE tarball [\#215](https://github.com/puppetlabs/puppetlabs-peadm/pull/215) ([mcka1n](https://github.com/mcka1n))
+
 ## [v3.2.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.2.0) (2021-09-20)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.1.0...v3.2.0)
