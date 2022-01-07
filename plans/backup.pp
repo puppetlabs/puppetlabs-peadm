@@ -78,7 +78,7 @@ plan peadm::backup (
     out::message("# Backing up database ${database_names[$index]}")
       # If the primary postgresql host is set then pe-puppetdb needs to be remotely backed up to primary.
       if $database_names[$index] == 'pe-puppetdb' and $primary_postgresql_host {
-        run_command("sudo -u pe-puppetdb /opt/puppetlabs/server/bin/pg_dump \"sslmode=verify-ca host=${primary_postgresql_host} sslcert=/etc/puppetlabs/puppetdb/ssl/${primary_host}.pem sslkey=/etc/puppetlabs/puppetdb/ssl/${primary_host}.pem sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem dbname=pe-puppetdb\" -f /tmp/puppetdb_$(date +%F_%T).bin || echo \"Failed to dump database puppetdb\"" , $primary_host) # lint:ignore:140chars
+        run_command("sudo -u pe-puppetdb /opt/puppetlabs/server/bin/pg_dump \"sslmode=verify-ca host=${primary_postgresql_host} sslcert=/etc/puppetlabs/puppetdb/ssl/${primary_host}.cert.pem sslkey=/etc/puppetlabs/puppetdb/ssl/${primary_host}.private_key.pem sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem dbname=pe-puppetdb\" -f /tmp/puppetdb_$(date +%F_%T).bin || echo \"Failed to dump database puppetdb\"" , $primary_host) # lint:ignore:140chars
       } else {
         run_command("sudo -u pe-postgres /opt/puppetlabs/server/bin/pg_dump -Fc \"${database_names[$index]}\" -f \"${backup_directory}/${database_names[$index]}_$(date +%F_%T).bin\" || echo \"Failed to dump database ${database_names[$index]}\"" , $primary_host) # lint:ignore:140chars
       }
