@@ -65,7 +65,7 @@ plan peadm::backup (
 
   # Check if /etc/puppetlabs/console-services/conf.d/secrets/keys.json exists and if so back it up
   out::message('# Backing up ldap secret key if it exists')
-  run_command("[ -f /etc/puppetlabs/console-services/conf.d/secrets/keys.json ] && cp -rp /etc/puppetlabs/console-services/conf.d/secrets/keys.json ${backup_directory}/", $primary_host) # lint:ignore:140chars
+  run_command("test -f /etc/puppetlabs/console-services/conf.d/secrets/keys.json && cp -rp /etc/puppetlabs/console-services/conf.d/secrets/keys.json ${backup_directory} || echo secret ldap key doesn't exist" , $primary_host) # lint:ignore:140chars
 
   # IF backing up orchestrator back up the secrets too /etc/puppetlabs/orchestration-services/conf.d/secrets/
   if $backup_orchestrator {
