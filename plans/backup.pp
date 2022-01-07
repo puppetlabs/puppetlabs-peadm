@@ -27,7 +27,6 @@ plan peadm::backup (
   $timestamp = Timestamp.new().strftime('%F_%T')
   $backup_directory = "${output_directory}/pe-backup-${timestamp}"
   # Create backup folder
-  # use an apply with file resource and timestamp
   apply_prep($primary_host)
   apply($primary_host){
     file { $backup_directory :
@@ -40,13 +39,6 @@ plan peadm::backup (
   # Create an array of the names of databases and whether they have to be backed up to use in a lambda later
   $database_to_backup = [ $backup_orchestrator, $backup_activity, $backup_rbac, $backup_puppetdb]
   $database_names     = [ 'pe-orchestrator' , 'pe-activity' , 'pe-rbac' , 'pe-puppetdb' ]
-
-  # Database backups should take place on the postgress server
-  if $primary_postgresql_host {
-    $database_backup_server = $primary_postgresql_host
-  } else {
-    $database_backup_server = $primary_host
-  }
 
   peadm::assert_supported_bolt_version()
 
@@ -71,10 +63,25 @@ plan peadm::backup (
     run_command("/opt/puppetlabs/bin/puppet-backup create --dir=${backup_directory} --scope=certs", $primary_host)
   }
 
+  # Check if /etc/puppetlabs/console-services/conf.d/secrets/keys.json exists and if so back it up
+  out::message('# Backing up ldap secret key if it exists')
+  run_command("[ -f /etc/puppetlabs/console-services/conf.d/secrets/keys.json ] && cp -rp /etc/puppetlabs/console-services/conf.d/secrets/keys.json ${backup_directory}/", $primary_host) # lint:ignore:140chars
+
+  # IF backing up orchestrator back up the secrets too /etc/puppetlabs/orchestration-services/conf.d/secrets/
+  if $backup_orchestrator {
+    out::message('# Backing up orchestrator secret keys')
+    run_command("cp -rp /etc/puppetlabs/orchestration-services/conf.d/secrets ${backup_directory}/", $primary_host)
+  }
+
   $database_to_backup.each |Integer $index, Boolean $value | {
     if $value {
     out::message("# Backing up database ${database_names[$index]}")
-    run_command("sudo -u pe-postgres /opt/puppetlabs/server/bin/pg_dump -Fc \"${database_names[$index]}\" -f \"${backup_directory}/${database_names[$index]}_$(date +%F_%T).bin\" || echo \"Failed to dump database ${database_names[$index]}\"" , $database_backup_server) # lint:ignore:140chars
+      # If the primary postgresql host is set then pe-puppetdb needs to be remotely backed up to primary.
+      if $database_names[$index] == 'pe-puppetdb' and $primary_postgresql_host {
+        run_command("sudo -u pe-puppetdb /opt/puppetlabs/server/bin/pg_dump \"sslmode=verify-ca host=${primary_postgresql_host} sslcert=/etc/puppetlabs/puppetdb/ssl/${primary_host}.pem sslkey=/etc/puppetlabs/puppetdb/ssl/${primary_host}.pem sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem dbname=pe-puppetdb\" -f /tmp/puppetdb_$(date +%F_%T).bin || echo \"Failed to dump database puppetdb\"" , $primary_host) # lint:ignore:140chars
+      } else {
+        run_command("sudo -u pe-postgres /opt/puppetlabs/server/bin/pg_dump -Fc \"${database_names[$index]}\" -f \"${backup_directory}/${database_names[$index]}_$(date +%F_%T).bin\" || echo \"Failed to dump database ${database_names[$index]}\"" , $primary_host) # lint:ignore:140chars
+      }
     }
   }
 }
