@@ -20,7 +20,7 @@ class BackupClassification
   private
 
   def https_client
-    client = Net::HTTP.new('localhost', '8140')
+    client = Net::HTTP.new('localhost', '4433')
     client.use_ssl = true
     client.cert = @cert ||= OpenSSL::X509::Certificate.new(File.read(Puppet.settings[:hostcert]))
     client.key = @key ||= OpenSSL::PKey::RSA.new(File.read(Puppet.settings[:hostprivkey]))
@@ -30,7 +30,7 @@ class BackupClassification
 
   def return_classification
     classification = https_client
-    classification_request = Net::HTTP::Get.new('/status/v1/services?level=debug')
+    classification_request = Net::HTTP::Get.new('/classifier-api/v1/groups')
 
     JSON.parse(classification.request(classification_request).body)
   end
