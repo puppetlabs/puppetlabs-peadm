@@ -25,10 +25,10 @@ plan peadm::upgrade (
   Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
 
   # Common Configuration
-  String           $version,
-  Optional[String] $compiler_pool_address            = undef,
-  Optional[String] $internal_compiler_a_pool_address = undef,
-  Optional[String] $internal_compiler_b_pool_address = undef,
+  Peadm::Pe_version $version,
+  Optional[String]  $compiler_pool_address            = undef,
+  Optional[String]  $internal_compiler_a_pool_address = undef,
+  Optional[String]  $internal_compiler_b_pool_address = undef,
 
   # Other
   Optional[String]      $token_file             = undef,
