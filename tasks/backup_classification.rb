@@ -32,7 +32,7 @@ class BackupClassification
     classification = https_client
     classification_request = Net::HTTP::Get.new('/classifier-api/v1/groups')
 
-    JSON.parse(classification.request(classification_request).body)
+    classification.request(classification_request).body
   end
 end
 # Run the task unless an environment flag has been set, signaling not to. The
