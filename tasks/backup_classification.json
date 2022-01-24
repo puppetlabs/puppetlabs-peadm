@@ -1,0 +1,13 @@
+{
+  "puppet_task_version": 1,
+  "supports_noop": false,
+  "description": "A task to call the classification api and write to file",
+  "parameters": {
+    "directory": {
+      "type": "String",
+      "description": "The directory to write the classification output to. Directory must exist",
+      "default": "/tmp"
+    }
+  },
+  "input_method": "stdin"
+}
