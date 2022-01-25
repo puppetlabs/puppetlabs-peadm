@@ -5,8 +5,8 @@ describe 'peadm::backup' do
   let(:params) { { 'primary_host' => 'primary' } }
 
   it 'runs with default params' do
-    allow_apply_prep
     allow_apply
+    expect_task('peadm::get_peadm_config').always_return({ 'primary_postgresql_host' => 'postgres' })
     expect_out_message.with_params('# Backing up ca and ssl certificates')
     # The commands all have a timestamp in them and frankly its prooved to hard with bolt spec to work this out
     allow_any_command
