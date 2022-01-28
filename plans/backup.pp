@@ -31,7 +31,7 @@ plan peadm::backup (
   apply($primary_host){
     file { $backup_directory :
       ensure => 'directory',
-      owner  => 'root',
+      owner  => 'pe-puppetdb',
       group  => 'pe-postgres',
       mode   => '0770'
     }
@@ -68,7 +68,7 @@ plan peadm::backup (
     out::message("# Backing up database ${database_names[$index]}")
       # If the primary postgresql host is set then pe-puppetdb needs to be remotely backed up to primary.
       if $database_names[$index] == 'pe-puppetdb' and $cluster['primary_postgresql_host'] {
-        run_command("sudo -u pe-puppetdb /opt/puppetlabs/server/bin/pg_dump \"sslmode=verify-ca host=${cluster['primary_postgresql_host']} sslcert=/etc/puppetlabs/puppetdb/ssl/${primary_host}.cert.pem sslkey=/etc/puppetlabs/puppetdb/ssl/${primary_host}.private_key.pem sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem dbname=pe-puppetdb\" -f /tmp/puppetdb_$(date +%F_%T).bin" , $primary_host) # lint:ignore:140chars
+        run_command("sudo -u pe-puppetdb /opt/puppetlabs/server/bin/pg_dump \"sslmode=verify-ca host=${cluster['primary_postgresql_host']} sslcert=/etc/puppetlabs/puppetdb/ssl/${primary_host}.cert.pem sslkey=/etc/puppetlabs/puppetdb/ssl/${primary_host}.private_key.pem sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem dbname=pe-puppetdb\" -f ${backup_directory}/puppetdb_$(date +%F_%T).bin" , $primary_host) # lint:ignore:140chars
       } else {
         run_command("sudo -u pe-postgres /opt/puppetlabs/server/bin/pg_dump -Fc \"${database_names[$index]}\" -f \"${backup_directory}/${database_names[$index]}_$(date +%F_%T).bin\"" , $primary_host) # lint:ignore:140chars
       }
