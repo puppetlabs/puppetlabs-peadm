@@ -46,7 +46,7 @@ The peadm::provision plan can be configured to download installation content dir
 
 ## Usage over the Orchestrator transport
 
-The peadm::upgrade plan can be used with the Orchestrator (pcp) transport, provided that the Bolt executor is running as root on the primary. To use the Orchestrator transport prepare an inventory file such as the following to set the default transport to be `pcp`, but the replica specifically to be `local`.
+The peadm::upgrade plan can be used with the Orchestrator (pcp) transport, provided that the Bolt executor is running as root on the primary. To use the Orchestrator transport prepare an inventory file such as the following to set the default transport to be `pcp`, but the primary specifically to be `local`.
 
 ```
 ---
