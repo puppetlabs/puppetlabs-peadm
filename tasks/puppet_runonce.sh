@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Try and ensure locale is correctly configured
+[ -z "${LANG}" ] && export LANG=$(localectl status | sed -n 's/.* LANG=\(.*\)/\1/p')
+
+# Parse noop parameter
 [ "$PT_noop" = "true" ] && NOOP_FLAG="--noop" || unset NOOP_FLAG
 
 # Wait for up to five minutes for an in-progress Puppet agent run to complete
