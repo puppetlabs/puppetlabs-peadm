@@ -103,7 +103,7 @@ Example params.json Bolt parameters file (shown: Extra Large with DR):
   "console_password": "puppetlabs",
   "dns_alt_names": [ "puppet", "puppet.lab1.puppet.vm" ],
   "compiler_pool_address": "puppet.lab1.puppet.vm",
-  "version": "2021.4.0"
+  "version": "2021.5.0"
 }
 ```
 

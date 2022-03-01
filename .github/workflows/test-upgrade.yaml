@@ -27,9 +27,9 @@ jobs:
           - 'standard'
           - 'extra-large-with-dr'
         version:
-          - '2019.8.9'
+          - '2019.8.10'
         version_to_upgrade:
-          - '2021.4.0'
+          - '2021.5.0'
         image:
           - 'centos-7'
         download_mode:
