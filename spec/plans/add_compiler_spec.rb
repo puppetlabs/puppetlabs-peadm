@@ -28,8 +28,6 @@ describe 'peadm::add_compiler' do
         .with_params({ 'server'        => 'primary',
                        'install_flags' => [
                          '--puppet-service-ensure', 'stopped',
-                         'extension_requests:1.3.6.1.4.1.34380.1.3.13=pe_compiler',
-                         'extension_requests:1.3.6.1.4.1.34380.1.1.9813=A',
                          'main:certname=compiler'
                        ] })
 
@@ -53,8 +51,6 @@ describe 'peadm::add_compiler' do
                          'install_flags' => [
                            'main:dns_alt_names=foo,bar',
                            '--puppet-service-ensure', 'stopped',
-                           'extension_requests:1.3.6.1.4.1.34380.1.3.13=pe_compiler',
-                           'extension_requests:1.3.6.1.4.1.34380.1.1.9813=A',
                            'main:certname=compiler'
                          ] })
 

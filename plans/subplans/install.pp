@@ -324,23 +324,28 @@ plan peadm::subplans::install (
     ]
 
     $role_and_group =
-      if ($target in $compiler_a_targets) {[
-        "extension_requests:${peadm::oid('pp_auth_role')}=pe_compiler",
-        "extension_requests:${peadm::oid('peadm_availability_group')}=A",
-      ]}
-      elsif ($target in $compiler_b_targets) {[
-        "extension_requests:${peadm::oid('pp_auth_role')}=pe_compiler",
-        "extension_requests:${peadm::oid('peadm_availability_group')}=B",
-      ]}
-      elsif ($target in $replica_target) {[
-        "extension_requests:${peadm::oid('peadm_role')}=puppet/server",
-        "extension_requests:${peadm::oid('peadm_availability_group')}=B",
-      ]}
+      if ($target in $compiler_a_targets) {{
+        peadm::oid('pp_auth_role')             => 'pe_compiler',
+        peadm::oid('peadm_availability_group') => 'A',
+      }}
+      elsif ($target in $compiler_b_targets) {{
+        peadm::oid('pp_auth_role')             => 'pe_compiler',
+        peadm::oid('peadm_availability_group') => 'B',
+      }}
+      elsif ($target in $replica_target) {{
+        peadm::oid('peadm_role')               => 'puppet/server',
+        peadm::oid('peadm_availability_group') => 'B',
+      }}
+
+    # Merge extension requests with csr_attributes.yaml or create it
+    run_plan('peadm::util::insert_csr_extension_requests', $target,
+      extension_requests => $role_and_group
+    )
 
     # Get an agent installed and cert signed
     run_task('peadm::agent_install', $target,
       server        => $primary_target.peadm::certname(),
-      install_flags => $common_install_flags + $role_and_group,
+      install_flags => $common_install_flags,
     )
 
     # Ensure certificate requests have been submitted, then run Puppet

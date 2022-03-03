@@ -20,8 +20,6 @@ describe 'peadm::add_replica' do
         .with_params({ 'server'        => 'primary',
                        'install_flags' => [
                          '--puppet-service-ensure', 'stopped',
-                         'extension_requests:1.3.6.1.4.1.34380.1.1.9812=puppet/server',
-                         'extension_requests:1.3.6.1.4.1.34380.1.1.9813=B',
                          'main:certname=replica',
                          'main:dns_alt_names=replica'
                        ] })
@@ -36,8 +34,6 @@ describe 'peadm::add_replica' do
         .with_params({ 'server'        => 'primary',
                        'install_flags' => [
                          '--puppet-service-ensure', 'stopped',
-                         'extension_requests:1.3.6.1.4.1.34380.1.1.9812=puppet/server',
-                         'extension_requests:1.3.6.1.4.1.34380.1.1.9813=B',
                          'main:certname=replica',
                          'main:dns_alt_names=replica,alt'
                        ] })

@@ -47,13 +47,19 @@ plan peadm::add_compiler(
     default => ["main:dns_alt_names=${dns_alt_names}"],
   }
 
+  # Check for and merge csr_attributes.
+  run_plan('peadm::util::insert_csr_extension_requests', $compiler_target,
+      extension_requests => {
+        peadm::oid('pp_auth_role')             => 'pe_compiler',
+        peadm::oid('peadm_availability_group') => $avail_group_letter
+      }
+    )
+
   # we first assume that there is no agent installed on the node. If there is, nothing will happen.
   run_task('peadm::agent_install', $compiler_target,
     server        => $primary_target.peadm::certname(),
     install_flags => $dns_alt_names_flag + [
       '--puppet-service-ensure', 'stopped',
-      "extension_requests:${peadm::oid('pp_auth_role')}=pe_compiler",
-      "extension_requests:${peadm::oid('peadm_availability_group')}=${avail_group_letter}",
       "main:certname=${compiler_target.peadm::certname()}",
     ],
   )

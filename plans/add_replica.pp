@@ -37,12 +37,18 @@ plan peadm::add_replica(
   # This has the effect of revoking the node's certificate, if it exists
   run_command("puppet infrastructure forget ${replica_target.peadm::certname()}", $primary_target, _catch_errors => true)
 
+  # Check for and merge csr_attributes.
+  run_plan('peadm::util::insert_csr_extension_requests', $replica_target,
+      extension_requests => {
+        peadm::oid('peadm_role')               => 'puppet/server',
+        peadm::oid('peadm_availability_group') => $replica_avail_group_letter
+      }
+    )
+
   run_task('peadm::agent_install', $replica_target,
     server        => $primary_target.peadm::certname(),
     install_flags => [
       '--puppet-service-ensure', 'stopped',
-      "extension_requests:${peadm::oid('peadm_role')}=puppet/server",
-      "extension_requests:${peadm::oid('peadm_availability_group')}=${replica_avail_group_letter}",
       "main:certname=${replica_target.peadm::certname()}",
       "main:dns_alt_names=${dns_alt_names.join(',')}",
     ],
