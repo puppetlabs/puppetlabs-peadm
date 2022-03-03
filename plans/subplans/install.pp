@@ -221,6 +221,30 @@ plan peadm::subplans::install (
         }
       )
     },
+    background('replica-csr.yaml') || {
+      run_plan('peadm::util::insert_csr_extension_requests', $replica_target,
+        extension_requests => {
+          peadm::oid('peadm_role')               => 'puppet/server',
+          peadm::oid('peadm_availability_group') => 'B'
+        }
+      )
+    },
+    background('compiler-a-csr.yaml') || {
+      run_plan('peadm::util::insert_csr_extension_requests', $compiler_a_targets,
+        extension_requests => {
+          peadm::oid('pp_auth_role')             => 'pe_compiler',
+          peadm::oid('peadm_availability_group') => 'A'
+        }
+      )
+    },
+    background('compiler-b-csr.yaml') || {
+      run_plan('peadm::util::insert_csr_extension_requests', $compiler_b_targets,
+        extension_requests => {
+          peadm::oid('pp_auth_role')             => 'pe_compiler',
+          peadm::oid('peadm_availability_group') => 'B'
+        }
+      )
+    },
     background('primary-postgresql-csr.yaml') || {
       run_plan('peadm::util::insert_csr_extension_requests', $primary_postgresql_target,
         extension_requests => {
@@ -322,25 +346,6 @@ plan peadm::subplans::install (
       "main:dns_alt_names=${dns_alt_names_csv}",
       "main:certname=${target.peadm::certname()}",
     ]
-
-    $role_and_group =
-      if ($target in $compiler_a_targets) {{
-        peadm::oid('pp_auth_role')             => 'pe_compiler',
-        peadm::oid('peadm_availability_group') => 'A',
-      }}
-      elsif ($target in $compiler_b_targets) {{
-        peadm::oid('pp_auth_role')             => 'pe_compiler',
-        peadm::oid('peadm_availability_group') => 'B',
-      }}
-      elsif ($target in $replica_target) {{
-        peadm::oid('peadm_role')               => 'puppet/server',
-        peadm::oid('peadm_availability_group') => 'B',
-      }}
-
-    # Merge extension requests with csr_attributes.yaml or create it
-    run_plan('peadm::util::insert_csr_extension_requests', $target,
-      extension_requests => $role_and_group
-    )
 
     # Get an agent installed and cert signed
     run_task('peadm::agent_install', $target,
