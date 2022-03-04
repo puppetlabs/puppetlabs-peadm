@@ -26,7 +26,7 @@ plan peadm::install (
 
   # Common Configuration
   String                            $console_password,
-  Peadm::Pe_version                 $version                          = '2019.8.8',
+  Peadm::Pe_version                 $version                          = '2021.5.0',
   Optional[Array[String]]           $dns_alt_names                    = undef,
   Optional[String]                  $compiler_pool_address            = undef,
   Optional[String]                  $internal_compiler_a_pool_address = undef,
