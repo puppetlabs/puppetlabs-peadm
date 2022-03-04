@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Try and ensure locale is correctly configured
+[ -z "${LANG}" ] && export LANG=$(localectl status | sed -n 's/.* LANG=\(.*\)/\1/p')
+
 USER=$(id -un)
 HOME=$(getent passwd "$USER" | cut -d : -f 6)
 
