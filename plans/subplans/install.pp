@@ -221,6 +221,30 @@ plan peadm::subplans::install (
         }
       )
     },
+    background('replica-csr.yaml') || {
+      run_plan('peadm::util::insert_csr_extension_requests', $replica_target,
+        extension_requests => {
+          peadm::oid('peadm_role')               => 'puppet/server',
+          peadm::oid('peadm_availability_group') => 'B'
+        }
+      )
+    },
+    background('compiler-a-csr.yaml') || {
+      run_plan('peadm::util::insert_csr_extension_requests', $compiler_a_targets,
+        extension_requests => {
+          peadm::oid('pp_auth_role')             => 'pe_compiler',
+          peadm::oid('peadm_availability_group') => 'A'
+        }
+      )
+    },
+    background('compiler-b-csr.yaml') || {
+      run_plan('peadm::util::insert_csr_extension_requests', $compiler_b_targets,
+        extension_requests => {
+          peadm::oid('pp_auth_role')             => 'pe_compiler',
+          peadm::oid('peadm_availability_group') => 'B'
+        }
+      )
+    },
     background('primary-postgresql-csr.yaml') || {
       run_plan('peadm::util::insert_csr_extension_requests', $primary_postgresql_target,
         extension_requests => {
@@ -323,24 +347,10 @@ plan peadm::subplans::install (
       "main:certname=${target.peadm::certname()}",
     ]
 
-    $role_and_group =
-      if ($target in $compiler_a_targets) {[
-        "extension_requests:${peadm::oid('pp_auth_role')}=pe_compiler",
-        "extension_requests:${peadm::oid('peadm_availability_group')}=A",
-      ]}
-      elsif ($target in $compiler_b_targets) {[
-        "extension_requests:${peadm::oid('pp_auth_role')}=pe_compiler",
-        "extension_requests:${peadm::oid('peadm_availability_group')}=B",
-      ]}
-      elsif ($target in $replica_target) {[
-        "extension_requests:${peadm::oid('peadm_role')}=puppet/server",
-        "extension_requests:${peadm::oid('peadm_availability_group')}=B",
-      ]}
-
     # Get an agent installed and cert signed
     run_task('peadm::agent_install', $target,
       server        => $primary_target.peadm::certname(),
-      install_flags => $common_install_flags + $role_and_group,
+      install_flags => $common_install_flags,
     )
 
     # Ensure certificate requests have been submitted, then run Puppet
