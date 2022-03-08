@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.4.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.4.0) (2022-03-08)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.3.0...v3.4.0)
+
+### Added
+
+- Allow compilers and replicas to merge csr\_attributes. [\#238](https://github.com/puppetlabs/puppetlabs-peadm/pull/238) ([bwilcox](https://github.com/bwilcox))
+- Add support for PE 2021.5 [\#237](https://github.com/puppetlabs/puppetlabs-peadm/pull/237) ([reidmv](https://github.com/reidmv))
+- Improve handling of unsuitable LANG settings [\#236](https://github.com/puppetlabs/puppetlabs-peadm/pull/236) ([reidmv](https://github.com/reidmv))
+- Add `peadm::backup` plan [\#226](https://github.com/puppetlabs/puppetlabs-peadm/pull/226) ([davidsandilands](https://github.com/davidsandilands))
+
+### Fixed
+
+- Make versions match SemVer pattern [\#232](https://github.com/puppetlabs/puppetlabs-peadm/pull/232) ([reidmv](https://github.com/reidmv))
+
 ## [v3.3.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.3.0) (2022-01-05)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.2.0...v3.3.0)
