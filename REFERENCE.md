@@ -39,6 +39,7 @@
 
 ### Data types
 
+* [`Peadm::Pe_version`](#peadmpe_version)
 * [`Peadm::Pem`](#peadmpem)
 * [`Peadm::SingleTargetSpec`](#peadmsingletargetspec): A SingleTargetSpec represents any String, Target or single-element array of one or the other that can be passed to get_targets() to return an
 
@@ -46,6 +47,7 @@
 
 * [`agent_install`](#agent_install): Install the Puppet agent from a master
 * [`agent_upgrade`](#agent_upgrade): Upgrade the target system using upgrade.bash from a master
+* [`backup_classification`](#backup_classification): A task to call the classification api and write to file
 * [`cert_data`](#cert_data): Return certificate data related to the Puppet agent
 * [`code_manager`](#code_manager): Perform various code manager actions
 * [`code_sync_status`](#code_sync_status): A task to confirm code is in sync accross the cluster for clusters with code manager configured
@@ -74,6 +76,7 @@
 
 #### Public Plans
 
+* [`peadm::backup`](#peadmbackup): Backup the core user settings for puppet infrastructure
 * [`peadm::convert`](#peadmconvert): Convert an existing PE cluster to a PEAdm-managed cluster
 * [`peadm::install`](#peadminstall): Install a new PE cluster
 * [`peadm::modify_certificate`](#peadmmodify_certificate): Modify the certificate of one or more targets
@@ -741,6 +744,16 @@ Data type: `TargetSpec`
 
 ## Data types
 
+### <a name="peadmpe_version"></a>`Peadm::Pe_version`
+
+The Peadm::Pe_version data type.
+
+Alias of
+
+```puppet
+Pattern[/^\d+\.\d+\.\d+(-.+)?$/]
+```
+
 ### <a name="peadmpem"></a>`Peadm::Pem`
 
 The Peadm::Pem data type.
@@ -800,6 +813,20 @@ Upgrade the target system using upgrade.bash from a master
 Data type: `String`
 
 The resolvable name of the Puppet server to upgrade from
+
+### <a name="backup_classification"></a>`backup_classification`
+
+A task to call the classification api and write to file
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `directory`
+
+Data type: `String`
+
+The directory to write the classification output to. Directory must exist
 
 ### <a name="cert_data"></a>`cert_data`
 
@@ -1199,6 +1226,85 @@ Which port to query the status API on
 
 ## Plans
 
+### <a name="peadmbackup"></a>`peadm::backup`
+
+This plan can backup data as outlined at insert doc
+
+#### Parameters
+
+The following parameters are available in the `peadm::backup` plan:
+
+* [`primary_host`](#primary_host)
+* [`backup_orchestrator`](#backup_orchestrator)
+* [`backup_rbac`](#backup_rbac)
+* [`backup_activity`](#backup_activity)
+* [`backup_ca_ssl`](#backup_ca_ssl)
+* [`backup_puppetdb`](#backup_puppetdb)
+* [`backup_classification`](#backup_classification)
+* [`output_directory`](#output_directory)
+
+##### <a name="primary_host"></a>`primary_host`
+
+Data type: `Peadm::SingleTargetSpec`
+
+
+
+##### <a name="backup_orchestrator"></a>`backup_orchestrator`
+
+Data type: `Boolean`
+
+
+
+Default value: ``true``
+
+##### <a name="backup_rbac"></a>`backup_rbac`
+
+Data type: `Boolean`
+
+
+
+Default value: ``true``
+
+##### <a name="backup_activity"></a>`backup_activity`
+
+Data type: `Boolean`
+
+
+
+Default value: ``true``
+
+##### <a name="backup_ca_ssl"></a>`backup_ca_ssl`
+
+Data type: `Boolean`
+
+
+
+Default value: ``true``
+
+##### <a name="backup_puppetdb"></a>`backup_puppetdb`
+
+Data type: `Boolean`
+
+
+
+Default value: ``false``
+
+##### <a name="backup_classification"></a>`backup_classification`
+
+Data type: `Boolean`
+
+
+
+Default value: ``true``
+
+##### <a name="output_directory"></a>`output_directory`
+
+Data type: `String`
+
+
+
+Default value: `'/tmp'`
+
 ### <a name="peadmconvert"></a>`peadm::convert`
 
 This plan sets required certificate extensions on PE nodes, and configures
@@ -1407,7 +1513,7 @@ Data type: `String`
 
 ##### <a name="version"></a>`version`
 
-Data type: `String`
+Data type: `Peadm::Pe_version`
 
 
 
@@ -1713,7 +1819,7 @@ Default value: ``undef``
 
 ##### <a name="version"></a>`version`
 
-Data type: `String`
+Data type: `Peadm::Pe_version`
 
 
 
