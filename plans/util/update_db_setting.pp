@@ -19,25 +19,24 @@ plan peadm::util::update_db_setting (
   Optional[Peadm::SingleTargetSpec] $new_postgresql_host     = undef,
   Optional[Peadm::SingleTargetSpec] $primary_postgresql_host = undef,
   Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
-  Hash                              $peadm_config
+  Optional[Hash]                    $peadm_config            = undef,
 ) {
-  # TODO: get and validate PE version
 
   # Convert inputs into targets.
   $primary_postgresql_target = peadm::get_targets($primary_postgresql_host, 1)
   $replica_postgresql_target = peadm::get_targets($replica_postgresql_host, 1)
 
-  $roles = $peadm_config['role-letter']
+  get_targets($targets).each |$target| {
 
-  $targets.each |$target| {
     # Availability group does not matter if only one PSQL node in the cluster
-    if ! $replica_postgresql_host {
-      $db_setting = "//${primary_postgresql_host}:5432/pe-puppetdb?ssl=true&sslfactory=org.postgresql.ssl.jdbc4.LibPQFactory&sslmode=verify-full&sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem&sslkey=/etc/puppetlabs/puppetdb/ssl/${target.peadm::certname()}.private_key.pk8&sslcert=/etc/puppetlabs/puppetdb/ssl/${$target.peadm::certname()}.cert.pem"
-    }
-
     # Determine configuration by pairing target with existing availability letter
     # assignments
     if ($primary_postgresql_host and $replica_postgresql_host) {
+
+      # Existing config used to dynamically pair nodes with appropriate PSQL
+      # server
+      $roles = $peadm_config['role-letter']
+
       $target_group_letter = peadm::flatten_compact([$roles['compilers'],$roles['server']].map |$role| {
         $role.map |$k,$v| {
           if $target.peadm::certname() in $v { $k }
@@ -51,7 +50,10 @@ plan peadm::util::update_db_setting (
       }
 
       $db_setting = "//${db}:5432/pe-puppetdb?ssl=true&sslfactory=org.postgresql.ssl.jdbc4.LibPQFactory&sslmode=verify-full&sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem&sslkey=/etc/puppetlabs/puppetdb/ssl/${target.peadm::certname()}.private_key.pk8&sslcert=/etc/puppetlabs/puppetdb/ssl/${$target.peadm::certname()}.cert.pem"
+    } else {
+      $db_setting = "//${primary_postgresql_host}:5432/pe-puppetdb?ssl=true&sslfactory=org.postgresql.ssl.jdbc4.LibPQFactory&sslmode=verify-full&sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem&sslkey=/etc/puppetlabs/puppetdb/ssl/${target.peadm::certname()}.private_key.pk8&sslcert=/etc/puppetlabs/puppetdb/ssl/${$target.peadm::certname()}.cert.pem"
     }
+
 
     apply($target) {
 

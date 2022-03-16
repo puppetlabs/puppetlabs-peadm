@@ -26,22 +26,22 @@ plan peadm::add_database(
   # Pluck these out for determining group letter assignments
   $roles = $peadm_config['role-letter']
 
-  # If array is empty then no external databases were previously configured 
-  $have_external_db = peadm::flatten_compact([$primary_postgresql_host, $replica_postgresql_host]).empty
-
   # Override mode in case of failure on previous run
   if $mode {
     $operating_mode = $mode
-    out::message("Operating mode was overridden by parameter mode set to: ${mode}")
+    out::message("Operating mode overridden by parameter mode set to ${mode}")
   } else {
+    # If array is empty then no external databases were previously configured 
+    $no_external_db = peadm::flatten_compact([$primary_postgresql_host, $replica_postgresql_host]).empty
+
     # Pick operating mode based on array check
-    if $have_external_db {
+    if $no_external_db {
       $operating_mode = 'init'
     } else {
       $operating_mode = 'pair'
     }
   }
-  out::message("Operating mode is ${operating_mode}")
+  out::message("Operating in ${operating_mode} mode")
 
   if $operating_mode == 'init' {
     # If no other PSQL node then match primary group letter
@@ -49,11 +49,19 @@ plan peadm::add_database(
     # Assume PuppetDB backend hosted on Primary if in init mode
     $source_db_host = $primary_host
   } else {
-    # The opposite letter than existing PSQL node
-    $avail_group_letter = peadm::flatten_compact($roles['postgresql'].map |$k,$v| { if ! $v { $k } })[0]
-    # First of primary or replica PSQL node, which ever exists use as source DB
-    $source_db_host = pick($primary_postgresql_host, $replica_postgresql_host)
+    # The letter which doesn't yet have a server assigned or in the event this
+    # is a replacement operation, the letter this node was assigned to previously
+    $avail_group_letter = peadm::flatten_compact($roles['postgresql'].map |$k,$v| {
+      if (! $v) or ($v == $targets.peadm::certname()) {
+        $k
+      }
+    })[0]
+    # When in pair mode we assume the other PSQL node will serve as our source
+    $source_db_host = peadm::flatten_compact([$primary_postgresql_host, $replica_postgresql_host]).reject($targets.peadm::certname())[0]
   }
+
+  out::message("Adding PostgreSQL server ${targets.peadm::certname()} to availability group ${avail_group_letter}")
+  out::message("Using ${source_db_host} to populate ${targets.peadm::certname()}")
 
   $source_db_target = peadm::get_targets($source_db_host, 1)
 
@@ -65,14 +73,15 @@ plan peadm::add_database(
   }
 
   peadm::plan_step('init-db-node') || {
-    # Install PSQL on new node to be used at external PuppetDB backend
+    # Install PSQL on new node to be used as external PuppetDB backend by using
+    # puppet in lieu of installer 
     run_plan('peadm::subplans::external_db_install', $targets,
       primary_host       => $primary_target,
       avail_group_letter => $avail_group_letter,
     )
   }
 
-  # Stop services that causes changes to PuppetDB backend
+  # Stop Puppet to ensure catalogs are not being compiled for PE infrastructure nodes
   run_command('systemctl stop puppet', peadm::flatten_compact([
     $targets,
     $compilers,
@@ -81,10 +90,9 @@ plan peadm::add_database(
     $source_db_target
   ]))
 
-  # Stop services that causes changes to PuppetDB backend, except for primary
-  # because we need it for the next couple steps
+  # Stop frontend services that causes changes to PuppetDB backend when agents request
+  # catalogs, except for primary because we need it for the next couple steps
   run_command('systemctl stop pe-puppetserver pe-puppetdb', $compilers)
-
 
   peadm::plan_step('replicate-db') || {
     # Replicate content from source to newly installed PSQL server
@@ -94,14 +102,13 @@ plan peadm::add_database(
     run_task('peadm::puppet_runonce', $targets)
   }
 
-  # Now stop the rest of of services which will cause PuppetDB changes
+  # Now stop the rest of the services that can cause PuppetDB changes
   run_command('systemctl stop pe-puppetserver pe-puppetdb', peadm::flatten_compact([
     $primary_target,
     $replica_target
   ]))
 
-  # Update classification and database.ini setting, taking shortcuts if init
-  # mode
+  # Update classification and database.ini setting
   if $operating_mode == 'init' {
     peadm::plan_step('update-classification') || {
       run_plan('peadm::util::update_classification', $primary_target,
@@ -169,9 +176,10 @@ plan peadm::add_database(
     }
   } else {
     peadm::plan_step('cleanup-db') || {}
+    out::message("No databases to cleanup when in ${operating_mode}")
   }
 
-  # Start services so everything starts working again
+  # Start services so catalogs can once again be compiled
   run_command('systemctl start pe-puppetserver pe-puppetdb', peadm::flatten_compact([
     $compilers,
     $primary_target,
