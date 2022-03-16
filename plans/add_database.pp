@@ -17,6 +17,14 @@ plan peadm::add_database(
   # PuppetDB
   $peadm_config = run_task('peadm::get_peadm_config', $primary_target).first.value
 
+  $compilers = $peadm_config['params']['compilers']
+
+  # Bail if this is trying to be ran against Standard
+  if $compilers.empty {
+    fail_plan('Plan Peadm::Add_database only applicable for L and XL deployments')
+  }
+
+  # Existing nodes and their assignments
   $replica_host = $peadm_config['params']['replica_host']
   $primary_postgresql_host = $peadm_config['params']['primary_postgresql_host']
   $replica_postgresql_host = $peadm_config['params']['replica_postgresql_host']
@@ -65,19 +73,13 @@ plan peadm::add_database(
 
   $source_db_target = peadm::get_targets($source_db_host, 1)
 
-  $compilers = $peadm_config['params']['compilers']
-
-  # Bail if this is trying to be ran against Standard
-  if $compilers.empty {
-    fail_plan('Plan Peadm::Add_database only applicable for L and XL deployments')
-  }
-
   peadm::plan_step('init-db-node') || {
     # Install PSQL on new node to be used as external PuppetDB backend by using
     # puppet in lieu of installer 
-    run_plan('peadm::subplans::external_db_install', $targets,
+    run_plan('peadm::subplans::component_install', $targets,
       primary_host       => $primary_target,
       avail_group_letter => $avail_group_letter,
+      role               => 'puppet/puppetdb-database'
     )
   }
 
@@ -91,7 +93,7 @@ plan peadm::add_database(
   ]))
 
   # Stop frontend services that causes changes to PuppetDB backend when agents request
-  # catalogs, except for primary because we need it for the next couple steps
+  # catalogs, except for primary because we need it for the next step
   run_command('systemctl stop pe-puppetserver pe-puppetdb', $compilers)
 
   peadm::plan_step('replicate-db') || {

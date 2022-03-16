@@ -1,0 +1,32 @@
+# @api private
+#
+# @summary Install a new PEADM component
+# @param avail_group_letter _ Either A or B; whichever of the two letter designations the component is assigned to
+# @param dns_alt_names _ A comma_separated list of DNS alt names for the component
+# @param database_host _ The hostname and certname of the new component
+# @param primary_host _ The hostname the primary Puppet server
+# @param role _ Optional PEADM role the component will serve
+plan peadm::subplans::component_install(
+  Peadm::SingleTargetSpec $targets,
+  Peadm::SingleTargetSpec $primary_host,
+  Enum['A', 'B']          $avail_group_letter,
+  Optional[String[1]]     $dns_alt_names = undef,
+  Optional[String[1]]     $role          = undef
+){
+  $component_target          = peadm::get_targets($targets, 1)
+  $primary_target            = peadm::get_targets($primary_host, 1)
+
+  run_plan('peadm::subplans::prepare_agent', $component_target,
+    primary_host           => $primary_target,
+    dns_alt_name           => $dns_alt_names,
+    certificate_extensions => {
+      peadm::oid('peadm_role')               => $role,
+      peadm::oid('peadm_availability_group') => $avail_group_letter,
+    }
+  )
+
+  # On component, run the puppet agent to finish initial configuring of component
+  run_task('peadm::puppet_runonce', $component_target)
+
+  return("Installation of component ${$component_target.peadm::certname()} with peadm_role: ${role} succeeded.")
+}

@@ -1,18 +1,6 @@
 # @api private
 #
-# @summary Configure first-time classification and DR setup
-#
-# @param compiler_pool_address 
-#   The service address used by agents to connect to compilers, or the Puppet
-#   service. Typically this is a load balancer.
-# @param internal_compiler_a_pool_address
-#   A load balancer address directing traffic to any of the "A" pool
-#   compilers. This is used for DR configuration in large and extra large
-#   architectures.
-# @param internal_compiler_b_pool_address
-#   A load balancer address directing traffic to any of the "B" pool
-#   compilers. This is used for DR configuration in large and extra large
-#   architectures.
+# @summary Make updates to PuppetDB database settings
 #
 plan peadm::util::update_db_setting (
   TargetSpec                        $targets,
@@ -26,17 +14,26 @@ plan peadm::util::update_db_setting (
   $primary_postgresql_target = peadm::get_targets($primary_postgresql_host, 1)
   $replica_postgresql_target = peadm::get_targets($replica_postgresql_host, 1)
 
+  # Originally written to handle some additional logic which was eventually
+  # determined to not be useful and was pulled out. As a result could use
+  # more additional simplification. The goal is to match each infrastructure
+  # component to the PostgreSQL nodes which corresponds to their availability
+  # letter and if a match is not found, assume that new node is the match.
+  #
+  # FIX ME: Test removal of $primary_potsgresql_host and $replica_postgresql_host 
+  # parameter check. Likely only parameter needed is the node be added. Section
+  # also needs to be parallelized, can't use built functionality of apply().
   get_targets($targets).each |$target| {
 
     # Availability group does not matter if only one PSQL node in the cluster
-    # Determine configuration by pairing target with existing availability letter
-    # assignments
     if ($primary_postgresql_host and $replica_postgresql_host) {
 
       # Existing config used to dynamically pair nodes with appropriate PSQL
       # server
       $roles = $peadm_config['role-letter']
 
+      # Determine configuration by pairing target with existing availability letter
+      # assignments, setting to the new node if no match is found.
       $target_group_letter = peadm::flatten_compact([$roles['compilers'],$roles['server']].map |$role| {
         $role.map |$k,$v| {
           if $target.peadm::certname() in $v { $k }
@@ -54,9 +51,8 @@ plan peadm::util::update_db_setting (
       $db_setting = "//${primary_postgresql_host}:5432/pe-puppetdb?ssl=true&sslfactory=org.postgresql.ssl.jdbc4.LibPQFactory&sslmode=verify-full&sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem&sslkey=/etc/puppetlabs/puppetdb/ssl/${target.peadm::certname()}.private_key.pk8&sslcert=/etc/puppetlabs/puppetdb/ssl/${$target.peadm::certname()}.cert.pem"
     }
 
-
+    # Introduced new dependency for PEADM to enable modification of INI files
     apply($target) {
-
       ini_setting { 'database_setting':
         ensure  => present,
         path    => '/etc/puppetlabs/puppetdb/conf.d/database.ini',
@@ -75,5 +71,5 @@ plan peadm::util::update_db_setting (
     }
   }
 
-  return('PuppetDB settings were updated for Puppet Enterprise compiler components successfully.')
+  return('PuppetDB database settings were updated successfully.')
 }
