@@ -44,6 +44,7 @@ plan peadm::util::update_classification (
   } else {
     $overridden_replica_postgresql_target = $replica_postgresql_target
   }
+  out::message("primary_postgresql_host will be set to ${primary_postgresql_target.peadm::certname()}")
   out::message("replica_postgresql_host will be set to ${overridden_replica_postgresql_target.peadm::certname()}")
 
   $new = merge($current, {

@@ -30,15 +30,13 @@ plan peadm::util::update_db_setting (
   $roles = $peadm_config['role-letter']
 
   $targets.each |$target| {
-    # Availability group does not matter for configuration order if adding a
-    # database for the first time
+    # Availability group does not matter if only one PSQL node in the cluster
     if ! $replica_postgresql_host {
-      $write_setting = "//${primary_postgresql_host}:5432/pe-puppetdb?ssl=true&sslfactory=org.postgresql.ssl.jdbc4.LibPQFactory&sslmode=verify-full&sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem&sslkey=/etc/puppetlabs/puppetdb/ssl/${target.peadm::certname()}.private_key.pk8&sslcert=/etc/puppetlabs/puppetdb/ssl/${$target.peadm::certname()}.cert.pem"
-      $read_setting = $write_setting
+      $db_setting = "//${primary_postgresql_host}:5432/pe-puppetdb?ssl=true&sslfactory=org.postgresql.ssl.jdbc4.LibPQFactory&sslmode=verify-full&sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem&sslkey=/etc/puppetlabs/puppetdb/ssl/${target.peadm::certname()}.private_key.pk8&sslcert=/etc/puppetlabs/puppetdb/ssl/${$target.peadm::certname()}.cert.pem"
     }
 
-    # Determine configuration order by pairing target with existing availability
-    # letter assignments
+    # Determine configuration by pairing target with existing availability letter
+    # assignments
     if ($primary_postgresql_host and $replica_postgresql_host) {
       $target_group_letter = peadm::flatten_compact([$roles['compilers'],$roles['server']].map |$role| {
         $role.map |$k,$v| {
@@ -47,15 +45,12 @@ plan peadm::util::update_db_setting (
       })[0]
       $match = $roles['postgresql'][$target_group_letter]
       if $match {
-        $first = $match
+        $db = $match
       } else {
-        $first = $new_postgresql_host
+        $db = $new_postgresql_host
       }
 
-      $second = [$primary_postgresql_host, $replica_postgresql_host].reject($first)[0]
-
-      $write_setting = "//${first}:5432/pe-puppetdb?ssl=true&sslfactory=org.postgresql.ssl.jdbc4.LibPQFactory&sslmode=verify-full&sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem&sslkey=/etc/puppetlabs/puppetdb/ssl/${target.peadm::certname()}.private_key.pk8&sslcert=/etc/puppetlabs/puppetdb/ssl/${$target.peadm::certname()}.cert.pem"
-      $read_setting = "//${second}:5432/pe-puppetdb?ssl=true&sslfactory=org.postgresql.ssl.jdbc4.LibPQFactory&sslmode=verify-full&sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem&sslkey=/etc/puppetlabs/puppetdb/ssl/${target.peadm::certname()}.private_key.pk8&sslcert=/etc/puppetlabs/puppetdb/ssl/${$target.peadm::certname()}.cert.pem"
+      $db_setting = "//${db}:5432/pe-puppetdb?ssl=true&sslfactory=org.postgresql.ssl.jdbc4.LibPQFactory&sslmode=verify-full&sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem&sslkey=/etc/puppetlabs/puppetdb/ssl/${target.peadm::certname()}.private_key.pk8&sslcert=/etc/puppetlabs/puppetdb/ssl/${$target.peadm::certname()}.cert.pem"
     }
 
     apply($target) {
@@ -65,7 +60,7 @@ plan peadm::util::update_db_setting (
         path    => '/etc/puppetlabs/puppetdb/conf.d/database.ini',
         section => 'database',
         setting => 'subname',
-        value   => $write_setting,
+        value   => $db_setting,
       }
 
       ini_setting { 'read_database_setting':
@@ -73,7 +68,7 @@ plan peadm::util::update_db_setting (
         path    => '/etc/puppetlabs/puppetdb/conf.d/read_database.ini',
         section => 'read-database',
         setting => 'subname',
-        value   => $read_setting,
+        value   => $db_setting,
       }
     }
   }
