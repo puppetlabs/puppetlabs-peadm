@@ -42,7 +42,7 @@ plan peadm::util::update_classification (
     $overridden_replica_postgresql_target = $replica_postgresql_target
   }
 
-  $new = merge($current, {
+  $filtered = {
     'primary_host' => $primary_target.peadm::certname(),
     'replica_host' => $replica_target.peadm::certname(),
     'primary_postgresql_host' => $primary_postgresql_target.peadm::certname(),
@@ -50,7 +50,9 @@ plan peadm::util::update_classification (
     'compiler_pool_address' => $compiler_pool_address,
     'internal_compiler_a_pool_address' => $internal_compiler_a_pool_address,
     'internal_compiler_b_pool_address' => $internal_compiler_b_pool_address
-  })
+  }.filter |$parameter| { $parameter[1] }
+
+  $new = merge($current, $filtered)
 
   out::message('Classification to be updated using the following hash...')
   out::message($new)
