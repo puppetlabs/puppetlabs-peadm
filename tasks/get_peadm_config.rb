@@ -36,8 +36,8 @@ class GetPEAdmConfig
         'replica_postgresql_host' => postgresql[replica_letter],
         'compilers' => compilers.map { |c| c['certname'] },
         'compiler_pool_address' => groups.dig('PE Master', 'config_data', 'pe_repo', 'compile_master_pool_address'),
-        'internal_compiler_a_pool_address' => groups.dig('PE Compiler Group A', 'classes', 'puppet_enterprise::profile::master', 'puppetdb_host', 1),
-        'internal_compiler_b_pool_address' => groups.dig('PE Compiler Group B', 'classes', 'puppet_enterprise::profile::master', 'puppetdb_host', 1),
+        'internal_compiler_a_pool_address' => groups.dig('PE Compiler Group B', 'classes', 'puppet_enterprise::profile::master', 'puppetdb_host', 1),
+        'internal_compiler_b_pool_address' => groups.dig('PE Compiler Group A', 'classes', 'puppet_enterprise::profile::master', 'puppetdb_host', 1),
       },
       'role-letter' => {
         'server' => {
