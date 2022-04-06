@@ -1,3 +1,4 @@
+# @api private
 plan peadm::util::code_sync_status (
   Peadm::SingleTargetSpec $targets,
 ) {
