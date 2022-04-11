@@ -165,10 +165,10 @@ task-json-escape() {
   # 6. Delete any remaining non-printable lines from the stream
   sed -e 's/\\/\\/g' \
     | { iconv -t ASCII --unicode-subst="\u%04x" || cat; } \
-    | sed -e 's/"/\\"/' \
+    | sed -e 's/"/\\"/g' \
           -e 's/\//\\\//g' \
-          -e "s/$(printf '\b')/\\\b/" \
-          -e "s/$(printf '\f')/\\\f/" \
+          -e "s/$(printf '\b')/\\\b/g" \
+          -e "s/$(printf '\f')/\\\f/g" \
           -e 's/\r/\\r/g' \
           -e 's/\t/\\t/g' \
           -e "s/$(printf "\x1b")/\\\u001b/g" \
