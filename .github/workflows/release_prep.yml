@@ -2,10 +2,6 @@ name: "Release Prep"
 
 on:
   workflow_dispatch:
-    inputs:
-      personal_access_token:
-        description: 'GitHub Personal Access Token'
-        required: false
 
 env:
   HONEYCOMB_WRITEKEY: 7f3c63a70eecc61d635917de46bea4e6 
@@ -40,8 +36,6 @@ jobs:
       uses: docker://puppet/iac_release:ci
       with:
         args: 'release prep --force'
-      env:
-        CHANGELOG_GITHUB_TOKEN: "${{ github.event.inputs.personal_access_token }}"
 
     - name: "Get Version"
       if: ${{ github.repository_owner == 'puppetlabs' }}
