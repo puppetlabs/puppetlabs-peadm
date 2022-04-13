@@ -82,10 +82,7 @@
 * [`peadm::install`](#peadminstall): Install a new PE cluster
 * [`peadm::modify_certificate`](#peadmmodify_certificate): Modify the certificate of one or more targets
 * [`peadm::status`](#peadmstatus): Return status information from one or more PE clusters in a table format
-* [`peadm::subplans::prepare_agent`](#peadmsubplansprepare_agent)
 * [`peadm::upgrade`](#peadmupgrade): Upgrade a PEAdm-managed cluster
-* [`peadm::util::db_disable_pglogical`](#peadmutildb_disable_pglogical)
-* [`peadm::util::db_purge`](#peadmutildb_purge)
 
 #### Private Plans
 
@@ -101,8 +98,11 @@ Supported use cases:
 * `peadm::subplans::db_populate`: Destructively (re)populates a new or existing database with the contents or a known good source
 * `peadm::subplans::install`: Perform initial installation of Puppet Enterprise Extra Large
 * `peadm::subplans::modify_certificate`
+* `peadm::subplans::prepare_agent`
 * `peadm::uninstall`: Single-entry-point plan for uninstalling Puppet Enterprise
 * `peadm::util::code_sync_status`
+* `peadm::util::db_disable_pglogical`
+* `peadm::util::db_purge`
 * `peadm::util::insert_csr_extension_requests`
 * `peadm::util::retrieve_and_upload`
 * `peadm::util::sanitize_pg_pe_conf`
@@ -1783,45 +1783,6 @@ Toggles the usage of colors, you may want to disable if the format is json
 
 Default value: `$format`
 
-### <a name="peadmsubplansprepare_agent"></a>`peadm::subplans::prepare_agent`
-
-The peadm::subplans::prepare_agent class.
-
-#### Parameters
-
-The following parameters are available in the `peadm::subplans::prepare_agent` plan:
-
-* [`targets`](#targets)
-* [`primary_host`](#primary_host)
-* [`certificate_extensions`](#certificate_extensions)
-* [`dns_alt_names`](#dns_alt_names)
-
-##### <a name="targets"></a>`targets`
-
-Data type: `Peadm::SingleTargetSpec`
-
-
-
-##### <a name="primary_host"></a>`primary_host`
-
-Data type: `Peadm::SingleTargetSpec`
-
-
-
-##### <a name="certificate_extensions"></a>`certificate_extensions`
-
-Data type: `Hash`
-
-
-
-##### <a name="dns_alt_names"></a>`dns_alt_names`
-
-Data type: `Optional[Array]`
-
-
-
-Default value: ``undef``
-
 ### <a name="peadmupgrade"></a>`peadm::upgrade`
 
 Upgrade a PEAdm-managed cluster
@@ -1963,50 +1924,4 @@ Data type: `Optional[Enum[
 
 
 Default value: ``undef``
-
-### <a name="peadmutildb_disable_pglogical"></a>`peadm::util::db_disable_pglogical`
-
-The peadm::util::db_disable_pglogical class.
-
-#### Parameters
-
-The following parameters are available in the `peadm::util::db_disable_pglogical` plan:
-
-* [`targets`](#targets)
-* [`databases`](#databases)
-
-##### <a name="targets"></a>`targets`
-
-Data type: `Peadm::SingleTargetSpec`
-
-
-
-##### <a name="databases"></a>`databases`
-
-Data type: `Array[String[1]]`
-
-
-
-### <a name="peadmutildb_purge"></a>`peadm::util::db_purge`
-
-The peadm::util::db_purge class.
-
-#### Parameters
-
-The following parameters are available in the `peadm::util::db_purge` plan:
-
-* [`targets`](#targets)
-* [`databases`](#databases)
-
-##### <a name="targets"></a>`targets`
-
-Data type: `TargetSpec`
-
-
-
-##### <a name="databases"></a>`databases`
-
-Data type: `Array[String[1]]`
-
-
 

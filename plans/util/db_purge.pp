@@ -1,3 +1,4 @@
+# @api private
 plan peadm::util::db_purge(
   TargetSpec       $targets,
   Array[String[1]] $databases,

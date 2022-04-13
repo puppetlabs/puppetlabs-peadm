@@ -1,3 +1,4 @@
+# @api private
 plan peadm::subplans::prepare_agent (
   Peadm::SingleTargetSpec $targets,
   Peadm::SingleTargetSpec $primary_host,
