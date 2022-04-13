@@ -5,7 +5,7 @@ on:
     inputs:
       personal_access_token:
         description: 'GitHub Personal Access Token'
-        required: false
+        required: true
 
 env:
   HONEYCOMB_WRITEKEY: 7f3c63a70eecc61d635917de46bea4e6 
