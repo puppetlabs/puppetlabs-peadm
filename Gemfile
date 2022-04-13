@@ -27,6 +27,7 @@ group :development do
   gem "puppet-debugger", '>= 0.18.0',                            require: false
   gem "bolt", '>= 3.17.0',                                       require: false
   gem "github_changelog_generator",                              require: false
+  gem "octokit", '4.21.0',                                       require: false
 end
 group :system_tests do
   gem "puppet-module-posix-system-r#{minor_version}", '~> 1.0', require: false, platforms: [:ruby]

@@ -9,6 +9,8 @@ Gemfile:
   optional:
     ':development':
       - gem: 'github_changelog_generator'
+      - gem: 'octokit'
+        version: '4.21.0' # Locked due to https://github.com/octokit/octokit.rb/issues/1391
 Rakefile:
   changelog_since_tag: '2.5.0'
   extras:
