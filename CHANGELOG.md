@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.5.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.5.0) (2022-04-13)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.4.0...v3.5.0)
+
+### Added
+
+- Add support for SLES 12 [\#245](https://github.com/puppetlabs/puppetlabs-peadm/pull/245) ([MartyEwings](https://github.com/MartyEwings))
+- Add `peadm::add_database` plan [\#241](https://github.com/puppetlabs/puppetlabs-peadm/pull/241) ([ody](https://github.com/ody))
+- Add experimental `peadm::util::code_sync_status` plan [\#221](https://github.com/puppetlabs/puppetlabs-peadm/pull/221) ([reidmv](https://github.com/reidmv))
+
+### Fixed
+
+- Fix json escaping in `bash_task_helper` [\#246](https://github.com/puppetlabs/puppetlabs-peadm/pull/246) ([reidmv](https://github.com/reidmv))
+- Fix load balancer bug in `peadm::get_peadm_config` task [\#244](https://github.com/puppetlabs/puppetlabs-peadm/pull/244) ([reidmv](https://github.com/reidmv))
+
 ## [v3.4.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.4.0) (2022-03-08)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.3.0...v3.4.0)
