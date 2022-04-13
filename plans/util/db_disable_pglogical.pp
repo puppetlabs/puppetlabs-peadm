@@ -1,3 +1,4 @@
+# @api private
 plan peadm::util::db_disable_pglogical(
   Peadm::SingleTargetSpec $targets,
   Array[String[1]]        $databases,

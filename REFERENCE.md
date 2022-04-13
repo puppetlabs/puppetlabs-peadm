@@ -76,6 +76,7 @@
 
 #### Public Plans
 
+* [`peadm::add_database`](#peadmadd_database)
 * [`peadm::backup`](#peadmbackup): Backup the core user settings for puppet infrastructure
 * [`peadm::convert`](#peadmconvert): Convert an existing PE cluster to a PEAdm-managed cluster
 * [`peadm::install`](#peadminstall): Install a new PE cluster
@@ -92,13 +93,21 @@ Supported use cases:
    The new replica should have the same certname as the broken one.
 * `peadm::misc::divert_code_manager`: This plan exists to account for a scenario where a PE XL
 * `peadm::modify_cert_extensions`
+* `peadm::subplans::component_install`: Install a new PEADM component
 * `peadm::subplans::configure`: Configure first-time classification and DR setup
+* `peadm::subplans::db_populate`: Destructively (re)populates a new or existing database with the contents or a known good source
 * `peadm::subplans::install`: Perform initial installation of Puppet Enterprise Extra Large
 * `peadm::subplans::modify_certificate`
+* `peadm::subplans::prepare_agent`
 * `peadm::uninstall`: Single-entry-point plan for uninstalling Puppet Enterprise
+* `peadm::util::code_sync_status`
+* `peadm::util::db_disable_pglogical`
+* `peadm::util::db_purge`
 * `peadm::util::insert_csr_extension_requests`
 * `peadm::util::retrieve_and_upload`
 * `peadm::util::sanitize_pg_pe_conf`
+* `peadm::util::update_classification`: Configure classification
+* `peadm::util::update_db_setting`: Make updates to PuppetDB database settings
 
 ## Classes
 
@@ -1225,6 +1234,53 @@ Data type: `Enum['8140', '8143']`
 Which port to query the status API on
 
 ## Plans
+
+### <a name="peadmadd_database"></a>`peadm::add_database`
+
+The peadm::add_database class.
+
+#### Parameters
+
+The following parameters are available in the `peadm::add_database` plan:
+
+* [`targets`](#targets)
+* [`primary_host`](#primary_host)
+* [`mode`](#mode)
+* [`begin_at_step`](#begin_at_step)
+
+##### <a name="targets"></a>`targets`
+
+Data type: `Peadm::SingleTargetSpec`
+
+
+
+##### <a name="primary_host"></a>`primary_host`
+
+Data type: `Peadm::SingleTargetSpec`
+
+
+
+##### <a name="mode"></a>`mode`
+
+Data type: `Optional[Enum['init', 'pair']]`
+
+
+
+Default value: ``undef``
+
+##### <a name="begin_at_step"></a>`begin_at_step`
+
+Data type: `Optional[Enum[
+    'init-db-node',
+    'replicate-db',
+    'update-classification',
+    'update-db-settings',
+    'cleanup-db',
+    'finalize']]`
+
+
+
+Default value: ``undef``
 
 ### <a name="peadmbackup"></a>`peadm::backup`
 
