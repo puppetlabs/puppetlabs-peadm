@@ -1,0 +1,17 @@
+{
+    "description": "Transform the user groups from a source backup to a list of groups on the target server",
+    "parameters": {
+      "source_directory": {
+        "type": "String",
+        "description": "Location of Source node group yaml file"
+      },
+      "working_directory": {
+        "type": "String",
+        "description": "Location of target node group yaml file and where to create the transformed file"
+      }
+    },
+    "input_method": "stdin",
+    "implementations": [
+      {"name": "transform_classification_groups.py"}
+    ]
+  }
