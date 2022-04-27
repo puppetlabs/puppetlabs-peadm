@@ -36,6 +36,10 @@ plan peadm::add_compiler(
       path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf',
       line => "pe-puppetdb-pe-puppetdb-migrator-map ${compiler_target.peadm::certname()} pe-puppetdb-migrator",
     }
+    file_line { 'pe-puppetdb-pe-puppetdb-read-map':
+      path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf',
+      line => "pe-puppetdb-pe-puppetdb-read-map ${compiler_target.peadm::certname()} pe-puppetdb-read",
+    }
   }
 
   # Reload pe-postgresql.service
