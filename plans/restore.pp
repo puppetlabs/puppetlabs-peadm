@@ -3,202 +3,196 @@
 # This plan can restore data to puppet infrastructure for DR and rebuilds
 # 
 plan peadm::restore (
-  # Standard
-  Peadm::SingleTargetSpec           $primary_host,
-  # Which data to restore
-  Boolean                            $restore_orchestrator    = true,
-  Boolean                            $restore_rbac            = true,
-  Boolean                            $restore_activity        = true,
-  Boolean                            $restore_ca_ssl          = true,
-  Boolean                            $restore_puppetdb        = false,
-  Boolean                            $restore_classification  = true,
-  String                             $input_directory         = '/tmp',
-  String                             $working_directory       = '/tmp',
-  String                             $backup_timestamp,
-){
-  peadm::assert_supported_bolt_version()
-  $cluster = run_task('peadm::get_peadm_config', $primary_host).first.value
+  # This plan should be run on the primary server
+  Peadm::SingleTargetSpec $targets,
 
+  # Which data to restore
+  Peadm::Recovery_opts    $restore = {},
+
+  # Path to the recovery tarball
+  Pattern[/.*\.tar\.gz$/] $input_file,
+) {
+  peadm::assert_supported_bolt_version()
+
+  $recovery_opts = (peadm::recovery_opts_default() + $restore)
+  $cluster = run_task('peadm::get_peadm_config', $targets).first.value
   $arch = peadm::assert_supported_architecture(
-    $primary_host,
-    $cluster['params']['replica_host'],
-    $cluster['params']['primary_postgresql_host'],
-    $cluster['params']['replica_postgresql_host'],
-    $cluster['params']['compiler_hosts'],
+    getvar('cluster.params.primary_host'),
+    getvar('cluster.params.replica_host'),
+    getvar('cluster.params.primary_postgresql_host'),
+    getvar('cluster.params.replica_postgresql_host'),
+    getvar('cluster.params.compiler_hosts'),
   )
-  $servers = delete_undef_values([$primary_host , $cluster['params']['replica_host'] ])
-  $cluster_servers = delete_undef_values($servers + $cluster['params']['compiler_hosts'] + [ $cluster['params']['primary_postgresql_host'], $cluster['params']['replica_postgresql_host']]) # lint:ignore:140chars
-  if $cluster['params']['compiler_hosts'] {
-    $check_puppetdb_on_compilers = run_task('service', $cluster['params']['compiler_hosts'],
-      action => 'status',
-      name   => 'pe-puppetdb'
-    )
-    $puppetdb_on_compilers = $check_puppetdb_on_compilers.filter_set | $result | {
-      $result['enabled'] == 'enabled'
-    }.targets
-  } else {
-    $puppetdb_on_compilers = undef
+
+  $primary_target   = peadm::get_targets(getvar('cluster.params.primary_host'), 1)
+  $replica_target   = peadm::get_targets(getvar('cluster.params.replica_host'), 1)
+  $compiler_targets = peadm::get_targets(getvar('cluster.params.compiler_hosts'))
+  $puppetdb_postgresql_target = getvar('cluster.params.primary_postgresql_host') ? {
+    undef   => $primary_target,
+    default => peadm::get_targets(getvar('cluster.params.primary_postgresql_host'), 1),
   }
-  $puppetdb_servers = delete_undef_values([$servers,$puppetdb_on_compilers])
-  $backup_directory = "${input_directory}/pe-backup-${backup_timestamp}"
+
+  $puppetdb_targets = peadm::flatten_compact([
+    $primary_target,
+    $replica_target,
+    $compiler_targets,
+  ])
+
+  $recovery_directory = "${dirname($input_file)}/${basename("${input_file}", '.tar.gz')}"
   $database_backup_directory = "${working_directory}/pe-backup-databases-${backup_timestamp}"
-  # I need the actual hostname for the certificate in a remote puppetdb backup. If a user sends primary host as IP it will fail
-  $primary_host_fqdn = $cluster['params']['primary_host']
-  $primary_postgresql_host = $cluster['params']['primary_postgresql_host']
-  apply($primary_host){
-    file { $database_backup_directory :
-      ensure => 'directory',
-      owner  => 'pe-puppetdb',
-      group  => 'pe-postgres',
-      mode   => '0770'
-    }
-  }
+
+  run_command(@("CMD"/L), $primary_target)
+    umask 0077 \
+      && cd ${shellquote($recovery_directory)} \
+      && tar -xzf ${shellquote($input_file)}
+    | CMD
 
   # Create an array of the names of databases and whether they have to be backed up to use in a lambda later
   $database_to_restore = [ $restore_orchestrator, $restore_activity, $restore_rbac, $restore_puppetdb]
   $database_names      = [ 'pe-orchestrator' , 'pe-activity' , 'pe-rbac' , 'pe-puppetdb' ]
 
-  peadm::assert_supported_bolt_version()
+  $restore_databases = {
+    'orchestrator' => $primary_target,
+    'activity'     => $primary_target,
+    'rbac'         => $primary_target,
+    'puppetdb'     => $puppetdb_postgresql_target,
+  }.filter |$key,$_| {
+    $recovery_opts[$key] == true
+  }
 
-  if $restore_classification {
-
+  if getvar('recovery_opts.classifier') {
     out::message('# Restoring classification')
-    run_task('peadm::backup_classification', $primary_host,
-      directory => $working_directory
+    run_task('peadm::backup_classification', $primary_target,
+      directory => $recovery_directory
     )
-    out::message("# Backed up current classification to ${working_directory}/classification_backup.json")
+    out::message("# Backed up current classification to ${recovery_directory}/classification_backup.json")
 
-    run_task('peadm::transform_classification_groups', $primary_host,
-      source_directory => $backup_directory,
-      working_directory => $working_directory
+    run_task('peadm::transform_classification_groups', $primary_target,
+      source_directory  => "${recovery_directory}/classifier",
+      working_directory => $recovery_directory
     )
 
-    run_task('peadm::restore_classification', $primary_host,
-    classification_file => "${working_directory}/classification_backup.json",
+    run_task('peadm::restore_classification', $primary_target,
+      classification_file => "${recovery_directory}/classification_backup.json",
     )
   }
 
-  if $restore_ca_ssl {
+  if getvar('recovery_opts.ca') {
     out::message('# Restoring ca and ssl certificates')
-    run_command("/opt/puppetlabs/bin/puppet-backup restore ${backup_directory}/pe_backup-*tgz --scope=certs --tempdir=${working_directory} --force", $primary_host) # lint:ignore:140chars
+    run_command(@("CMD"/L), $primary_target)
+      /opt/puppetlabs/bin/puppet-backup restore \
+        --scope=certs \
+        --tempdir=${shellquote($recovery_directory)} \
+        --force \
+        ${shellquote($recovery_directory)}/classifier/pe_backup-*tgz
+      | CMD
   }
 
   ## shutdown services
-    run_task('service', $servers,
-      action => 'stop',
-      name   => 'pe-console-services'
-    )
-    run_task('service', $primary_host,
-      action => 'stop',
-      name   => 'pe-nginx'
-    )
-    run_task('service', $servers,
-      action => 'stop',
-      name   => 'pe-puppetserver'
-    )
-    run_task('service', $servers,
-      action => 'stop',
-      name   => 'pxp-agent'
-    )
-    run_task('service', $primary_host,
-      action => 'stop',
-      name   => 'pe-orchestration-services'
-    )
-    run_task('service', $cluster_servers,
-      action => 'stop',
-      name   => 'puppet'
-    )
-    run_task('service', $puppetdb_servers ,
-      action => 'stop',
-      name   => 'pe-puppetdb'
-    )
-
+  run_command(@("CMD"/L), $primary_target)
+    systemctl stop pe-console-services pe-nginx pxp-agent pe-puppetserver \
+                   pe-orchestration-services puppet pe-puppetdb
+    | CMD
 
   # Restore secrets/keys.json if it exists
   out::message('# Restoring ldap secret key if it exists')
-  run_command("test -f ${backup_directory}//keys.json && cp -rp ${backup_directory}/keys.json /etc/puppetlabs/console-services/conf.d/secrets/ || echo secret ldap key doesnt exist" , $primary_host) # lint:ignore:140chars
+  run_command(@("CMD"/L), $primary_target)
+    test -f ${shellquote($backup_directory)}/rbac/keys.json \
+      && cp -rp ${shellquote($backup_directory)}/keys.json /etc/puppetlabs/console-services/conf.d/secrets/ \
+      || echo secret ldap key doesnt exist
+    | CMD
 
-  # IF restoring orchestrator restore the secrets too /etc/puppetlabs/orchestration-services/conf.d/secrets/
-  if $restore_orchestrator {
+  # IF restoring orchestrator restore the secrets to /etc/puppetlabs/orchestration-services/conf.d/secrets/
+  if getvar('recovery_opts.orchestrator') {
     out::message('# Restoring orchestrator secret keys')
-    run_command("cp -rp ${backup_directory}/secrets/* /etc/puppetlabs/orchestration-services/conf.d/secrets ", $primary_host)
+    run_command(@("CMD"/L), $primary_target)
+      cp -rp ${shellquote($backup_directory)}/secrets/* /etc/puppetlabs/orchestration-services/conf.d/secrets/
+      | CMD
   }
 
-  $database_to_restore.each |Integer $index, Boolean $value | {
-    if $value {
-    out::message("# Restoring database ${database_names[$index]}")
-      # If the primary postgresql host is set then pe-puppetdb needs to be remotely backed up to primary.
-      if $database_names[$index] == 'pe-puppetdb' and $primary_postgresql_host {
-        # Drop pglogical extensions and schema if present
-        run_command("su - pe-postgres -s /bin/bash -c \"/opt/puppetlabs/server/bin/psql --tuples-only -d '${database_names[$index]}' -c 'DROP SCHEMA IF EXISTS pglogical CASCADE;'\"", $primary_postgresql_host) # lint:ignore:140chars
-        run_command("su - pe-postgres -s /bin/bash -c \"/opt/puppetlabs/server/bin/psql -d '${database_names[$index]}' -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'\"", $primary_postgresql_host) # lint:ignore:140chars
-        # To allow pe-puppetdb to restore the database grant temporary privileges
-        run_command("su - pe-postgres -s /bin/bash -c \"/opt/puppetlabs/server/bin/psql -d '${database_names[$index]}' -c 'ALTER USER \\\"pe-puppetdb\\\" WITH SUPERUSER;'\"", $primary_postgresql_host) # lint:ignore:140chars
-        # Restore database
-        run_command("/opt/puppetlabs/server/bin/pg_restore -d \"sslmode=verify-ca host=${primary_postgresql_host} sslcert=/etc/puppetlabs/puppetdb/ssl/${primary_host_fqdn}.cert.pem sslkey=/etc/puppetlabs/puppetdb/ssl/${primary_host_fqdn}.private_key.pem sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem dbname=pe-puppetdb user=pe-puppetdb\" -Fd ${backup_directory}/puppetdb_*" , $primary_host) # lint:ignore:140chars
-        # Remove pe-puppetdb privileges post restore
-        run_command("su - pe-postgres -s /bin/bash -c \"/opt/puppetlabs/server/bin/psql -d '${database_names[$index]}' -c 'ALTER USER \\\"pe-puppetdb\\\" WITH NOSUPERUSER;'\"", $primary_postgresql_host) # lint:ignore:140chars
-        # Drop pglogical extension and schema (again) if present after db restore
-        run_command("su - pe-postgres -s /bin/bash -c \"/opt/puppetlabs/server/bin/psql --tuples-only -d '${database_names[$index]}' -c 'DROP SCHEMA IF EXISTS pglogical CASCADE;'\"",$primary_postgresql_host) # lint:ignore:140chars
-        run_command("su - pe-postgres -s /bin/bash -c \"/opt/puppetlabs/server/bin/psql -d '${database_names[$index]}' -c 'DROP EXTENSION IF EXISTS pglogical CASCADE;;'\"",$primary_postgresql_host) # lint:ignore:140chars
-      } else {
-        # Drop pglogical extensions and schema if present
-        run_command("su - pe-postgres -s '/bin/bash' -c \"/opt/puppetlabs/server/bin/psql --tuples-only -d '${database_names[$index]}' -c 'DROP SCHEMA IF EXISTS pglogical CASCADE;'\"", $primary_host) # lint:ignore:140chars
-        run_command("su - pe-postgres -s /bin/bash -c \"/opt/puppetlabs/server/bin/psql -d '${database_names[$index]}' -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'\"", $primary_host) # lint:ignore:140chars
-        # Restore database
-        run_command("cp -pr ${backup_directory}/${database_names[$index]}_* ${database_backup_directory}/ ", $primary_host )
-        run_command("su - pe-postgres -s /bin/bash -c \"/opt/puppetlabs/server/bin/pg_restore ${database_backup_directory}/${database_names[$index]}_* -Fd -j4 --dbname=${database_names[$index]}\"", $primary_host)# lint:ignore:140chars
-        run_command("sudo -H -u pe-postgres /opt/puppetlabs/server/bin/pg_restore -d ${database_names[$index]} -c ${database_backup_directory}/${database_names[$index]}_*",$primary_host) # lint:ignore:140chars
-        run_command("rm -rf ${database_backup_directory}/${database_names[$index]}_*", $primary_host )
-        # Drop pglogical extension and schema (again) if present after db restore
-        run_command("su - pe-postgres -s '/bin/bash' -c \"/opt/puppetlabs/server/bin/psql --tuples-only -d '${database_names[$index]}' -c 'DROP SCHEMA IF EXISTS pglogical CASCADE;'\"",$primary_host) # lint:ignore:140chars
-        run_command("su - pe-postgres -s /bin/bash -c \"/opt/puppetlabs/server/bin/psql -d '${database_names[$index]}' -c 'DROP EXTENSION IF EXISTS pglogical CASCADE;'\"",$primary_host) # lint:ignore:140chars
-      }
-    }
+  #$database_to_restore.each |Integer $index, Boolean $value | {
+  $restore_databases.each |$name,$database_target| {
+    out::message("# Restoring ${name} database")
+    $dbname = "pe-${shellquote($name)}"
+
+    # Drop pglogical extensions and schema if present
+    run_command(@("CMD"/L), $database_target)
+      su - pe-postgres -s /bin/bash -c \
+        "/opt/puppetlabs/server/bin/psql \
+           --tuples-only \
+           -d '${dbname}}' \
+           -c 'DROP SCHEMA IF EXISTS pglogical CASCADE;'"
+      | CMD
+
+    run_command(@("CMD"/L), $database_target)
+      su - pe-postgres -s /bin/bash -c \
+        "/opt/puppetlabs/server/bin/psql \
+           -d '${dbname}' \
+           -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'"
+      | CMD
+
+    # To allow db user to restore the database grant temporary privileges
+    run_command(@("CMD"/L), $database_target)
+      su - pe-postgres -s /bin/bash -c \
+        "/opt/puppetlabs/server/bin/psql \
+           -d '${dbname}' \
+           -c 'ALTER USER \"${dbname}\" WITH SUPERUSER;'"
+      | CMD
+
+    # Restore database
+    run_command(@("CMD"/L), $primary_target)
+      /opt/puppetlabs/server/bin/pg_restore \
+        -d "sslmode=verify-ca \
+            host=${shellquote($database_target.peadm::certname())} \
+            sslcert=/etc/puppetlabs/puppetdb/ssl/${shellquote($primary_target.peadm::certname())}.cert.pem \
+            sslkey=/etc/puppetlabs/puppetdb/ssl/${shellquote($primary_target.peadm::certname())}.private_key.pem \
+            sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem \
+            dbname=${dbname} \
+            user=${dbname}" \
+        -Fd ${backup_directory}/${name}/${dbname}.dump.d
+      | CMD
+
+    # Remove db user privileges post restore
+    run_command(@("CMD"/L), $database_target)
+      su - pe-postgres -s /bin/bash -c \
+        "/opt/puppetlabs/server/bin/psql \
+           -d '${dbname}' \
+           -c 'ALTER USER \"${dbname}\" WITH NOSUPERUSER;'"
+      | CMD
+
+    # Drop pglogical extension and schema (again) if present after db restore
+    run_command(@("CMD"/L), $database_target)
+      su - pe-postgres -s /bin/bash -c \
+        "/opt/puppetlabs/server/bin/psql \
+           --tuples-only \
+           -d '${dbname}' \
+           -c 'DROP SCHEMA IF EXISTS pglogical CASCADE;'"
+      | CMD
+
+    run_command(@("CMD"/L), $database_target)
+      su - pe-postgres -s /bin/bash -c \
+        "/opt/puppetlabs/server/bin/psql \
+           -d '${dbname}' \
+           -c 'DROP EXTENSION IF EXISTS pglogical CASCADE;'"
+      | CMD
   }
 
-  ## Restart services
-  run_task('service', $primary_host,
-    action => 'start',
-    name   => 'pe-orchestration-services'
-  )
-  run_task('service', $servers,
-    action => 'start',
-    name   => 'pxp-agent'
-  )
-  run_task('service', $servers,
-    action => 'start',
-    name   => 'pe-puppetserver'
-  )
-  run_task('service', $primary_host,
-    action => 'start',
-    name   => 'pe-nginx'
-  )
-  run_task('service', $servers,
-    action => 'start',
-    name   => 'pe-console-services'
-  )
-  run_task('service', $cluster_servers,
-    action => 'start',
-    name   => 'puppet'
-  )
-  run_task('service', $puppetdb_servers,
-    action => 'start',
-    name   => 'pe-puppetdb'
-  )
-# If we have replicas reinitalise any databases restored
-  if $cluster['params']['replica_host'] {
-    $database_to_restore.each |Integer $index, Boolean $value | {
-      if $database_names[$index] != 'pe-puppetdb' and $cluster['params']['replica_postgresql_host'] {
-        run_command("/opt/puppetlabs/bin/puppet-infra reinitialize replica --db ${database_names[$index]} -y", $cluster['params']['replica_host'] ) # lint:ignore:140chars
-      }
-    }
-  }
+  run_command(@("CMD"/L), $primary_target)
+    systemctl start pe-console-services pe-nginx pxp-agent pe-puppetserver \
+                    pe-orchestration-services puppet pe-puppetdb
+    | CMD
+
+  # If we have replicas reinitalise them
+  run_command(@("CMD"/L), $replica_target)
+    /opt/puppetlabs/bin/puppet-infra reinitialize replica -y
+    | CMD
 
   apply($primary_host){
-    file { $database_backup_directory :
+    file { $recovery_directory :
       ensure => 'absent',
       force  => true
     }
   }
+
+  return("success")
 }
