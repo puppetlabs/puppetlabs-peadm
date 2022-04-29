@@ -13,6 +13,9 @@
 #   A load balancer address directing traffic to any of the "B" pool
 #   compilers. This is used for DR configuration in large and extra large
 #   architectures.
+# @param ldap_config
+#   This hash contains the options necessary for configuring the LDAP
+#   connection on the main server.
 #
 plan peadm::subplans::configure (
   # Standard
@@ -32,6 +35,7 @@ plan peadm::subplans::configure (
   Optional[String] $internal_compiler_b_pool_address = undef,
   Optional[String] $token_file = undef,
   Optional[String] $deploy_environment = undef,
+  Optional[Hash]   $ldap_config = undef,
 
   # Other
   String           $stagingdir = '/tmp',
@@ -103,6 +107,21 @@ plan peadm::subplans::configure (
       # Can remove flag when that issue is fixed.
       legacy     => true,
     )
+  }
+
+  if $ldap_config {
+  # Run the task to configure ldap
+    $ldap_result = run_task('peadm::pe_ldap_config', $primary_target,
+      pe_main         => $primary_target.peadm::certname(),
+      ldap_config     => $ldap_config,
+      '_catch_errors' => true,
+    )
+
+    # If there was an LDAP failure, note it and continue.
+    if $ldap_result[0].error {
+      out::message('There was a problem with the LDAP configuration, configuration must be completed manually.')
+      out::message($ldap_result.to_data)
+    }
   }
 
   # Run Puppet everywhere to pick up last remaining config tweaks

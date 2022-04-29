@@ -38,6 +38,7 @@ plan peadm::install (
   Optional[String]                  $internal_compiler_a_pool_address = undef,
   Optional[String]                  $internal_compiler_b_pool_address = undef,
   Optional[Hash]                    $pe_conf_data                     = { },
+  Optional[Hash]                    $ldap_config                      = undef,
 
   # Code Manager
   Optional[String]                  $r10k_remote              = undef,
@@ -109,6 +110,7 @@ plan peadm::install (
     internal_compiler_a_pool_address => $internal_compiler_a_pool_address,
     internal_compiler_b_pool_address => $internal_compiler_b_pool_address,
     deploy_environment               => $deploy_environment,
+    ldap_config                      => $ldap_config,
 
     # Other
     stagingdir                       => $stagingdir,
