@@ -39,17 +39,12 @@ plan peadm::restore (
   ])
 
   $recovery_directory = "${dirname($input_file)}/${basename("${input_file}", '.tar.gz')}"
-  $database_backup_directory = "${working_directory}/pe-backup-databases-${backup_timestamp}"
 
   run_command(@("CMD"/L), $primary_target)
     umask 0077 \
-      && cd ${shellquote($recovery_directory)} \
+      && cd ${shellquote(dirname($recovery_directory))} \
       && tar -xzf ${shellquote($input_file)}
     | CMD
-
-  # Create an array of the names of databases and whether they have to be backed up to use in a lambda later
-  $database_to_restore = [ $restore_orchestrator, $restore_activity, $restore_rbac, $restore_puppetdb]
-  $database_names      = [ 'pe-orchestrator' , 'pe-activity' , 'pe-rbac' , 'pe-puppetdb' ]
 
   $restore_databases = {
     'orchestrator' => $primary_target,
@@ -97,8 +92,8 @@ plan peadm::restore (
   # Restore secrets/keys.json if it exists
   out::message('# Restoring ldap secret key if it exists')
   run_command(@("CMD"/L), $primary_target)
-    test -f ${shellquote($backup_directory)}/rbac/keys.json \
-      && cp -rp ${shellquote($backup_directory)}/keys.json /etc/puppetlabs/console-services/conf.d/secrets/ \
+    test -f ${shellquote($recovery_directory)}/rbac/keys.json \
+      && cp -rp ${shellquote($recovery_directory)}/keys.json /etc/puppetlabs/console-services/conf.d/secrets/ \
       || echo secret ldap key doesnt exist
     | CMD
 
@@ -106,7 +101,7 @@ plan peadm::restore (
   if getvar('recovery_opts.orchestrator') {
     out::message('# Restoring orchestrator secret keys')
     run_command(@("CMD"/L), $primary_target)
-      cp -rp ${shellquote($backup_directory)}/secrets/* /etc/puppetlabs/orchestration-services/conf.d/secrets/
+      cp -rp ${shellquote($recovery_directory)}/orchestrator/secrets/* /etc/puppetlabs/orchestration-services/conf.d/secrets/
       | CMD
   }
 
@@ -120,7 +115,7 @@ plan peadm::restore (
       su - pe-postgres -s /bin/bash -c \
         "/opt/puppetlabs/server/bin/psql \
            --tuples-only \
-           -d '${dbname}}' \
+           -d '${dbname}' \
            -c 'DROP SCHEMA IF EXISTS pglogical CASCADE;'"
       | CMD
 
@@ -149,7 +144,7 @@ plan peadm::restore (
             sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem \
             dbname=${dbname} \
             user=${dbname}" \
-        -Fd ${backup_directory}/${name}/${dbname}.dump.d
+        -Fd ${recovery_directory}/${name}/${dbname}.dump.d
       | CMD
 
     # Remove db user privileges post restore
@@ -187,7 +182,7 @@ plan peadm::restore (
     /opt/puppetlabs/bin/puppet-infra reinitialize replica -y
     | CMD
 
-  apply($primary_host){
+  apply($primary_target){
     file { $recovery_directory :
       ensure => 'absent',
       force  => true

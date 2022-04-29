@@ -110,7 +110,8 @@ plan peadm::backup (
 
   run_command(@("CMD"/L), $primary_target)
     umask 0077 \
-      && tar -czf ${shellquote($backup_directory)}.tar.gz ${shellquote($backup_directory)} \
+      && cd ${shellquote(dirname($backup_directory))} \
+      && tar -czf ${shellquote($backup_directory)}.tar.gz ${shellquote(basename($backup_directory))} \
       && rm -rf ${shellquote($backup_directory)}
     | CMD
 
