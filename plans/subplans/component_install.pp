@@ -3,7 +3,6 @@
 # @summary Install a new PEADM component
 # @param avail_group_letter _ Either A or B; whichever of the two letter designations the component is assigned to
 # @param dns_alt_names _ A comma_separated list of DNS alt names for the component
-# @param database_host _ The hostname and certname of the new component
 # @param primary_host _ The hostname the primary Puppet server
 # @param role _ Optional PEADM role the component will serve
 plan peadm::subplans::component_install(
