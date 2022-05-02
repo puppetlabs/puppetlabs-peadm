@@ -161,6 +161,7 @@ plan peadm::restore (
     parallelize($database_targets) |$database_target| {
       run_command(@("CMD"/L), $primary_target)
         /opt/puppetlabs/server/bin/pg_restore \
+          -j 4 \
           -d "sslmode=verify-ca \
               host=${shellquote($database_target.peadm::certname())} \
               sslcert=/etc/puppetlabs/puppetdb/ssl/${shellquote($primary_target.peadm::certname())}.cert.pem \
