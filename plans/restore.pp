@@ -27,10 +27,20 @@ plan peadm::restore (
   $primary_target   = peadm::get_targets(getvar('cluster.params.primary_host'), 1)
   $replica_target   = peadm::get_targets(getvar('cluster.params.replica_host'), 1)
   $compiler_targets = peadm::get_targets(getvar('cluster.params.compiler_hosts'))
-  $puppetdb_postgresql_target = getvar('cluster.params.primary_postgresql_host') ? {
-    undef   => $primary_target,
-    default => peadm::get_targets(getvar('cluster.params.primary_postgresql_host'), 1),
-  }
+
+  # Determine the array of targets to which the PuppetDB PostgreSQL database
+  # should be restored to. This could be as simple as just the primary server,
+  # or it could be two separate PostgreSQL servers.
+  $puppetdb_postgresql_targets = peadm::flatten_compact([
+    getvar('cluster.params.primary_postgresql_host') ? {
+      undef   => $primary_target,
+      default => peadm::get_targets(getvar('cluster.params.primary_postgresql_host'), 1),
+    },
+    getvar('cluster.params.replica_postgresql_host') ? {
+      undef   => $replica_target,
+      default => peadm::get_targets(getvar('cluster.params.replica_postgresql_host'), 1),
+    },
+  ])
 
   $puppetdb_targets = peadm::flatten_compact([
     $primary_target,
@@ -46,11 +56,13 @@ plan peadm::restore (
       && tar -xzf ${shellquote($input_file)}
     | CMD
 
+  # Map of recovery option name to array of database hosts to restore the
+  # relevant .dump content to.
   $restore_databases = {
-    'orchestrator' => $primary_target,
-    'activity'     => $primary_target,
-    'rbac'         => $primary_target,
-    'puppetdb'     => $puppetdb_postgresql_target,
+    'orchestrator' => [$primary_target],
+    'activity'     => [$primary_target],
+    'rbac'         => [$primary_target],
+    'puppetdb'     => $puppetdb_postgresql_targets,
   }.filter |$key,$_| {
     $recovery_opts[$key] == true
   }
@@ -106,12 +118,12 @@ plan peadm::restore (
   }
 
   #$database_to_restore.each |Integer $index, Boolean $value | {
-  $restore_databases.each |$name,$database_target| {
+  $restore_databases.each |$name,$database_targets| {
     out::message("# Restoring ${name} database")
     $dbname = "pe-${shellquote($name)}"
 
     # Drop pglogical extensions and schema if present
-    run_command(@("CMD"/L), $database_target)
+    run_command(@("CMD"/L), $database_targets)
       su - pe-postgres -s /bin/bash -c \
         "/opt/puppetlabs/server/bin/psql \
            --tuples-only \
@@ -119,7 +131,7 @@ plan peadm::restore (
            -c 'DROP SCHEMA IF EXISTS pglogical CASCADE;'"
       | CMD
 
-    run_command(@("CMD"/L), $database_target)
+    run_command(@("CMD"/L), $database_targets)
       su - pe-postgres -s /bin/bash -c \
         "/opt/puppetlabs/server/bin/psql \
            -d '${dbname}' \
@@ -127,28 +139,31 @@ plan peadm::restore (
       | CMD
 
     # To allow db user to restore the database grant temporary privileges
-    run_command(@("CMD"/L), $database_target)
+    run_command(@("CMD"/L), $database_targets)
       su - pe-postgres -s /bin/bash -c \
         "/opt/puppetlabs/server/bin/psql \
            -d '${dbname}' \
            -c 'ALTER USER \"${dbname}\" WITH SUPERUSER;'"
       | CMD
 
-    # Restore database
-    run_command(@("CMD"/L), $primary_target)
-      /opt/puppetlabs/server/bin/pg_restore \
-        -d "sslmode=verify-ca \
-            host=${shellquote($database_target.peadm::certname())} \
-            sslcert=/etc/puppetlabs/puppetdb/ssl/${shellquote($primary_target.peadm::certname())}.cert.pem \
-            sslkey=/etc/puppetlabs/puppetdb/ssl/${shellquote($primary_target.peadm::certname())}.private_key.pem \
-            sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem \
-            dbname=${dbname} \
-            user=${dbname}" \
-        -Fd ${recovery_directory}/${name}/${dbname}.dump.d
-      | CMD
+    # Restore database. If there are multiple database restore targets, perform
+    # the restore(s) in parallel.
+    parallelize($database_targets) |$database_target| {
+      run_command(@("CMD"/L), $primary_target)
+        /opt/puppetlabs/server/bin/pg_restore \
+          -d "sslmode=verify-ca \
+              host=${shellquote($database_target.peadm::certname())} \
+              sslcert=/etc/puppetlabs/puppetdb/ssl/${shellquote($primary_target.peadm::certname())}.cert.pem \
+              sslkey=/etc/puppetlabs/puppetdb/ssl/${shellquote($primary_target.peadm::certname())}.private_key.pem \
+              sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem \
+              dbname=${dbname} \
+              user=${dbname}" \
+          -Fd ${recovery_directory}/${name}/${dbname}.dump.d
+        | CMD
+    }
 
     # Remove db user privileges post restore
-    run_command(@("CMD"/L), $database_target)
+    run_command(@("CMD"/L), $database_targets)
       su - pe-postgres -s /bin/bash -c \
         "/opt/puppetlabs/server/bin/psql \
            -d '${dbname}' \
@@ -156,7 +171,7 @@ plan peadm::restore (
       | CMD
 
     # Drop pglogical extension and schema (again) if present after db restore
-    run_command(@("CMD"/L), $database_target)
+    run_command(@("CMD"/L), $database_targets)
       su - pe-postgres -s /bin/bash -c \
         "/opt/puppetlabs/server/bin/psql \
            --tuples-only \
@@ -164,7 +179,7 @@ plan peadm::restore (
            -c 'DROP SCHEMA IF EXISTS pglogical CASCADE;'"
       | CMD
 
-    run_command(@("CMD"/L), $database_target)
+    run_command(@("CMD"/L), $database_targets)
       su - pe-postgres -s /bin/bash -c \
         "/opt/puppetlabs/server/bin/psql \
            -d '${dbname}' \
