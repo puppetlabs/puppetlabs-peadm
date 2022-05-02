@@ -117,6 +117,9 @@ plan peadm::restore (
       | CMD
   }
 
+  # TODO: Use PuppetDB's /pdb/admin/v1/archive API to SAVE data currently in
+  #       PuppetDB. Otherwise we'll completely lose it if/when we restore.
+
   #$database_to_restore.each |Integer $index, Boolean $value | {
   $restore_databases.each |$name,$database_targets| {
     out::message("# Restoring ${name} database")
@@ -187,9 +190,14 @@ plan peadm::restore (
       | CMD
   }
 
+  # TODO: Use PuppetDB's /pdb/admin/v1/archive API to MERGE previously saved
+  #       data into the restored database.
+
+  # Use `puppet infra` to ensure correct file permissions, restart services,
+  # etc. Make sure not to try and get config data from the classifier, which
+  # isn't yet up and running.
   run_command(@("CMD"/L), $primary_target)
-    systemctl start pe-console-services pe-nginx pxp-agent pe-puppetserver \
-                    pe-orchestration-services puppet pe-puppetdb
+    /opt/puppetlabs/bin/puppet-infrastructure configure --no-recover
     | CMD
 
   # If we have replicas reinitalise them
