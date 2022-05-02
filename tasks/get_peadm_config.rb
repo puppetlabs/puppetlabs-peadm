@@ -18,13 +18,19 @@ class GetPEAdmConfig
     # Compute values
     primary = groups.pinned('PE Master')
     replica = groups.pinned('PE HA Replica')
-    server_a = server('puppet/server', 'A')
-    server_b = server('puppet/server', 'B')
+    server_a = server('puppet/server', 'A', [primary, replica].compact)
+    server_b = server('puppet/server', 'B', [primary, replica].compact)
     primary_letter = primary.eql?(server_a) ? 'A' : 'B'
     replica_letter = primary_letter.eql?('A') ? 'B' : 'A'
+
+    configured_postgresql_servers = [
+      groups.dig("PE Primary A", 'config_data', 'puppet_enterprise::profile::puppetdb', 'database_host'),
+      groups.dig("PE Primary B", 'config_data', 'puppet_enterprise::profile::puppetdb', 'database_host'),
+    ].compact
+
     postgresql = {
-      'A' => server('puppet/puppetdb-database', 'A'),
-      'B' => server('puppet/puppetdb-database', 'B'),
+      'A' => server('puppet/puppetdb-database', 'A', configured_postgresql_servers),
+      'B' => server('puppet/puppetdb-database', 'B', configured_postgresql_servers),
     }
 
     # Build and return the task output
@@ -78,10 +84,11 @@ class GetPEAdmConfig
     end
   end
 
-  def server(role, letter)
+  def server(role, letter, certname_array)
     query = 'inventory[certname] { '\
             '  trusted.extensions."1.3.6.1.4.1.34380.1.1.9812" = "' + role + '" and ' \
-            '  trusted.extensions."1.3.6.1.4.1.34380.1.1.9813" = "' + letter + '"}'
+            '  trusted.extensions."1.3.6.1.4.1.34380.1.1.9813" = "' + letter + '" and ' \
+            '  certname in ' + certname_array.to_json + '}'
 
     server = pdb_query(query).map { |n| n['certname'] }
     raise "More than one #{letter} #{role} server found!" unless server.size <= 1
