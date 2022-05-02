@@ -95,6 +95,16 @@ plan peadm::restore (
       | CMD
   }
 
+  # Use PuppetDB's /pdb/admin/v1/archive API to SAVE data currently in PuppetDB.
+  # Otherwise we'll completely lose it if/when we restore.
+  # TODO: consider adding a heuristic to skip when innappropriate due to size
+  #       or other factors.
+  if getvar('recovery_opts.puppetdb') {
+    run_command(@("CMD"/L), $primary_target)
+      /opt/puppetlabs/bin/puppet-db export ${shellquote($recovery_directory)}/puppetdb-archive.bin
+      | CMD
+  }
+
   ## shutdown services
   run_command(@("CMD"/L), $primary_target)
     systemctl stop pe-console-services pe-nginx pxp-agent pe-puppetserver \
@@ -116,9 +126,6 @@ plan peadm::restore (
       cp -rp ${shellquote($recovery_directory)}/orchestrator/secrets/* /etc/puppetlabs/orchestration-services/conf.d/secrets/
       | CMD
   }
-
-  # TODO: Use PuppetDB's /pdb/admin/v1/archive API to SAVE data currently in
-  #       PuppetDB. Otherwise we'll completely lose it if/when we restore.
 
   #$database_to_restore.each |Integer $index, Boolean $value | {
   $restore_databases.each |$name,$database_targets| {
@@ -190,8 +197,15 @@ plan peadm::restore (
       | CMD
   }
 
-  # TODO: Use PuppetDB's /pdb/admin/v1/archive API to MERGE previously saved
-  #       data into the restored database.
+  # Use PuppetDB's /pdb/admin/v1/archive API to MERGE previously saved data
+  # into the restored database.
+  # TODO: consider adding a heuristic to skip when innappropriate due to size
+  #       or other factors.
+  if getvar('recovery_opts.puppetdb') {
+    run_command(@("CMD"/L), $primary_target)
+      /opt/puppetlabs/bin/puppet-db import ${shellquote($recovery_directory)}/puppetdb-archive.bin
+      | CMD
+  }
 
   # Use `puppet infra` to ensure correct file permissions, restart services,
   # etc. Make sure not to try and get config data from the classifier, which
