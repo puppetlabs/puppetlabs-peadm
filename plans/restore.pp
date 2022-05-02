@@ -198,16 +198,6 @@ plan peadm::restore (
       | CMD
   }
 
-  # Use PuppetDB's /pdb/admin/v1/archive API to MERGE previously saved data
-  # into the restored database.
-  # TODO: consider adding a heuristic to skip when innappropriate due to size
-  #       or other factors.
-  if getvar('recovery_opts.puppetdb') {
-    run_command(@("CMD"/L), $primary_target)
-      /opt/puppetlabs/bin/puppet-db import ${shellquote($recovery_directory)}/puppetdb-archive.bin
-      | CMD
-  }
-
   # Use `puppet infra` to ensure correct file permissions, restart services,
   # etc. Make sure not to try and get config data from the classifier, which
   # isn't yet up and running.
@@ -219,6 +209,19 @@ plan peadm::restore (
   run_command(@("CMD"/L), $replica_target)
     /opt/puppetlabs/bin/puppet-infra reinitialize replica -y
     | CMD
+
+  # Use PuppetDB's /pdb/admin/v1/archive API to MERGE previously saved data
+  # into the restored database.
+  # TODO: consider adding a heuristic to skip when innappropriate due to size
+  #       or other factors.
+  if getvar('recovery_opts.puppetdb') {
+    run_command(@("CMD"/L), $primary_target)
+      /opt/puppetlabs/bin/puppet-db import ${shellquote($recovery_directory)}/puppetdb-archive.bin
+      | CMD
+  }
+
+  # Run Puppet to pick up last remaining config tweaks
+  run_task('peadm::puppet_runonce', $primary_target)
 
   apply($primary_target){
     file { $recovery_directory :
