@@ -35,12 +35,14 @@
 * [`peadm::node_manager_yaml_location`](#peadmnode_manager_yaml_location)
 * [`peadm::oid`](#peadmoid)
 * [`peadm::plan_step`](#peadmplan_step)
+* [`peadm::recovery_opts_default`](#peadmrecovery_opts_default)
 * [`peadm::wait_until_service_ready`](#peadmwait_until_service_ready): A convenience function to help remember port numbers for services and handle running the wait_until_service_ready task
 
 ### Data types
 
 * [`Peadm::Pe_version`](#peadmpe_version)
 * [`Peadm::Pem`](#peadmpem)
+* [`Peadm::Recovery_opts`](#peadmrecovery_opts)
 * [`Peadm::SingleTargetSpec`](#peadmsingletargetspec): A SingleTargetSpec represents any String, Target or single-element array of one or the other that can be passed to get_targets() to return an
 
 ### Tasks
@@ -725,6 +727,18 @@ Data type: `Callable`
 
 
 
+### <a name="peadmrecovery_opts_default"></a>`peadm::recovery_opts_default`
+
+Type: Puppet Language
+
+The peadm::recovery_opts_default function.
+
+#### `peadm::recovery_opts_default()`
+
+The peadm::recovery_opts_default function.
+
+Returns: `Any`
+
 ### <a name="peadmwait_until_service_ready"></a>`peadm::wait_until_service_ready`
 
 Type: Puppet Language
@@ -771,6 +785,23 @@ Alias of
 
 ```puppet
 Pattern[/^-----BEGIN/]
+```
+
+### <a name="peadmrecovery_opts"></a>`Peadm::Recovery_opts`
+
+The Peadm::Recovery_opts data type.
+
+Alias of
+
+```puppet
+Struct[{
+  'orchestrator' => Optional[Boolean],
+  'puppetdb'     => Optional[Boolean],
+  'rbac'         => Optional[Boolean],
+  'activity'     => Optional[Boolean],
+  'ca'           => Optional[Boolean[false]],
+  'classifier'   => Optional[Boolean],
+}]
 ```
 
 ### <a name="peadmsingletargetspec"></a>`Peadm::SingleTargetSpec`
@@ -1290,68 +1321,23 @@ This plan can backup data as outlined at insert doc
 
 The following parameters are available in the `peadm::backup` plan:
 
-* [`primary_host`](#primary_host)
-* [`backup_orchestrator`](#backup_orchestrator)
-* [`backup_rbac`](#backup_rbac)
-* [`backup_activity`](#backup_activity)
-* [`backup_ca_ssl`](#backup_ca_ssl)
-* [`backup_puppetdb`](#backup_puppetdb)
-* [`backup_classification`](#backup_classification)
+* [`targets`](#targets)
+* [`backup`](#backup)
 * [`output_directory`](#output_directory)
 
-##### <a name="primary_host"></a>`primary_host`
+##### <a name="targets"></a>`targets`
 
 Data type: `Peadm::SingleTargetSpec`
 
 
 
-##### <a name="backup_orchestrator"></a>`backup_orchestrator`
+##### <a name="backup"></a>`backup`
 
-Data type: `Boolean`
-
-
-
-Default value: ``true``
-
-##### <a name="backup_rbac"></a>`backup_rbac`
-
-Data type: `Boolean`
+Data type: `Peadm::Recovery_opts`
 
 
 
-Default value: ``true``
-
-##### <a name="backup_activity"></a>`backup_activity`
-
-Data type: `Boolean`
-
-
-
-Default value: ``true``
-
-##### <a name="backup_ca_ssl"></a>`backup_ca_ssl`
-
-Data type: `Boolean`
-
-
-
-Default value: ``true``
-
-##### <a name="backup_puppetdb"></a>`backup_puppetdb`
-
-Data type: `Boolean`
-
-
-
-Default value: ``false``
-
-##### <a name="backup_classification"></a>`backup_classification`
-
-Data type: `Boolean`
-
-
-
-Default value: ``true``
+Default value: `{}`
 
 ##### <a name="output_directory"></a>`output_directory`
 
