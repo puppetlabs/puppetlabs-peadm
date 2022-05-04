@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.6.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.6.0) (2022-05-04)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.5.0...v3.6.0)
+
+### Added
+
+- Solarch 581 [\#235](https://github.com/puppetlabs/puppetlabs-peadm/pull/235) ([davidsandilands](https://github.com/davidsandilands))
+
+### Fixed
+
+- Add read map so puppetdb can start on new compiler [\#252](https://github.com/puppetlabs/puppetlabs-peadm/pull/252) ([ody](https://github.com/ody))
+- \(SOLARCH-434\) Procedure for recovering PSQL [\#243](https://github.com/puppetlabs/puppetlabs-peadm/pull/243) ([ody](https://github.com/ody))
+
 ## [v3.5.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.5.0) (2022-04-13)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.4.0...v3.5.0)
