@@ -37,38 +37,12 @@ plan peadm::add_replica(
   # This has the effect of revoking the node's certificate, if it exists
   run_command("puppet infrastructure forget ${replica_target.peadm::certname()}", $primary_target, _catch_errors => true)
 
-  # Check for and merge csr_attributes.
-  run_plan('peadm::util::insert_csr_extension_requests', $replica_target,
-      extension_requests => {
-        peadm::oid('peadm_role')               => 'puppet/server',
-        peadm::oid('peadm_availability_group') => $replica_avail_group_letter
-      }
-    )
-
-  run_task('peadm::agent_install', $replica_target,
-    server        => $primary_target.peadm::certname(),
-    install_flags => [
-      '--puppet-service-ensure', 'stopped',
-      "main:certname=${replica_target.peadm::certname()}",
-      "main:dns_alt_names=${dns_alt_names.join(',')}",
-    ],
+  run_plan('peadm::subplans::component_install', $replica_target,
+    primary_host       => $primary_target,
+    avail_group_letter => $replica_avail_group_letter,
+    role               => 'puppet/server',
+    dns_alt_names      => $dns_alt_names
   )
-
-  # clean the cert to make the plan idempotent
-  run_task('peadm::ssl_clean', $replica_target,
-    certname => $replica_target.peadm::certname(),
-  )
-
-  # Manually submit a CSR
-  run_task('peadm::submit_csr', $replica_target)
-
-  # On primary, if necessary, sign the certificate request
-  run_task('peadm::sign_csr', $primary_target,
-    certnames => [$replica_target.peadm::certname()],
-  )
-
-  # On <replica_target>, run the puppet agent
-  run_task('peadm::puppet_runonce', $replica_target)
 
   # On the PE-PostgreSQL server in the <replacement-avail-group-letter> group
 
@@ -97,6 +71,11 @@ plan peadm::add_replica(
       subscribe => File_line['puppetdb-map', 'migrator-map'],
     }
   }
+
+  run_plan('peadm::util::update_classification', $primary_target,
+    replica_host                     => $replica_host,
+    internal_compiler_b_pool_address => $replica_host,
+  )
 
   # Provision the new system as a replica
   run_task('peadm::provision_replica', $primary_target,
