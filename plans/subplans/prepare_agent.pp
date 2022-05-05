@@ -11,7 +11,7 @@ plan peadm::subplans::prepare_agent (
 
   $dns_alt_names_flag = $dns_alt_names? {
     undef   => [],
-    default => ["main:dns_alt_names=${dns_alt_names}"],
+    default => ["main:dns_alt_names=${dns_alt_names.join(',')}"],
   }
 
   $status = run_task('package', $agent_target,
