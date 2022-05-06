@@ -1,3 +1,4 @@
+# @api private
 # @summary Restore the core user settings for puppet infrastructure from backup
 #
 # This plan can restore data to puppet infrastructure for DR and rebuilds

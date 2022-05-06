@@ -1,3 +1,4 @@
+# @api private
 # @summary Backup the core user settings for puppet infrastructure
 #
 # This plan can backup data as outlined at insert doc
