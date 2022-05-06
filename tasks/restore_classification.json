@@ -1,0 +1,12 @@
+{
+  "puppet_task_version": 1,
+  "supports_noop": false,
+  "description": "A short description of this task",
+  "parameters": {
+    "classification_file": {
+      "type": "String",
+      "description": "The full path to a backed up or transformed classification file",
+      "default": "/tmp/transformed_classification.json"
+    }
+  }
+}
