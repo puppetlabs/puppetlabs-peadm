@@ -24,8 +24,8 @@ class GetPEAdmConfig
     replica_letter = primary_letter.eql?('A') ? 'B' : 'A'
 
     configured_postgresql_servers = [
-      groups.dig("PE Primary A", 'config_data', 'puppet_enterprise::profile::puppetdb', 'database_host'),
-      groups.dig("PE Primary B", 'config_data', 'puppet_enterprise::profile::puppetdb', 'database_host'),
+      groups.dig('PE Primary A', 'config_data', 'puppet_enterprise::profile::puppetdb', 'database_host'),
+      groups.dig('PE Primary B', 'config_data', 'puppet_enterprise::profile::puppetdb', 'database_host'),
     ].compact
 
     postgresql = {
