@@ -107,7 +107,7 @@ Example params.json Bolt parameters file (shown: Extra Large with DR):
 }
 ```
 
-Example params.json Bolt parameters file including LDAP configuration (shown: Standard):
+Example params.json Bolt parameters file (shown: Standard):
 
 ```json
 {
@@ -116,36 +116,10 @@ Example params.json Bolt parameters file including LDAP configuration (shown: St
   "console_password": "puppetlabs",
   "dns_alt_names": [ "puppet", "puppet.lab1.puppet.vm" ],
   "version": "2021.5.0",
-
-  "ldap_config": {
-    "help_link": "https://help.example.com",
-    "ssl": true,
-    "group_name_attr": "name",
-    "password": "skippy",
-    "group_rdn": null,
-    "connect_timeout": 15,
-    "user_display_name_attr": "cn",
-    "disable_ldap_matching_rule_in_chain": false,
-    "ssl_hostname_validation": true,
-    "hostname": "ldap.example.com",
-    "base_dn": "dc=example,dc=com",
-    "user_lookup_attr": "uid",
-    "port": 636,
-    "login": "cn=ldapuser,ou=service,ou=users,dc=example,dc=com",
-    "group_lookup_attr": "cn",
-    "group_member_attr": "uniqueMember",
-    "ssl_wildcard_validation": false,
-    "user_email_attr": "mail",
-    "user_rdn": "ou=users",
-    "group_object_class": "groupOfUniqueNames",
-    "display_name": "Acme Corp Ldap server",
-    "search_nested_groups": true,
-    "start_tls": false
-  }
 }
 ```
 
-Review the [peadm::install plan](../plans/install.pp) to learn about more advanced installation options. It is possible to supply an ssh private key and git clone URL for a control-repo as part of installation, for example.
+Review the [peadm::install plan](../plans/install.pp) to learn about more advanced installation options. For example, it is possible to: supply an ssh private key and git clone URL for a control-repo as part of installation; supply the LDAP configuration data for PE; and similar complete automation tie-ins.
 
 ## Offline usage
 

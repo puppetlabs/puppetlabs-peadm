@@ -30,12 +30,12 @@ plan peadm::subplans::configure (
   Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
 
   # Common Configuration
-  String           $compiler_pool_address = $primary_host.peadm::certname(),
-  Optional[String] $internal_compiler_a_pool_address = undef,
-  Optional[String] $internal_compiler_b_pool_address = undef,
-  Optional[String] $token_file = undef,
-  Optional[String] $deploy_environment = undef,
-  Optional[Hash]   $ldap_config = undef,
+  String                       $compiler_pool_address = $primary_host.peadm::certname(),
+  Optional[String]             $internal_compiler_a_pool_address = undef,
+  Optional[String]             $internal_compiler_b_pool_address = undef,
+  Optional[String]             $token_file = undef,
+  Optional[String]             $deploy_environment = undef,
+  Optional[Peadm::Ldap_config] $ldap_config = undef,
 
   # Other
   String           $stagingdir = '/tmp',
