@@ -19,7 +19,7 @@ Prepare to run the plan against all servers in the PE infrastructure, using a pa
 }
 ```
 
-See the [provision](provision.md#reference-architectures) documentation for a list of supported architectures. Note that for convert, *all infrastructure being converted must already be functional*; you cannot use convert to add new systems to the infrastructure, nor can you use it to change your architecture.
+See the [install](install.md#reference-architectures) documentation for a list of supported architectures. Note that for convert, *all infrastructure being converted must already be functional*; you cannot use convert to add new systems to the infrastructure, nor can you use it to change your architecture.
 
 ```
 bolt plan run peadm::convert --params @params.json 
