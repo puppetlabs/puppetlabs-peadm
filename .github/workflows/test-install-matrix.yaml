@@ -28,8 +28,8 @@ jobs:
           - large
           - extra-large-with-dr
         version:
-          - 2019.8.10
-          - 2021.5.0
+          - 2019.8.11
+          - 2021.6.0
         image:
           - centos-7
 
