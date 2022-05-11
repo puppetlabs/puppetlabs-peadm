@@ -31,17 +31,6 @@ plan peadm::util::update_classification (
   out::verbose('Current config is...')
   out::verbose($current)
 
-  # When a replica in configured, the B side of the deployment requires that
-  # replica_postgresql_host to be set, if it is not then PuppetDB will be left
-  # non-functional. Doing this will allow both sides of the deployment to start
-  # up and be functional until the second PostgreSQL node can be provisioned and configured.
-#  if (! $replica_postgresql_target.peadm::certname()) and $current['replica_host'] {
-#    out::message('Overriding replica_postgresql_host while in transitive state')
-#    $overridden_replica_postgresql_target = $primary_postgresql_target
-#  } else {
-#    $overridden_replica_postgresql_target = $replica_postgresql_target
-#  }
-
   $filtered_params = {
     'compiler_pool_address'            => $compiler_pool_address,
     'internal_compiler_a_pool_address' => $internal_compiler_a_pool_address,

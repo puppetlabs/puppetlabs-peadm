@@ -27,7 +27,8 @@ describe 'peadm::add_replica' do
                          'main:certname=replica'
                        ] })
 
-      expect_out_message.with_params('Classification to be updated using the following hash...')
+      expect_out_verbose.with_params('Current config is...')
+      expect_out_verbose.with_params('Updating classification to...')
       expect(run_plan('peadm::add_replica', params)).to be_ok
     end
 
@@ -43,7 +44,8 @@ describe 'peadm::add_replica' do
                          '--puppet-service-ensure', 'stopped',
                          'main:certname=replica'
                        ] })
-      expect_out_message.with_params('Classification to be updated using the following hash...')
+      expect_out_verbose.with_params('Current config is...')
+      expect_out_verbose.with_params('Updating classification to...')
       expect(run_plan('peadm::add_replica', params)).to be_ok
     end
   end
