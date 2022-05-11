@@ -2,7 +2,7 @@ require 'spec_helper'
 
 describe 'peadm::backup' do
   include BoltSpec::Plans
-  let(:params) { { 'primary_host' => 'primary' } }
+  let(:params) { { 'targets' => 'primary' } }
 
   it 'runs with default params' do
     allow_apply
