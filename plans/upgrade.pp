@@ -11,6 +11,11 @@
 #   A load balancer address directing traffic to any of the "B" pool
 #   compilers. This is used for DR configuration in large and extra large
 #   architectures.
+# @param pe_installer_source
+#   The URL to download the Puppet Enterprise installer media from. If not
+#   specified, PEAdm will attempt to download PE installation media from its
+#   standard public source. When specified, PEAdm will download directly from the
+#   URL given.
 #
 plan peadm::upgrade (
   # Standard
@@ -26,6 +31,7 @@ plan peadm::upgrade (
 
   # Common Configuration
   Peadm::Pe_version $version,
+  Optional[String]  $pe_installer_source              = undef,
   Optional[String]  $compiler_pool_address            = undef,
   Optional[String]  $internal_compiler_a_pool_address = undef,
   Optional[String]  $internal_compiler_b_pool_address = undef,
@@ -121,7 +127,10 @@ plan peadm::upgrade (
 
   $platform = run_task('peadm::precheck', $primary_target).first['platform']
   $tarball_filename = "puppet-enterprise-${version}-${platform}.tar.gz"
-  $tarball_source   = "https://s3.amazonaws.com/pe-builds/released/${version}/${tarball_filename}"
+  $tarball_source   = $pe_installer_source ? {
+    undef   => "https://s3.amazonaws.com/pe-builds/released/${version}/${tarball_filename}",
+    default => $pe_installer_source,
+  }
   $upload_tarball_path = "/tmp/${tarball_filename}"
 
   peadm::plan_step('preparation') || {

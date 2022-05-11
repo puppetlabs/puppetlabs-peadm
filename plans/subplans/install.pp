@@ -20,6 +20,12 @@
 #   Config data to plane into pe.conf when generated on all hosts, this can be
 #   used for tuning data etc.
 #
+# @param pe_installer_source
+#   The URL to download the Puppet Enterprise installer media from. If not
+#   specified, PEAdm will attempt to download PE installation media from its
+#   standard public source. When specified, PEAdm will download directly from the
+#   URL given.
+#
 plan peadm::subplans::install (
   # Standard
   Peadm::SingleTargetSpec           $primary_host,
@@ -35,8 +41,9 @@ plan peadm::subplans::install (
   # Common Configuration
   String               $console_password,
   Peadm::Pe_version    $version,
-  Array[String]        $dns_alt_names = [ ],
-  Hash                 $pe_conf_data  = { },
+  Optional[String]     $pe_installer_source = undef,
+  Array[String]        $dns_alt_names       = [ ],
+  Hash                 $pe_conf_data        = { },
 
   # Code Manager
   Optional[String]     $r10k_remote              = undef,
@@ -191,7 +198,10 @@ plan peadm::subplans::install (
   }
 
   $pe_tarball_name     = "puppet-enterprise-${version}-${platform}.tar.gz"
-  $pe_tarball_source   = "https://s3.amazonaws.com/pe-builds/released/${version}/${pe_tarball_name}"
+  $pe_tarball_source   = $pe_installer_source ? {
+    undef   => "https://s3.amazonaws.com/pe-builds/released/${version}/${pe_tarball_name}",
+    default => $pe_installer_source,
+  }
   $upload_tarball_path = "/tmp/${pe_tarball_name}"
 
   if $download_mode == 'bolthost' {
