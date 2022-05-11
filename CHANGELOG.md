@@ -8,8 +8,8 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
+- Add support for PE 2021.6 and 2019.8.11 [\#260](https://github.com/puppetlabs/puppetlabs-peadm/pull/260) ([reidmv](https://github.com/reidmv))
 - Add optional `pe_installer_source` parameter [\#261](https://github.com/puppetlabs/puppetlabs-peadm/pull/261) ([reidmv](https://github.com/reidmv))
-- Support PE 2021.6 and 2019.8.11 [\#260](https://github.com/puppetlabs/puppetlabs-peadm/pull/260) ([reidmv](https://github.com/reidmv))
 - Add experimental restore plan [\#250](https://github.com/puppetlabs/puppetlabs-peadm/pull/250) ([reidmv](https://github.com/reidmv))
 
 ## [v3.6.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.6.0) (2022-05-04)
@@ -18,12 +18,12 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
-- Solarch 581 [\#235](https://github.com/puppetlabs/puppetlabs-peadm/pull/235) ([davidsandilands](https://github.com/davidsandilands))
+- Add experimental backup plan [\#235](https://github.com/puppetlabs/puppetlabs-peadm/pull/235) ([davidsandilands](https://github.com/davidsandilands))
 
 ### Fixed
 
 - Add read map so puppetdb can start on new compiler [\#252](https://github.com/puppetlabs/puppetlabs-peadm/pull/252) ([ody](https://github.com/ody))
-- \(SOLARCH-434\) Procedure for recovering PSQL [\#243](https://github.com/puppetlabs/puppetlabs-peadm/pull/243) ([ody](https://github.com/ody))
+- Fix and document recovery procedure for PSQL [\#243](https://github.com/puppetlabs/puppetlabs-peadm/pull/243) ([ody](https://github.com/ody))
 
 ## [v3.5.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.5.0) (2022-04-13)
 
