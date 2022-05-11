@@ -69,9 +69,11 @@
 * [`puppet_runonce`](#puppet_runonce): Run the Puppet agent one time
 * [`rbac_token`](#rbac_token): Get and save an rbac token for the root user, admin rbac user
 * [`read_file`](#read_file): Read the contents of a file
+* [`restore_classification`](#restore_classification): A short description of this task
 * [`sign_csr`](#sign_csr): Submit a certificate signing request
 * [`ssl_clean`](#ssl_clean): Clean an agent's certificate
 * [`submit_csr`](#submit_csr): Submit a certificate signing request
+* [`transform_classification_groups`](#transform_classification_groups): Transform the user groups from a source backup to a list of groups on the target server
 * [`wait_until_service_ready`](#wait_until_service_ready): Return when the orchestrator service is healthy, or timeout after 15 seconds
 
 ### Plans
@@ -79,7 +81,6 @@
 #### Public Plans
 
 * [`peadm::add_database`](#peadmadd_database)
-* [`peadm::backup`](#peadmbackup): Backup the core user settings for puppet infrastructure
 * [`peadm::convert`](#peadmconvert): Convert an existing PE cluster to a PEAdm-managed cluster
 * [`peadm::install`](#peadminstall): Install a new PE cluster
 * [`peadm::modify_certificate`](#peadmmodify_certificate): Modify the certificate of one or more targets
@@ -93,8 +94,10 @@
 Supported use cases:
 1: The existing replica is broken, we have a fresh new VM we want to provision the replica to.
    The new replica should have the same certname as the broken one.
+* `peadm::backup`: Backup the core user settings for puppet infrastructure
 * `peadm::misc::divert_code_manager`: This plan exists to account for a scenario where a PE XL
 * `peadm::modify_cert_extensions`
+* `peadm::restore`: Restore the core user settings for puppet infrastructure from backup
 * `peadm::subplans::component_install`: Install a new PEADM component
 * `peadm::subplans::configure`: Configure first-time classification and DR setup
 * `peadm::subplans::db_populate`: Destructively (re)populates a new or existing database with the contents or a known good source
@@ -1202,6 +1205,20 @@ Data type: `String`
 
 Path to the file to read
 
+### <a name="restore_classification"></a>`restore_classification`
+
+A short description of this task
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `classification_file`
+
+Data type: `String`
+
+The full path to a backed up or transformed classification file
+
 ### <a name="sign_csr"></a>`sign_csr`
 
 Submit a certificate signing request
@@ -1243,6 +1260,26 @@ Submit a certificate signing request
 Data type: `Optional[Array[String]]`
 
 DNS Alternative Names to request for the certificate
+
+### <a name="transform_classification_groups"></a>`transform_classification_groups`
+
+Transform the user groups from a source backup to a list of groups on the target server
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `source_directory`
+
+Data type: `String`
+
+Location of Source node group yaml file
+
+##### `working_directory`
+
+Data type: `String`
+
+Location of target node group yaml file and where to create the transformed file
 
 ### <a name="wait_until_service_ready"></a>`wait_until_service_ready`
 
@@ -1312,40 +1349,6 @@ Data type: `Optional[Enum[
 
 
 Default value: ``undef``
-
-### <a name="peadmbackup"></a>`peadm::backup`
-
-This plan can backup data as outlined at insert doc
-
-#### Parameters
-
-The following parameters are available in the `peadm::backup` plan:
-
-* [`targets`](#targets)
-* [`backup`](#backup)
-* [`output_directory`](#output_directory)
-
-##### <a name="targets"></a>`targets`
-
-Data type: `Peadm::SingleTargetSpec`
-
-
-
-##### <a name="backup"></a>`backup`
-
-Data type: `Peadm::Recovery_opts`
-
-
-
-Default value: `{}`
-
-##### <a name="output_directory"></a>`output_directory`
-
-Data type: `String`
-
-
-
-Default value: `'/tmp'`
 
 ### <a name="peadmconvert"></a>`peadm::convert`
 
@@ -1461,6 +1464,7 @@ The following parameters are available in the `peadm::install` plan:
 * [`compiler_pool_address`](#compiler_pool_address)
 * [`internal_compiler_a_pool_address`](#internal_compiler_a_pool_address)
 * [`internal_compiler_b_pool_address`](#internal_compiler_b_pool_address)
+* [`pe_installer_source`](#pe_installer_source)
 * [`primary_host`](#primary_host)
 * [`replica_host`](#replica_host)
 * [`compiler_hosts`](#compiler_hosts)
@@ -1506,6 +1510,17 @@ Data type: `Optional[String]`
 A load balancer address directing traffic to any of the "B" pool
 compilers. This is used for DR configuration in large and extra large
 architectures.
+
+Default value: ``undef``
+
+##### <a name="pe_installer_source"></a>`pe_installer_source`
+
+Data type: `Optional[String]`
+
+The URL to download the Puppet Enterprise installer media from. If not
+specified, PEAdm will attempt to download PE installation media from its
+standard public source. When specified, PEAdm will download directly from the
+URL given.
 
 Default value: ``undef``
 
@@ -1780,6 +1795,7 @@ The following parameters are available in the `peadm::upgrade` plan:
 * [`compiler_pool_address`](#compiler_pool_address)
 * [`internal_compiler_a_pool_address`](#internal_compiler_a_pool_address)
 * [`internal_compiler_b_pool_address`](#internal_compiler_b_pool_address)
+* [`pe_installer_source`](#pe_installer_source)
 * [`primary_host`](#primary_host)
 * [`replica_host`](#replica_host)
 * [`compiler_hosts`](#compiler_hosts)
@@ -1818,6 +1834,17 @@ Data type: `Optional[String]`
 A load balancer address directing traffic to any of the "B" pool
 compilers. This is used for DR configuration in large and extra large
 architectures.
+
+Default value: ``undef``
+
+##### <a name="pe_installer_source"></a>`pe_installer_source`
+
+Data type: `Optional[String]`
+
+The URL to download the Puppet Enterprise installer media from. If not
+specified, PEAdm will attempt to download PE installation media from its
+standard public source. When specified, PEAdm will download directly from the
+URL given.
 
 Default value: ``undef``
 

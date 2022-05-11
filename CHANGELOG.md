@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.7.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.7.0) (2022-05-11)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.6.0...v3.7.0)
+
+### Added
+
+- Add optional `pe_installer_source` parameter [\#261](https://github.com/puppetlabs/puppetlabs-peadm/pull/261) ([reidmv](https://github.com/reidmv))
+- Support PE 2021.6 and 2019.8.11 [\#260](https://github.com/puppetlabs/puppetlabs-peadm/pull/260) ([reidmv](https://github.com/reidmv))
+- Add experimental restore plan [\#250](https://github.com/puppetlabs/puppetlabs-peadm/pull/250) ([reidmv](https://github.com/reidmv))
+
 ## [v3.6.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.6.0) (2022-05-04)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.5.0...v3.6.0)
