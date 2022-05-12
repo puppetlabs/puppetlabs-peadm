@@ -294,11 +294,10 @@ plan peadm::upgrade (
     $workaround_delete_reports = $arch['disaster-recovery'] and $version =~ SemVerRange('>= 2019.8')
     if $workaround_delete_reports {
       run_command(@("COMMAND"/$), $replica_target)
-        if [ -e ${pdbapps}/delete-reports -a ! -h ${pdbapps}/delete-reports ]
-        then
-          mv ${pdbapps}/delete-reports ${pdbapps}/delete-reports.original
-          ln -s \$(which true) ${pdbapps}/delete-reports
-        fi
+        if [ -e ${pdbapps}/delete-reports -a ! -h ${pdbapps}/delete-reports ]; then
+          mv ${pdbapps}/delete-reports ${pdbapps}/delete-reports.original;
+          ln -s \$(which true) ${pdbapps}/delete-reports;
+        fi;
         | COMMAND
     }
 
@@ -312,10 +311,9 @@ plan peadm::upgrade (
     # Return the delete-reports CLI app to its original state
     if $workaround_delete_reports {
       run_command(@("COMMAND"/$), $replica_target)
-        if [ -e ${pdbapps}/delete-reports.original ]
-        then
-          mv ${pdbapps}/delete-reports.original ${pdbapps}/delete-reports
-        fi
+        if [ -e ${pdbapps}/delete-reports.original ]; then
+          mv ${pdbapps}/delete-reports.original ${pdbapps}/delete-reports;
+        fi;
         | COMMAND
     }
   }
