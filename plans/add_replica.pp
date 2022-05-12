@@ -35,7 +35,7 @@ plan peadm::add_replica(
   $dns_alt_names = [$replica_target.peadm::certname()] + (pick($certdata['dns-alt-names'], []) - $certdata['certname'])
 
   # This has the effect of revoking the node's certificate, if it exists
-  run_command("puppet infrastructure forget ${replica_target.peadm::certname()}", $primary_target, _catch_errors => true)
+  run_command("/opt/puppetlabs/bin/puppet infrastructure forget ${replica_target.peadm::certname()}", $primary_target, _catch_errors => true)
 
   run_plan('peadm::subplans::component_install', $replica_target,
     primary_host       => $primary_target,
