@@ -26,6 +26,11 @@ plan peadm::add_replica(
   $replica_target             = peadm::get_targets($replica_host, 1)
   $replica_postgresql_target  = peadm::get_targets($replica_postgresql_host, 1)
 
+  run_command('systemctl stop puppet.service', peadm::flatten_compact([
+    $primary_target,
+    $replica_postgresql_target,
+  ]))
+
   $certdata = run_task('peadm::cert_data', $primary_target).first.value
   $primary_avail_group_letter = $certdata['extensions'][peadm::oid('peadm_availability_group')]
   $replica_avail_group_letter = $primary_avail_group_letter ? { 'A' => 'B', 'B' => 'A' }
@@ -51,26 +56,21 @@ plan peadm::add_replica(
   #  pe-puppetdb-pe-puppetdb-map <replacement-replica-fqdn> pe-puppetdb
   #  pe-puppetdb-pe-puppetdb-migrator-map <replacement-replica-fqdn> pe-puppetdb-migrator
   apply($replica_postgresql_target) {
-    service { 'puppet':
-      ensure => stopped,
-      before => File_line['puppetdb-map', 'migrator-map'],
-    }
-
-    file_line { 'puppetdb-map':
+    file_line { 'pe-puppetdb-pe-puppetdb-map':
       path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf',
       line => "pe-puppetdb-pe-puppetdb-map ${replica_target.peadm::certname()} pe-puppetdb",
     }
-
-    file_line { 'migrator-map':
+    file_line { 'pe-puppetdb-pe-puppetdb-migrator-map':
       path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf',
       line => "pe-puppetdb-pe-puppetdb-migrator-map ${replica_target.peadm::certname()} pe-puppetdb-migrator",
     }
-
-    service { 'pe-postgresql':
-      ensure    => running,
-      subscribe => File_line['puppetdb-map', 'migrator-map'],
+    file_line { 'pe-puppetdb-pe-puppetdb-read-map':
+      path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf',
+      line => "pe-puppetdb-pe-puppetdb-read-map ${replica_target.peadm::certname()} pe-puppetdb-read",
     }
   }
+
+  run_command('systemctl reload pe-postgresql.service', $replica_postgresql_target)
 
   run_plan('peadm::util::update_classification', $primary_target,
     server_a_host                    => $replica_avail_group_letter ? { 'A' => $replica_host, default => undef },
@@ -90,8 +90,12 @@ plan peadm::add_replica(
     legacy     => true,
   )
 
-  # start puppet service on postgresql host
-  run_command('systemctl start puppet.service', $replica_postgresql_target)
+  # start puppet service
+  run_command('systemctl start puppet.service', peadm::flatten_compact([
+    $primary_target,
+    $replica_postgresql_target,
+    $replica_target
+  ]))
 
   return("Added replica ${replica_target}")
 }

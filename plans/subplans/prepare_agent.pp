@@ -29,6 +29,11 @@ plan peadm::subplans::prepare_agent (
         "main:certname=${agent_target.peadm::certname()}",
       ],
     )
+  } else {
+    run_command('systemctl stop puppet.service', $agent_target)
+    out::message('Ensuring node is set to query current primary for Puppet Agent operations')
+    run_command("/opt/puppetlabs/bin/puppet config set --section main server ${primary_target.peadm::certname()}", $agent_target)
+    run_command('/opt/puppetlabs/bin/puppet config delete --section agent server_list', $agent_target)
   }
 
   # Ensures scenarios where agent was pre-installed but never on-boarding and

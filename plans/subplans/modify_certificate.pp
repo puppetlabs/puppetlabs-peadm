@@ -34,6 +34,7 @@ plan peadm::subplans::modify_certificate (
       ($desired_alt_names == $existing_alt_names) and
       ($desired_exts.all |$key,$val| { $existing_exts[$key] == $val }) and
       !($remove_extensions.any |$key| { $key in $existing_exts.keys }) and
+      !$certdata['certificate-revoked'] and
       !$force_regenerate)
   {
     out::message("${certname} already has requested modifications; certificate will not be re-issued")
