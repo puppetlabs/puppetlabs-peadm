@@ -1,0 +1,17 @@
+{
+  "description": "Set the ldap config in the PE console",
+  "parameters": {
+    "ldap_config": {
+      "type": "Peadm::Ldap_config",
+      "description": "The hash of options for ldap."
+    },
+    "pe_main": {
+      "type": "String",
+      "description": "The PE Main server"
+    }
+  },
+  "input_method": "stdin",
+  "implementations": [
+    {"name": "pe_ldap_config.rb"}
+  ]
+}

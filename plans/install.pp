@@ -16,6 +16,11 @@
 #   specified, PEAdm will attempt to download PE installation media from its
 #   standard public source. When specified, PEAdm will download directly from the
 #   URL given.
+# @param ldap_config
+#   If specified, configures PE RBAC DS with the supplied configuration hash.
+#   The parameter should be set to a valid set of connection settings as
+#   documented for the PE RBAC /ds endpoint. See:
+#   https://puppet.com/docs/pe/latest/rbac_api_v1_directory.html#put_ds-request_format
 #
 plan peadm::install (
   # Standard
@@ -38,6 +43,7 @@ plan peadm::install (
   Optional[String]                  $internal_compiler_a_pool_address = undef,
   Optional[String]                  $internal_compiler_b_pool_address = undef,
   Optional[Hash]                    $pe_conf_data                     = { },
+  Optional[Peadm::Ldap_config]      $ldap_config                      = undef,
 
   # Code Manager
   Optional[String]                  $r10k_remote              = undef,
@@ -109,6 +115,7 @@ plan peadm::install (
     internal_compiler_a_pool_address => $internal_compiler_a_pool_address,
     internal_compiler_b_pool_address => $internal_compiler_b_pool_address,
     deploy_environment               => $deploy_environment,
+    ldap_config                      => $ldap_config,
 
     # Other
     stagingdir                       => $stagingdir,

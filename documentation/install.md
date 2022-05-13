@@ -107,7 +107,19 @@ Example params.json Bolt parameters file (shown: Extra Large with DR):
 }
 ```
 
-Review the [peadm::install plan](../plans/install.pp) to learn about more advanced installation options. It is possible to supply an ssh private key and git clone URL for a control-repo as part of installation, for example.
+Example params.json Bolt parameters file (shown: Standard):
+
+```json
+{
+  "primary_host": "pe-xl-core-0.lab1.puppet.vm",
+
+  "console_password": "puppetlabs",
+  "dns_alt_names": [ "puppet", "puppet.lab1.puppet.vm" ],
+  "version": "2021.5.0",
+}
+```
+
+Review the [peadm::install plan](../plans/install.pp) to learn about more advanced installation options. For example, it is possible to: supply an ssh private key and git clone URL for a control-repo as part of installation; supply the LDAP configuration data for PE; and similar complete automation tie-ins.
 
 ## Offline usage
 
