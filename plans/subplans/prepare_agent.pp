@@ -36,19 +36,35 @@ plan peadm::subplans::prepare_agent (
     run_command('/opt/puppetlabs/bin/puppet config delete --section agent server_list', $agent_target)
   }
 
+  # Obtain data about certificate from primary 
+  $certstatus = run_task('peadm::cert_valid_status', $primary_target,
+    certname => $agent_target.peadm::certname()).first.value
+
+  if ($certstatus['certificate-status'] == 'invalid') {
+    $force_regenerate = true
+    $skip_csr = true
+  } else {
+    $force_regenerate = false
+    $skip_csr = false
+
+  }
+
   # Ensures scenarios where agent was pre-installed but never on-boarding and
   # when agent was absent but their was an existing signed certificate with the
   # same name as the one being provisioned.
   #
   # If necessary, manually submit a CSR
   # ignoring errors to simplify logic
-  run_task('peadm::submit_csr', $agent_target, {'_catch_errors' => true})
+  unless $skip_csr {
+    run_task('peadm::submit_csr', $agent_target, {'_catch_errors' => true})
 
-  # On primary, if necessary, sign the certificate request
-  run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$agent_target.peadm::certname()] } )
+    # On primary, if necessary, sign the certificate request
+    run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$agent_target.peadm::certname()] } )
+  }
 
   run_plan('peadm::modify_certificate', $agent_target,
-    primary_host   => $primary_target.peadm::certname(),
-    add_extensions => $certificate_extensions
+    primary_host     => $primary_target.peadm::certname(),
+    add_extensions   => $certificate_extensions,
+    force_regenerate => $force_regenerate
   )
 }

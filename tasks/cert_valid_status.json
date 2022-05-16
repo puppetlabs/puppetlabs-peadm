@@ -1,0 +1,13 @@
+{
+  "description": "Check primary for valid state of a certificate",
+  "parameters": {
+    "certname": {
+      "type": "String",
+      "description": "The certifcate name to check validation of"
+    }
+  },
+  "input_method": "stdin",
+  "implementations": [
+    {"name": "cert_valid_status.rb"}
+  ]
+}
