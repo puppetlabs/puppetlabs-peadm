@@ -40,13 +40,19 @@ plan peadm::subplans::prepare_agent (
   $certstatus = run_task('peadm::cert_valid_status', $primary_target,
     certname => $agent_target.peadm::certname()).first.value
 
+  # Obtain data about certificate from agent
+  $certdata = run_task('peadm::cert_data', $agent_target).first.value
+
   if ($certstatus['certificate-status'] == 'invalid') {
     $force_regenerate = true
     $skip_csr = true
   } else {
+    if $certdata['certificate-exists'] and $certstatus['reason'] =~ /The private key is missing from/ {
+      out::message("Agent: ${agent_target.peadm::certname()} has a local cert but Primary: ${primary_target.peadm::certname()} does not, force agent clean")
+      run_task('peadm::ssl_clean', $agent_target, certname => $agent_target.peadm::certname())
+    }
     $force_regenerate = false
     $skip_csr = false
-
   }
 
   # Ensures scenarios where agent was pre-installed but never on-boarding and

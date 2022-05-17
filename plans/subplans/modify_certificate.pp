@@ -21,8 +21,6 @@ plan peadm::subplans::modify_certificate (
   $certdata = run_task('peadm::cert_data', $target).first.value
   $certname = $certdata['certname']
 
-
-
   $target_is_primary = ($certname == $primary_certname)
 
   # These vars represent what the extensions currently are, vs. what they should be
@@ -68,13 +66,13 @@ plan peadm::subplans::modify_certificate (
     # fail the plan unless it's a known circumstance in which it's okay to proceed.
     # Scenario 1: the primary's cert can't be cleaned because it's already revoked.
     # Scenario 2: the primary's cert can't be cleaned because it's been deleted.
-    # Scenario 3: a component's cert can't be cleaned because it was previously by some other function.
+    # Scenario 3: any component's cert can't be cleaned because it's been deleted.
     unless ($target_is_primary and
             ($ca_clean_result[merged_output] =~ /certificate revoked/ or
-              $ca_clean_result[merged_output] =~ /Could not find 'hostcert'/ or
-                $ca_clean_result[merged_output] =~ /Could not find files to clean/))
+              $ca_clean_result[merged_output] =~ /Could not find 'hostcert'/)) or
+                ($ca_clean_result[merged_output] =~ /Could not find files to clean/)
     {
-      fail_plan($ca_clean_result)
+      fail_plan($ca_clean_result[merged_output])
     }
   }
 
