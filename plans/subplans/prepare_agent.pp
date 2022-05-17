@@ -31,6 +31,10 @@ plan peadm::subplans::prepare_agent (
     )
   } else {
     run_command('systemctl stop puppet.service', $agent_target)
+    # If re-using a node which was previously part of the infrastructure then it
+    # might have a bad configuration which will prevent it from reconfiguring. Best
+    # example of this is a failed primary being added back into infrastructure  as
+    # a replica
     out::message('Ensuring node is set to query current primary for Puppet Agent operations')
     run_command("/opt/puppetlabs/bin/puppet config set --section main server ${primary_target.peadm::certname()}", $agent_target)
     run_command('/opt/puppetlabs/bin/puppet config delete --section agent server_list', $agent_target)
@@ -43,10 +47,17 @@ plan peadm::subplans::prepare_agent (
   # Obtain data about certificate from agent
   $certdata = run_task('peadm::cert_data', $agent_target).first.value
 
+  # The invalid status is primarily serves as a way to catch revoked certificates.
+  # A primary server is the only thing that can reliably identify if agent
+  # certificates are revoked, if it is then skip the submit and sign process and
+  # just got directly to forcing a regeneration.
   if ($certstatus['certificate-status'] == 'invalid') {
     $force_regenerate = true
     $skip_csr = true
   } else {
+    # When the primary can't validate a certificate because it is missing but the
+    # agent claims it has one, clean the agent to get to an agreed upon state
+    # before moving onto the submit and sign process.
     if $certdata['certificate-exists'] and $certstatus['reason'] =~ /The private key is missing from/ {
       out::message("Agent: ${agent_target.peadm::certname()} has a local cert but Primary: ${primary_target.peadm::certname()} does not, force agent clean")
       run_task('peadm::ssl_clean', $agent_target, certname => $agent_target.peadm::certname())
@@ -68,6 +79,8 @@ plan peadm::subplans::prepare_agent (
     run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$agent_target.peadm::certname()] } )
   }
 
+  # If agent certificate is good but lacks appropriate extensions, plan will still
+  # regenerate certificate
   run_plan('peadm::modify_certificate', $agent_target,
     primary_host     => $primary_target.peadm::certname(),
     add_extensions   => $certificate_extensions,
