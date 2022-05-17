@@ -79,6 +79,12 @@ plan peadm::add_replica(
     internal_compiler_b_pool_address => $replica_avail_group_letter ? { 'B' => $replica_host, default => undef }
   )
 
+  # Source the global hiera.yaml from Primary and synchronize to new Replica 
+  # Provision the new system as a replica
+  run_plan('peadm::util::sync_global_hiera', $replica_target,
+    primary_host => $primary_target
+  )
+
   # Provision the new system as a replica
   run_task('peadm::provision_replica', $primary_target,
     replica    => $replica_target.peadm::certname(),

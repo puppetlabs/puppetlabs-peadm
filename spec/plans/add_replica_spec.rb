@@ -17,7 +17,7 @@ describe 'peadm::add_replica' do
     it 'runs successfully when the primary does not have alt-names' do
       allow_standard_non_returning_calls
       expect_task('peadm::get_peadm_config').always_return(cfg)
-      expect_task('peadm::cert_data').always_return(certdata).be_called_times(3)
+      expect_task('peadm::cert_data').always_return(certdata).be_called_times(4)
       expect_task('package').always_return({ 'status' => 'uninstalled' })
       expect_task('peadm::agent_install')
         .with_params({ 'server'        => 'primary',
@@ -35,7 +35,7 @@ describe 'peadm::add_replica' do
     it 'runs successfully when the primary has alt-names' do
       allow_standard_non_returning_calls
       expect_task('peadm::get_peadm_config').always_return(cfg)
-      expect_task('peadm::cert_data').always_return(certdata.merge({ 'dns-alt-names' => ['primary', 'alt'] })).be_called_times(3)
+      expect_task('peadm::cert_data').always_return(certdata.merge({ 'dns-alt-names' => ['primary', 'alt'] })).be_called_times(4)
       expect_task('package').always_return({ 'status' => 'uninstalled' })
       expect_task('peadm::agent_install')
         .with_params({ 'server'        => 'primary',
