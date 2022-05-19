@@ -22,7 +22,7 @@ Procedure:
 
 2. Temporarily set both primary and replica server nodes so that they use the remaining healthy PE-PostgreSQL server
 
-        bolt plan run peadm::util::update_db_setting --target <primary-server-fqdn>,<replica-server-fqdn> primary_postgresql_host=<working-postgres-server-fqdn>
+        bolt plan run peadm::util::update_db_setting --target <primary-server-fqdn>,<replica-server-fqdn> primary_postgresql_host=<working-postgres-server-fqdn> override=true
 
 3. Restart `pe-puppetdb.service` on Puppet server primary and replica
 
