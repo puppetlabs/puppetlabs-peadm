@@ -11,17 +11,21 @@ describe 'peadm::add_replica' do
 
   describe 'basic functionality' do
     let(:params) { { 'primary_host' => 'primary', 'replica_host' => 'replica' } }
-    let(:certdata) { {
-      'certificate-exists' => true,
-      'certname'           => 'primary',
-      'extensions'         => { '1.3.6.1.4.1.34380.1.1.9813' => 'A' },
-      'dns-alt-names'      => []
-    } }
-    let(:certstatus) { {
-      'certificate-status' => 'valid',
-      'reason'             => 'Expires - 2099-01-01 00:00:00 UTC'
-    } }
     let(:cfg) { { 'params' => { 'primary_host' => 'primary' } } }
+    let(:certdata) do
+      {
+        'certificate-exists' => true,
+        'certname'           => 'primary',
+        'extensions'         => { '1.3.6.1.4.1.34380.1.1.9813' => 'A' },
+        'dns-alt-names'      => []
+      }
+    end
+    let(:certstatus) do
+      {
+        'certificate-status' => 'valid',
+        'reason'             => 'Expires - 2099-01-01 00:00:00 UTC'
+      }
+    end
 
     it 'runs successfully when the primary does not have alt-names' do
       allow_standard_non_returning_calls

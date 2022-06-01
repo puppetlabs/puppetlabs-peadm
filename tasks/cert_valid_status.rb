@@ -4,7 +4,7 @@
 require 'puppet'
 require 'json'
 
-$params = JSON.parse(STDIN.read)
+params = JSON.parse(STDIN.read)
 
 Puppet.initialize_settings
 
@@ -14,7 +14,7 @@ begin
   cert_provider = Puppet::X509::CertProvider.new
   ssl_provider = Puppet::SSL::SSLProvider.new
   password = cert_provider.load_private_key_password
-  ssl_context = ssl_provider.load_context(certname: $params['certname'], password: password)
+  ssl_context = ssl_provider.load_context(certname: params['certname'], password: password)
 rescue Puppet::SSL::CertVerifyError => e
   status = { 'certificate-status' => 'invalid', 'reason' => e.message }
 rescue Puppet::Error => e
