@@ -107,6 +107,11 @@ plan peadm::add_compiler(
     },
   )
 
+  # Source the global hiera.yaml from Primary and synchronize to new compiler
+  run_plan('peadm::util::sync_global_hiera', $compiler_target,
+    primary_host => $primary_target
+  )
+
   # On <compiler-host>, run the puppet agent
   run_task('peadm::puppet_runonce', $compiler_target)
 
