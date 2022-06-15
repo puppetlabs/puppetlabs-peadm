@@ -6,11 +6,12 @@ plan peadm::util::update_classification (
   # Standard
   Peadm::SingleTargetSpec           $targets,
   Optional[Hash]                    $peadm_config = undef,
-  Optional[Peadm::SingleTargetSpec] $replica_host = undef,
+  Optional[Peadm::SingleTargetSpec] $server_a_host = undef,
+  Optional[Peadm::SingleTargetSpec] $server_b_host = undef,
 
   # Extra Large
-  Optional[Peadm::SingleTargetSpec] $primary_postgresql_host = undef,
-  Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
+  Optional[Peadm::SingleTargetSpec] $postgresql_a_host = undef,
+  Optional[Peadm::SingleTargetSpec] $postgresql_b_host = undef,
 
   # Common Configuration
   Optional[String] $compiler_pool_address = undef,
@@ -18,44 +19,49 @@ plan peadm::util::update_classification (
   Optional[String] $internal_compiler_b_pool_address = undef,
 ) {
 
-  # Convert inputs into targets.
-  $primary_target                   = peadm::get_targets($targets, 1)
-  $replica_target                   = peadm::get_targets($replica_host, 1)
-  $primary_postgresql_target        = peadm::get_targets($primary_postgresql_host, 1)
-  $replica_postgresql_target        = peadm::get_targets($replica_postgresql_host, 1)
+  $primary_target = peadm::get_targets($targets, 1)
 
   # Makes this more easily usable outside a plan
   if $peadm_config {
-    $current = $peadm_config['params']
+    $current = $peadm_config
   } else {
-    $current = run_task('peadm::get_peadm_config', $primary_target).first.value['params']
+    $current = run_task('peadm::get_peadm_config', $primary_target).first.value
   }
 
-  # When a replica in configured, the B side of the deployment requires that
-  # replica_postgresql_host to be set, if it is not then PuppetDB will be left
-  # non-functional. Doing this will allow both sides of the deployment to start
-  # up and be functional until the second PostgreSQL node can be provisioned and configured.
-  if (! $replica_postgresql_target.peadm::certname()) and $current['replica_host'] {
-    out::message('Overriding replica_postgresql_host while in transitive state')
-    $overridden_replica_postgresql_target = $primary_postgresql_target
-  } else {
-    $overridden_replica_postgresql_target = $replica_postgresql_target
-  }
+  out::verbose('Current config is...')
+  out::verbose($current)
 
-  $filtered = {
-    'primary_host' => $primary_target.peadm::certname(),
-    'replica_host' => $replica_target.peadm::certname(),
-    'primary_postgresql_host' => $primary_postgresql_target.peadm::certname(),
-    'replica_postgresql_host' => $overridden_replica_postgresql_target.peadm::certname(),
-    'compiler_pool_address' => $compiler_pool_address,
+  $filtered_params = {
+    'compiler_pool_address'            => $compiler_pool_address,
     'internal_compiler_a_pool_address' => $internal_compiler_a_pool_address,
     'internal_compiler_b_pool_address' => $internal_compiler_b_pool_address
   }.filter |$parameter| { $parameter[1] }
 
-  $new = merge($current, $filtered)
+  $filtered_server = {
+    'A' => $server_a_host,
+    'B' => $server_b_host
+  }.filter |$parameter| { $parameter[1] }
 
-  out::message('Classification to be updated using the following hash...')
-  out::message($new)
+  $filtered_psql = {
+    'A' => $postgresql_a_host,
+    'B' => $postgresql_b_host
+  }.filter |$parameter| { $parameter[1] }
+
+  $filtered = {
+    'params'      => $filtered_params,
+    'role-letter' => {
+      'server'     => $filtered_server,
+      'postgresql' => $filtered_psql
+    }
+  }
+
+  out::verbose('New values are...')
+  out::verbose($filtered)
+
+  $new = deep_merge($current, $filtered)
+
+  out::verbose('Updating classification to...')
+  out::verbose($new)
 
   apply($primary_target) {
     class { 'peadm::setup::node_manager_yaml':
@@ -63,14 +69,14 @@ plan peadm::util::update_classification (
     }
 
     class { 'peadm::setup::node_manager':
-      primary_host                     => $new['primary_host'],
-      server_a_host                    => $new['primary_host'],
-      server_b_host                    => $new['replica_host'],
-      postgresql_a_host                => $new['primary_postgresql_host'],
-      postgresql_b_host                => $new['replica_postgresql_host'],
-      compiler_pool_address            => $new['compiler_pool_address'],
-      internal_compiler_a_pool_address => $new['internal_compiler_a_pool_address'],
-      internal_compiler_b_pool_address => $new['internal_compiler_b_pool_address'],
+      primary_host                     => $primary_target.peadm::certname(),
+      server_a_host                    => $new['role-letter']['server']['A'],
+      server_b_host                    => $new['role-letter']['server']['B'],
+      postgresql_a_host                => $new['role-letter']['postgresql']['A'],
+      postgresql_b_host                => $new['role-letter']['postgresql']['B'],
+      compiler_pool_address            => $new['params']['compiler_pool_address'],
+      internal_compiler_a_pool_address => $new['params']['internal_compiler_a_pool_address'],
+      internal_compiler_b_pool_address => $new['params']['internal_compiler_b_pool_address'],
       require                          => Class['peadm::setup::node_manager_yaml'],
     }
   }

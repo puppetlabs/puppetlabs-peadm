@@ -7,18 +7,18 @@
 # @param dns_alt_names _ A comma_separated list of DNS alt names for the component
 # @param role _ Optional PEADM role the component will serve
 plan peadm::subplans::component_install(
-  Peadm::SingleTargetSpec $targets,
-  Peadm::SingleTargetSpec $primary_host,
-  Enum['A', 'B']          $avail_group_letter,
-  Optional[String[1]]     $dns_alt_names = undef,
-  Optional[String[1]]     $role          = undef
+  Peadm::SingleTargetSpec                $targets,
+  Peadm::SingleTargetSpec                $primary_host,
+  Enum['A', 'B']                         $avail_group_letter,
+  Optional[Variant[String[1], Array]] $dns_alt_names = undef,
+  Optional[String[1]]                    $role          = undef
 ){
   $component_target          = peadm::get_targets($targets, 1)
   $primary_target            = peadm::get_targets($primary_host, 1)
 
   run_plan('peadm::subplans::prepare_agent', $component_target,
     primary_host           => $primary_target,
-    dns_alt_name           => $dns_alt_names,
+    dns_alt_names          => peadm::flatten_compact([$dns_alt_names]),
     certificate_extensions => {
       peadm::oid('peadm_role')               => $role,
       peadm::oid('peadm_availability_group') => $avail_group_letter,

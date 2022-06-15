@@ -4,30 +4,18 @@
 #
 plan peadm::util::update_db_setting (
   TargetSpec                        $targets,
-  Optional[Peadm::SingleTargetSpec] $new_postgresql_host     = undef,
-  Optional[Peadm::SingleTargetSpec] $primary_postgresql_host = undef,
-  Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
-  Optional[Hash]                    $peadm_config            = undef,
+  Optional[Peadm::SingleTargetSpec] $postgresql_host = undef,
+  Optional[Hash]                    $peadm_config    = undef,
+  Boolean                           $override        = false
 ) {
 
-  # Convert inputs into targets.
-  $primary_postgresql_target = peadm::get_targets($primary_postgresql_host, 1)
-  $replica_postgresql_target = peadm::get_targets($replica_postgresql_host, 1)
-
-  # Originally written to handle some additional logic which was eventually
-  # determined to not be useful and was pulled out. As a result could use
-  # more additional simplification. The goal is to match each infrastructure
-  # component to the PostgreSQL nodes which corresponds to their availability
-  # letter and if a match is not found, assume that new node is the match.
-  #
-  # FIX ME: Test removal of $primary_potsgresql_host and $replica_postgresql_host 
-  # parameter check. Likely only parameter needed is the node be added. Section
-  # also needs to be parallelized, can't use built functionality of apply().
+  # FIX ME: Section needs to be parallelized, can't use built in functionality
+  # of apply().
   get_targets($targets).each |$target| {
 
-    # Availability group does not matter if only one PSQL node in the cluster
-    if ($primary_postgresql_host and $replica_postgresql_host) {
-
+    if $override {
+      $db = $postgresql_host
+    } else {
       # Existing config used to dynamically pair nodes with appropriate PSQL
       # server
       $roles = $peadm_config['role-letter']
@@ -43,15 +31,13 @@ plan peadm::util::update_db_setting (
       if $match {
         $db = $match
       } else {
-        $db = $new_postgresql_host
+        $db = $postgresql_host
       }
-
-      $db_setting = "//${db}:5432/pe-puppetdb?ssl=true&sslfactory=org.postgresql.ssl.jdbc4.LibPQFactory&sslmode=verify-full&sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem&sslkey=/etc/puppetlabs/puppetdb/ssl/${target.peadm::certname()}.private_key.pk8&sslcert=/etc/puppetlabs/puppetdb/ssl/${$target.peadm::certname()}.cert.pem"
-    } else {
-      $db_setting = "//${primary_postgresql_host}:5432/pe-puppetdb?ssl=true&sslfactory=org.postgresql.ssl.jdbc4.LibPQFactory&sslmode=verify-full&sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem&sslkey=/etc/puppetlabs/puppetdb/ssl/${target.peadm::certname()}.private_key.pk8&sslcert=/etc/puppetlabs/puppetdb/ssl/${$target.peadm::certname()}.cert.pem"
     }
 
-    # Introduced new dependency for PEADM to enable modification of INI files
+    $db_setting = "//${db}:5432/pe-puppetdb?ssl=true&sslfactory=org.postgresql.ssl.jdbc4.LibPQFactory&sslmode=verify-full&sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem&sslkey=/etc/puppetlabs/puppetdb/ssl/${target.peadm::certname()}.private_key.pk8&sslcert=/etc/puppetlabs/puppetdb/ssl/${$target.peadm::certname()}.cert.pem"
+
+    # Introduces dependency so PEADM can modify INI files
     apply($target) {
       ini_setting { 'database_setting':
         ensure  => present,

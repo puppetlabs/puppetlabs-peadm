@@ -26,6 +26,11 @@ plan peadm::add_replica(
   $replica_target             = peadm::get_targets($replica_host, 1)
   $replica_postgresql_target  = peadm::get_targets($replica_postgresql_host, 1)
 
+  run_command('systemctl stop puppet.service', peadm::flatten_compact([
+    $primary_target,
+    $replica_postgresql_target,
+  ]))
+
   $certdata = run_task('peadm::cert_data', $primary_target).first.value
   $primary_avail_group_letter = $certdata['extensions'][peadm::oid('peadm_availability_group')]
   $replica_avail_group_letter = $primary_avail_group_letter ? { 'A' => 'B', 'B' => 'A' }
@@ -35,40 +40,14 @@ plan peadm::add_replica(
   $dns_alt_names = [$replica_target.peadm::certname()] + (pick($certdata['dns-alt-names'], []) - $certdata['certname'])
 
   # This has the effect of revoking the node's certificate, if it exists
-  run_command("puppet infrastructure forget ${replica_target.peadm::certname()}", $primary_target, _catch_errors => true)
+  run_command("/opt/puppetlabs/bin/puppet infrastructure forget ${replica_target.peadm::certname()}", $primary_target, _catch_errors => true)
 
-  # Check for and merge csr_attributes.
-  run_plan('peadm::util::insert_csr_extension_requests', $replica_target,
-      extension_requests => {
-        peadm::oid('peadm_role')               => 'puppet/server',
-        peadm::oid('peadm_availability_group') => $replica_avail_group_letter
-      }
-    )
-
-  run_task('peadm::agent_install', $replica_target,
-    server        => $primary_target.peadm::certname(),
-    install_flags => [
-      '--puppet-service-ensure', 'stopped',
-      "main:certname=${replica_target.peadm::certname()}",
-      "main:dns_alt_names=${dns_alt_names.join(',')}",
-    ],
+  run_plan('peadm::subplans::component_install', $replica_target,
+    primary_host       => $primary_target,
+    avail_group_letter => $replica_avail_group_letter,
+    role               => 'puppet/server',
+    dns_alt_names      => $dns_alt_names
   )
-
-  # clean the cert to make the plan idempotent
-  run_task('peadm::ssl_clean', $replica_target,
-    certname => $replica_target.peadm::certname(),
-  )
-
-  # Manually submit a CSR
-  run_task('peadm::submit_csr', $replica_target)
-
-  # On primary, if necessary, sign the certificate request
-  run_task('peadm::sign_csr', $primary_target,
-    certnames => [$replica_target.peadm::certname()],
-  )
-
-  # On <replica_target>, run the puppet agent
-  run_task('peadm::puppet_runonce', $replica_target)
 
   # On the PE-PostgreSQL server in the <replacement-avail-group-letter> group
 
@@ -77,26 +56,34 @@ plan peadm::add_replica(
   #  pe-puppetdb-pe-puppetdb-map <replacement-replica-fqdn> pe-puppetdb
   #  pe-puppetdb-pe-puppetdb-migrator-map <replacement-replica-fqdn> pe-puppetdb-migrator
   apply($replica_postgresql_target) {
-    service { 'puppet':
-      ensure => stopped,
-      before => File_line['puppetdb-map', 'migrator-map'],
-    }
-
-    file_line { 'puppetdb-map':
+    file_line { 'pe-puppetdb-pe-puppetdb-map':
       path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf',
       line => "pe-puppetdb-pe-puppetdb-map ${replica_target.peadm::certname()} pe-puppetdb",
     }
-
-    file_line { 'migrator-map':
+    file_line { 'pe-puppetdb-pe-puppetdb-migrator-map':
       path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf',
       line => "pe-puppetdb-pe-puppetdb-migrator-map ${replica_target.peadm::certname()} pe-puppetdb-migrator",
     }
-
-    service { 'pe-postgresql':
-      ensure    => running,
-      subscribe => File_line['puppetdb-map', 'migrator-map'],
+    file_line { 'pe-puppetdb-pe-puppetdb-read-map':
+      path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf',
+      line => "pe-puppetdb-pe-puppetdb-read-map ${replica_target.peadm::certname()} pe-puppetdb-read",
     }
   }
+
+  run_command('systemctl reload pe-postgresql.service', $replica_postgresql_target)
+
+  run_plan('peadm::util::update_classification', $primary_target,
+    server_a_host                    => $replica_avail_group_letter ? { 'A' => $replica_host, default => undef },
+    server_b_host                    => $replica_avail_group_letter ? { 'B' => $replica_host, default => undef },
+    internal_compiler_a_pool_address => $replica_avail_group_letter ? { 'A' => $replica_host, default => undef },
+    internal_compiler_b_pool_address => $replica_avail_group_letter ? { 'B' => $replica_host, default => undef }
+  )
+
+  # Source the global hiera.yaml from Primary and synchronize to new Replica 
+  # Provision the new system as a replica
+  run_plan('peadm::util::sync_global_hiera', $replica_target,
+    primary_host => $primary_target
+  )
 
   # Provision the new system as a replica
   run_task('peadm::provision_replica', $primary_target,
@@ -109,8 +96,12 @@ plan peadm::add_replica(
     legacy     => true,
   )
 
-  # start puppet service on postgresql host
-  run_command('systemctl start puppet.service', $replica_postgresql_target)
+  # start puppet service
+  run_command('systemctl start puppet.service', peadm::flatten_compact([
+    $primary_target,
+    $replica_postgresql_target,
+    $replica_target
+  ]))
 
   return("Added replica ${replica_target}")
 }
