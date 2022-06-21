@@ -242,6 +242,11 @@ plan peadm::convert (
     # that would cause the runs to fail on all the rest.
     run_task('peadm::puppet_runonce', $primary_target)
     run_task('peadm::puppet_runonce', $all_targets - $primary_target)
+
+    # Restart cluster compiler services that are likely not restarted by our
+    # final Puppet run to increase chance everything is functional upon plan
+    # completion
+    run_command('systemctl restart pe-puppetserver.service pe-puppetdb.service', $all_targets - $primary_target)
   }
 
   return("Conversion to peadm Puppet Enterprise ${arch['architecture']} completed.")
