@@ -2,14 +2,29 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.8.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.8.0) (2022-06-21)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.7.0...v3.8.0)
+
+### Added
+
+- Fix classification when adding some components [\#258](https://github.com/puppetlabs/puppetlabs-peadm/pull/258) ([ody](https://github.com/ody))
+- Add task and update configure plan to allow for ldap configuration on… [\#253](https://github.com/puppetlabs/puppetlabs-peadm/pull/253) ([bwilcox](https://github.com/bwilcox))
+
+### Fixed
+
+- Restart compiler services [\#271](https://github.com/puppetlabs/puppetlabs-peadm/pull/271) ([ody](https://github.com/ody))
+- Set additional rules on replica when adding compiler [\#270](https://github.com/puppetlabs/puppetlabs-peadm/pull/270) ([ody](https://github.com/ody))
+- Updates documentation [\#269](https://github.com/puppetlabs/puppetlabs-peadm/pull/269) ([ody](https://github.com/ody))
+
 ## [v3.7.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.7.0) (2022-05-11)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.6.0...v3.7.0)
 
 ### Added
 
-- Add support for PE 2021.6 and 2019.8.11 [\#260](https://github.com/puppetlabs/puppetlabs-peadm/pull/260) ([reidmv](https://github.com/reidmv))
 - Add optional `pe_installer_source` parameter [\#261](https://github.com/puppetlabs/puppetlabs-peadm/pull/261) ([reidmv](https://github.com/reidmv))
+- Support PE 2021.6 and 2019.8.11 [\#260](https://github.com/puppetlabs/puppetlabs-peadm/pull/260) ([reidmv](https://github.com/reidmv))
 - Add experimental restore plan [\#250](https://github.com/puppetlabs/puppetlabs-peadm/pull/250) ([reidmv](https://github.com/reidmv))
 
 ## [v3.6.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.6.0) (2022-05-04)
@@ -18,12 +33,12 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
-- Add experimental backup plan [\#235](https://github.com/puppetlabs/puppetlabs-peadm/pull/235) ([davidsandilands](https://github.com/davidsandilands))
+- Solarch 581 [\#235](https://github.com/puppetlabs/puppetlabs-peadm/pull/235) ([davidsandilands](https://github.com/davidsandilands))
 
 ### Fixed
 
 - Add read map so puppetdb can start on new compiler [\#252](https://github.com/puppetlabs/puppetlabs-peadm/pull/252) ([ody](https://github.com/ody))
-- Fix and document recovery procedure for PSQL [\#243](https://github.com/puppetlabs/puppetlabs-peadm/pull/243) ([ody](https://github.com/ody))
+- \(SOLARCH-434\) Procedure for recovering PSQL [\#243](https://github.com/puppetlabs/puppetlabs-peadm/pull/243) ([ody](https://github.com/ody))
 
 ## [v3.5.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.5.0) (2022-04-13)
 
