@@ -17,21 +17,24 @@ plan peadm::subplans::db_populate(
     $destination_target,
   ]))
 
-  # Add the following two lines to /opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf
+  # Retrieve source's PSQL version
+  $psql_version = run_task('peadm::get_psql_version', $source_target).first.value['version']
+
+  # Add the following two lines to /opt/puppetlabs/server/data/postgresql/${psql_version}/data/pg_ident.conf
   #
   # These lines allow connections from destination by pg_basebackup to replicate
   # content
   apply($source_target) {
     file_line { 'replication-pe-ha-replication-map':
-      path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf',
+      path => "/opt/puppetlabs/server/data/postgresql/${psql_version}/data/pg_ident.conf",
       line => "replication-pe-ha-replication-map ${destination_target.peadm::certname()} pe-ha-replication",
     }
     file_line { 'replication-pe-ha-replication-ipv4':
-      path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_hba.conf',
+      path => "/opt/puppetlabs/server/data/postgresql/${psql_version}/data/pg_hba.conf",
       line => 'hostssl replication    pe-ha-replication 0.0.0.0/0  cert  map=replication-pe-ha-replication-map  clientcert=1',
     }
     file_line { 'replication-pe-ha-replication-ipv6':
-      path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_hba.conf',
+      path => "/opt/puppetlabs/server/data/postgresql/${psql_version}/data/pg_hba.conf",
       line => 'hostssl replication    pe-ha-replication ::/0       cert  map=replication-pe-ha-replication-map  clientcert=1',
     }
   }
@@ -42,7 +45,7 @@ plan peadm::subplans::db_populate(
   # Save existing certificates to use for authentication to source. Can not use
   # certs stored in /etc/puppetlabs/puppet/ssl because we will run pg_basebackup
   # as pe-postgres user, which lacks access
-  run_command('mv /opt/puppetlabs/server/data/postgresql/11/data/certs /opt/puppetlabs/server/data/pg_certs', $destination_target)
+  run_command("mv /opt/puppetlabs/server/data/postgresql/${psql_version}/data/certs /opt/puppetlabs/server/data/pg_certs", $destination_target)
 
   # pg_basebackup requires an entirely empty data directory
   run_command('rm -rf /opt/puppetlabs/server/data/postgresql/*', $destination_target)
@@ -50,7 +53,7 @@ plan peadm::subplans::db_populate(
   $pg_basebackup = @("PGBASE")
     runuser -u pe-postgres -- \
       /opt/puppetlabs/server/bin/pg_basebackup \
-        -D /opt/puppetlabs/server/data/postgresql/11/data \
+        -D /opt/puppetlabs/server/data/postgresql/${psql_version}/data \
         -d "host=${source_host}
             user=pe-ha-replication
             sslmode=verify-full
@@ -72,17 +75,17 @@ plan peadm::subplans::db_populate(
   apply($source_target) {
     file_line { 'replication-pe-ha-replication-map':
       ensure => absent,
-      path   => '/opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf',
+      path   => "/opt/puppetlabs/server/data/postgresql/${psql_version}/data/pg_ident.conf",
       line   => "replication-pe-ha-replication-map ${destination_target.peadm::certname()} pe-ha-replication",
     }
     file_line { 'replication-pe-ha-replication-ipv4':
       ensure => absent,
-      path   => '/opt/puppetlabs/server/data/postgresql/11/data/pg_hba.conf',
+      path   => "/opt/puppetlabs/server/data/postgresql/${psql_version}/data/pg_hba.conf",
       line   => 'hostssl replication    pe-ha-replication 0.0.0.0/0  cert  map=replication-pe-ha-replication-map  clientcert=1',
     }
     file_line { 'replication-pe-ha-replication-ipv6':
       ensure => absent,
-      path   => '/opt/puppetlabs/server/data/postgresql/11/data/pg_hba.conf',
+      path   => "/opt/puppetlabs/server/data/postgresql/${psql_version}/data/pg_hba.conf",
       line   => 'hostssl replication    pe-ha-replication ::/0       cert  map=replication-pe-ha-replication-map  clientcert=1',
     }
   }
