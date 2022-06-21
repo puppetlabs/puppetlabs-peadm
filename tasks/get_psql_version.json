@@ -1,0 +1,5 @@
+{
+  "description": "Run on a PE PSQL node to return the major version of the PSQL server currently installed",
+  "parameters": { },
+  "input_method": "stdin"
+}
