@@ -40,6 +40,7 @@
 
 ### Data types
 
+* [`Peadm::Ldap_config`](#peadmldap_config)
 * [`Peadm::Pe_version`](#peadmpe_version)
 * [`Peadm::Pem`](#peadmpem)
 * [`Peadm::Recovery_opts`](#peadmrecovery_opts)
@@ -51,6 +52,7 @@
 * [`agent_upgrade`](#agent_upgrade): Upgrade the target system using upgrade.bash from a master
 * [`backup_classification`](#backup_classification): A task to call the classification api and write to file
 * [`cert_data`](#cert_data): Return certificate data related to the Puppet agent
+* [`cert_valid_status`](#cert_valid_status): Check primary for valid state of a certificate
 * [`code_manager`](#code_manager): Perform various code manager actions
 * [`code_sync_status`](#code_sync_status): A task to confirm code is in sync accross the cluster for clusters with code manager configured
 * [`divert_code_manager`](#divert_code_manager): Divert the code manager live-dir setting
@@ -62,6 +64,7 @@
 * [`mkdir_p_file`](#mkdir_p_file): Create a file with the specified content at the specified location
 * [`mv`](#mv): Wrapper task for mv command
 * [`pe_install`](#pe_install): Install Puppet Enterprise from a tarball
+* [`pe_ldap_config`](#pe_ldap_config): Set the ldap config in the PE console
 * [`pe_uninstall`](#pe_uninstall): Uninstall Puppet Enterprise
 * [`precheck`](#precheck): Return pre-check information about a system
 * [`provision_replica`](#provision_replica): Execute the replica provision puppet command
@@ -111,6 +114,7 @@ Supported use cases:
 * `peadm::util::insert_csr_extension_requests`
 * `peadm::util::retrieve_and_upload`
 * `peadm::util::sanitize_pg_pe_conf`
+* `peadm::util::sync_global_hiera`
 * `peadm::util::update_classification`: Configure classification
 * `peadm::util::update_db_setting`: Make updates to PuppetDB database settings
 
@@ -770,6 +774,40 @@ Data type: `TargetSpec`
 
 ## Data types
 
+### <a name="peadmldap_config"></a>`Peadm::Ldap_config`
+
+The Peadm::Ldap_config data type.
+
+Alias of
+
+```puppet
+Struct[{
+  base_dn                             => String,
+  connect_timeout                     => Integer,
+  disable_ldap_matching_rule_in_chain => Boolean,
+  display_name                        => String,
+  group_lookup_attr                   => String,
+  group_member_attr                   => String,
+  group_name_attr                     => String,
+  group_object_class                  => String,
+  Optional[group_rdn]                 => Optional[String],
+  Optional[help_link]                 => Optional[String],
+  hostname                            => String,
+  Optional[login]                     => Optional[String],
+  Optional[password]                  => Optional[String],
+  port                                => Integer,
+  search_nested_groups                => Boolean,
+  ssl                                 => Boolean,
+  ssl_hostname_validation             => Boolean,
+  ssl_wildcard_validation             => Boolean,
+  start_tls                           => Boolean,
+  user_display_name_attr              => String,
+  user_email_attr                     => String,
+  user_lookup_attr                    => String,
+  Optional[user_rdn]                  => Optional[String],
+}]
+```
+
 ### <a name="peadmpe_version"></a>`Peadm::Pe_version`
 
 The Peadm::Pe_version data type.
@@ -876,6 +914,20 @@ The directory to write the classification output to. Directory must exist
 Return certificate data related to the Puppet agent
 
 **Supports noop?** false
+
+### <a name="cert_valid_status"></a>`cert_valid_status`
+
+Check primary for valid state of a certificate
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `certname`
+
+Data type: `String`
+
+The certifcate name to check validation of
 
 ### <a name="code_manager"></a>`code_manager`
 
@@ -1092,6 +1144,26 @@ If true, optimize task for known manual issues with extra-large installs. Do not
 Data type: `Optional[Enum['stopped']]`
 
 If 'stopped', ensure the Puppet agent is not running when install completes
+
+### <a name="pe_ldap_config"></a>`pe_ldap_config`
+
+Set the ldap config in the PE console
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `ldap_config`
+
+Data type: `Peadm::Ldap_config`
+
+The hash of options for ldap.
+
+##### `pe_main`
+
+Data type: `String`
+
+The PE Main server
 
 ### <a name="pe_uninstall"></a>`pe_uninstall`
 
@@ -1465,6 +1537,7 @@ The following parameters are available in the `peadm::install` plan:
 * [`internal_compiler_a_pool_address`](#internal_compiler_a_pool_address)
 * [`internal_compiler_b_pool_address`](#internal_compiler_b_pool_address)
 * [`pe_installer_source`](#pe_installer_source)
+* [`ldap_config`](#ldap_config)
 * [`primary_host`](#primary_host)
 * [`replica_host`](#replica_host)
 * [`compiler_hosts`](#compiler_hosts)
@@ -1521,6 +1594,17 @@ The URL to download the Puppet Enterprise installer media from. If not
 specified, PEAdm will attempt to download PE installation media from its
 standard public source. When specified, PEAdm will download directly from the
 URL given.
+
+Default value: ``undef``
+
+##### <a name="ldap_config"></a>`ldap_config`
+
+Data type: `Optional[Peadm::Ldap_config]`
+
+If specified, configures PE RBAC DS with the supplied configuration hash.
+The parameter should be set to a valid set of connection settings as
+documented for the PE RBAC /ds endpoint. See:
+https://puppet.com/docs/pe/latest/rbac_api_v1_directory.html#put_ds-request_format
 
 Default value: ``undef``
 
