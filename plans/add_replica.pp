@@ -31,6 +31,15 @@ plan peadm::add_replica(
     $replica_postgresql_target,
   ]))
 
+  # Get current peadm config to ensure we forget active replicas
+  $peadm_config = run_task('peadm::get_peadm_config', $primary_target).first.value
+
+  # Make list of all possible replicas, configured and provided
+  $replicas = peadm::flatten_compact([
+    $replica_host,
+    $peadm_config['params']['replica_host']
+  ]).unique
+
   $certdata = run_task('peadm::cert_data', $primary_target).first.value
   $primary_avail_group_letter = $certdata['extensions'][peadm::oid('peadm_availability_group')]
   $replica_avail_group_letter = $primary_avail_group_letter ? { 'A' => 'B', 'B' => 'A' }
@@ -40,7 +49,9 @@ plan peadm::add_replica(
   $dns_alt_names = [$replica_target.peadm::certname()] + (pick($certdata['dns-alt-names'], []) - $certdata['certname'])
 
   # This has the effect of revoking the node's certificate, if it exists
-  run_command("/opt/puppetlabs/bin/puppet infrastructure forget ${replica_target.peadm::certname()}", $primary_target, _catch_errors => true)
+  $replicas.each |$replica| {
+    run_command("/opt/puppetlabs/bin/puppet infrastructure forget ${replica}", $primary_target, _catch_errors => true)
+  }
 
   run_plan('peadm::subplans::component_install', $replica_target,
     primary_host       => $primary_target,
@@ -76,7 +87,8 @@ plan peadm::add_replica(
     server_a_host                    => $replica_avail_group_letter ? { 'A' => $replica_host, default => undef },
     server_b_host                    => $replica_avail_group_letter ? { 'B' => $replica_host, default => undef },
     internal_compiler_a_pool_address => $replica_avail_group_letter ? { 'A' => $replica_host, default => undef },
-    internal_compiler_b_pool_address => $replica_avail_group_letter ? { 'B' => $replica_host, default => undef }
+    internal_compiler_b_pool_address => $replica_avail_group_letter ? { 'B' => $replica_host, default => undef },
+    peadm_config                     => $peadm_config
   )
 
   # Source the global hiera.yaml from Primary and synchronize to new Replica 
