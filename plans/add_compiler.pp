@@ -14,13 +14,35 @@ plan peadm::add_compiler(
   Peadm::SingleTargetSpec $compiler_host,
   Peadm::SingleTargetSpec $primary_host,
   Peadm::SingleTargetSpec $primary_postgresql_host,
-){
+) {
   $compiler_target           = peadm::get_targets($compiler_host, 1)
   $primary_target            = peadm::get_targets($primary_host, 1)
   $primary_postgresql_target = peadm::get_targets($primary_postgresql_host, 1)
 
+  # Get current peadm config to determine where to setup additional rules for
+  # compiler's secondary PuppetDB instances
+  $peadm_config = run_task('peadm::get_peadm_config', $primary_target).first.value
+
+  # Return the opposite server than the compiler to be added so it can be
+  # configured with the appropriate rules for Puppet Server access from
+  # compiler
+  $replica_avail_group_letter = $avail_group_letter ? { 'A' => 'B', 'B' => 'A' }
+  $replica_puppetdb = $peadm_config['role-letter']['server'][$replica_avail_group_letter]
+
+  $replica_puppetdb_target = peadm::get_targets($replica_puppetdb, 1)
+
   # Stop puppet.service
-  run_command('systemctl stop puppet.service', $primary_postgresql_target)
+  run_command('systemctl stop puppet.service', peadm::flatten_compact([
+    $primary_postgresql_target,
+    $replica_puppetdb_target
+  ]))
+
+  apply($replica_puppetdb_target) {
+    file_line { 'pe-puppetdb-compiler-cert-allow':
+      path => '/etc/puppetlabs/puppetdb/certificate-allowlist',
+      line => $compiler_target.peadm::certname(),
+    }
+  }
 
   # Add the following two lines to /opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf
   # 
@@ -85,15 +107,24 @@ plan peadm::add_compiler(
     },
   )
 
+  # Source the global hiera.yaml from Primary and synchronize to new compiler
+  run_plan('peadm::util::sync_global_hiera', $compiler_target,
+    primary_host => $primary_target
+  )
+
   # On <compiler-host>, run the puppet agent
   run_task('peadm::puppet_runonce', $compiler_target)
 
   # On <primary_postgresql_host> run the puppet agent
-  run_task('peadm::puppet_runonce', $primary_postgresql_target)
+  run_task('peadm::puppet_runonce', peadm::flatten_compact([
+    $primary_postgresql_target,
+    $replica_puppetdb_target
+  ]))
 
   # On <primary_postgresql_host> start puppet.service
   run_command('systemctl start puppet.service', peadm::flatten_compact([
     $primary_postgresql_target,
+    $replica_puppetdb_target,
     $compiler_target,
   ]))
 
