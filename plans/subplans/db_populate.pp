@@ -20,6 +20,12 @@ plan peadm::subplans::db_populate(
   # Retrieve source's PSQL version
   $psql_version = run_task('peadm::get_psql_version', $source_target).first.value['version']
 
+  # Determine clientcert setting
+  $clientcert = $psql_version ? {
+    '14'    => 'verify-full',
+    default => 1
+  }
+
   # Add the following two lines to /opt/puppetlabs/server/data/postgresql/${psql_version}/data/pg_ident.conf
   #
   # These lines allow connections from destination by pg_basebackup to replicate
@@ -31,11 +37,11 @@ plan peadm::subplans::db_populate(
     }
     file_line { 'replication-pe-ha-replication-ipv4':
       path => "/opt/puppetlabs/server/data/postgresql/${psql_version}/data/pg_hba.conf",
-      line => 'hostssl replication    pe-ha-replication 0.0.0.0/0  cert  map=replication-pe-ha-replication-map  clientcert=1',
+      line => "hostssl replication    pe-ha-replication 0.0.0.0/0  cert  map=replication-pe-ha-replication-map  clientcert=${clientcert}",
     }
     file_line { 'replication-pe-ha-replication-ipv6':
       path => "/opt/puppetlabs/server/data/postgresql/${psql_version}/data/pg_hba.conf",
-      line => 'hostssl replication    pe-ha-replication ::/0       cert  map=replication-pe-ha-replication-map  clientcert=1',
+      line => "hostssl replication    pe-ha-replication ::/0       cert  map=replication-pe-ha-replication-map  clientcert=${clientcert}",
     }
   }
 
@@ -81,12 +87,12 @@ plan peadm::subplans::db_populate(
     file_line { 'replication-pe-ha-replication-ipv4':
       ensure => absent,
       path   => "/opt/puppetlabs/server/data/postgresql/${psql_version}/data/pg_hba.conf",
-      line   => 'hostssl replication    pe-ha-replication 0.0.0.0/0  cert  map=replication-pe-ha-replication-map  clientcert=1',
+      line   => "hostssl replication    pe-ha-replication 0.0.0.0/0  cert  map=replication-pe-ha-replication-map  clientcert=${clientcert}",
     }
     file_line { 'replication-pe-ha-replication-ipv6':
       ensure => absent,
       path   => "/opt/puppetlabs/server/data/postgresql/${psql_version}/data/pg_hba.conf",
-      line   => 'hostssl replication    pe-ha-replication ::/0       cert  map=replication-pe-ha-replication-map  clientcert=1',
+      line   => "hostssl replication    pe-ha-replication ::/0       cert  map=replication-pe-ha-replication-map  clientcert=${clientcert}",
     }
   }
 
