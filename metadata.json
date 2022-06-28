@@ -39,6 +39,10 @@
     {
       "name": "puppetlabs/inifile",
       "version_requirement": ">= 5.2.0 < 6.0.0"
+    },
+    {
+      "name": "puppetlabs/ruby_task_helper",
+      "version_requirement": ">= 0.6.1 < 1.0.0"
     }
   ],
   "operatingsystem_support": [

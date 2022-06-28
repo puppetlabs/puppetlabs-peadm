@@ -1,0 +1,6 @@
+{
+  "description": "Run on a PE PSQL node to return the major version of the PSQL server currently installed",
+  "parameters": { },
+  "files": ["ruby_task_helper/files/task_helper.rb"],
+  "input_method": "stdin"
+}

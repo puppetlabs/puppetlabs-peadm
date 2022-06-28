@@ -44,6 +44,9 @@ plan peadm::add_compiler(
     }
   }
 
+  # On the PostgreSQL server backing PuppetDB for compiler, get version number
+  $psql_version = run_task('peadm::get_psql_version', $primary_postgresql_target).first.value['version']
+
   # Add the following two lines to /opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf
   # 
   # pe-puppetdb-pe-puppetdb-map <new-compiler-host> pe-puppetdb
@@ -51,15 +54,15 @@ plan peadm::add_compiler(
 
   apply($primary_postgresql_target) {
     file_line { 'pe-puppetdb-pe-puppetdb-map':
-      path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf',
+      path => "/opt/puppetlabs/server/data/postgresql/${psql_version}/data/pg_ident.conf",
       line => "pe-puppetdb-pe-puppetdb-map ${compiler_target.peadm::certname()} pe-puppetdb",
     }
     file_line { 'pe-puppetdb-pe-puppetdb-migrator-map':
-      path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf',
+      path => "/opt/puppetlabs/server/data/postgresql/${psql_version}/data/pg_ident.conf",
       line => "pe-puppetdb-pe-puppetdb-migrator-map ${compiler_target.peadm::certname()} pe-puppetdb-migrator",
     }
     file_line { 'pe-puppetdb-pe-puppetdb-read-map':
-      path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf',
+      path => "/opt/puppetlabs/server/data/postgresql/${psql_version}/data/pg_ident.conf",
       line => "pe-puppetdb-pe-puppetdb-read-map ${compiler_target.peadm::certname()} pe-puppetdb-read",
     }
   }

@@ -60,28 +60,34 @@ plan peadm::add_replica(
     dns_alt_names      => $dns_alt_names
   )
 
-  # On the PE-PostgreSQL server in the <replacement-avail-group-letter> group
+  # Wrap these things that operate on replica_postgresql_target in an if statement
+  # to avoid failures retrieving PSQL version because you can't operate functions
+  # on a return value of nil.
+  if $replica_postgresql_host {
+    # On the PE-PostgreSQL server in the <replacement-avail-group-letter> group
+    $psql_version = run_task('peadm::get_psql_version', $replica_postgresql_target).first.value['version']
 
-  # Stop puppet and add the following two lines to
-  # /opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf
-  #  pe-puppetdb-pe-puppetdb-map <replacement-replica-fqdn> pe-puppetdb
-  #  pe-puppetdb-pe-puppetdb-migrator-map <replacement-replica-fqdn> pe-puppetdb-migrator
-  apply($replica_postgresql_target) {
-    file_line { 'pe-puppetdb-pe-puppetdb-map':
-      path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf',
-      line => "pe-puppetdb-pe-puppetdb-map ${replica_target.peadm::certname()} pe-puppetdb",
+    # Stop puppet and add the following two lines to
+    # /opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf
+    #  pe-puppetdb-pe-puppetdb-map <replacement-replica-fqdn> pe-puppetdb
+    #  pe-puppetdb-pe-puppetdb-migrator-map <replacement-replica-fqdn> pe-puppetdb-migrator
+    apply($replica_postgresql_target) {
+      file_line { 'pe-puppetdb-pe-puppetdb-map':
+        path => "/opt/puppetlabs/server/data/postgresql/${psql_version}/data/pg_ident.conf",
+        line => "pe-puppetdb-pe-puppetdb-map ${replica_target.peadm::certname()} pe-puppetdb",
+      }
+      file_line { 'pe-puppetdb-pe-puppetdb-migrator-map':
+        path => "/opt/puppetlabs/server/data/postgresql/${psql_version}/data/pg_ident.conf",
+        line => "pe-puppetdb-pe-puppetdb-migrator-map ${replica_target.peadm::certname()} pe-puppetdb-migrator",
+      }
+      file_line { 'pe-puppetdb-pe-puppetdb-read-map':
+        path => "/opt/puppetlabs/server/data/postgresql/${psql_version}/data/pg_ident.conf",
+        line => "pe-puppetdb-pe-puppetdb-read-map ${replica_target.peadm::certname()} pe-puppetdb-read",
+      }
     }
-    file_line { 'pe-puppetdb-pe-puppetdb-migrator-map':
-      path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf',
-      line => "pe-puppetdb-pe-puppetdb-migrator-map ${replica_target.peadm::certname()} pe-puppetdb-migrator",
-    }
-    file_line { 'pe-puppetdb-pe-puppetdb-read-map':
-      path => '/opt/puppetlabs/server/data/postgresql/11/data/pg_ident.conf',
-      line => "pe-puppetdb-pe-puppetdb-read-map ${replica_target.peadm::certname()} pe-puppetdb-read",
-    }
+
+    run_command('systemctl reload pe-postgresql.service', $replica_postgresql_target)
   }
-
-  run_command('systemctl reload pe-postgresql.service', $replica_postgresql_target)
 
   run_plan('peadm::util::update_classification', $primary_target,
     server_a_host                    => $replica_avail_group_letter ? { 'A' => $replica_host, default => undef },
