@@ -21,7 +21,7 @@ The configuration applied in each group looks as follows:
 
 ### PE Primary A
 
-![PE Primary A group](images/pe-master-a.png)
+![PE Primary A group](images/pe-primary-a.png)
 
 Notes for PE Primary A:
 
@@ -33,7 +33,7 @@ Notes for PE Primary A:
 * Uses a different PuppetDB PostgreSQL node than PE Primary B
 
 ### PE Primary B
-![PE Primary B group](images/pe-master-b.png)
+![PE Primary B group](images/pe-primary-b.png)
 
 Notes for PE Primary B:
 
