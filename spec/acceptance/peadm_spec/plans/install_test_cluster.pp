@@ -1,6 +1,7 @@
 plan peadm_spec::install_test_cluster (
-  $architecture,
-  $version,
+  String[1]                 $architecture,
+  String[1]                 $version,
+  Enum['enable', 'disable'] $fips = 'disable'
 ) {
 
   $t = get_targets('*')
@@ -9,6 +10,15 @@ plan peadm_spec::install_test_cluster (
   parallelize($t) |$target| {
     $fqdn = run_command('hostname -f', $target)
     $target.set_var('certname', $fqdn.first['stdout'].chomp)
+  }
+
+  if $fips == 'enable' {
+    run_command('/bin/fips-mode-setup --enable', $t)
+    run_plan('reboot', $t)
+    $fips_status = run_command('/bin/fips-mode-setup --check', $t)
+    $fips_status.each |$status| {
+      out::message("${status.target.name}: ${status.value['stdout']}")
+    }
   }
 
   $common_params = {
