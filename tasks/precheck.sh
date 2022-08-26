@@ -7,13 +7,15 @@ if grep -qi ubuntu /etc/os-release; then
   osfamily="ubuntu"
 elif grep -qi sles /etc/os-release; then
   osfamily="sles"
+elif grep -qi redhat /etc/os-release && fips-mode-setup --is-enabled; then
+  osfamily="redhatfips"
 else
   osfamily="el"
 fi
 
 # OS-specific modifications
 [ "$osfamily" = "ubuntu" -a "$arch" = "x86_64" ] && arch="amd64"
-[ "$osfamily" = "el"  ] || [ "$osfamily" = "sles"  ]  && version=$(echo "$version" | cut -d . -f 1)
+[ "$osfamily" = "el"  ] || [ "$osfamily" = "sles"  ] || [ "$osfamily" = "redhatfips" ]  && version=$(echo "$version" | cut -d . -f 1)
 
 # Output a JSON result for ease of Task usage in Puppet Task Plans
 cat <<EOS
