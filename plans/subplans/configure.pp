@@ -58,23 +58,23 @@ plan peadm::subplans::configure (
     $compiler_hosts,
   )
 
-  # Define the global hiera.yaml file on the Master; and syncronize to any Replica and Compilers.
-  # This enables Data in the Classifier/Console, which is used/required by this architecture.
-  # Necessary, for example, when promoting the Replica due to PE-18400 (and others).
-  $global_hiera_yaml = run_task('peadm::read_file', $primary_target,
-    path => '/etc/puppetlabs/puppet/hiera.yaml',
-  ).first['content']
-
-  run_task('peadm::mkdir_p_file', peadm::flatten_compact([
-    $replica_target,
-    $compiler_targets,
-  ]),
-    path    => '/etc/puppetlabs/puppet/hiera.yaml',
-    owner   => 'root',
-    group   => 'root',
-    mode    => '0644',
-    content => $global_hiera_yaml,
-  )
+  # Source list of files on Primary and synchronize to new Replica
+  $content_sources = [
+    '/opt/puppetlabs/server/data/console-services/certs/ad_ca_chain.pem',
+    '/etc/puppetlabs/orchestration-services/conf.d/secrets/keys.json',
+    '/etc/puppetlabs/orchestration-services/conf.d/secrets/orchestrator-encryption-keys.json',
+    '/etc/puppetlabs/console-services/conf.d/secrets/keys.json',
+    '/etc/puppetlabs/puppet/hiera.yaml'
+  ]
+  parallelize($content_sources) |$path| {
+    run_plan('peadm::util::copy_file', peadm::flatten_compact([
+      $replica_target,
+      $compiler_targets,
+    ]),
+      source_host   => $primary_target,
+      path          => $path
+    )
+  }
 
   # Set up the console node groups to configure the various hosts in their roles
 

@@ -40,7 +40,7 @@ describe 'peadm::add_replica' do
                          '--puppet-service-ensure', 'stopped',
                          'main:certname=replica'
                        ] })
-      expect_plan('peadm::util::sync_global_hiera')
+      expect_plan('peadm::util::copy_file').be_called_times(5)
 
       expect_out_verbose.with_params('Current config is...')
       expect_out_verbose.with_params('Updating classification to...')
@@ -60,7 +60,7 @@ describe 'peadm::add_replica' do
                          '--puppet-service-ensure', 'stopped',
                          'main:certname=replica'
                        ] })
-      expect_plan('peadm::util::sync_global_hiera')
+      expect_plan('peadm::util::copy_file').be_called_times(5)
 
       expect_out_verbose.with_params('Current config is...')
       expect_out_verbose.with_params('Updating classification to...')

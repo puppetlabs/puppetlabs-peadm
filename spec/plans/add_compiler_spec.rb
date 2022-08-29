@@ -49,7 +49,7 @@ describe 'peadm::add_compiler' do
       #   ["--puppet-service-ensure", "stopped",
       #   "extension_requests:1.3.6.1.4.1.34380.1.3.13=pe_compiler", "extension_requests:1.3.6.1.4.1.34380.1.1.9813=A", "main:certname=compiler"], "server"=>"primary"}
 
-      expect_plan('peadm::util::sync_global_hiera').be_called_times(1)
+      expect_plan('peadm::util::copy_file').be_called_times(1)
       expect(run_plan('peadm::add_compiler', params)).to be_ok
     end
 
@@ -69,7 +69,7 @@ describe 'peadm::add_compiler' do
                            '--puppet-service-ensure', 'stopped',
                            'main:certname=compiler'
                          ] })
-        expect_plan('peadm::util::sync_global_hiera').be_called_times(1)
+        expect_plan('peadm::util::copy_file').be_called_times(1)
         expect(run_plan('peadm::add_compiler', params2)).to be_ok
       end
     end

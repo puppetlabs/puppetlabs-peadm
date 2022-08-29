@@ -97,11 +97,20 @@ plan peadm::add_replica(
     peadm_config                     => $peadm_config
   )
 
-  # Source the global hiera.yaml from Primary and synchronize to new Replica 
-  # Provision the new system as a replica
-  run_plan('peadm::util::sync_global_hiera', $replica_target,
-    primary_host => $primary_target
-  )
+  # Source list of files on Primary and synchronize to new Replica
+  $content_sources = [
+    '/opt/puppetlabs/server/data/console-services/certs/ad_ca_chain.pem',
+    '/etc/puppetlabs/orchestration-services/conf.d/secrets/keys.json',
+    '/etc/puppetlabs/orchestration-services/conf.d/secrets/orchestrator-encryption-keys.json',
+    '/etc/puppetlabs/console-services/conf.d/secrets/keys.json',
+    '/etc/puppetlabs/puppet/hiera.yaml'
+  ]
+  parallelize($content_sources) |$path| {
+    run_plan('peadm::util::copy_file', $replica_target,
+      source_host   => $primary_target,
+      path          => $path
+    )
+  }
 
   # Provision the new system as a replica
   run_task('peadm::provision_replica', $primary_target,

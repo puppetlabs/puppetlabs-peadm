@@ -10,7 +10,7 @@ describe 'peadm::subplans::configure' do
       allow_any_plan
       allow_any_command
 
-      expect_task('peadm::read_file').always_return({ 'content' => 'mock' })
+      expect_task('peadm::util::copy_file').not_be_called
       expect_task('peadm::provision_replica').not_be_called
       expect_task('peadm::code_manager').not_be_called
 
