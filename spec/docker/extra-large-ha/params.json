@@ -12,6 +12,6 @@
     "pe-xl-core-0.puppet.vm",
     "puppet-xl.vm"
   ],
-  "version": "2019.8.5",
+  "version": "2021.7.0",
   "compiler_pool_address": "puppet-xl.vm"
 }

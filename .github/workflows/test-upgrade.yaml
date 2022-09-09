@@ -31,7 +31,7 @@ jobs:
         version_to_upgrade:
           - '2021.7.0'
         image:
-          - 'centos-7'
+          - 'almalinux-cloud/almalinux-8'
         download_mode:
           - 'direct'
 

@@ -6,5 +6,5 @@
   "compiler_hosts": [
     "pe-xl-compiler-0.puppet.vm"
   ],
-  "version": "2019.8.5"
+  "version": "2021.7.0"
 }

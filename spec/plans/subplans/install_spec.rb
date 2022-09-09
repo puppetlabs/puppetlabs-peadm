@@ -39,7 +39,7 @@ describe 'peadm::subplans::install' do
     params = {
       'primary_host'     => 'primary',
       'console_password' => 'puppetlabs',
-      'version'          => '2019.8.11',
+      'version'          => '2019.8.12',
     }
 
     expect(run_plan('peadm::subplans::install', params)).to be_ok
