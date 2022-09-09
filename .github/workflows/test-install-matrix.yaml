@@ -100,8 +100,6 @@ jobs:
             sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
           echo ::endgroup::
 
-          touch ${HOME}/pause
-
       - name: "Honeycomb: Record provision time"
         if: ${{ always() }}
         run: |
