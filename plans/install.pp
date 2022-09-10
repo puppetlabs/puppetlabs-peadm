@@ -59,6 +59,7 @@ plan peadm::install (
   Optional[String]                  $stagingdir             = undef,
   Enum[direct,bolthost]             $download_mode          = 'bolthost',
   Boolean                           $permit_unsafe_versions = false,
+  String                            $token_lifetime         = '1y',
 ) {
   peadm::assert_supported_bolt_version()
 
@@ -96,6 +97,7 @@ plan peadm::install (
     stagingdir                     => $stagingdir,
     download_mode                  => $download_mode,
     permit_unsafe_versions         => $permit_unsafe_versions,
+    token_lifetime                 => $token_lifetime,
   )
 
   $configure_result = run_plan('peadm::subplans::configure',

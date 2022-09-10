@@ -4,6 +4,10 @@
     "password": {
       "type": "String",
       "description": "The password for the admin user"
+    },
+    "token_lifetime": {
+      "type": "String",
+      "description": "The duration for which a token will be valid. Format <integer>[smhdy]"
     }
   },
   "input_method": "stdin",
