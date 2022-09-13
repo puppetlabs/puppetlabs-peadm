@@ -17,7 +17,7 @@ uri = URI.parse('https://localhost:4433/rbac-api/v1/auth/token')
 body = {
   'login'    => 'admin',
   'password' => $params['password'],
-  'lifetime' => '1y',
+  'lifetime' => $params['token_lifetime'],
   'label'    => 'provision-time token',
 }.to_json
 

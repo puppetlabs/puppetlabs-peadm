@@ -58,6 +58,7 @@ plan peadm::subplans::install (
   String                $stagingdir             = '/tmp',
   Enum[direct,bolthost] $download_mode          = 'bolthost',
   Boolean               $permit_unsafe_versions = false,
+  String                $token_lifetime         = '1y',
 ) {
   peadm::assert_supported_pe_version($version, $permit_unsafe_versions)
 
@@ -325,7 +326,8 @@ plan peadm::subplans::install (
   run_command('systemctl stop pe-puppetdb', $primary_target)
   run_command('systemctl start pe-puppetdb', $primary_target)
   run_task('peadm::rbac_token', $primary_target,
-    password => $console_password,
+    password       => $console_password,
+    token_lifetime => $token_lifetime,
   )
 
   # Stub a production environment and commit it to file-sync. At least one
