@@ -103,7 +103,7 @@ Example params.json Bolt parameters file (shown: Extra Large with DR):
   "console_password": "puppetlabs",
   "dns_alt_names": [ "puppet", "puppet.lab1.puppet.vm" ],
   "compiler_pool_address": "puppet.lab1.puppet.vm",
-  "version": "2021.6.0"
+  "version": "2021.7.0"
 }
 ```
 
@@ -168,7 +168,7 @@ A parameters JSON file can then reference the target names, which will become th
   "console_password": "puppetlabs",
   "dns_alt_names": [ "puppet", "puppet.lab1.puppet.vm" ],
   "compiler_pool_address": "puppet.lab1.puppet.vm",
-  "version": "2019.2.2"
+  "version": "2021.7.0"
 }
 ```
 

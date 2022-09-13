@@ -7,7 +7,7 @@ on:
       image:
         description: 'GCP image for test cluster'
         required: true
-        default: 'centos-7'
+        default: 'almalinux-cloud/almalinux-8'
       architecture:
         description: 'PE architecture to test'
         required: true
@@ -15,7 +15,7 @@ on:
       version:
         description: 'PE version to install'
         required: true
-        default: '2019.8.8'
+        default: '2021.7.0'
       ssh-debugging:
         description: 'Boolean; whether or not to pause for ssh debugging'
         required: true

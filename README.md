@@ -6,14 +6,16 @@ The peadm module is able to deploy and manage Puppet Enterprise 2019.x Standard,
 
 #### Table of Contents
 
-1. [Expectations and support](#expectations-and-support)
-2. [Overview](#overview)
-    * [What peadm affects](#what-peadm-affects)
-    * [What peadm does not affect](#what-peadm-does-not-affect)
-    * [Requirements](#requirements)
-3. [Usage](#usage)
-4. [Reference](#reference)
-5. [Getting Help](#getting-help)
+- [Puppet Enterprise (pe) Administration (adm) Module](#puppet-enterprise-pe-administration-adm-module)
+      - [Table of Contents](#table-of-contents)
+  - [Expectations and support](#expectations-and-support)
+  - [Overview](#overview)
+    - [What peadm affects](#what-peadm-affects)
+    - [What peadm does not affect](#what-peadm-does-not-affect)
+    - [Requirements](#requirements)
+  - [Usage](#usage)
+  - [Reference](#reference)
+  - [Getting Help](#getting-help)
 
 ## Expectations and support
 
@@ -42,7 +44,7 @@ The normal usage pattern for peadm is as follows.
 
 ### Requirements
 
-* Puppet Enterprise 2019.8.1 or newer (tested with PE 2021.6)
+* Puppet Enterprise 2019.8.1 or newer (tested with PE 2021.7)
 * Bolt 3.17.0 or newer (tested with Bolt 3.21.0)
 * EL 7, EL 8, Ubuntu 18.04, or Ubuntu 20.04
 * Classifier Data enabled. This PE feature is enabled by default on new installs, but can be disabled by users if they remove the relevant configuration from their global hiera.yaml file. See the [PE docs](https://puppet.com/docs/pe/latest/config_console.html#task-5039) for more information.
