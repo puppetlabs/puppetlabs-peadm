@@ -6,7 +6,17 @@ Documentation which provides instructions for expanding existing PEADM based dep
 * [Enable Disaster Recovery and Add a Replica with peadm::add_replica](#enable-disaster-recovery-and-add-a-replica-with-peadmadd_replica)
 * [Adding Compilers with peadm::add_compiler](#adding-compilers-with-peadmadd_compiler)
 
+### Notes
+
+* CLI options for `add_replica`, `add_compiler`, and `add_database` are unfortunately inconsistent
+  * This is the result of a history of organic development
+* There is an inconsistency in the output of the task `peadm::get_peadm_config` and the naming of related parameters
+  * The documentation and CLI refer to availability groups but the output from the task will refer to associated data as role letters
+* The term host and server are interchangeable throughout the documentation
+  * When ever possible documentation will prefer the term server but plan parameters and `peadm::get_peadm_config` often uses the term host 
+
 ### Key
+
 * _\<primary-server-fqdn\>_ - The FQDN and certname of the Primary Puppet server
 * _\<new-postgres-server-fqdn\>_ - The FQDN and certname of the new PE-PostgreSQL server to initialize
 * _\<new-replica-server-fqdn\>_ - The FQDN and certname of the new Replica Puppet server to initialize
@@ -18,15 +28,19 @@ Documentation which provides instructions for expanding existing PEADM based dep
 
 ## Adding External Databases with peadm::add_database
 
-An external PE-PostgreSQL database is the component which separates Extra Large from Large deployments. These external database servers are PuppetDB specific and do not serve any other data storage services to other components of Puppet Enterprise. When the Extra Large architecture is being utilized and disaster recovery (DR) is enabled, two external PE-PostgreSQL servers must be provisioned and it is required that both PE-PostgreSQL servers exist prior to provisioning a Replica because it is immediately dependent upon this second external database server. One should notice that in both variations of this action, with **no DR** plans and when preparing to enable it for the first time, the command is exactly the same. This specific plan is intelligent enough to determine the most appropriate values for your second external database by examining the values which were used for the first.
+An external PE-PostgreSQL server is the component which separates the Extra Large and Large deployment architectures. These external database servers are PuppetDB specific and do not serve databases for other components of Puppet Enterprise. When the Extra Large deployment architecture is being utilized and disaster recovery (DR) is enabled, two external PE-PostgreSQL servers must be provisioned and it is required that both PE-PostgreSQL servers exist prior to provisioning a Replica Puppet server because it is immediately dependent upon this second external database server. In both situations, with **no DR** plans and when preparing to enable it for the first time, the command is exactly the same. This specific plan is intelligent enough to determine the most appropriate values for your second external PE-PostgreSQL server by examining the values which were used for the first.
 
 ### Add an external PE-PostgreSQL server in all scenarios
 
-    bolt plan run peadm::add_database -t <new-postgres-server-fqdn> primary_host=<primary-server-fqdn>
+    bolt plan run peadm::add_database -t <new-postgres-server-fqdn> primary_host=<primary-server-fqdn>:w
 
 ## Enable Disaster Recovery and Add a Replica with peadm::add_replica
 
-All three architectures have two variations, disaster recovery (DR) enabled or disabled. This does not have an effect on the deployed architecture naming, a Standard deployment which deploys a DR Replica is still referred to as the Standard architecture. The basic process remains the same when adding a Replica to any architecture but there are differences in CLI arguments when operating on an Extra Large deployment. When DR is enabled using PEADM, a second availability group will be created, **B**. When DR is not enabled, only one exists, **A**. These availability groups are created for pairing subsets of Compilers with the backend source which will configure them, among other things. By default the initial Primary is assigned availability group **A** and the initial Replica is assigned **B**. The availability group assignments stay with the server and importantly not with the role of the server. If you choose to promote the Replica assigned to **B** to a Primary than availability group **B** is now simply the group containing the Primary. When adding a Replica you do not need to know the availability group of the Primary it is being paired with, the `peadm::add_replica` plan will determine the appropriate group by looking up which group the Primary is assigned.
+All three deployment architectures have two variations, disaster recovery (DR) enabled or disabled. The deployment architecture a Puppet Enterprise deployment adopts is not changed by the addition of a Replica Puppet server. If you adopt the Standard deployment architecture and enable DR by provisioning a Replica Puppet server, the adopted deployment architecture remains as Standard. The basic process is also the same when adding a Replica Puppet server to any existing PEADM based deployment of Puppet Enterprise but there are differences in CLI arguments when operating on the Extra Large deployment architecture.
+
+PEADM creates availability groups to logically group failure domains within a Puppet Enterprise deployment. These availability group designations control how various components connect together with backend services like database servers. Availability group **A** is created by PEADM in all scenarios but when you enable DR using PEADM, a second availability group will be created, **B**.
+
+The initial Primary will be assigned availability group **A** and the initial Replica is assigned **B**. The availability group assignments stay with the server and importantly not with the role of the server. If you choose to promote the Replica Puppet server assigned to **B** to a Primary than availability group **B** is now simply the group containing the Primary Puppet server. When adding a Replica Puppet server you do not need to know the availability group of the Primary it is being paired with, the `peadm::add_replica` plan will determine the appropriate group by looking up to which group the Primary Puppet server is assigned.
 
 ### Adding a Replica to Standard and Large deployments
 
@@ -34,7 +48,7 @@ All three architectures have two variations, disaster recovery (DR) enabled or d
 
 ### Adding a Replica to Extra Large deployments
 
-In Extra Large deployments you must provide the `replica_postgresql_host` parameter set to PE-PostgreSQL host which will be collocated within the same availability group as the new Replica. The `peadm::get_peadm_config` again helps you figure this out. In the **Example** section below, the task has figured out which PE-PostgreSQL server is the Replica database host. You'll find the value at `params.replica_postgresql_host`, which is equal to `pe-psql-6251cd-1.us-west1-b.c.slice-cody.internal`. Reminder, the Replica PE-PostgreSQL server **MUST** be provisioned and deployed prior to initializing a Replica Puppet server.
+In deployments which adopted the Extra Large deployment architecture you must provide the `replica_postgresql_host` parameter set to the PE-PostgreSQL server which will be collocated within the same availability group as the new Replica Puppet server. The `peadm::get_peadm_config` task will help you determine the most appropriate value. In the **Example** section below, the task has figured out which PE-PostgreSQL server is the Replica PE-PostgreSQL database server. You'll find the value at `params.replica_postgresql_host`, which is equal to `pe-psql-6251cd-1.us-west1-b.c.slice-cody.internal`. Reminder, the Replica PE-PostgreSQL server **MUST** be provisioned and deployed prior to initializing a Replica Puppet server.
 
     bolt plan run peadm::get_peadm_config --targets <primary-server-fqdn> 
     bolt plan run peadm::add_replica primary_host=<primary-server-fqdn> replica_host=<new-replica-server-fqdn> replica_postgresql_host=<replica-postgres-server-fqdn>
@@ -83,25 +97,25 @@ In Extra Large deployments you must provide the `replica_postgresql_host` parame
 
 ## Adding Compilers with peadm::add_compiler
 
-Standard deployments are the only architecture of the three which do not have Compilers available upon initial deployment, the lack of them is what differentiates Standard from Large. Architecture has no effect on the process for adding Compilers to a deployment. The [peadm::add_compiler](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/plans/add_compiler.pp) plan functions identical in all three architecture, even if you're adding the 1st or the 100th but some options do change slightly depending.
+The Standard deployment architecture is the only deployment architecture of the three which does not include Compilers, the lack of them is what differentiates the Standard from Large deployment architecture. Deployment architecture has no effect on the process for adding Compilers to a deployment. The [peadm::add_compiler](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/plans/add_compiler.pp) plan functions identical in all three deployment architectures, whether you are adding the 1st or the 100th but some options do change slightly depending.
 
 ### Adding Compilers to Standard and Large without disaster recovery
 
-The command invocation is identical when adding compilers to a Standard or Large deployment if disaster recovery (DR) is not enabled and a Replica has not been provisioned. Take note of the values for `avail_group_letter` and `primary_postgresql_host`, in this **no DR**  scenario, the value of these parameter will always be set to **A** and the FQDN of the Primary Puppet server.
+The command invocation is identical when adding Compilers to a Standard or Large deployment architecture if disaster recovery (DR) is not enabled and a Replica Puppet server has not been provisioned. Take note of the values for `avail_group_letter` and `primary_postgresql_host`, in this **no DR**  scenario, the value of these parameters will always be set to **A** and the FQDN of the Primary Puppet server.
 
     bolt plan run peadm::add_compiler primary_host=<primary-server-fqdn> compiler_host=<new-compiler-fqdn> avail_group_letter=A primary_postgresql_host=<primary-server-fqdn>
 
 ### Adding Compilers to Extra Large without disaster recovery
 
-When adding a compiler to an Extra Large deployment in a **no DR** scenario, the only difference is that the `primary_postgresql_host` changes to be the value of the Primary PE-PostgreSQL server as opposed to the Primary Puppet server.
+When adding a Compiler to a deployment which has adopted the Extra Large deployment architecture in a **no DR** scenario, the only difference is that the `primary_postgresql_host` changes to be the value of the Primary PE-PostgreSQL server as opposed to the Primary Puppet server.
 
     bolt plan run peadm::add_compiler primary_host=<primary-server-fqdn> compiler_host=<new-compiler-fqdn> avail_group_letter=A primary_postgresql_host=<primary-postgresql-server-fqdn>
 
 ### Adding Compilers to Standard and Large when disaster recovery has been enabled
 
-When disaster recovery (DR) is enabled and a Replica provisioned, PEADM creates a second availability group. You must take this into consideration when adding new compilers and ensure you are assigning appropriate values for the group the compiler is targeted for. It is a good idea to keep these two availability groups populated with an equal quantity of compilers. Besides the value of `avail_group_letter` being dependent on which group the new compiler is targeted towards, the value of `primary_postgresql_host` will also vary.
+As was described in the section documenting [peadm::add_replica](#enable-disaster-recovery-and-add-a-replica-with-peadmadd_replica), when disaster recovery (DR) is enabled and a Replica provisioned, PEADM creates a second availability group, **B**. You must take this second availability group into consideration when adding new compilers and ensure you are assigning appropriate values for the group the Compiler is targeted for. It is a good idea to keep these two availability groups populated with an equal quantity of Compilers. Besides the value of `avail_group_letter` being dependent on which group the new Compiler is targeted towards, the value of `primary_postgresql_host` will also vary.
 
-The name of the `primary_postgresql_host` parameter can be confusing, it is **NOT** always equal to the Primary Puppet server or Primary PE-PostgreSQL server, it can also be equal to the Replica Puppet server or Replica PE-PostgreSQL server. It should be set to the server which is a member of the compiler's target availability group. The easiest way to determine this value is to first run the `peadm::get_peadm_config` task and source the value from its output. In the **Example** section the value to use when targeting the **B** group is `pe-server-59ab63-1.us-west1-b.c.slice-cody.internal`. You'll find the value at `role-letter.server.B`.
+The name of the `primary_postgresql_host` parameter can be confusing, it is **NOT** always equal to the Primary Puppet server or Primary PE-PostgreSQL server, it can also be equal to the Replica Puppet server or Replica PE-PostgreSQL server. It should be set to the server which is a member of the Compiler's target availability group. The easiest way to determine this value is to first run the `peadm::get_peadm_config` task and source the value from its output. In the **Example** section the value to use when targeting the **B** group is `pe-server-59ab63-1.us-west1-b.c.slice-cody.internal`. You'll find the value at `role-letter.server.B`.
 
     bolt plan run peadm::get_peadm_config --targets <primary-server-fqdn> 
     bolt plan run peadm::add_compiler primary_host=<primary-server-fqdn> compiler_host=<new-compiler-fqdn> avail_group_letter=<new-compiler-target-group> primary_postgresql_host=<target-group-server-fqdn>
@@ -149,8 +163,7 @@ The name of the `primary_postgresql_host` parameter can be confusing, it is **NO
 
 ### Adding compilers to Extra Large when disaster recovery has been enabled
 
-Adding a compiler to an Extra Large deployment with disaster recovery (DR) enabled is similar to Standard and Large but the value of `primary_postgresql_host` will not correspond to the Primary or Replica since PuppetDB databases are now hosted external. In the **Example** section the value to use when targeting the **A** group is `pe-psql-65e03f-0.us-west1-a.c.slice-cody.internal`. You'll find the value at `role-letter.postgresql.A`.
-
+Adding a Compiler to a deployment which has adopted the Extra Large deployment architecture with disaster recovery (DR) enabled is similar to Standard and Large but the value of `primary_postgresql_host` will no longer correspond to the Primary or Replica Puppet server since PuppetDB databases are now hosted externally. In the **Example** section, the value to use when targeting the **A** group is `pe-psql-65e03f-0.us-west1-a.c.slice-cody.internal`. You'll find the value at `role-letter.postgresql.A`.
 
     bolt plan run peadm::get_peadm_config --targets <primary-server-fqdn> 
     bolt plan run peadm::add_compiler primary_host=<primary-server-fqdn> compiler_host=<new-compiler-fqdn> avail_group_letter=<new-compiler-target-availability-group> primary_postgresql_host=<target-availability-group-postgresql-fqdn>
