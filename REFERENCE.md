@@ -49,7 +49,6 @@
 ### Tasks
 
 * [`agent_install`](#agent_install): Install the Puppet agent from a master
-* [`agent_upgrade`](#agent_upgrade): Upgrade the target system using upgrade.bash from a master
 * [`backup_classification`](#backup_classification): A task to call the classification api and write to file
 * [`cert_data`](#cert_data): Return certificate data related to the Puppet agent
 * [`cert_valid_status`](#cert_valid_status): Check primary for valid state of a certificate
