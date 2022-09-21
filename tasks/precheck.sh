@@ -7,7 +7,7 @@ if grep -qi ubuntu /etc/os-release; then
   osfamily="ubuntu"
 elif grep -qi sles /etc/os-release; then
   osfamily="sles"
-elif grep -qi redhat /etc/os-release && fips-mode-setup --is-enabled; then
+elif grep -qi redhat /etc/os-release && (which fips-mode-setup &>/dev/null && fips-mode-setup --is-enabled); then
   osfamily="redhatfips"
 else
   osfamily="el"
