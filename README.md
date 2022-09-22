@@ -60,12 +60,18 @@ Follow the links below to usage instructions for each peadm plan.
 
 ## Reference
 
-Additional documentation and information pertaining to various aspects or elements of peadm.
+Information from the Puppet documentation site that will help you understand which architecture is right for you.
+
+* [PE Architecture Documentation](https://puppet.com/docs/pe/latest/choosing_an_architecture.html)
+* [PE Multi-region reference architecture](https://puppet.com/docs/patterns-and-tactics/latest/reference-architectures/pe-multi-region-reference-architectures.html)
+
+
+Documentation pertaining to additional uses of peadm.
 
 * [DR Component Recovery](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/recovery.md)
-* [PE Architecture Documentation](https://puppet.com/docs/pe/latest/choosing_an_architecture.html)
-* [Classification](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/classification.md)
 * [Architectures](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/architectures.md)
+* [Expanding Deployment](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/expanding.md)
+* [Classification](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/classification.md)
 * [Testing](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/pre_post_checks.md)
 * [Docker Based Examples](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/docker_examples.md)
 
