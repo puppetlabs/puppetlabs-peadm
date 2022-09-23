@@ -13,26 +13,26 @@ function peadm::assert_supported_architecture (
     !!($replica_postgresql_host),
   ] {
     [true, false, false, false]: { # Standard or Large, no DR
-      ({ 'disaster-recovery' => false, 'architecture' => $compiler_hosts ? {
-        undef   => 'standard',
-        default => 'large',
-      }})
+      ( { 'disaster-recovery' => false, 'architecture' => $compiler_hosts ? {
+            undef   => 'standard',
+            default => 'large',
+      } })
     }
-    [true, true, false, false]: {  # Standard or Large, DR
-      ({ 'disaster-recovery' => true, 'architecture' => $compiler_hosts ? {
-        undef   => 'standard',
-        default => 'large',
-      }})
+    [true, true, false, false]: { # Standard or Large, DR
+      ( { 'disaster-recovery' => true, 'architecture' => $compiler_hosts ? {
+            undef   => 'standard',
+            default => 'large',
+      } })
     }
-    [true, false, true, false]: {  # Extra Large, no DR
-      ({ 'disaster-recovery' => false, 'architecture' => 'extra-large' })
+    [true, false, true, false]: { # Extra Large, no DR
+      ( { 'disaster-recovery' => false, 'architecture' => 'extra-large' })
     }
-    [true, true, true, true]: {    # Extra Large, DR
-      ({ 'disaster-recovery' => true,  'architecture' => 'extra-large' })
+    [true, true, true, true]: { # Extra Large, DR
+      ( { 'disaster-recovery' => true,  'architecture' => 'extra-large' })
     }
-    default: {                     # Invalid
+    default: { # Invalid
       out::message(inline_epp(@(HEREDOC)))
-        Invalid architecture! Recieved:
+                Invalid architecture! Recieved:
           - primary
         <% if $replica_host { -%>
           - primary-replica
@@ -77,5 +77,5 @@ function peadm::assert_supported_architecture (
   }
 
   # Return value
-  return({ 'supported' =>  true } + $result)
+  return( { 'supported' => true } + $result)
 }
