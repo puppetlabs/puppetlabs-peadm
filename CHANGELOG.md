@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.8.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.8.0) (2022-09-23)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.8.0...v3.8.0)
+
+### UNCATEGORIZED PRS; LABEL THEM ON GITHUB
+
+- Update Readme to clarify support expectations [\#290](https://github.com/puppetlabs/puppetlabs-peadm/pull/290) ([nigelkersten](https://github.com/nigelkersten))
+- Ensure fips commands exists before using it [\#289](https://github.com/puppetlabs/puppetlabs-peadm/pull/289) ([ody](https://github.com/ody))
+- Provide documentation on expanding a deployment [\#286](https://github.com/puppetlabs/puppetlabs-peadm/pull/286) ([ody](https://github.com/ody))
+- allow to customize admin's token lifetime [\#285](https://github.com/puppetlabs/puppetlabs-peadm/pull/285) ([vchepkov](https://github.com/vchepkov))
+- Bump latest versoins to 2021.7.0 and 2019.8.12 [\#283](https://github.com/puppetlabs/puppetlabs-peadm/pull/283) ([timidri](https://github.com/timidri))
+- Fix-ups in copy\_file plan usage [\#282](https://github.com/puppetlabs/puppetlabs-peadm/pull/282) ([ody](https://github.com/ody))
+- Re-use sync\_global\_hiera plan [\#281](https://github.com/puppetlabs/puppetlabs-peadm/pull/281) ([ody](https://github.com/ody))
+- Support the installation of PE on FIPS enabled RHEL [\#280](https://github.com/puppetlabs/puppetlabs-peadm/pull/280) ([ody](https://github.com/ody))
+- Fetch installed PSQL version [\#275](https://github.com/puppetlabs/puppetlabs-peadm/pull/275) ([ody](https://github.com/ody))
+
 ## [v3.8.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.8.0) (2022-06-21)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.7.0...v3.8.0)
