@@ -12,17 +12,17 @@ plan peadm::status(
   Enum[json,table] $format = 'table',
   Boolean $verbose = false,
   Boolean $summarize = true,
-  Boolean $colors = $format ? { json => false, default => true }
+  Boolean $colors = $format ? { 'json' => false, default => true }
 ) {
   peadm::assert_supported_bolt_version()
 
-  $results = run_task('peadm::infrastatus', $targets, { format => 'json'})
+  $results = run_task('peadm::infrastatus', $targets, { format => 'json' })
   # returns the data in a hash 
-  $stack_status = $results.reduce({}) | $res, $item | {
+  $stack_status = $results.reduce( {}) | $res, $item | {
     $data = $item.value[output]
     $stack_name = $item.target.peadm::certname()
     $status = peadm::determine_status($data, $colors).merge(stack_name => $stack_name )
-    $res.merge({ $stack_name => $status })
+    $res.merge( { $stack_name => $status })
   }
 
   $overall_degraded_stacks = $stack_status.filter | $item | { $item[1][status] =~ /degraded/ }
@@ -62,27 +62,27 @@ plan peadm::status(
   if $format == 'table' {
     # Summary table
     out::message(
-      format::table({
-        title => $table_title,
-        head  => $table_head,
-        rows  => $stack_table_rows}))
+      format::table( {
+          title => $table_title,
+          head  => $table_head,
+    rows  => $stack_table_rows }))
 
     # Failed services table
     unless $bad_svc_rows.empty {
       out::message(
-        format::table({
-          title => 'Failed Service Status',
-          head  => $service_table_head,
-          rows  => $bad_svc_rows.reduce([]) |$memo,$rows| { $memo + $rows }}))
+        format::table( {
+            title => 'Failed Service Status',
+            head  => $service_table_head,
+      rows  => $bad_svc_rows.reduce([]) |$memo,$rows| { $memo + $rows } }))
     }
 
     # Operational services table
     if $verbose and ! $good_svc_rows.empty {
       out::message(
-        format::table({
-          title => 'Operational Service Status',
-          head  => $service_table_head,
-          rows  => $good_svc_rows.reduce([]) |$memo,$rows| { $memo + $rows }}))
+        format::table( {
+            title => 'Operational Service Status',
+            head  => $service_table_head,
+      rows  => $good_svc_rows.reduce([]) |$memo,$rows| { $memo + $rows } }))
     }
   } else {
     if $summarize {
@@ -91,10 +91,10 @@ plan peadm::status(
       $summary_json = {
         'summary' => {
           'status' => $overall_status,
-          'stacks' => $stack_table_rows.hash
+          'stacks' => $stack_table_rows.hash,
         },
         'failed' => $failed,
-        'operational' => $passed
+        'operational' => $passed,
       }
       return $summary_json
     } else {
