@@ -32,7 +32,7 @@ function peadm::assert_supported_architecture (
     }
     default: { # Invalid
       out::message(inline_epp(@(HEREDOC)))
-                Invalid architecture! Recieved:
+                Invalid architecture! Received:
           - primary
         <% if $replica_host { -%>
           - primary-replica
