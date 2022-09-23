@@ -60,6 +60,7 @@
 * [`enable_replica`](#enable_replica): Execute the enable replica puppet command
 * [`filesize`](#filesize): Return the size of a file in bytes
 * [`get_peadm_config`](#get_peadm_config): Run on a PE primary node to return the currently configured PEAdm parameters
+* [`get_psql_version`](#get_psql_version): Run on a PE PSQL node to return the major version of the PSQL server currently installed
 * [`infrastatus`](#infrastatus): Runs puppet infra status and returns the output
 * [`mkdir_p_file`](#mkdir_p_file): Create a file with the specified content at the specified location
 * [`mv`](#mv): Wrapper task for mv command
@@ -109,12 +110,12 @@ Supported use cases:
 * `peadm::subplans::prepare_agent`
 * `peadm::uninstall`: Single-entry-point plan for uninstalling Puppet Enterprise
 * `peadm::util::code_sync_status`
+* `peadm::util::copy_file`
 * `peadm::util::db_disable_pglogical`
 * `peadm::util::db_purge`
 * `peadm::util::insert_csr_extension_requests`
 * `peadm::util::retrieve_and_upload`
 * `peadm::util::sanitize_pg_pe_conf`
-* `peadm::util::sync_global_hiera`
 * `peadm::util::update_classification`: Configure classification
 * `peadm::util::update_db_setting`: Make updates to PuppetDB database settings
 
@@ -190,7 +191,7 @@ Assert that the PE version given is supported by PEAdm
 
 The peadm::assert_supported_pe_version function.
 
-Returns: `Struct[{'supported' => Boolean}]` true if the version is supported, raise error otherwise
+Returns: `Struct[{ 'supported' => Boolean }]` true if the version is supported, raise error otherwise
 
 ##### `the`
 
@@ -1035,6 +1036,12 @@ Run on a PE primary node to return the currently configured PEAdm parameters
 
 **Supports noop?** false
 
+### <a name="get_psql_version"></a>`get_psql_version`
+
+Run on a PE PSQL node to return the major version of the PSQL server currently installed
+
+**Supports noop?** false
+
 ### <a name="infrastatus"></a>`infrastatus`
 
 Runs puppet infra status and returns the output
@@ -1262,6 +1269,12 @@ Get and save an rbac token for the root user, admin rbac user
 Data type: `String`
 
 The password for the admin user
+
+##### `token_lifetime`
+
+Data type: `String`
+
+The duration for which a token will be valid. Format <integer>[smhdy]
 
 ### <a name="read_file"></a>`read_file`
 
@@ -1556,6 +1569,7 @@ The following parameters are available in the `peadm::install` plan:
 * [`stagingdir`](#stagingdir)
 * [`download_mode`](#download_mode)
 * [`permit_unsafe_versions`](#permit_unsafe_versions)
+* [`token_lifetime`](#token_lifetime)
 
 ##### <a name="compiler_pool_address"></a>`compiler_pool_address`
 
@@ -1658,7 +1672,7 @@ Data type: `Peadm::Pe_version`
 
 
 
-Default value: `'2019.8.8'`
+Default value: `'2021.7.0'`
 
 ##### <a name="dns_alt_names"></a>`dns_alt_names`
 
@@ -1747,6 +1761,14 @@ Data type: `Boolean`
 
 
 Default value: ``false``
+
+##### <a name="token_lifetime"></a>`token_lifetime`
+
+Data type: `String`
+
+
+
+Default value: `'1y'`
 
 ### <a name="peadmmodify_certificate"></a>`peadm::modify_certificate`
 

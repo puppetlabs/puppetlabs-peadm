@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.9.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.9.0) (2022-09-23)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.8.0...v3.9.0)
+
+### Added
+
+- allow to customize admin's token lifetime [\#285](https://github.com/puppetlabs/puppetlabs-peadm/pull/285) ([vchepkov](https://github.com/vchepkov))
+
+### Fixed
+
+- Ensure fips commands exists before using it [\#289](https://github.com/puppetlabs/puppetlabs-peadm/pull/289) ([ody](https://github.com/ody))
+- Fix-ups in copy\_file plan usage [\#282](https://github.com/puppetlabs/puppetlabs-peadm/pull/282) ([ody](https://github.com/ody))
+- Re-use sync\_global\_hiera plan [\#281](https://github.com/puppetlabs/puppetlabs-peadm/pull/281) ([ody](https://github.com/ody))
+- Support the installation of PE on FIPS enabled RHEL [\#280](https://github.com/puppetlabs/puppetlabs-peadm/pull/280) ([ody](https://github.com/ody))
+- Fetch installed PSQL version [\#275](https://github.com/puppetlabs/puppetlabs-peadm/pull/275) ([ody](https://github.com/ody))
+
 ## [v3.8.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.8.0) (2022-06-21)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.7.0...v3.8.0)
