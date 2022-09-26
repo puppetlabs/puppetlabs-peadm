@@ -1,6 +1,6 @@
 # Backup Puppet Enterprise using the peadm module
 
-## What is being backup?
+## What is being backed up?
 
 By default the `peadm::backup` plan will backup the following items:
 
