@@ -5,10 +5,11 @@
 # @summary Replace a replica host for a Standard or Large architecture.
 #   Supported use cases:
 #   1: The existing replica is broken, we have a fresh new VM we want to provision the replica to.
-#      The new replica should have the same certname as the broken one.
 # @param primary_host - The hostname and certname of the primary Puppet server
 # @param replica_host - The hostname and certname of the replica VM
-# @param replica_postgresql_host - The hostname and certname of the host with the replica PE-PosgreSQL database. 
+# @param replica_postgresql_host - The hostname and certname of the host with the replica PE-PosgreSQL database.
+# @param token_file - (optional) the token file in a different location than the default.
+# 
 #   Can be a separate host in an XL architecture, or undef in Standard or Large.
 plan peadm::add_replica(
   # Standard or Large
@@ -21,14 +22,13 @@ plan peadm::add_replica(
   # Common Configuration
   Optional[String] $token_file = undef,
 ) {
-
   $primary_target             = peadm::get_targets($primary_host, 1)
   $replica_target             = peadm::get_targets($replica_host, 1)
   $replica_postgresql_target  = peadm::get_targets($replica_postgresql_host, 1)
 
   run_command('systemctl stop puppet.service', peadm::flatten_compact([
-    $primary_target,
-    $replica_postgresql_target,
+        $primary_target,
+        $replica_postgresql_target,
   ]))
 
   # Get current peadm config to ensure we forget active replicas
@@ -36,8 +36,8 @@ plan peadm::add_replica(
 
   # Make list of all possible replicas, configured and provided
   $replicas = peadm::flatten_compact([
-    $replica_host,
-    $peadm_config['params']['replica_host']
+      $replica_host,
+      $peadm_config['params']['replica_host'],
   ]).unique
 
   $certdata = run_task('peadm::cert_data', $primary_target).first.value
@@ -103,7 +103,7 @@ plan peadm::add_replica(
     '/etc/puppetlabs/orchestration-services/conf.d/secrets/keys.json',
     '/etc/puppetlabs/orchestration-services/conf.d/secrets/orchestrator-encryption-keys.json',
     '/etc/puppetlabs/console-services/conf.d/secrets/keys.json',
-    '/etc/puppetlabs/puppet/hiera.yaml'
+    '/etc/puppetlabs/puppet/hiera.yaml',
   ]
   parallelize($content_sources) |$path| {
     run_plan('peadm::util::copy_file', $replica_target,
@@ -125,9 +125,9 @@ plan peadm::add_replica(
 
   # start puppet service
   run_command('systemctl start puppet.service', peadm::flatten_compact([
-    $primary_target,
-    $replica_postgresql_target,
-    $replica_target
+        $primary_target,
+        $replica_postgresql_target,
+        $replica_target,
   ]))
 
   return("Added replica ${replica_target}")
