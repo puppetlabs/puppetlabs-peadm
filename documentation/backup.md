@@ -1,4 +1,4 @@
-# Backup Puppet Enterprise using the peadm module
+# Backup Puppet Enterprise using the PEADM module
 
 ## What is being backed up?
 
