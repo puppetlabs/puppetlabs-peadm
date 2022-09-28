@@ -2,8 +2,7 @@ plan peadm_spec::upgrade_test_cluster(
   $architecture,
   $version,
   $download_mode
-){
-
+) {
   $t = get_targets('*')
   wait_until_available($t)
 
@@ -19,36 +18,36 @@ plan peadm_spec::upgrade_test_cluster(
 
   $arch_params =
     case $architecture {
-      'standard': {{
+    'standard': { {
         primary_host => $t.filter |$n| { $n.vars['role'] == 'primary' },
-      }}
-      'standard-with-dr': {{
+    } }
+    'standard-with-dr': { {
         primary_host   => $t.filter |$n| { $n.vars['role'] == 'primary' },
         replica_host   => $t.filter |$n| { $n.vars['role'] == 'replica' },
-      }}
-      'large': {{
+    } }
+    'large': { {
         primary_host   => $t.filter |$n| { $n.vars['role'] == 'primary' },
         compiler_hosts => $t.filter |$n| { $n.vars['role'] == 'compiler' },
-      }}
-      'large-with-dr': {{
+    } }
+    'large-with-dr': { {
         primary_host   => $t.filter |$n| { $n.vars['role'] == 'primary' },
         replica_host   => $t.filter |$n| { $n.vars['role'] == 'replica' },
         compiler_hosts => $t.filter |$n| { $n.vars['role'] == 'compiler' },
-      }}
-      'extra-large': {{
+    } }
+    'extra-large': { {
         primary_host            => $t.filter |$n| { $n.vars['role'] == 'primary' },
         primary_postgresql_host => $t.filter |$n| { $n.vars['role'] == 'primary-pdb-postgresql' },
         compiler_hosts          => $t.filter |$n| { $n.vars['role'] == 'compiler' },
-      }}
-      'extra-large-with-dr': {{
+    } }
+    'extra-large-with-dr': { {
         primary_host             => $t.filter |$n| { $n.vars['role'] == 'primary' },
         primary_postgresql_host  => $t.filter |$n| { $n.vars['role'] == 'primary-pdb-postgresql' },
         replica_host             => $t.filter |$n| { $n.vars['role'] == 'replica' },
         replica_postgresql_host  => $t.filter |$n| { $n.vars['role'] == 'replica-pdb-postgresql' },
         compiler_hosts           => $t.filter |$n| { $n.vars['role'] == 'compiler' },
-      }}
-      default: { fail('Invalid architecture!') }
-    }
+    } }
+    default: { fail('Invalid architecture!') }
+  }
 
   $params = $arch_params + $common_params
   run_plan('peadm::upgrade', $params)

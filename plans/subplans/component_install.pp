@@ -12,7 +12,7 @@ plan peadm::subplans::component_install(
   Enum['A', 'B']                         $avail_group_letter,
   Optional[Variant[String[1], Array]] $dns_alt_names = undef,
   Optional[String[1]]                    $role          = undef
-){
+) {
   $component_target          = peadm::get_targets($targets, 1)
   $primary_target            = peadm::get_targets($primary_host, 1)
 

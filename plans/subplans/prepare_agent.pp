@@ -5,7 +5,6 @@ plan peadm::subplans::prepare_agent (
   Hash                    $certificate_extensions,
   Optional[Array]         $dns_alt_names = undef,
 ) {
-
   $agent_target    = peadm::get_targets($targets, 1)
   $primary_target  = peadm::get_targets($primary_host, 1)
 
@@ -42,7 +41,7 @@ plan peadm::subplans::prepare_agent (
 
   # Obtain data about certificate from primary 
   $certstatus = run_task('peadm::cert_valid_status', $primary_target,
-    certname => $agent_target.peadm::certname()).first.value
+  certname => $agent_target.peadm::certname()).first.value
 
   # Obtain data about certificate from agent
   $certdata = run_task('peadm::cert_data', $agent_target).first.value
@@ -73,10 +72,10 @@ plan peadm::subplans::prepare_agent (
   # If necessary, manually submit a CSR
   # ignoring errors to simplify logic
   unless $skip_csr {
-    run_task('peadm::submit_csr', $agent_target, {'_catch_errors' => true})
+    run_task('peadm::submit_csr', $agent_target, { '_catch_errors' => true })
 
     # On primary, if necessary, sign the certificate request
-    run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$agent_target.peadm::certname()] } )
+    run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$agent_target.peadm::certname()] })
   }
 
   # If agent certificate is good but lacks appropriate extensions, plan will still

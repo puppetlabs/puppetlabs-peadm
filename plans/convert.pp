@@ -19,13 +19,13 @@ plan peadm::convert (
   String                            $compiler_pool_address            = $primary_host,
   Optional[String]                  $internal_compiler_a_pool_address = undef,
   Optional[String]                  $internal_compiler_b_pool_address = undef,
-  Array[String]                     $dns_alt_names                    = [ ],
+  Array[String]                     $dns_alt_names                    = [],
 
   Optional[Enum[
-    'modify-primary-certs',
-    'modify-infra-certs',
-    'convert-node-groups',
-    'finalize']] $begin_at_step = undef,
+      'modify-primary-certs',
+      'modify-infra-certs',
+      'convert-node-groups',
+      'finalize']] $begin_at_step = undef,
 ) {
   peadm::assert_supported_bolt_version()
 
@@ -39,11 +39,11 @@ plan peadm::convert (
   $primary_postgresql_target        = peadm::get_targets($primary_postgresql_host, 1)
 
   $all_targets = peadm::flatten_compact([
-    $primary_target,
-    $replica_target,
-    $replica_postgresql_target,
-    $compiler_targets,
-    $primary_postgresql_target,
+      $primary_target,
+      $replica_target,
+      $replica_postgresql_target,
+      $compiler_targets,
+      $primary_postgresql_target,
   ])
 
   # Ensure input valid for a supported architecture
@@ -60,7 +60,7 @@ plan peadm::convert (
   # Get trusted fact information for all compilers. Use peadm::certname() as
   # the hash key because the apply block below will break trying to parse the
   # $compiler_extensions variable if it has Target-type hash keys.
-  $cert_extensions = run_task('peadm::cert_data', $all_targets).reduce({}) |$memo,$result| {
+  $cert_extensions = run_task('peadm::cert_data', $all_targets).reduce( {}) |$memo,$result| {
     $memo + { $result.target.peadm::certname() => $result['extensions'] }
   }
 
