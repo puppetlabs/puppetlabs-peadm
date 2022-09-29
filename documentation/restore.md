@@ -1,6 +1,6 @@
 # Restore Puppet Enterprise using the PEADM module
 
-Once you have a [backup](backup.md) you can restore a PE primary server
+Once you have a [backup](backup.md) you can restore a PE primary server. It is important to highlight that you can not use the `peadm::restore` plan with a backup that was not created with the `peadm::backup` plan.
 
 As in the `peadm::backup` plan, you can choose what you want to restore by specifying the parameter `restore`
 
