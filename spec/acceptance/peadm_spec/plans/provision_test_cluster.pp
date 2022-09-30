@@ -25,6 +25,10 @@ plan peadm_spec::provision_test_cluster (
       ['primary', 'primary-pdb-postgresql', 'compiler',
       'replica', 'replica-pdb-postgresql', 'compiler']
     }
+    'extra-large-with-dr-and-spare-replica': {
+      ['primary', 'primary-pdb-postgresql', 'compiler',
+      'replica', 'replica-pdb-postgresql', 'compiler', 'spare-replica']
+    }
     default: {
       fail_plan("Unknown architecture: ${architecture}")
     }
