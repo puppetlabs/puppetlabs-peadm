@@ -1,9 +1,10 @@
+# This plan performs a failover procedure on an XL architecture
+# It assumes an inventory files with roles specified including a `spare-replica` role
 plan peadm_spec::perform_failover(
-  String[1] $console_password
 ) {
   # get node certnames
   $t = get_targets('*')
-  # wait_until_available($t)
+  wait_until_available($t)
 
   parallelize($t) |$target| {
     $fqdn = run_command('hostname -f', $target)
@@ -12,32 +13,30 @@ plan peadm_spec::perform_failover(
 
   # run infra status on the primary
   $primary_host = $t.filter |$n| { $n.vars['role'] == 'primary' }
-  # out::verbose("Running peadm::status on new primary host ${primary_host}")
-  # run_plan('peadm::status', $primary_host)
+  out::verbose("Running peadm::status on new primary host ${primary_host}")
+  run_plan('peadm::status', $primary_host)
 
-  # # bring down the current primary
-  # out::verbose("Bringing down primary host ${primary_host}")
-  # run_task('reboot', $primary_host, shutdown_only => true)
+  # bring down the current primary
+  out::verbose("Bringing down primary host ${primary_host}")
+  run_task('reboot', $primary_host, shutdown_only => true)
 
   # promote the replica to new primary
   $replica_host = $t.filter |$n| { $n.vars['role'] == 'replica' }
-  # out::verbose("Promoting replica host ${replica_host} to primary")
-  # run_command(@("HEREDOC"/L), $replica_host)
-  #   /opt/puppetlabs/bin/puppet infra promote replica --topology mono-with-compile --yes
-  # |-HEREDOC
+  out::verbose("Promoting replica host ${replica_host} to primary")
+  run_command(@("HEREDOC"/L), $replica_host)
+    /opt/puppetlabs/bin/puppet infra promote replica --topology mono-with-compile --yes
+  |-HEREDOC
 
-  # generate access token
+  # generate access token on new primary
   out::verbose("Generating access token on replica host ${replica_host}")
   run_task('peadm::rbac_token', $replica_host,
-    password       => $console_password,
+    password       => 'puppetlabs',
     token_lifetime => '1y',
   )
 
-  # $primary_certname = $primary_host.peadm::certname()
   # purge the "failed" primary node
   run_command(@("HEREDOC"/L), $replica_host)
-    # /opt/puppetlabs/bin/puppet node purge ${peadm::certname($primary_host)}
-    /opt/puppetlabs/bin/puppet node purge ip-10-138-1-143.eu-central-1.compute.internal
+    /opt/puppetlabs/bin/puppet node purge ${peadm::certname($primary_host)}
   |-HEREDOC
 
   # add new replica
@@ -50,9 +49,9 @@ plan peadm_spec::perform_failover(
 
   out::verbose("Adding new replica host ${new_replica_host} to primary")
   run_plan('peadm::add_replica',
-    primary_host            => $replica_host.first(),
-    replica_host            => $new_replica_host.first(),
-    replica_postgresql_host => $replica_postgresql_host ? { [] => undef, default => $replica_postgresql_host.first() },
+    primary_host            => peadm::certname($replica_host),
+    replica_host            => peadm::certname($new_replica_host),
+    replica_postgresql_host => $replica_postgresql_host ? { [] => undef, default => peadm::certname($replica_postgresql_host) },
   )
 
   # run infra status on the new primary
