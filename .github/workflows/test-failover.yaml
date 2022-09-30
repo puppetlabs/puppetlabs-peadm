@@ -149,9 +149,7 @@ jobs:
           buildevents cmd $TRACE_ID $STEP_ID 'bolt plan run peadm_spec::perform_failover' -- \
             bundle exec bolt plan run peadm_spec::perform_failover \
               --inventoryfile spec/fixtures/litmus_inventory.yaml \
-              --modulepath spec/fixtures/modules \
-              platform=${{ matrix.image }} \
-              vars="role: primary"
+              --modulepath spec/fixtures/modules
 
       - name: "Honeycomb: Record falover time"
         if: ${{ always() }}
@@ -170,6 +168,11 @@ jobs:
             sleep 60
           done 
           echo "${HOME}/pause absent, continuing workflow."
+
+      - name: 'Swap primary and replica nodes'
+        run: |
+          sed -i .sedbak 's/ primary/ ___replica___/;s/ replica/ ___primary___/;s/___//g' \
+              spec/fixtures/litmus_inventory.yaml
 
       - name: 'Upgrade PE on test cluster'
         if: ${{ always() && github.event.inputs.version_to_upgrade != '' }}
