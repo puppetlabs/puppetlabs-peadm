@@ -27,7 +27,7 @@ env:
 
 jobs:
   test-failover:
-    name: "PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}"
+    name: "PE ${{ matrix.version }} extra-large-with-dr-and-spare-replica on ${{ matrix.image }}"
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true
@@ -37,13 +37,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture:
-          - "extra-large-with-dr-and-spare-replica"
         version:
           - "${{ github.event.inputs.version }}"
         image:
           - "${{ github.event.inputs.image }}"
-
+        architecture:
+          - "extra-large-with-dr-and-spare-replica"
     steps:
       - name: 'Start SSH session'
         if: ${{ github.event.inputs.ssh-debugging == 'true' }}
@@ -85,11 +84,11 @@ jobs:
         run: |
           echo ::group::honeycomb
             buildevents step $TRACE_ID $STEP_ID $STEP_START 'Set up environment'
-            echo STEP_ID=${{ matrix.architecture }}-${{ matrix.image }}-provision >> $GITHUB_ENV
+            echo STEP_ID=extra-large-with-dr-and-spare-replica-${{ matrix.image }}-provision >> $GITHUB_ENV
             echo STEP_START=$(date +%s) >> $GITHUB_ENV
           echo ::endgroup::
 
-      - name: 'Provision test cluster (specified architecture with added DR)'
+      - name: 'Provision test cluster (XL with spare replica)'
         timeout-minutes: 15
         run: |
           echo ::group::prepare
@@ -106,7 +105,7 @@ jobs:
                 --modulepath spec/fixtures/modules \
                 provider=provision_service \
                 image=${{ matrix.image }} \
-                architecture=${{ matrix.architecture }}-with-dr
+                architecture=${{ matrix.architecture }}
             buildevents cmd $TRACE_ID $STEP_ID 'bolt task run provision::provision_service' -- \
               bundle exec bolt bolt task run provision::provision_service \
                 --modulepath spec/fixtures/modules \
@@ -128,7 +127,7 @@ jobs:
         run: |
           echo ::group::honeycomb
             buildevents step $TRACE_ID $STEP_ID $STEP_START 'Provision test cluster'
-            echo STEP_ID=${{ matrix.architecture }}-${{ matrix.image }}-install >> $GITHUB_ENV
+            echo STEP_ID=extra-large-with-dr-and-spare-replica-${{ matrix.image }}-install >> $GITHUB_ENV
             echo STEP_START=$(date +%s) >> $GITHUB_ENV
           echo ::endgroup::
 
@@ -147,7 +146,7 @@ jobs:
         run: |
           echo ::group::honeycomb
             buildevents step $TRACE_ID $STEP_ID $STEP_START 'Install PE on test cluster'
-            echo STEP_ID=${{ matrix.architecture }}-${{ matrix.image }}-tear_down >> $GITHUB_ENV
+            echo STEP_ID=extra-large-with-dr-and-spare-replica-${{ matrix.image }}-tear_down >> $GITHUB_ENV
             echo STEP_START=$(date +%s) >> $GITHUB_ENV
           echo ::endgroup::
 
@@ -165,7 +164,7 @@ jobs:
         run: |
           echo ::group::honeycomb
             buildevents step $TRACE_ID $STEP_ID $STEP_START 'Perform failover'
-            echo STEP_ID=${{ matrix.architecture }}-${{ matrix.image }}-tear_down >> $GITHUB_ENV
+            echo STEP_ID=extra-large-with-dr-and-spare-replica-${{ matrix.image }}-tear_down >> $GITHUB_ENV
             echo STEP_START=$(date +%s) >> $GITHUB_ENV
           echo ::endgroup::
 
@@ -186,7 +185,7 @@ jobs:
             bundle exec bolt plan run peadm_spec::upgrade_test_cluster \
               --inventoryfile spec/fixtures/litmus_inventory.yaml \
               --modulepath spec/fixtures/modules \
-              architecture='extra-large-with-dr' \
+              architecture=${{ matrix.architecture }} \
               download_mode='direct' \
               version=${{ matrix.version_to_upgrade }}
 
@@ -195,7 +194,7 @@ jobs:
         run: |
           echo ::group::honeycomb
             buildevents step $TRACE_ID $STEP_ID $STEP_START 'Upgrade PE on test cluster'
-            echo STEP_ID=${{ matrix.architecture }}-${{ matrix.version_to_upgrade }}-tear_down >> $GITHUB_ENV
+            echo STEP_ID=extra-large-with-dr-and-spare-replica-${{ matrix.version_to_upgrade }}-tear_down >> $GITHUB_ENV
             echo STEP_START=$(date +%s) >> $GITHUB_ENV
           echo ::endgroup::
 
