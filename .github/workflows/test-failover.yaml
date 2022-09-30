@@ -106,12 +106,6 @@ jobs:
                 provider=provision_service \
                 image=${{ matrix.image }} \
                 architecture=${{ matrix.architecture }}
-            buildevents cmd $TRACE_ID $STEP_ID 'bolt task run provision::provision_service' -- \
-              bundle exec bolt bolt task run provision::provision_service \
-                --modulepath spec/fixtures/modules \
-                action=provision
-                platform=${{ matrix.image }} \
-                vars="role: primary"
           echo ::endgroup::
 
           echo ::group::info:request
