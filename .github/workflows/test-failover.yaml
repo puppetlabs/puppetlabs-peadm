@@ -27,7 +27,7 @@ env:
 
 jobs:
   test-failover:
-    name: "PE ${{ matrix.version }} extra-large-with-dr-and-spare-replica on ${{ matrix.image }}"
+    name: "PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}"
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true
@@ -42,7 +42,7 @@ jobs:
         image:
           - "${{ github.event.inputs.image }}"
         architecture:
-          - "extra-large-with-dr-and-spare-replica"
+          - "extra-large-with-dr"
     steps:
       - name: 'Start SSH session'
         if: ${{ github.event.inputs.ssh-debugging == 'true' }}
@@ -84,7 +84,7 @@ jobs:
         run: |
           echo ::group::honeycomb
             buildevents step $TRACE_ID $STEP_ID $STEP_START 'Set up environment'
-            echo STEP_ID=extra-large-with-dr-and-spare-replica-${{ matrix.image }}-provision >> $GITHUB_ENV
+            echo STEP_ID=${{ matrix.architecture }}-${{ matrix.image }}-provision >> $GITHUB_ENV
             echo STEP_START=$(date +%s) >> $GITHUB_ENV
           echo ::endgroup::
 
@@ -105,7 +105,7 @@ jobs:
                 --modulepath spec/fixtures/modules \
                 provider=provision_service \
                 image=${{ matrix.image }} \
-                architecture=${{ matrix.architecture }}
+                architecture=${{ matrix.architecture }}-and-spare-replica
           echo ::endgroup::
 
           echo ::group::info:request
@@ -121,7 +121,7 @@ jobs:
         run: |
           echo ::group::honeycomb
             buildevents step $TRACE_ID $STEP_ID $STEP_START 'Provision test cluster'
-            echo STEP_ID=extra-large-with-dr-and-spare-replica-${{ matrix.image }}-install >> $GITHUB_ENV
+            echo STEP_ID=${{ matrix.architecture }}-${{ matrix.image }}-install >> $GITHUB_ENV
             echo STEP_START=$(date +%s) >> $GITHUB_ENV
           echo ::endgroup::
 
@@ -140,7 +140,7 @@ jobs:
         run: |
           echo ::group::honeycomb
             buildevents step $TRACE_ID $STEP_ID $STEP_START 'Install PE on test cluster'
-            echo STEP_ID=extra-large-with-dr-and-spare-replica-${{ matrix.image }}-tear_down >> $GITHUB_ENV
+            echo STEP_ID=${{ matrix.architecture }}-${{ matrix.image }}-tear_down >> $GITHUB_ENV
             echo STEP_START=$(date +%s) >> $GITHUB_ENV
           echo ::endgroup::
 
@@ -158,7 +158,7 @@ jobs:
         run: |
           echo ::group::honeycomb
             buildevents step $TRACE_ID $STEP_ID $STEP_START 'Perform failover'
-            echo STEP_ID=extra-large-with-dr-and-spare-replica-${{ matrix.image }}-tear_down >> $GITHUB_ENV
+            echo STEP_ID=${{ matrix.architecture }}-${{ matrix.image }}-tear_down >> $GITHUB_ENV
             echo STEP_START=$(date +%s) >> $GITHUB_ENV
           echo ::endgroup::
 
@@ -188,7 +188,7 @@ jobs:
         run: |
           echo ::group::honeycomb
             buildevents step $TRACE_ID $STEP_ID $STEP_START 'Upgrade PE on test cluster'
-            echo STEP_ID=extra-large-with-dr-and-spare-replica-${{ matrix.version_to_upgrade }}-tear_down >> $GITHUB_ENV
+            echo STEP_ID=${{ matrix.architecture }}-${{ matrix.version_to_upgrade }}-tear_down >> $GITHUB_ENV
             echo STEP_START=$(date +%s) >> $GITHUB_ENV
           echo ::endgroup::
 
