@@ -3,8 +3,8 @@ plan peadm::subplans::modify_certificate (
   Peadm::SingleTargetSpec $targets,
   TargetSpec              $primary_host,
   String                  $primary_certname,
-  Hash                    $add_extensions = { },
-  Array                   $remove_extensions = [ ],
+  Hash                    $add_extensions = {},
+  Array                   $remove_extensions = [],
   Optional[Array]         $dns_alt_names = undef,
   Boolean                 $force_regenerate = false,
 ) {
@@ -32,11 +32,10 @@ plan peadm::subplans::modify_certificate (
   # If the existing certificate meets all the requirements, there's no need
   # to regenerate it. Skip it and move on to the next.
   if ($certdata['certificate-exists'] and
-      ($desired_alt_names == $existing_alt_names) and
-      ($desired_exts.all |$key,$val| { $existing_exts[$key] == $val }) and
-      !($remove_extensions.any |$key| { $key in $existing_exts.keys }) and
-      !$force_regenerate)
-  {
+    ($desired_alt_names == $existing_alt_names) and
+    ($desired_exts.all |$key,$val| { $existing_exts[$key] == $val }) and
+    !($remove_extensions.any |$key| { $key in $existing_exts.keys }) and
+  !$force_regenerate) {
     out::message("${certname} already has requested modifications; certificate will not be re-issued")
     return('Skipped')
   }
@@ -58,8 +57,8 @@ plan peadm::subplans::modify_certificate (
     merge              => false,
   )
 
-  $ca_clean_result = run_command(@("HEREDOC"/L), $primary_target, _catch_errors =>  true).first
-    /opt/puppetlabs/bin/puppetserver ca clean --certname ${certname}
+  $ca_clean_result = run_command(@("HEREDOC"/L), $primary_target, _catch_errors => true).first
+        /opt/puppetlabs/bin/puppetserver ca clean --certname ${certname}
     |-HEREDOC
 
   unless $ca_clean_result.ok {
@@ -68,10 +67,9 @@ plan peadm::subplans::modify_certificate (
     # Scenario 2: the primary's cert can't be cleaned because it's been deleted.
     # Scenario 3: any component's cert can't be cleaned because it's been deleted.
     unless ($target_is_primary and
-            ($ca_clean_result[merged_output] =~ /certificate revoked/ or
-              $ca_clean_result[merged_output] =~ /Could not find 'hostcert'/)) or
-                ($ca_clean_result[merged_output] =~ /Could not find files to clean/)
-    {
+      ($ca_clean_result[merged_output] =~ /certificate revoked/ or
+    $ca_clean_result[merged_output] =~ /Could not find 'hostcert'/)) or
+    ($ca_clean_result[merged_output] =~ /Could not find files to clean/) {
       fail_plan($ca_clean_result[merged_output])
     }
   }
@@ -95,9 +93,9 @@ plan peadm::subplans::modify_certificate (
   else {
     # PRIMARY cert regeneration
     # The docs are broken, and the process is unclean. Sadface.
-    run_task('service', $target, {action => 'stop', name => 'pe-puppetserver'})
+    run_task('service', $target, { action => 'stop', name => 'pe-puppetserver' })
     run_command(@("HEREDOC"/L), $target)
-      rm -f \
+            rm -f \
         /etc/puppetlabs/puppet/ssl/certs/${certname}.pem \
         /etc/puppetlabs/puppet/ssl/private_keys/${certname}.pem \
         /etc/puppetlabs/puppet/ssl/public_keys/${certname}.pem \
@@ -105,12 +103,12 @@ plan peadm::subplans::modify_certificate (
         /etc/puppetlabs/puppet/ssl/ca/signed/${certname}.pem \
       |-HEREDOC
     run_command(@("HEREDOC"/L), $target)
-      /opt/puppetlabs/bin/puppetserver ca generate \
+            /opt/puppetlabs/bin/puppetserver ca generate \
         --certname ${certname} \
         --subject-alt-names ${alt_names.join(',')} \
         --ca-client
       |-HEREDOC
-    run_task('service', $target, {action => 'start', name => 'pe-puppetserver'})
+    run_task('service', $target, { action => 'start', name => 'pe-puppetserver' })
   }
 
   # Fire puppet back up when done
