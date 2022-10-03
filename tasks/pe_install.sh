@@ -22,7 +22,13 @@ fi
 tgzdir=$(dirname "$PT_tarball")
 pedir=$(tar -tf "$PT_tarball" | head -n 1 | xargs dirname)
 
-tar -C "$tgzdir" -xzf "$PT_tarball"
+if file "$PT_tarball" | grep -q gzip; then
+  tar_options="-xzf"
+else
+  tar_options="-xf"
+fi 
+
+tar -C "$tgzdir" "$tar_options" "$PT_tarball"
 
 if [ ! -z "$PT_peconf" ]; then
 	/bin/bash "${tgzdir}/${pedir}/puppet-enterprise-installer" -y -c "$PT_peconf"
