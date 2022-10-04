@@ -12,7 +12,7 @@ plan peadm_spec::perform_failover(
   }
 
   # run infra status on the primary
-  $primary_host = $t.filter |$n| { $n.vars['role'] == 'primary' }
+  $primary_host = $t.filter |$n| { $n.vars['role'] == 'primary' }[0]
   out::verbose("Running peadm::status on new primary host ${primary_host}")
   run_plan('peadm::status', $primary_host)
 
@@ -21,7 +21,7 @@ plan peadm_spec::perform_failover(
   run_task('reboot', $primary_host, shutdown_only => true)
 
   # promote the replica to new primary
-  $replica_host = $t.filter |$n| { $n.vars['role'] == 'replica' }
+  $replica_host = $t.filter |$n| { $n.vars['role'] == 'replica' }[0]
   out::verbose("Promoting replica host ${replica_host} to primary")
   run_command(@("HEREDOC"/L), $replica_host)
     /opt/puppetlabs/bin/puppet infra promote replica --topology mono-with-compile --yes
@@ -40,8 +40,8 @@ plan peadm_spec::perform_failover(
   |-HEREDOC
 
   # add new replica
-  $replica_postgresql_host = $t.filter |$n| { $n.vars['role'] == 'primary-pdb-postgresql' }
-  $new_replica_host = $t.filter |$n| { $n.vars['role'] == 'spare-replica' }
+  $replica_postgresql_host = $t.filter |$n| { $n.vars['role'] == 'primary-pdb-postgresql' }[0]
+  $new_replica_host = $t.filter |$n| { $n.vars['role'] == 'spare-replica' }[0]
 
   if $new_replica_host == [] {
     fail_plan('"spare-replica" role missing from inventory, cannot continue')
@@ -49,9 +49,9 @@ plan peadm_spec::perform_failover(
 
   out::verbose("Adding new replica host ${new_replica_host} to primary")
   run_plan('peadm::add_replica',
-    primary_host            => peadm::certname($replica_host),
-    replica_host            => peadm::certname($new_replica_host),
-    replica_postgresql_host => $replica_postgresql_host ? { [] => undef, default => peadm::certname($replica_postgresql_host) },
+    primary_host            => $replica_host,
+    replica_host            => $new_replica_host,
+    replica_postgresql_host => $replica_postgresql_host ? { [] => undef, default => $replica_postgresql_host },
   )
 
   # run infra status on the new primary
