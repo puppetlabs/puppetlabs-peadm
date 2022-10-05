@@ -5,8 +5,8 @@
 plan peadm::modify_certificate (
   TargetSpec              $targets,
   Peadm::SingleTargetSpec $primary_host,
-  Hash                    $add_extensions = { },
-  Array                   $remove_extensions = [ ],
+  Hash                    $add_extensions = {},
+  Array                   $remove_extensions = [],
   Optional[Array]         $dns_alt_names = undef,
   Boolean                 $force_regenerate = false,
 ) {
