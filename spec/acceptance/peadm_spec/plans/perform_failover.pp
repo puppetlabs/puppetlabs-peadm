@@ -49,9 +49,9 @@ plan peadm_spec::perform_failover(
 
   out::verbose("Adding new replica host ${new_replica_host} to primary")
   run_plan('peadm::add_replica',
-    primary_host            => $replica_host,
-    replica_host            => $new_replica_host,
-    replica_postgresql_host => $replica_postgresql_host ? { [] => undef, default => $replica_postgresql_host },
+    primary_host            => $replica_host.name,
+    replica_host            => $new_replica_host.name,
+    replica_postgresql_host => $replica_postgresql_host ? { [] => undef, default => $replica_postgresql_host.name },
   )
 
   # run infra status on the new primary
