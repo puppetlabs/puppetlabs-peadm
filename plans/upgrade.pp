@@ -30,11 +30,11 @@ plan peadm::upgrade (
   Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
 
   # Common Configuration
-  Peadm::Pe_version $version,
-  Optional[String]  $pe_installer_source              = undef,
-  Optional[String]  $compiler_pool_address            = undef,
-  Optional[String]  $internal_compiler_a_pool_address = undef,
-  Optional[String]  $internal_compiler_b_pool_address = undef,
+  Optional[Peadm::Pe_version] $version                          = undef,
+  Optional[String]            $pe_installer_source              = undef,
+  Optional[String]            $compiler_pool_address            = undef,
+  Optional[String]            $internal_compiler_a_pool_address = undef,
+  Optional[String]            $internal_compiler_b_pool_address = undef,
 
   # Other
   Optional[String]      $token_file             = undef,
@@ -50,9 +50,6 @@ plan peadm::upgrade (
     'upgrade-replica-compilers',
     'finalize']] $begin_at_step = undef,
 ) {
-  peadm::assert_supported_bolt_version()
-
-  peadm::assert_supported_pe_version($version, $permit_unsafe_versions)
 
   # Ensure input valid for a supported architecture
   $arch = peadm::assert_supported_architecture(
@@ -68,7 +65,7 @@ plan peadm::upgrade (
   $replica_target            = peadm::get_targets($replica_host, 1)
   $primary_postgresql_target = peadm::get_targets($primary_postgresql_host, 1)
   $replica_postgresql_target = peadm::get_targets($replica_postgresql_host, 1)
-  $compiler_targets                 = peadm::get_targets($compiler_hosts)
+  $compiler_targets          = peadm::get_targets($compiler_hosts)
 
   $all_targets = peadm::flatten_compact([
     $primary_target,
@@ -85,6 +82,26 @@ plan peadm::upgrade (
   ])
 
   out::message('# Gathering information')
+
+  $primary_target.peadm::fail_on_transport('pcp')
+
+  $platform = run_task('peadm::precheck', $primary_target).first['platform']
+
+  if $pe_installer_source {
+    $pe_tarball_name   = $pe_installer_source.split('/')[-1]
+    $pe_tarball_source = $pe_installer_source
+    $_version          = $pe_tarball_name.split('-')[2]
+  } else {
+    $_version          = $version
+    $pe_tarball_name   = "puppet-enterprise-${_version}-${platform}.tar.gz"
+    $pe_tarball_source = "https://s3.amazonaws.com/pe-builds/released/${_version}/${pe_tarball_name}"
+  }
+
+  $upload_tarball_path = "/tmp/${pe_tarball_name}"
+
+  peadm::assert_supported_bolt_version()
+
+  peadm::assert_supported_pe_version($_version, $permit_unsafe_versions)
 
   # Gather certificate extension information from all systems
   $cert_extensions = run_task('peadm::cert_data', $all_targets).reduce({}) |$memo,$result| {
@@ -123,16 +140,6 @@ plan peadm::upgrade (
       == $cert_extensions.dig($replica_target[0].peadm::certname, peadm::oid('peadm_availability_group')))
   }
 
-  $primary_target.peadm::fail_on_transport('pcp')
-
-  $platform = run_task('peadm::precheck', $primary_target).first['platform']
-  $tarball_filename = "puppet-enterprise-${version}-${platform}.tar.gz"
-  $tarball_source   = $pe_installer_source ? {
-    undef   => "https://s3.amazonaws.com/pe-builds/released/${version}/${tarball_filename}",
-    default => $pe_installer_source,
-  }
-  $upload_tarball_path = "/tmp/${tarball_filename}"
-
   peadm::plan_step('preparation') || {
     # Support for running over the orchestrator transport relies on Bolt being
     # executed from the primary using the local transport. For now, fail the plan
@@ -140,14 +147,14 @@ plan peadm::upgrade (
     if $download_mode == 'bolthost' {
       # Download the PE tarball on the nodes that need it
       run_plan('peadm::util::retrieve_and_upload', $pe_installer_targets,
-        source      => $tarball_source,
-        local_path  => "${stagingdir}/${tarball_filename}",
+        source      => $pe_tarball_source,
+        local_path  => "${stagingdir}/${pe_tarball_name}",
         upload_path => $upload_tarball_path,
       )
     } else {
       # Download PE tarballs directly to nodes that need it
       run_task('peadm::download', $pe_installer_targets,
-        source => $tarball_source,
+        source => $pe_tarball_source,
         path   => $upload_tarball_path,
       )
     }
@@ -291,7 +298,7 @@ plan peadm::upgrade (
     # doesn't deal well with the PuppetDB database being on a separate node.
     # So, move it aside before running the upgrade.
     $pdbapps = '/opt/puppetlabs/server/apps/puppetdb/cli/apps'
-    $workaround_delete_reports = $arch['disaster-recovery'] and $version =~ SemVerRange('>= 2019.8')
+    $workaround_delete_reports = $arch['disaster-recovery'] and $_version =~ SemVerRange('>= 2019.8')
     if $workaround_delete_reports {
       run_command(@("COMMAND"/$), $replica_target)
         if [ -e ${pdbapps}/delete-reports -a ! -h ${pdbapps}/delete-reports ]
