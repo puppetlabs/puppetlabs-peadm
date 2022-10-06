@@ -19,6 +19,7 @@ plan peadm::modify_certificate (
   # TODO: convert $add_extensions and $remov_extensions  to OIDs, if friendly
   # names have been given
 
+  out::message("peadm::modify_certificate: primary host: ${primary_target} - ${primary_target.name} - ${primary_target.uri}")
   $primary_certname = run_task('peadm::cert_data', $primary_target).first['certname']
 
   # Do the primary first, if it's in the list
