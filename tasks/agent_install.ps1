@@ -1,6 +1,6 @@
 # agent_install.ps1
 
-if (!(Test-Path "C:\Program Files\Puppet Labs\Puppet\puppet\bin\puppet")){
+if (Test-Path "C:\Program Files\Puppet Labs\Puppet\puppet\bin\puppet"){
   Write-Host "ERROR: Puppet agent is already installed. Re-install, re-configuration, or upgrade not supported. Please uninstall the agent before running this task."
   Exit 1
 }
