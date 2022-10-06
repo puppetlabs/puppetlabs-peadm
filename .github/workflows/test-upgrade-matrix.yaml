@@ -1,37 +1,11 @@
 ---
-name: "Upgrade test"
+name: "Upgrade test matrix"
 
 on:
-  workflow_dispatch:
-    inputs:
-      image:
-        description: 'GCP image for test cluster'
-        required: true
-        default: 'almalinux-cloud/almalinux-8'
-      architecture:
-        type: choice
-        required: true
-        default: 'standard'
-        description: 'PE architecture to test'
-        options: 
-        - standard
-        - standard-with-dr
-        - large
-        - large-with-dr
-        - extra-large
-        - extra-large-with-dr
-      version:
-        description: 'PE version to install initially'
-        required: true
-        default: '2019.8.12'
-      upgrade_version:
-        description: 'PE version to upgrade to'
-        required: true
-        default: '2021.7.0'
-      ssh-debugging:
-        description: 'Boolean; whether or not to pause for ssh debugging'
-        required: true
-        default: 'false'
+  pull_request:
+    branches: [main]
+    types: [review_requested]
+  workflow_dispatch: {}
 
 env:
   HONEYCOMB_WRITEKEY: 7f3c63a70eecc61d635917de46bea4e6
@@ -49,16 +23,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        architecture:
+          - 'standard'
+          - 'extra-large-with-dr'
+        version:
+          - '2019.8.12'
+        version_to_upgrade:
+          - '2021.7.0'
+        image:
+          - 'almalinux-cloud/almalinux-8'
         download_mode:
           - 'direct'
-        architecture:
-          - "${{ github.event.inputs.architecture }}"
-        version:
-          - "${{ github.event.inputs.version }}"
-        version_to_upgrade:
-          - "${{ github.event.inputs.upgrade_version }}"
-        image:
-          - "${{ github.event.inputs.image }}"
 
     steps:
       - name: 'Start SSH session'
