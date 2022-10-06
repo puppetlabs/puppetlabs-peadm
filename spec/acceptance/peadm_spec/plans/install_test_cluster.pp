@@ -1,7 +1,10 @@
 plan peadm_spec::install_test_cluster (
   String[1]                 $architecture,
-  String[1]                 $version,
-  Enum['enable', 'disable'] $fips = 'disable'
+  String                    $download_mode          = 'direct',
+  Optional[String[1]]       $version                = undef,
+  Optional[String[1]]       $pe_installer_source    = undef,
+  Boolean                   $permit_unsafe_versions = false,
+  Enum['enable', 'disable'] $fips                   = 'disable'
 ) {
 
   $t = get_targets('*')
@@ -22,9 +25,11 @@ plan peadm_spec::install_test_cluster (
   }
 
   $common_params = {
-    console_password => 'puppetlabs',
-    download_mode    => 'direct',
-    version          => $version,
+    console_password       => 'puppetlabs',
+    download_mode          => $download_mode,
+    version                => $version,
+    pe_installer_source    => $pe_installer_source,
+    permit_unsafe_versions => $permit_unsafe_versions,
   }
 
   $arch_params =
