@@ -36,7 +36,7 @@ env:
 
 jobs:
   test-upgrade:
-    name: "PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}"
+    name: "PE ${{ matrix.version }} to latest dev using ${{ matrix.architecture }} on ${{ matrix.image }}"
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true
