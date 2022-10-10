@@ -18,7 +18,7 @@ There is also a procedure related to the restoration of the databases where `pea
 
 ## How to use the restore plan?
 
-As in the `peadm::backup` plan, you can choose what you want to restore by specifying the parameter `restore`
+As in the `peadm::backup` plan, you can choose what you want to restore by specifying the parameter `restore`. The `input_file` parameter refers to the location of the backup tarball.
 
 Example:
 
@@ -34,7 +34,7 @@ Example:
     "ca": false,
     "classifier": false,
   },
-  "input_file": "/tmp/path"
+  "input_file": "/tmp/path/backup_tarball.tgz"
 }
 ```
 To run the `peadm::restore` plan with our custom parameters file, we can do:
