@@ -3,17 +3,15 @@ name: "Install latest dev test nightly"
 
 on:
   schedule:
-    - cron: '0 1 * * *'
+    - cron: '0 3 * * *'
 
 env:
-  IMAGE: 'almalinux-cloud/almalinux-8'
-  ARCHITECTURE: 'extra-large-with-dr'
   HONEYCOMB_WRITEKEY: 7f3c63a70eecc61d635917de46bea4e6
   HONEYCOMB_DATASET: litmus tests
 
 jobs:
   test-install:
-    name: "PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}"
+    name: "PE nightly using ${{ matrix.architecture }} on ${{ matrix.image }}"
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true
@@ -24,9 +22,9 @@ jobs:
       fail-fast: false
       matrix:
         architecture:
-          - "${{ env.ARCHITECTURE }}"
+          - 'extra-large-with-dr'
         image:
-          - "${{ env.IMAGE }}"
+          - 'almalinux-cloud/almalinux-8'
 
     steps:
       - name: "Honeycomb: Start recording"
