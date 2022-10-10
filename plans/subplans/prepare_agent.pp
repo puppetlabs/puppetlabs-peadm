@@ -8,6 +8,9 @@ plan peadm::subplans::prepare_agent (
   $agent_target    = peadm::get_targets($targets, 1)
   $primary_target  = peadm::get_targets($primary_host, 1)
 
+  out::message("Preparing agent ${agent_target} to connect to ${primary_target}")
+  out::message("agent target ${agent_target} to connect to ${primary_target}")
+
   $dns_alt_names_flag = $dns_alt_names? {
     undef   => [],
     default => ["main:dns_alt_names=${dns_alt_names.join(',')}"],
@@ -80,6 +83,7 @@ plan peadm::subplans::prepare_agent (
 
   # If agent certificate is good but lacks appropriate extensions, plan will still
   # regenerate certificate
+  out::message("primary target: ${primary_target}, certname: ${primary_target.peadm::certname()}, uri: ${primary_target.uri}")
   run_plan('peadm::modify_certificate', $agent_target,
     primary_host     => $primary_target.peadm::certname(),
     add_extensions   => $certificate_extensions,
