@@ -1,7 +1,9 @@
 plan peadm_spec::upgrade_test_cluster(
-  $architecture,
-  $version,
-  $download_mode
+  String[1]           $architecture,
+  String              $download_mode          = 'direct',
+  Optional[String[1]] $version                = undef,
+  Optional[String[1]] $pe_installer_source    = undef,
+  Boolean             $permit_unsafe_versions = false,
 ){
 
   $t = get_targets('*')
@@ -13,8 +15,10 @@ plan peadm_spec::upgrade_test_cluster(
   }
 
   $common_params = {
-    download_mode    => $download_mode,
-    version          => $version,
+    download_mode          => $download_mode,
+    version                => $version,
+    pe_installer_source    => $pe_installer_source,
+    permit_unsafe_versions => $permit_unsafe_versions,
   }
 
   $arch_params =
