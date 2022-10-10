@@ -85,7 +85,7 @@ plan peadm::subplans::prepare_agent (
   # regenerate certificate
   out::message("primary target: ${primary_target}, certname: ${primary_target.peadm::certname()}, uri: ${primary_target[0].uri}")
   run_plan('peadm::modify_certificate', $agent_target,
-    primary_host     => $primary_target.peadm::certname(),
+    primary_host     => $primary_target,
     add_extensions   => $certificate_extensions,
     force_regenerate => $force_regenerate
   )
