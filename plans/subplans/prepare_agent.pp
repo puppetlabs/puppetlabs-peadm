@@ -83,7 +83,7 @@ plan peadm::subplans::prepare_agent (
 
   # If agent certificate is good but lacks appropriate extensions, plan will still
   # regenerate certificate
-  out::message("primary target: ${primary_target}, certname: ${primary_target.peadm::certname()}, uri: ${primary_target.uri}")
+  out::message("primary target: ${primary_target}, certname: ${primary_target.peadm::certname()}, uri: ${primary_target[0].uri}")
   run_plan('peadm::modify_certificate', $agent_target,
     primary_host     => $primary_target.peadm::certname(),
     add_extensions   => $certificate_extensions,
