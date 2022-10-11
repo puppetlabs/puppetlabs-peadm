@@ -21,12 +21,12 @@ plan peadm_spec::perform_failover(
   run_task('reboot', $primary_host, shutdown_only => true)
 
   # purge the "failed" primary node
+  $replica_host = $t.filter |$n| { $n.vars['role'] == 'replica' }[0]
   run_command(@("HEREDOC"/L), $replica_host)
     /opt/puppetlabs/bin/puppet node purge ${peadm::certname($primary_host)}
   |-HEREDOC
 
   # promote the replica to new primary
-  $replica_host = $t.filter |$n| { $n.vars['role'] == 'replica' }[0]
   out::verbose("Promoting replica host ${replica_host} to primary")
   run_command(@("HEREDOC"/L), $replica_host)
     /opt/puppetlabs/bin/puppet infra promote replica --topology mono-with-compile --yes
