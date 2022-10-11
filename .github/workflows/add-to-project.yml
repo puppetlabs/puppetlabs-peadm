@@ -14,5 +14,5 @@ jobs:
         with:
           # You can target a repository in a different organization
           # to the issue
-          project-url: https://github.com/orgs/solarch/projects/55
+          project-url: https://github.com/orgs/puppetlabs/projects/55
           github-token: ${{ secrets.GITHUB_TOKEN }}
