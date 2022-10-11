@@ -20,6 +20,11 @@ plan peadm_spec::perform_failover(
   out::verbose("Bringing down primary host ${primary_host}")
   run_task('reboot', $primary_host, shutdown_only => true)
 
+  # purge the "failed" primary node
+  run_command(@("HEREDOC"/L), $replica_host)
+    /opt/puppetlabs/bin/puppet node purge ${peadm::certname($primary_host)}
+  |-HEREDOC
+
   # promote the replica to new primary
   $replica_host = $t.filter |$n| { $n.vars['role'] == 'replica' }[0]
   out::verbose("Promoting replica host ${replica_host} to primary")
@@ -33,11 +38,6 @@ plan peadm_spec::perform_failover(
     password       => 'puppetlabs',
     token_lifetime => '1y',
   )
-
-  # purge the "failed" primary node
-  run_command(@("HEREDOC"/L), $replica_host)
-    /opt/puppetlabs/bin/puppet node purge ${peadm::certname($primary_host)}
-  |-HEREDOC
 
   # add new replica
   $replica_postgresql_host = $t.filter |$n| { $n.vars['role'] == 'primary-pdb-postgresql' }[0]
