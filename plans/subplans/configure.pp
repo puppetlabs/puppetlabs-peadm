@@ -16,6 +16,9 @@
 # @param ldap_config
 #   This hash contains the options necessary for configuring the LDAP
 #   connection on the main server.
+# @param final_agent_state
+#   Configures the state the puppet agent should be in on infrastructure nodes
+#   after PE is configured successfully.
 #
 plan peadm::subplans::configure (
   # Standard
@@ -30,15 +33,16 @@ plan peadm::subplans::configure (
   Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
 
   # Common Configuration
-  String                       $compiler_pool_address = $primary_host.peadm::certname(),
+  String                       $compiler_pool_address            = $primary_host.peadm::certname(),
   Optional[String]             $internal_compiler_a_pool_address = undef,
   Optional[String]             $internal_compiler_b_pool_address = undef,
-  Optional[String]             $token_file = undef,
-  Optional[String]             $deploy_environment = undef,
-  Optional[Peadm::Ldap_config] $ldap_config = undef,
+  Optional[String]             $token_file                       = undef,
+  Optional[String]             $deploy_environment               = undef,
+  Optional[Peadm::Ldap_config] $ldap_config                      = undef,
 
   # Other
-  String           $stagingdir = '/tmp',
+  String           $stagingdir                   = '/tmp',
+  Enum['running', 'stopped'] $final_agent_state  = 'running'
 ) {
   # TODO: get and validate PE version
 
@@ -147,7 +151,11 @@ plan peadm::subplans::configure (
   }
 
   # Ensure Puppet agent service is running now that configuration is complete
-  run_command('systemctl start puppet', peadm::flatten_compact([
+  $systemctl_state = $final_agent_state ? {
+    'running' => 'start',
+    'stopped' => 'stop'
+  }
+  run_command("systemctl ${systemctl_state} puppet", peadm::flatten_compact([
     $primary_target,
     $replica_target,
     $primary_postgresql_target,
