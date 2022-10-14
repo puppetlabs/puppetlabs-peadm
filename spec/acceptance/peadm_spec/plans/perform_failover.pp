@@ -16,9 +16,9 @@ plan peadm_spec::perform_failover(
   out::verbose("Running peadm::status on new primary host ${primary_host}")
   run_plan('peadm::status', $primary_host)
 
-  # bring down the current primary
+  # bring down the current primary right now
   out::verbose("Bringing down primary host ${primary_host}")
-  run_task('reboot', $primary_host, shutdown_only => true)
+  run_task('reboot', $primary_host, shutdown_only => true, timeout => 0)
 
   # promote the replica to new primary
   $replica_host = $t.filter |$n| { $n.vars['role'] == 'replica' }[0]
