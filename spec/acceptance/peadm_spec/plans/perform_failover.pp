@@ -18,6 +18,8 @@ plan peadm_spec::perform_failover(
 
   # bring down the current primary right now
   out::verbose("Bringing down primary host ${primary_host}")
+  # destroy the ssldir in case the host comes up again
+  run_command('rm -rf $(puppet config print ssldir)', $primary_host, _catch_errors => true)
   run_task('reboot', $primary_host, shutdown_only => true, timeout => 0)
 
   # promote the replica to new primary
@@ -27,9 +29,14 @@ plan peadm_spec::perform_failover(
     /opt/puppetlabs/bin/puppet infra promote replica --topology mono-with-compile --yes
   |-HEREDOC
 
-  # purge the "failed" primary node
-  run_command(@("HEREDOC"/L), $replica_host)
-    /opt/puppetlabs/bin/puppet node purge ${peadm::certname($primary_host)}
+  # # purge the "failed" primary node
+  # run_command(@("HEREDOC"/L), $replica_host)
+  #   /opt/puppetlabs/bin/puppet node purge ${peadm::certname($primary_host)}
+  # |-HEREDOC
+
+  # forget the "failed" primary node
+  run_command(@("HEREDOC"/L), $replica_host, _catch_errors => true)
+    /opt/puppetlabs/bin/puppet infrastructure forget ${peadm::certname($primary_host)}
   |-HEREDOC
 
   # generate access token on new primary
