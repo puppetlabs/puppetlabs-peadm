@@ -18,8 +18,8 @@ plan peadm_spec::perform_failover(
 
   # bring down the current primary right now
   out::verbose("Bringing down primary host ${primary_host}")
-  # destroy the ssldir in case the host comes up again
-  run_command('rm -rf $(puppet config print ssldir)', $primary_host, _catch_errors => true)
+  # prevent host from starting up networking in case it comes up again
+  run_command('systemctl set-default basic.target', $primary_host, _catch_errors => true)
   run_task('reboot', $primary_host, shutdown_only => true, timeout => 0)
 
   # promote the replica to new primary
