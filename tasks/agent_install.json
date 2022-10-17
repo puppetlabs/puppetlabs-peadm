@@ -11,7 +11,6 @@
       "default": []
     }
   },
-  "input_method": "environment",
   "implementations": [
     {"name": "agent_install.sh", "requirements": ["shell"]},
     {"name": "agent_install.ps1", "requirements": ["powershell"]}
