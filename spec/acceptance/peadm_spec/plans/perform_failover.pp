@@ -34,17 +34,18 @@ plan peadm_spec::perform_failover(
   #   /opt/puppetlabs/bin/puppet node purge ${peadm::certname($primary_host)}
   # |-HEREDOC
 
-  # forget the "failed" primary node
-  run_command(@("HEREDOC"/L), $replica_host, _catch_errors => true)
-    /opt/puppetlabs/bin/puppet infrastructure forget ${peadm::certname($primary_host)}
-  |-HEREDOC
-
   # generate access token on new primary
   out::verbose("Generating access token on replica host ${replica_host}")
   run_task('peadm::rbac_token', $replica_host,
     password       => 'puppetlabs',
     token_lifetime => '1y',
   )
+
+  # forget the "failed" primary node
+  run_command(@("HEREDOC"/L), $replica_host, _catch_errors => true)
+    /opt/puppetlabs/bin/puppet infrastructure forget ${peadm::certname($primary_host)}
+  |-HEREDOC
+
 
   # add new replica
   $replica_postgresql_host = $t.filter |$n| { $n.vars['role'] == 'primary-pdb-postgresql' }[0]
