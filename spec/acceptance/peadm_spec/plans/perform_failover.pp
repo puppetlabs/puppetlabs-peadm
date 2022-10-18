@@ -41,11 +41,18 @@ plan peadm_spec::perform_failover(
     token_lifetime => '1y',
   )
 
+  $res1 = run_command('/opt/puppetlabs/bin/puppet query \'nodes [certname] {node_state = "active"}\'',
+    $replica_host)
+  out::message("Active nodes 1: ${res1.first['stdout']}")
+
   # forget the "failed" primary node
   run_command(@("HEREDOC"/L), $replica_host, _catch_errors => true)
     /opt/puppetlabs/bin/puppet infrastructure forget ${peadm::certname($primary_host)}
   |-HEREDOC
 
+  $res2 = run_command('/opt/puppetlabs/bin/puppet query \'nodes [certname] {node_state = "active"}\'',
+    $replica_host)
+  out::message("Active nodes 2: ${res2.first['stdout']}")
 
   # add new replica
   $replica_postgresql_host = $t.filter |$n| { $n.vars['role'] == 'primary-pdb-postgresql' }[0]
@@ -61,6 +68,10 @@ plan peadm_spec::perform_failover(
     replica_host            => $new_replica_host.uri,
     replica_postgresql_host => $replica_postgresql_host ? { [] => undef, default => $replica_postgresql_host.uri },
   )
+
+  $res3 = run_command('/opt/puppetlabs/bin/puppet query \'nodes [certname] {node_state = "active"}\'',
+    $replica_host)
+  out::message("Active nodes 3: ${res3.first['stdout']}")
 
   # run infra status on the new primary
   out::verbose("Running peadm::status on new primary host ${replica_host}")
