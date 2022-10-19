@@ -15,7 +15,21 @@ Optionally you can also backup:
 
 1. CA (CA and SSL certificates)
 
-**Note:** It is important to note that the `peadm::backup` plan in its current version is not as granular as you can get when you manually run [the `puppet-backup create` command.](https://puppet.com/docs/pe/2021.7/backing_up_and_restoring_pe.html#back_up_pe_infrastructure)
+----
+
+Most of the backups will be a direct copy of the databases with the exception of:
+
+- Classification
+  - The backup is done using an API call
+- CA
+  - The certificate files will be copy via the puppet-backup script.
+
+
+**Note:** 
+
+It is important to highlight that the `peadm::backup` plan's output is different than the one you will get when you backup manually using [the `puppet-backup create` command.](https://puppet.com/docs/pe/latest/backing_up_and_restoring_pe.html#back_up_pe_infrastructure).
+
+The main difference between these two backup tools is structure of the backup file, since this plan `peadm:backup` uses a combination of scripts, API calls and DB backups, you will not be able to restore it using the traditional `sudo puppet-backup restore <backup-filename>` command. [To read more about the difference between the options (flags), please read the official PE doc for backing up & restoring.](https://puppet.com/docs/pe/latest/backing_up_and_restoring_pe.html#back_up_pe_infrastructure)
 
 ## How can I customize my backup?
 
