@@ -16,6 +16,8 @@ There is some downtime involved when the `peadm:restore` plan is executed. The f
 
 There is also a procedure related to the restoration of the databases where `peadm::restore` will temporarily set privileges (permissions) to a DB user. These temporary privileges are removed right after the PostgreSQL restore command finishes.
 
+Also, this plan uses internal calls to the `peadm::get_targets` function, this means the plan expects the services to be up and running when you start either a restore or a backup.
+
 ## How to use the restore plan?
 
 As in the `peadm::backup` plan, you can choose what you want to restore by specifying the parameter `restore`. The `input_file` parameter refers to the location of the backup tarball.
