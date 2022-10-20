@@ -37,6 +37,8 @@ We need to pass the `backup` parameter to the `peadm::backup` plan.
 
 **Example**
 
+**Note:** The `peadm::backup` plan can only be executed from the PE primary server.
+
 Let's Backup _only_ RBAC
 
 ```
