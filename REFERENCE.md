@@ -1671,7 +1671,7 @@ Data type: `Peadm::Pe_version`
 
 
 
-Default value: `'2021.7.0'`
+Default value: `'2021.7.1'`
 
 ##### <a name="dns_alt_names"></a>`dns_alt_names`
 
