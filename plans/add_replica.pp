@@ -120,7 +120,7 @@ plan peadm::add_replica(
     # Race condition, where the provision command checks PuppetDB status and
     # probably gets "starting", but fails out because that's not "running".
     # Can remove flag when that issue is fixed.
-    legacy     => true,
+    legacy     => false,
   )
 
   # start puppet service
