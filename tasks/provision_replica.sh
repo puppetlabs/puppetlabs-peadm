@@ -25,10 +25,15 @@ if [ "$PT_legacy" = "false" ]; then
     --enable
 
 elif [ "$PT_legacy" = "true" ]; then
+  echo "query active nodes before provision replica"
+  puppet query 'nodes [certname] {node_state = "active"}'
+
   puppet infrastructure provision replica "$PT_replica" \
     --color false \
     --token-file "$TOKEN_FILE"
 
+  echo "query active nodes before enable replica"
+  puppet query 'nodes [certname] {node_state = "active"}'
   puppet infrastructure enable replica "$PT_replica" \
     --color false \
     --yes --token-file "$TOKEN_FILE" \
