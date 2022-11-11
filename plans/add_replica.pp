@@ -121,7 +121,7 @@ plan peadm::add_replica(
     # probably gets "starting", but fails out because that's not "running".
     # Can remove flag when that issue is fixed.
     legacy     => false,
-    _catch_errors => true, # testing
+    # _catch_errors => true, # testing
   )
 
   # start puppet service
