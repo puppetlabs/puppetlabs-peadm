@@ -6,8 +6,8 @@
       "description": "DNS Alternative Names to request for the certificate"
     }
   },
-  "input_method": "stdin",
   "implementations": [
-    {"name": "submit_csr.rb"}
+    {"name": "submit_csr.rb", "requirements": ["shell"]},
+    {"name": "submit_csr.ps1", "requirements": ["powershell"]}
   ]
 }
