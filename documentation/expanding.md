@@ -50,7 +50,7 @@ The initial Primary will be assigned availability group **A** and the initial Re
 
 In deployments which adopted the Extra Large deployment architecture you must provide the `replica_postgresql_host` parameter set to the PE-PostgreSQL server which will be collocated within the same availability group as the new Replica Puppet server. The `peadm::get_peadm_config` task will help you determine the most appropriate value. In the **Example** section below, the task has figured out which PE-PostgreSQL server is the Replica PE-PostgreSQL database server. You'll find the value at `params.replica_postgresql_host`, which is equal to `pe-psql-6251cd-1.us-west1-b.c.slice-cody.internal`. Reminder, the Replica PE-PostgreSQL server **MUST** be provisioned and deployed prior to initializing a Replica Puppet server.
 
-    bolt plan run peadm::get_peadm_config --targets <primary-server-fqdn> 
+    bolt task run peadm::get_peadm_config --targets <primary-server-fqdn> 
     bolt plan run peadm::add_replica primary_host=<primary-server-fqdn> replica_host=<new-replica-server-fqdn> replica_postgresql_host=<replica-postgres-server-fqdn>
 
 **Example**
