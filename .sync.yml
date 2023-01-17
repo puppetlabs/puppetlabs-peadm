@@ -2,8 +2,6 @@
 Gemfile:
   required:
     ':development':
-      - gem: 'puppet-debugger'
-        version: '>= 0.18.0'
       - gem: 'bolt'
         version: '>= 3.10.0'
   optional:
