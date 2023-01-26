@@ -3,12 +3,35 @@
 require 'spec_helper'
 
 describe 'peadm::fail_on_transport' do
-  let(:nodes) do
-    'some_value_goes_here'
-  end
-  let(:transport) do
-    'some_value_goes_here'
+  include BoltSpec::BoltContext
+
+  around :each do |example|
+    in_bolt_context do
+      example.run
+    end
   end
 
-  xit { is_expected.to run.with_params(nodes, transport).and_return('some_value') }
+  # NOTE: If https://github.com/puppetlabs/bolt/issues/3184
+  #       is fixed, this will start causing a duplicate declaration
+  #       error. If that happens, delete this pre_condition.
+  let(:pre_condition) do
+    'type TargetSpec = Boltlib::TargetSpec'
+  end
+
+  let(:nodes) do
+    'pcp://target.example'
+  end
+
+  # Function testing depends on rspec-puppet magic in the opening describe
+  # statement. Re-defining the subject just to give it a different name
+  # would require duplicating rspec-puppet code, and that's a far worse sin.
+  # rubocop:disable Rspec/NamedSubject
+  it 'raises an error when nodes use the specified transport' do
+    expect { subject.execute(nodes, 'pcp') }.to raise_error(Puppet::PreformattedError, %r{target\.example uses pcp transport})
+  end
+
+  it 'raises no error when nodes do not use the specified transport' do
+    expect { subject.execute(nodes, 'ssh') }.not_to raise_error
+  end
+  # rubocop:enable Rspec/NamedSubject
 end
