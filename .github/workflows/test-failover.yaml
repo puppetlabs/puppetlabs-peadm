@@ -15,7 +15,7 @@ on:
       version_to_upgrade:
         description: 'PE version to upgrade to'
         required: false
-        default: '2021.7.1'
+        default: '2021.7.2'
       ssh-debugging:
         description: 'Boolean; whether or not to pause for ssh debugging'
         required: true
