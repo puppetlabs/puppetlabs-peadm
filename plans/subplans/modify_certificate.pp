@@ -11,10 +11,20 @@ plan peadm::subplans::modify_certificate (
   $target = get_target($targets)
   $primary_target = get_target($primary_host)
 
-  # This plan doesn't work to reissue the master cert over the orchestrator due
-  # to pe-puppetserver needing to restart
   if ($primary_target == $target) {
-    $primary_target.peadm::fail_on_transport('pcp')
+    $primary_target.peadm::fail_on_transport('pcp', @(HEREDOC/n))
+      \nThe "pcp" transport is not available for use with the Primary
+      as peadm::subplans::modify_certificate will cause a restart of the
+      PE Orchestration service.
+
+      Use the "local" transport if running this plan directly from
+      the Primary node, or the "ssh" transport if running this
+      plan from an external Bolt host.
+
+      For information on configuring transports, see:
+
+          https://www.puppet.com/docs/bolt/latest/bolt_transports_reference.html
+      |-HEREDOC
   }
 
   # Figure out some information from the existing certificate

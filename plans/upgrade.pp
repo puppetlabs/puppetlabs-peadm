@@ -83,7 +83,19 @@ plan peadm::upgrade (
 
   out::message('# Gathering information')
 
-  $primary_target.peadm::fail_on_transport('pcp')
+  $primary_target.peadm::fail_on_transport('pcp', @(HEREDOC/n))
+    \nThe "pcp" transport is not available for use with the Primary
+    as peadm::upgrade will cause a restart of the
+    PE Orchestration service.
+
+    Use the "local" transport if running this plan directly from
+    the Primary node, or the "ssh" transport if running this
+    plan from an external Bolt host.
+
+    For information on configuring transports, see:
+
+        https://www.puppet.com/docs/bolt/latest/bolt_transports_reference.html
+    |-HEREDOC
 
   $platform = run_task('peadm::precheck', $primary_target).first['platform']
 
@@ -141,9 +153,6 @@ plan peadm::upgrade (
   }
 
   peadm::plan_step('preparation') || {
-    # Support for running over the orchestrator transport relies on Bolt being
-    # executed from the primary using the local transport. For now, fail the plan
-    # if the orchestrator is being used for the primary.
     if $download_mode == 'bolthost' {
       # Download the PE tarball on the nodes that need it
       run_plan('peadm::util::retrieve_and_upload', $pe_installer_targets,
