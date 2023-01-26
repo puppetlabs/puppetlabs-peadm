@@ -41,4 +41,16 @@ describe 'peadm::util::retrieve_and_upload' do
 
     expect(run_plan('peadm::util::retrieve_and_upload', 'nodes' => 'primary', 'source' => '/tmp/source', 'upload_path' => '/tmp/upload', 'local_path' => '/tmp/download')).to be_ok
   end
+
+  it 'fails when nodes are configured to use the pcp transport' do
+    result = run_plan('peadm::util::retrieve_and_upload',
+                      { 'nodes'       => ['pcp://node.example'],
+                        'source'      => '/tmp/source',
+                        'upload_path' => '/tmp/upload',
+                        'local_path'  => '/tmp/download' })
+
+    expect(result).not_to be_ok
+    expect(result.value.kind).to eq('unexpected-transport')
+    expect(result.value.msg).to match(%r{The "pcp" transport is not available for uploading PE installers})
+  end
 end
