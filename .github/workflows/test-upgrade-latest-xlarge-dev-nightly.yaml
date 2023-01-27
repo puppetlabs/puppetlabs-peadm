@@ -24,7 +24,7 @@ jobs:
         architecture:
           - 'extra-large-with-dr'
         version:
-          - '2021.7.1'
+          - '2021.7.2'
         image:
           - 'almalinux-cloud/almalinux-8'
 
