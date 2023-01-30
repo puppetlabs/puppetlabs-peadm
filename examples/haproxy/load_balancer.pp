@@ -5,10 +5,9 @@
 #
 # lint:ignore:autoloader_layout
 class examples::load_balancer {
-
   class { 'haproxy':
     global_options   => {
-      'log'     => "${::ipaddress} local2",
+      'log'     => "${facts['facts[\'networking\'][\'ip\']']} local2",
       'chroot'  => '/var/lib/haproxy',
       'pidfile' => '/var/run/haproxy.pid',
       'maxconn' => 5000,
@@ -24,14 +23,14 @@ class examples::load_balancer {
         'client 2m',
         'server 2m',
         'http-request 120s',
-      ]
-    }
+      ],
+    },
   }
 
   haproxy::listen { 'puppetserver':
     collect_exported => true,
     mode             => 'tcp',
-    ipaddress        => $::ipaddress,
+    ipaddress        => $facts['networking']['ip'],
     ports            => '8140',
     options          => {
       option  => ['tcplog'],
@@ -42,7 +41,7 @@ class examples::load_balancer {
   haproxy::listen { 'pcp-broker':
     collect_exported => true,
     mode             => 'tcp',
-    ipaddress        => $::ipaddress,
+    ipaddress        => $facts['networking']['ip'],
     ports            => '8142',
     options          => {
       option  => ['tcplog'],
@@ -57,10 +56,9 @@ class examples::load_balancer {
   # TODO: split load balancing into two pools, A and B
   haproxy::listen { 'puppetdb':
     collect_exported => true,
-    ipaddress        => $::ipaddress,
+    ipaddress        => $facts['networking']['ip'],
     ports            => '8081',
     options          => {},
   }
-
 }
 # lint:endignore

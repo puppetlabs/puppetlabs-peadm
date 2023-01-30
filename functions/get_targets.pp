@@ -10,8 +10,8 @@ function peadm::get_targets(
   # $count is 1, return the result of get_target() in an array. If $count is
   # undef, return get_targets().
   case $spec {
-    Undef, [ ]: {
-      [ ] # Return empty array
+    Undef, []: {
+      [] # Return empty array
     }
     default: {
       $count ? {

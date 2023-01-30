@@ -42,8 +42,8 @@ plan peadm::subplans::install (
   String               $console_password,
   Peadm::Pe_version    $version,
   Optional[String]     $pe_installer_source = undef,
-  Array[String]        $dns_alt_names       = [ ],
-  Hash                 $pe_conf_data        = { },
+  Array[String]        $dns_alt_names       = [],
+  Hash                 $pe_conf_data        = {},
 
   # Code Manager
   Optional[String]     $r10k_remote              = undef,
@@ -79,32 +79,32 @@ plan peadm::subplans::install (
   )
 
   $all_targets = peadm::flatten_compact([
-    $primary_target,
-    $primary_postgresql_target,
-    $replica_target,
-    $replica_postgresql_target,
-    $compiler_targets,
+      $primary_target,
+      $primary_postgresql_target,
+      $replica_target,
+      $replica_postgresql_target,
+      $compiler_targets,
   ])
 
   $primary_targets = peadm::flatten_compact([
-    $primary_target,
-    $replica_target,
+      $primary_target,
+      $replica_target,
   ])
 
   $database_targets = peadm::flatten_compact([
-    $primary_postgresql_target,
-    $replica_postgresql_target,
+      $primary_postgresql_target,
+      $replica_postgresql_target,
   ])
 
   $pe_installer_targets = peadm::flatten_compact([
-    $primary_target,
-    $primary_postgresql_target,
-    $replica_postgresql_target,
+      $primary_target,
+      $primary_postgresql_target,
+      $replica_postgresql_target,
   ])
 
   $agent_installer_targets = peadm::flatten_compact([
-    $compiler_targets,
-    $replica_target,
+      $compiler_targets,
+      $replica_target,
   ])
 
   # Clusters A and B are used to divide PuppetDB availability for compilers
@@ -135,10 +135,12 @@ plan peadm::subplans::install (
   $precheck_results.each |$result| {
     $name = $result.target.peadm::certname()
     if ($name != $result['hostname']) {
+# lint:ignore:strict_indent
       warning(@("HEREDOC"))
-        WARNING: Target name / hostname mismatch: target ${name} reports ${result['hostname']}
+                                WARNING: Target name / hostname mismatch: target ${name} reports ${result['hostname']}
                  Certificate name will be set to target name. Please ensure target name is correct and resolvable
         |-HEREDOC
+# lint:endignore
     }
     if ($result['platform'] != $platform) {
       fail_plan("Platform mismatch: target ${name} reports '${result['platform']}; expected ${platform}'")
@@ -157,28 +159,28 @@ plan peadm::subplans::install (
   }
 
   $primary_pe_conf = peadm::generate_pe_conf({
-    'console_admin_password'                                          => $console_password,
-    'puppet_enterprise::puppet_master_host'                           => $primary_target.peadm::certname(),
-    'pe_install::puppet_master_dnsaltnames'                           => $dns_alt_names,
-    'puppet_enterprise::puppetdb_database_host'                       => $primary_postgresql_target.peadm::certname(),
-    'puppet_enterprise::profile::master::code_manager_auto_configure' => true,
-    'puppet_enterprise::profile::master::r10k_remote'                 => $r10k_remote,
-    'puppet_enterprise::profile::master::r10k_private_key'            => $r10k_private_key ? {
-      undef   => undef,
-      default => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
-    },
+      'console_admin_password'                                          => $console_password,
+      'puppet_enterprise::puppet_master_host'                           => $primary_target.peadm::certname(),
+      'pe_install::puppet_master_dnsaltnames'                           => $dns_alt_names,
+      'puppet_enterprise::puppetdb_database_host'                       => $primary_postgresql_target.peadm::certname(),
+      'puppet_enterprise::profile::master::code_manager_auto_configure' => true,
+      'puppet_enterprise::profile::master::r10k_remote'                 => $r10k_remote,
+      'puppet_enterprise::profile::master::r10k_private_key'            => $r10k_private_key ? {
+        undef   => undef,
+        default => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
+      },
   } + $puppetdb_database_temp_config + $pe_conf_data)
 
   $primary_postgresql_pe_conf = peadm::generate_pe_conf({
-    'console_admin_password'                => 'not used',
-    'puppet_enterprise::puppet_master_host' => $primary_target.peadm::certname(),
-    'puppet_enterprise::database_host'      => $primary_postgresql_target.peadm::certname(),
+      'console_admin_password'                => 'not used',
+      'puppet_enterprise::puppet_master_host' => $primary_target.peadm::certname(),
+      'puppet_enterprise::database_host'      => $primary_postgresql_target.peadm::certname(),
   } + $puppetdb_database_temp_config + $pe_conf_data)
 
   $replica_postgresql_pe_conf = peadm::generate_pe_conf({
-    'console_admin_password'                => 'not used',
-    'puppet_enterprise::puppet_master_host' => $primary_target.peadm::certname(),
-    'puppet_enterprise::database_host'      => $replica_postgresql_target.peadm::certname(),
+      'console_admin_password'                => 'not used',
+      'puppet_enterprise::puppet_master_host' => $primary_target.peadm::certname(),
+      'puppet_enterprise::database_host'      => $replica_postgresql_target.peadm::certname(),
   } + $puppetdb_database_temp_config + $pe_conf_data)
 
   # Upload the pe.conf files to the hosts that need them, and ensure correctly
@@ -189,12 +191,14 @@ plan peadm::subplans::install (
     $pe_conf = getvar("${var}_pe_conf")
 
     peadm::file_content_upload($pe_conf, '/tmp/pe.conf', $target)
+# lint:ignore:strict_indent
     run_task('peadm::mkdir_p_file', $target,
       path    => '/etc/puppetlabs/puppet/puppet.conf',
       content => @("HEREDOC"),
-        [main]
+                                [main]
         certname = ${target.peadm::certname()}
         | HEREDOC
+# lint:endignore
     )
   }
 
@@ -231,7 +235,7 @@ plan peadm::subplans::install (
       run_plan('peadm::util::insert_csr_extension_requests', $primary_target,
         extension_requests => {
           peadm::oid('peadm_role')               => 'puppet/server',
-          peadm::oid('peadm_availability_group') => 'A'
+          peadm::oid('peadm_availability_group') => 'A',
         }
       )
     },
@@ -239,7 +243,7 @@ plan peadm::subplans::install (
       run_plan('peadm::util::insert_csr_extension_requests', $replica_target,
         extension_requests => {
           peadm::oid('peadm_role')               => 'puppet/server',
-          peadm::oid('peadm_availability_group') => 'B'
+          peadm::oid('peadm_availability_group') => 'B',
         }
       )
     },
@@ -247,7 +251,7 @@ plan peadm::subplans::install (
       run_plan('peadm::util::insert_csr_extension_requests', $compiler_a_targets,
         extension_requests => {
           peadm::oid('pp_auth_role')             => 'pe_compiler',
-          peadm::oid('peadm_availability_group') => 'A'
+          peadm::oid('peadm_availability_group') => 'A',
         }
       )
     },
@@ -255,7 +259,7 @@ plan peadm::subplans::install (
       run_plan('peadm::util::insert_csr_extension_requests', $compiler_b_targets,
         extension_requests => {
           peadm::oid('pp_auth_role')             => 'pe_compiler',
-          peadm::oid('peadm_availability_group') => 'B'
+          peadm::oid('peadm_availability_group') => 'B',
         }
       )
     },
@@ -263,7 +267,7 @@ plan peadm::subplans::install (
       run_plan('peadm::util::insert_csr_extension_requests', $primary_postgresql_target,
         extension_requests => {
           peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
-          peadm::oid('peadm_availability_group') => 'A'
+          peadm::oid('peadm_availability_group') => 'A',
         }
       )
     },
@@ -271,10 +275,10 @@ plan peadm::subplans::install (
       run_plan('peadm::util::insert_csr_extension_requests', $replica_postgresql_target,
         extension_requests => {
           peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
-          peadm::oid('peadm_availability_group') => 'B'
+          peadm::oid('peadm_availability_group') => 'B',
         }
       )
-    }
+    },
   ]
 
   wait($csr_yaml_jobs)
@@ -370,7 +374,7 @@ plan peadm::subplans::install (
 
     # Ensure certificate requests have been submitted, then run Puppet
     run_task('peadm::submit_csr', $target)
-    run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$target.peadm::certname] } )
+    run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$target.peadm::certname] })
     run_task('peadm::puppet_runonce', $target)
   }
 

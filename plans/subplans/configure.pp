@@ -72,9 +72,9 @@ plan peadm::subplans::configure (
   ]
 
   run_plan('peadm::util::copy_file', peadm::flatten_compact([
-    $replica_target,
-    $compiler_targets,
-  ]),
+        $replica_target,
+        $compiler_targets,
+    ]),
     source_host   => $primary_target,
     path          => $common_content_source
   )
@@ -120,7 +120,7 @@ plan peadm::subplans::configure (
   }
 
   if $ldap_config {
-  # Run the task to configure ldap
+    # Run the task to configure ldap
     $ldap_result = run_task('peadm::pe_ldap_config', $primary_target,
       pe_main         => $primary_target.peadm::certname(),
       ldap_config     => $ldap_config,
@@ -136,11 +136,11 @@ plan peadm::subplans::configure (
 
   # Run Puppet everywhere to pick up last remaining config tweaks
   run_task('peadm::puppet_runonce', peadm::flatten_compact([
-    $primary_target,
-    $primary_postgresql_target,
-    $compiler_targets,
-    $replica_target,
-    $replica_postgresql_target,
+        $primary_target,
+        $primary_postgresql_target,
+        $compiler_targets,
+        $replica_target,
+        $replica_postgresql_target,
   ]))
 
   # Deploy an environment if a deploy environment is specified
@@ -156,11 +156,11 @@ plan peadm::subplans::configure (
     'stopped' => 'stop'
   }
   run_command("systemctl ${systemctl_state} puppet", peadm::flatten_compact([
-    $primary_target,
-    $replica_target,
-    $primary_postgresql_target,
-    $replica_postgresql_target,
-    $compiler_targets,
+        $primary_target,
+        $replica_target,
+        $primary_postgresql_target,
+        $replica_postgresql_target,
+        $compiler_targets,
   ]))
 
   return("Configuration of Puppet Enterprise ${arch['architecture']} succeeded.")

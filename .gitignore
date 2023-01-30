@@ -32,7 +32,3 @@
 .plan_cache.json
 .resource_types/
 bolt-debug.log
-spec/docker/**/*.tar.gz
-spec/docker/**/*.asc
-spec/docker/**/files/puppet-enterprise*
-spec/docker/.task_cache.json

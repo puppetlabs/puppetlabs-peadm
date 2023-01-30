@@ -14,5 +14,4 @@ class peadm::setup::convert_node_manager {
   node_group { 'PE Master B':
     ensure => absent,
   }
-
 }
