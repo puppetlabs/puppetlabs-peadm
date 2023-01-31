@@ -321,7 +321,7 @@ plan peadm::upgrade (
     # Return the delete-reports CLI app to its original state
     if $workaround_delete_reports {
       run_command(@("COMMAND"/$), $replica_target)
-                                if [ -e ${pdbapps}/delete-reports.original ]
+        if [ -e ${pdbapps}/delete-reports.original ]
         then
           mv ${pdbapps}/delete-reports.original ${pdbapps}/delete-reports
         fi
