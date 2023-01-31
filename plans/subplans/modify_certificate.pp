@@ -58,7 +58,7 @@ plan peadm::subplans::modify_certificate (
   )
 # lint:ignore:strict_indent
   $ca_clean_result = run_command(@("HEREDOC"/L), $primary_target, _catch_errors => true).first
-                /opt/puppetlabs/bin/puppetserver ca clean --certname ${certname}
+    /opt/puppetlabs/bin/puppetserver ca clean --certname ${certname}
     |-HEREDOC
 # lint:endignore
   unless $ca_clean_result.ok {
@@ -87,7 +87,7 @@ plan peadm::subplans::modify_certificate (
     # present on the agent.
 # lint:ignore:strict_indent
     run_command(@("HEREDOC"/L), $target)
-                        /opt/puppetlabs/bin/puppet ssl download_cert --certname ${certname} || \
+      /opt/puppetlabs/bin/puppet ssl download_cert --certname ${certname} || \
       /opt/puppetlabs/bin/puppet certificate find --ca-location remote ${certname}
       |-HEREDOC
   }

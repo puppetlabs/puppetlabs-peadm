@@ -7,7 +7,7 @@ plan peadm::modify_cert_extensions (
 ) {
 # lint:ignore:strict_indent
   out::message(@(EOS))
-                            The peadm::modify_cert_extensions plan has been deprecated.
+    The peadm::modify_cert_extensions plan has been deprecated.
     Please use peadm::modify_certificate instead.
     | EOS
 # lint:endignore

@@ -97,6 +97,6 @@ plan peadm::subplans::db_populate(
   # Reload pe-postgresql to revoke replication rules
   run_command('systemctl reload pe-postgresql.service', ${source_target})
 
-  return("Population of ${$destination_target.peadm::certname()} with data from s$source_target") 
+  return("Population of ${$destination_target.peadm::certname()} with data from s${$source_target.peadm::certname()} succeeded.")
 }
 

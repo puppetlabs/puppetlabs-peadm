@@ -74,7 +74,7 @@ plan peadm::backup (
     out::message('# Backing up ca and ssl certificates')
 # lint:ignore:strict_indent
     run_command(@("CMD"), $primary_target)
-                                          /opt/puppetlabs/bin/puppet-backup create --dir=${shellquote($backup_directory)}/ca --scope=certs
+      /opt/puppetlabs/bin/puppet-backup create --dir=${shellquote($backup_directory)}/ca --scope=certs
       | CMD
   }
 
@@ -83,7 +83,7 @@ plan peadm::backup (
     out::message('# Backing up ldap secret key if it exists')
 # lint:ignore:140chars
     run_command(@("CMD"/L), $primary_target)
-                                          test -f /etc/puppetlabs/console-services/conf.d/secrets/keys.json \
+      test -f /etc/puppetlabs/console-services/conf.d/secrets/keys.json \
         && cp -rp /etc/puppetlabs/console-services/conf.d/secrets ${shellquote($backup_directory)}/rbac/ \
         || echo secret ldap key doesnt exist
       | CMD
@@ -94,13 +94,13 @@ plan peadm::backup (
   if getvar('recovery_opts.orchestrator') {
     out::message('# Backing up orchestrator secret keys')
     run_command(@("CMD"), $primary_target)
-                                          cp -rp /etc/puppetlabs/orchestration-services/conf.d/secrets ${shellquote($backup_directory)}/orchestrator/ 
+      cp -rp /etc/puppetlabs/orchestration-services/conf.d/secrets ${shellquote($backup_directory)}/orchestrator/ 
       | CMD
   }
 # lint:endignore
   $backup_databases.each |$name,$database_target| {
     run_command(@("CMD"/L), $primary_target)
-                                          /opt/puppetlabs/server/bin/pg_dump -Fd -Z3 -j4 \
+      /opt/puppetlabs/server/bin/pg_dump -Fd -Z3 -j4 \
         -f ${shellquote($backup_directory)}/${shellquote($name)}/pe-${shellquote($name)}.dump.d \
         "sslmode=verify-ca \
          host=${shellquote($database_target.peadm::certname())} \
@@ -113,7 +113,7 @@ plan peadm::backup (
   }
 
   run_command(@("CMD"/L), $primary_target)
-                            umask 0077 \
+    umask 0077 \
       && cd ${shellquote(dirname($backup_directory))} \
       && tar -czf ${shellquote($backup_directory)}.tar.gz ${shellquote(basename($backup_directory))} \
       && rm -rf ${shellquote($backup_directory)}

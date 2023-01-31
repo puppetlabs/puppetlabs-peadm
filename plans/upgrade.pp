@@ -123,7 +123,7 @@ plan peadm::upgrade (
   } {
 # lint:ignore:strict_indent
     fail_plan(@(HEREDOC/L))
-                        Required trusted facts are not present; upgrade cannot be completed. If \
+      Required trusted facts are not present; upgrade cannot be completed. If \
       this infrastructure was provisioned with an old version of peadm, you may \
       need to run the peadm::convert plan\
       | HEREDOC
@@ -303,7 +303,7 @@ plan peadm::upgrade (
     if $workaround_delete_reports {
 # lint:ignore:strict_indent
       run_command(@("COMMAND"/$), $replica_target)
-                                if [ -e ${pdbapps}/delete-reports -a ! -h ${pdbapps}/delete-reports ]
+        if [ -e ${pdbapps}/delete-reports -a ! -h ${pdbapps}/delete-reports ]
         then
           mv ${pdbapps}/delete-reports ${pdbapps}/delete-reports.original
           ln -s \$(which true) ${pdbapps}/delete-reports

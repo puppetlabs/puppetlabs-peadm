@@ -79,7 +79,7 @@ plan peadm::convert (
   if (!$previously_configured_by_peadm and ($pe_version =~ SemVerRange('< 2019.7.0'))) {
 # lint:ignore:strict_indent
     fail_plan(@("EOL"/L))
-                                          PE cluster cannot be converted! PE cluster must be a deployment \
+      PE cluster cannot be converted! PE cluster must be a deployment \
       created by pe_xl, by an older version of peadm, or be PE version \
       2019.7.0 or newer. Detected PE version ${pe_version}, and did not detect \
       signs that the deployment was previously created by peadm/pe_xl.
@@ -232,7 +232,7 @@ plan peadm::convert (
     else {
 # lint:ignore:strict_indent
       out::message(@("EOL"/L))
-                                                        NOTICE: Node groups not created/updated as part of convert because PE \
+        NOTICE: Node groups not created/updated as part of convert because PE \
         version is too old to support them. Node groups will be updated when \
         the peadm::upgrade plan is run.
         | EOL

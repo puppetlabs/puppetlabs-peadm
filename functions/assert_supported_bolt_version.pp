@@ -11,7 +11,7 @@ function peadm::assert_supported_bolt_version (
 # lint:ignore:strict_indent
   unless $supported {
     fail(@("REASON"/L))
-                                          This version of puppetlabs-peadm requires Bolt version ${supported_bolt_version}.
+      This version of puppetlabs-peadm requires Bolt version ${supported_bolt_version}.
 
       You are using Bolt version ${peadm::bolt_version()}.
 

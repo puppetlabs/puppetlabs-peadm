@@ -17,7 +17,7 @@ plan peadm::misc::divert_code_manager (
 ) {
 # lint:ignore:strict_indent
   notice(@(HEREDOC))
-                            The code manager puppet-code live-dir will be diverted
+    The code manager puppet-code live-dir will be diverted
       from: /etc/puppetlabs/code
       to:   /etc/puppetlabs/code-synchronized
     This will allow /etc/puppetlabs/code to be managed manually
@@ -26,7 +26,7 @@ plan peadm::misc::divert_code_manager (
   run_task('peadm::divert_code_manager', $primary_host)
 
   notice(@(HEREDOC))
-                            Remember to enforce this configuration in your Puppet code with a Collector Override. E.g.
+    Remember to enforce this configuration in your Puppet code with a Collector Override. E.g.
 
       Pe_hocon_setting <| title == 'file-sync.repos.puppet-code.live-dir' |> {
         value => '/etc/puppetlabs/code-synchronized',

@@ -137,7 +137,7 @@ plan peadm::subplans::install (
     if ($name != $result['hostname']) {
 # lint:ignore:strict_indent
       warning(@("HEREDOC"))
-                                WARNING: Target name / hostname mismatch: target ${name} reports ${result['hostname']}
+        WARNING: Target name / hostname mismatch: target ${name} reports ${result['hostname']}
                  Certificate name will be set to target name. Please ensure target name is correct and resolvable
         |-HEREDOC
 # lint:endignore
@@ -195,7 +195,7 @@ plan peadm::subplans::install (
     run_task('peadm::mkdir_p_file', $target,
       path    => '/etc/puppetlabs/puppet/puppet.conf',
       content => @("HEREDOC"),
-                                [main]
+        [main]
         certname = ${target.peadm::certname()}
         | HEREDOC
 # lint:endignore
