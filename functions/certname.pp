@@ -16,18 +16,20 @@ function peadm::certname(
     Array[Undef,1,1],
   Array[Any,0,0]] $target,
 ) >> Variant[String, Undef] {
+# lint:ignore:unquoted_string_in_case
   case $target {
-    'Target': {
+    Target: {
       $target.vars['certname'] ? {
         default => $target.vars['certname'],
         undef   => $target.name
       }
     }
-    Array['Target',1,1]: {
+    Array[Target,1,1]: {
       $target[0].vars['certname'] ? {
         default => $target[0].vars['certname'],
         undef   => $target[0].name
       }
+# lint:endignore
     }
     String: {
       $target
