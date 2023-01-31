@@ -43,6 +43,7 @@ end
 
 PuppetLint.configuration.send('disable_relative')
 PuppetLint.configuration.send('disable_strict_indent')
+PuppetLint.configuration.send('disable_manifest_whitespace_missing_newline_end_of_file')
 
 
 if Bundler.rubygems.find_name('github_changelog_generator').any?

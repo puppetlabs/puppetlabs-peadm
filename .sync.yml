@@ -11,7 +11,7 @@ Gemfile:
         version: '4.21.0' # Locked due to https://github.com/octokit/octokit.rb/issues/1391
 Rakefile:
   changelog_since_tag: '2.5.0'
-  default_disabled_lint_checks: ['strict_indent']
+  default_disabled_lint_checks: ['strict_indent','manifest_whitespace_missing_newline_end_of_file']
   extras:
     - 'PuppetSyntax.exclude_paths = ["plans/**/*.pp", "spec/acceptance/**/plans/**/*.pp", "vendor/**/*"]'
 spec/spec_helper.rb:
