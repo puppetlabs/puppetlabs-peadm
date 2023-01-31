@@ -29,6 +29,6 @@ spec/spec_helper.rb:
     - 'spec/docker/**/files/puppet-enterprise*'
     - 'spec/docker/.task_cache.json'
 .github/workflows/auto_release.yml:
-  unmanaged: false
+  unmanaged: true 
 .github/workflows/release.yml:
   unmanaged: false
