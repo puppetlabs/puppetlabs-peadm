@@ -33,8 +33,8 @@ plan peadm::add_compiler(
 
   # Stop puppet.service
   run_command('systemctl stop puppet.service', peadm::flatten_compact([
-    $primary_postgresql_target,
-    $replica_puppetdb_target
+        $primary_postgresql_target,
+        $replica_puppetdb_target,
   ]))
 
   apply($replica_puppetdb_target) {
@@ -78,11 +78,11 @@ plan peadm::add_compiler(
 
   # Check for and merge csr_attributes.
   run_plan('peadm::util::insert_csr_extension_requests', $compiler_target,
-      extension_requests => {
-        peadm::oid('pp_auth_role')             => 'pe_compiler',
-        peadm::oid('peadm_availability_group') => $avail_group_letter
-      }
-    )
+    extension_requests => {
+      peadm::oid('pp_auth_role')             => 'pe_compiler',
+      peadm::oid('peadm_availability_group') => $avail_group_letter,
+    }
+  )
 
   # we first assume that there is no agent installed on the node. If there is, nothing will happen.
   run_task('peadm::agent_install', $compiler_target,
@@ -95,10 +95,10 @@ plan peadm::add_compiler(
 
   # If necessary, manually submit a CSR
   # ignoring errors to simplify logic
-  run_task('peadm::submit_csr', $compiler_target, {'_catch_errors' => true})
+  run_task('peadm::submit_csr', $compiler_target, { '_catch_errors' => true })
 
   # On primary, if necessary, sign the certificate request
-  run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$compiler_target.peadm::certname()] } )
+  run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$compiler_target.peadm::certname()] })
 
   # If there was already a signed cert, force the certificate extensions we want
   # TODO: update peadm::util::add_cert_extensions to take care of dns alt names
@@ -121,17 +121,16 @@ plan peadm::add_compiler(
 
   # On <primary_postgresql_host> run the puppet agent
   run_task('peadm::puppet_runonce', peadm::flatten_compact([
-    $primary_postgresql_target,
-    $replica_puppetdb_target
+        $primary_postgresql_target,
+        $replica_puppetdb_target,
   ]))
 
   # On <primary_postgresql_host> start puppet.service
   run_command('systemctl start puppet.service', peadm::flatten_compact([
-    $primary_postgresql_target,
-    $replica_puppetdb_target,
-    $compiler_target,
+        $primary_postgresql_target,
+        $replica_puppetdb_target,
+        $compiler_target,
   ]))
 
   return("Adding or replacing compiler ${$compiler_target.peadm::certname()} succeeded.")
-
 }

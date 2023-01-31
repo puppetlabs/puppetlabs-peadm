@@ -3,7 +3,6 @@ function peadm::file_or_content(
   Variant[String, Undef] $file,
   Variant[String, Undef] $content,
 ) {
-
   $value = [
     $file,
     $content,
@@ -15,5 +14,4 @@ function peadm::file_or_content(
       undef   => $content,    # content supplied directly, use as-is
     },
   }
-
 }

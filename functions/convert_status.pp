@@ -1,4 +1,3 @@
-
 # @summary Transforms a value in a human readable status with or without colors
 # @param status A value of true, false, degraded, or an Integer that represents number of non operationally services
 #        If using an integer, you must also supply the total amount of services 
@@ -19,7 +18,7 @@ function peadm::convert_status(
   Variant[String,Boolean, Integer] $status,
   Optional[Integer] $total = 0,
   Optional[Boolean] $use_colors = true
-  ) >> String {
+) >> String {
   if $status =~ Integer {
     if ( $status < 1 ) {
       $result = 'operational'
@@ -30,10 +29,10 @@ function peadm::convert_status(
     }
   } else {
     $result = $status ? {
-        true               => 'operational',
-        false              => 'failed',
-        /degraded/         => 'degraded',
-        default            => 'unknown'
+      true               => 'operational',
+      false              => 'failed',
+      /degraded/         => 'degraded',
+      default            => 'unknown'
     }
   }
   if $use_colors {

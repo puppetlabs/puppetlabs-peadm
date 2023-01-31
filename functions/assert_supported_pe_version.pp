@@ -10,18 +10,23 @@ function peadm::assert_supported_pe_version (
   $supported = ($version =~ SemVerRange(">= ${oldest} <= ${newest}"))
 
   if $permit_unsafe_versions {
+# lint:ignore:strict_indent
     warning(@("WARN"/L))
       WARNING: Permitting unsafe PE versions. This is not supported or tested.
         Proceeding with this action could result in a broken PE Infrastructure.
       | WARN
+# lint:endignore
   }
 
   if (!$supported and $permit_unsafe_versions) {
+# lint:ignore:strict_indent
     warning(@("WARN"/L))
       WARNING: PE version ${version} is NOT SUPPORTED!
       | WARN
+# lint:endignore
   }
   elsif (!$supported) {
+# lint:ignore:strict_indent
     fail(@("REASON"/L))
       This version of the puppetlabs-peadm module does not support PE ${version}.
 
@@ -32,6 +37,7 @@ function peadm::assert_supported_pe_version (
       exists which supports that version of PE.
 
       | REASON
+# lint:endignore
   }
 
   return({ 'supported' => $supported })

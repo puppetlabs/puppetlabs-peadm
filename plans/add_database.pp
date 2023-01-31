@@ -3,14 +3,13 @@ plan peadm::add_database(
   Peadm::SingleTargetSpec $primary_host,
   Optional[Enum['init', 'pair']] $mode = undef,
   Optional[Enum[
-    'init-db-node',
-    'replicate-db',
-    'update-classification',
-    'update-db-settings',
-    'cleanup-db',
-    'finalize']] $begin_at_step = undef,
+      'init-db-node',
+      'replicate-db',
+      'update-classification',
+      'update-db-settings',
+      'cleanup-db',
+  'finalize']] $begin_at_step = undef,
 ) {
-
   $primary_target = peadm::get_targets($primary_host, 1)
   $postgresql_target = peadm::get_targets($targets, 1)
 
@@ -44,8 +43,8 @@ plan peadm::add_database(
   } else {
     # If array is empty then no external databases were previously configured 
     $no_external_db = peadm::flatten_compact([
-      $postgresql_a_host,
-      $postgresql_b_host
+        $postgresql_a_host,
+        $postgresql_b_host,
     ]).empty
 
     # Pick operating mode based on array check
@@ -60,9 +59,9 @@ plan peadm::add_database(
   if $operating_mode == 'init' {
     # If no other PSQL node then match primary group letter
     $avail_group_letter = peadm::flatten_compact($roles['server'].map |$k,$v| {
-      if $v == $primary_host {
-        $k
-      }
+        if $v == $primary_host {
+          $k
+        }
     })[0]
     # Assume PuppetDB backend hosted on Primary if in init mode
     $source_db_host = $primary_host
@@ -70,14 +69,14 @@ plan peadm::add_database(
     # The letter which doesn't yet have a server assigned or in the event this
     # is a replacement operation, the letter this node was assigned to previously
     $avail_group_letter = peadm::flatten_compact($roles['postgresql'].map |$k,$v| {
-      if (! $v) or ($v == $postgresql_host) {
-        $k
-      }
+        if (! $v) or ($v == $postgresql_host) {
+          $k
+        }
     })[0]
     # When in pair mode we assume the other PSQL node will serve as our source
     $source_db_host = peadm::flatten_compact([
-      $postgresql_a_host,
-      $postgresql_b_host
+        $postgresql_a_host,
+        $postgresql_b_host,
     ]).reject($postgresql_host)[0]
   }
 
@@ -98,11 +97,11 @@ plan peadm::add_database(
 
   # Stop Puppet to ensure catalogs are not being compiled for PE infrastructure nodes
   run_command('systemctl stop puppet.service', peadm::flatten_compact([
-    $postgresql_target,
-    $compilers,
-    $primary_target,
-    $replica_target,
-    $source_db_target
+        $postgresql_target,
+        $compilers,
+        $primary_target,
+        $replica_target,
+        $source_db_target,
   ]))
 
   # Stop frontend compiler services that causes changes to PuppetDB backend when
@@ -120,7 +119,6 @@ plan peadm::add_database(
   # Update classification and database.ini settings, assume a replica PSQL
   # does not exist
   peadm::plan_step('update-classification') || {
-
     # To ensure everything is functional when a replica exists but only a single
     # PostgreSQL node has been deployed, configure alternate availability group
     # to connect to other group's new node
@@ -145,23 +143,22 @@ plan peadm::add_database(
 
   peadm::plan_step('update-db-settings') || {
     run_plan('peadm::util::update_db_setting', peadm::flatten_compact([
-      $compilers,
-      $primary_target,
-      $replica_target
-    ]),
+          $compilers,
+          $primary_target,
+          $replica_target,
+      ]),
       postgresql_host => $postgresql_host,
       peadm_config    => $peadm_config
     )
 
     # (Re-)Start PuppetDB now that we are done making modifications
     run_command('systemctl restart pe-puppetdb.service', peadm::flatten_compact([
-      $primary_target,
-      $replica_target
+          $primary_target,
+          $replica_target,
     ]))
   }
 
   peadm::plan_step('cleanup-db') || {
-
     if $operating_mode == 'init' {
       # Clean up old puppetdb database on primary and those which were copied to
       # new host.
@@ -170,7 +167,7 @@ plan peadm::add_database(
         'pe-classifier',
         'pe-inventory',
         'pe-orchestrator',
-        'pe-rbac'
+        'pe-rbac',
       ]
 
       # If a primary replica exists then pglogical is enabled and will prevent
@@ -181,9 +178,9 @@ plan peadm::add_database(
 
       # Clean up old databases
       $clean_source = peadm::flatten_compact([
-        $source_db_target,
-        $primary_target,
-        $replica_target
+          $source_db_target,
+          $primary_target,
+          $replica_target,
       ])
 
       run_plan('peadm::util::db_purge', $clean_source,      databases => ['pe-puppetdb'])
@@ -197,23 +194,22 @@ plan peadm::add_database(
   # agents
   run_command('systemctl start pe-puppetserver.service pe-puppetdb.service', $compilers)
 
-
   peadm::plan_step('finalize') || {
     # Run Puppet to sweep up but no restarts should occur so do them in parallel
     run_task('peadm::puppet_runonce', peadm::flatten_compact([
-      $postgresql_target,
-      $primary_target,
-      $compilers,
-      $replica_target
+          $postgresql_target,
+          $primary_target,
+          $compilers,
+          $replica_target,
     ]))
 
     # Start Puppet agent
     run_command('systemctl start puppet.service', peadm::flatten_compact([
-      $postgresql_target,
-      $compilers,
-      $primary_target,
-      $replica_target,
-      $source_db_target
+          $postgresql_target,
+          $compilers,
+          $primary_target,
+          $replica_target,
+          $source_db_target,
     ]))
   }
 }

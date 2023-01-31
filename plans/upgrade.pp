@@ -43,14 +43,13 @@ plan peadm::upgrade (
   Boolean               $permit_unsafe_versions = false,
 
   Optional[Enum[
-    'upgrade-primary',
-    'upgrade-node-groups',
-    'upgrade-primary-compilers',
-    'upgrade-replica',
-    'upgrade-replica-compilers',
-    'finalize']] $begin_at_step = undef,
+      'upgrade-primary',
+      'upgrade-node-groups',
+      'upgrade-primary-compilers',
+      'upgrade-replica',
+      'upgrade-replica-compilers',
+  'finalize']] $begin_at_step = undef,
 ) {
-
   # Ensure input valid for a supported architecture
   $arch = peadm::assert_supported_architecture(
     $primary_host,
@@ -68,17 +67,17 @@ plan peadm::upgrade (
   $compiler_targets          = peadm::get_targets($compiler_hosts)
 
   $all_targets = peadm::flatten_compact([
-    $primary_target,
-    $primary_postgresql_target,
-    $replica_target,
-    $replica_postgresql_target,
-    $compiler_targets,
+      $primary_target,
+      $primary_postgresql_target,
+      $replica_target,
+      $replica_postgresql_target,
+      $compiler_targets,
   ])
 
   $pe_installer_targets = peadm::flatten_compact([
-    $primary_target,
-    $primary_postgresql_target,
-    $replica_postgresql_target,
+      $primary_target,
+      $primary_postgresql_target,
+      $replica_postgresql_target,
   ])
 
   out::message('# Gathering information')
@@ -122,22 +121,24 @@ plan peadm::upgrade (
     [peadm::oid('peadm_role'), 'pp_auth_role'].all |$ext| { $cert[$ext] == undef } or
     $cert[peadm::oid('peadm_availability_group')] == undef
   } {
+# lint:ignore:strict_indent
     fail_plan(@(HEREDOC/L))
       Required trusted facts are not present; upgrade cannot be completed. If \
       this infrastructure was provisioned with an old version of peadm, you may \
       need to run the peadm::convert plan\
       | HEREDOC
+# lint:endignore
   }
 
   # Determine which compilers are associated with which DR group
   $compiler_m1_targets = $compiler_targets.filter |$target| {
     ($cert_extensions.dig($target.peadm::certname, peadm::oid('peadm_availability_group'))
-      == $cert_extensions.dig($primary_target[0].peadm::certname, peadm::oid('peadm_availability_group')))
+    == $cert_extensions.dig($primary_target[0].peadm::certname, peadm::oid('peadm_availability_group')))
   }
 
   $compiler_m2_targets = $compiler_targets.filter |$target| {
     ($cert_extensions.dig($target.peadm::certname, peadm::oid('peadm_availability_group'))
-      == $cert_extensions.dig($replica_target[0].peadm::certname, peadm::oid('peadm_availability_group')))
+    == $cert_extensions.dig($replica_target[0].peadm::certname, peadm::oid('peadm_availability_group')))
   }
 
   peadm::plan_step('preparation') || {
@@ -176,20 +177,20 @@ plan peadm::upgrade (
     # is only ever consulted during install and upgrade of these nodes, but if
     # it contains the wrong values, upgrade will fail.
     peadm::flatten_compact([
-      $primary_postgresql_target,
-      $replica_postgresql_target,
+        $primary_postgresql_target,
+        $replica_postgresql_target,
     ]).each |$target| {
       $current_pe_conf = run_task('peadm::read_file', $target,
         path => '/etc/puppetlabs/enterprise/conf.d/pe.conf',
       ).first['content']
 
       $pe_conf = ($current_pe_conf ? {
-        undef   => {},
-        default => $current_pe_conf.parsehocon(),
-      } + {
-        'console_admin_password'                => 'not used',
-        'puppet_enterprise::puppet_master_host' => $primary_target.peadm::certname(),
-        'puppet_enterprise::database_host'      => $target.peadm::certname(),
+          undef   => {},
+          default => $current_pe_conf.parsehocon(),
+        } + {
+          'console_admin_password'                => 'not used',
+          'puppet_enterprise::puppet_master_host' => $primary_target.peadm::certname(),
+          'puppet_enterprise::database_host'      => $target.peadm::certname(),
       } + $profile_database_puppetdb_hosts).to_json_pretty()
 
       write_file($pe_conf, '/etc/puppetlabs/enterprise/conf.d/pe.conf', $target)
@@ -220,8 +221,8 @@ plan peadm::upgrade (
     # Installer-driven upgrade will de-configure auth access for compilers.
     # Re-run Puppet immediately to fully re-enable
     run_task('peadm::puppet_runonce', peadm::flatten_compact([
-      $primary_target,
-      $primary_postgresql_target,
+          $primary_target,
+          $primary_postgresql_target,
     ]))
   }
 
@@ -290,8 +291,8 @@ plan peadm::upgrade (
     # `puppet infra upgrade` cannot handle orchestration services restarting,
     # also run Puppet immediately on the primary.
     run_task('peadm::puppet_runonce', peadm::flatten_compact([
-      $primary_target,
-      $replica_postgresql_target,
+          $primary_target,
+          $replica_postgresql_target,
     ]))
 
     # The `puppetdb delete-reports` CLI app has a bug in 2019.8.0 where it
@@ -300,6 +301,7 @@ plan peadm::upgrade (
     $pdbapps = '/opt/puppetlabs/server/apps/puppetdb/cli/apps'
     $workaround_delete_reports = $arch['disaster-recovery'] and $_version =~ SemVerRange('>= 2019.8')
     if $workaround_delete_reports {
+# lint:ignore:strict_indent
       run_command(@("COMMAND"/$), $replica_target)
         if [ -e ${pdbapps}/delete-reports -a ! -h ${pdbapps}/delete-reports ]
         then
@@ -324,6 +326,7 @@ plan peadm::upgrade (
           mv ${pdbapps}/delete-reports.original ${pdbapps}/delete-reports
         fi
         | COMMAND
+# lint:endignore
     }
   }
 

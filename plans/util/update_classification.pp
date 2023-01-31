@@ -18,7 +18,6 @@ plan peadm::util::update_classification (
   Optional[String] $internal_compiler_a_pool_address = undef,
   Optional[String] $internal_compiler_b_pool_address = undef,
 ) {
-
   $primary_target = peadm::get_targets($targets, 1)
 
   # Makes this more easily usable outside a plan
@@ -34,25 +33,25 @@ plan peadm::util::update_classification (
   $filtered_params = {
     'compiler_pool_address'            => $compiler_pool_address,
     'internal_compiler_a_pool_address' => $internal_compiler_a_pool_address,
-    'internal_compiler_b_pool_address' => $internal_compiler_b_pool_address
+    'internal_compiler_b_pool_address' => $internal_compiler_b_pool_address,
   }.filter |$parameter| { $parameter[1] }
 
   $filtered_server = {
     'A' => $server_a_host,
-    'B' => $server_b_host
+    'B' => $server_b_host,
   }.filter |$parameter| { $parameter[1] }
 
   $filtered_psql = {
     'A' => $postgresql_a_host,
-    'B' => $postgresql_b_host
+    'B' => $postgresql_b_host,
   }.filter |$parameter| { $parameter[1] }
 
   $filtered = {
     'params'      => $filtered_params,
     'role-letter' => {
       'server'     => $filtered_server,
-      'postgresql' => $filtered_psql
-    }
+      'postgresql' => $filtered_psql,
+    },
   }
 
   out::verbose('New values are...')

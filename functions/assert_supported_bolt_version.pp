@@ -5,10 +5,10 @@
 # Accepts a parameter for the $supported_bolt_version for unit testing purposes
 function peadm::assert_supported_bolt_version (
   # No arguments
-) >> Struct[{'supported' => Boolean}] {
+) >> Struct[{ 'supported' => Boolean }] {
   $supported_bolt_version = '>= 3.17.0 < 4.0.0'
   $supported = (peadm::bolt_version() =~ SemVerRange($supported_bolt_version))
-
+# lint:ignore:strict_indent
   unless $supported {
     fail(@("REASON"/L))
       This version of puppetlabs-peadm requires Bolt version ${supported_bolt_version}.
@@ -19,6 +19,6 @@ function peadm::assert_supported_bolt_version (
 
       | REASON
   }
-
+# lint:endignore
   return({ 'supported' => $supported })
 }

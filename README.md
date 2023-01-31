@@ -2,7 +2,7 @@
 
 This Puppet module contains Bolt plans used to deploy and manage Puppet Enterprise infrastructure. Plans are provided to automate common lifecycle activities in order to increase velocity and reduce the possibility of human error incurred by manually performing these activities.
 
-The peadm module is able to deploy and manage Puppet Enterprise 2019.x Standard, Large, and Extra Large architectures.
+The peadm module is able to deploy and manage Puppet Enterprise 2019.7 and higher for Standard, Large, and Extra Large architectures.
 
 #### Table of Contents
 

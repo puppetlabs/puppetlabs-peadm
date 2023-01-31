@@ -2,15 +2,13 @@
 #
 # lint:ignore:autoloader_layout
 class examples::puppetdb {
-
   # TODO: split load balancing into two pools, A and B
-  @@haproxy::balancermember { "${::clientcert}_puppetdb_listener":
+  @@haproxy::balancermember { "${facts['clientcert']}_puppetdb_listener":
     listening_service => 'puppetdb',
-    server_names      => $::fqdn,
-    ipaddresses       => $::ipaddress,
+    server_names      => $facts['networking']['fqdn'],
+    ipaddresses       => $facts['networking']['ip'],
     ports             => '8081',
     options           => 'check',
   }
-
 }
 # lint:endignore

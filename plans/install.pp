@@ -45,7 +45,7 @@ plan peadm::install (
   Optional[String]                  $compiler_pool_address            = undef,
   Optional[String]                  $internal_compiler_a_pool_address = undef,
   Optional[String]                  $internal_compiler_b_pool_address = undef,
-  Optional[Hash]                    $pe_conf_data                     = { },
+  Optional[Hash]                    $pe_conf_data                     = {},
   Optional[Peadm::Ldap_config]      $ldap_config                      = undef,
 
   # Code Manager
@@ -131,4 +131,3 @@ plan peadm::install (
   # Return a string banner reporting on what was done
   return([$install_result, $configure_result])
 }
-
