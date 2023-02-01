@@ -39,5 +39,18 @@ describe 'peadm::subplans::modify_certificate' do
         expect(run_plan('peadm::subplans::modify_certificate', params)).to be_ok
       end
     end
+
+    context 'modifying the primary certificate' do
+      it 'fails if the primary is using the PCP transport' do
+        result = run_plan('peadm::subplans::modify_certificate',
+                          { 'targets'          => 'pcp://primary.example',
+                            'primary_host'     => 'pcp://primary.example',
+                            'primary_certname' => 'primary.example' })
+
+        expect(result).not_to be_ok
+        expect(result.value.kind).to eq('unexpected-transport')
+        expect(result.value.msg).to match(%r{The "pcp" transport is not available for use with the Primary})
+      end
+    end
   end
 end
