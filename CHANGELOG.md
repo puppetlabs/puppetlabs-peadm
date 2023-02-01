@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.10.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.10.0) (2023-02-01)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.9.0...v3.10.0)
+
+### Added
+
+- Adding windows node capability [\#307](https://github.com/puppetlabs/puppetlabs-peadm/pull/307) ([davidsandilands](https://github.com/davidsandilands))
+- Parameter for setting final state of agents [\#305](https://github.com/puppetlabs/puppetlabs-peadm/pull/305) ([ody](https://github.com/ody))
+
+### Fixed
+
+- Fix XL failures in finalize step of peadm::convert [\#315](https://github.com/puppetlabs/puppetlabs-peadm/pull/315) ([Sharpie](https://github.com/Sharpie))
+- Sync FIPS detection with the PE installer [\#310](https://github.com/puppetlabs/puppetlabs-peadm/pull/310) ([Sharpie](https://github.com/Sharpie))
+
 ## [v3.9.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.9.0) (2022-09-23)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.8.0...v3.9.0)
@@ -26,6 +40,7 @@ All notable changes to this project will be documented in this file. The format 
 
 - Fix classification when adding some components [\#258](https://github.com/puppetlabs/puppetlabs-peadm/pull/258) ([ody](https://github.com/ody))
 - Add task and update configure plan to allow for ldap configuration on… [\#253](https://github.com/puppetlabs/puppetlabs-peadm/pull/253) ([bwilcox](https://github.com/bwilcox))
+- Add experimental restore plan [\#250](https://github.com/puppetlabs/puppetlabs-peadm/pull/250) ([reidmv](https://github.com/reidmv))
 
 ### Fixed
 
@@ -39,9 +54,8 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
-- Add optional `pe_installer_source` parameter [\#261](https://github.com/puppetlabs/puppetlabs-peadm/pull/261) ([reidmv](https://github.com/reidmv))
+- Add optional `pe\_installer\_source` parameter [\#261](https://github.com/puppetlabs/puppetlabs-peadm/pull/261) ([reidmv](https://github.com/reidmv))
 - Support PE 2021.6 and 2019.8.11 [\#260](https://github.com/puppetlabs/puppetlabs-peadm/pull/260) ([reidmv](https://github.com/reidmv))
-- Add experimental restore plan [\#250](https://github.com/puppetlabs/puppetlabs-peadm/pull/250) ([reidmv](https://github.com/reidmv))
 
 ## [v3.6.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.6.0) (2022-05-04)
 
@@ -63,13 +77,14 @@ All notable changes to this project will be documented in this file. The format 
 ### Added
 
 - Add support for SLES 12 [\#245](https://github.com/puppetlabs/puppetlabs-peadm/pull/245) ([MartyEwings](https://github.com/MartyEwings))
-- Add `peadm::add_database` plan [\#241](https://github.com/puppetlabs/puppetlabs-peadm/pull/241) ([ody](https://github.com/ody))
-- Add experimental `peadm::util::code_sync_status` plan [\#221](https://github.com/puppetlabs/puppetlabs-peadm/pull/221) ([reidmv](https://github.com/reidmv))
+- Add `peadm::add\_database` plan [\#241](https://github.com/puppetlabs/puppetlabs-peadm/pull/241) ([ody](https://github.com/ody))
+- Add support for PE 2021.5 [\#237](https://github.com/puppetlabs/puppetlabs-peadm/pull/237) ([reidmv](https://github.com/reidmv))
+- Add experimental `peadm::util::code\_sync\_status` plan [\#221](https://github.com/puppetlabs/puppetlabs-peadm/pull/221) ([reidmv](https://github.com/reidmv))
 
 ### Fixed
 
-- Fix json escaping in `bash_task_helper` [\#246](https://github.com/puppetlabs/puppetlabs-peadm/pull/246) ([reidmv](https://github.com/reidmv))
-- Fix load balancer bug in `peadm::get_peadm_config` task [\#244](https://github.com/puppetlabs/puppetlabs-peadm/pull/244) ([reidmv](https://github.com/reidmv))
+- Fix json escaping in `bash\_task\_helper` [\#246](https://github.com/puppetlabs/puppetlabs-peadm/pull/246) ([reidmv](https://github.com/reidmv))
+- Fix load balancer bug in `peadm::get\_peadm\_config` task [\#244](https://github.com/puppetlabs/puppetlabs-peadm/pull/244) ([reidmv](https://github.com/reidmv))
 
 ## [v3.4.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.4.0) (2022-03-08)
 
@@ -78,7 +93,6 @@ All notable changes to this project will be documented in this file. The format 
 ### Added
 
 - Allow compilers and replicas to merge csr\_attributes. [\#238](https://github.com/puppetlabs/puppetlabs-peadm/pull/238) ([bwilcox](https://github.com/bwilcox))
-- Add support for PE 2021.5 [\#237](https://github.com/puppetlabs/puppetlabs-peadm/pull/237) ([reidmv](https://github.com/reidmv))
 - Improve handling of unsuitable LANG settings [\#236](https://github.com/puppetlabs/puppetlabs-peadm/pull/236) ([reidmv](https://github.com/reidmv))
 - Add `peadm::backup` plan [\#226](https://github.com/puppetlabs/puppetlabs-peadm/pull/226) ([davidsandilands](https://github.com/davidsandilands))
 
