@@ -531,7 +531,7 @@ Fails if any nodes have the chosen transport.
 
 Useful for excluding PCP when it's not appopriate
 
-#### `peadm::fail_on_transport(TargetSpec $nodes, String $transport, String $message)`
+#### `peadm::fail_on_transport(TargetSpec $nodes, String $transport, String $message = 'This is not supported.')`
 
 Fails if any nodes have the chosen transport.
 
@@ -546,6 +546,12 @@ Data type: `TargetSpec`
 
 
 ##### `transport`
+
+Data type: `String`
+
+
+
+##### `message`
 
 Data type: `String`
 
