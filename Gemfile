@@ -35,7 +35,7 @@ group :development do
   gem "rubocop-rspec", '= 2.0.1',                      require: false
   gem "rb-readline", '= 0.5.5',                        require: false, platforms: [:mswin, :mingw, :x64_mingw]
   gem "bolt", '>= 3.10.0',                             require: false
-  gem "github_changelog_generator",                    require: false
+  gem "github_changelog_generator", '1.15.2',          require: false
   gem "octokit", '4.21.0',                             require: false
 end
 group :system_tests do
