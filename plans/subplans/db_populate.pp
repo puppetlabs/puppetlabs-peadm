@@ -65,18 +65,18 @@ plan peadm::subplans::db_populate(
             sslcert=/opt/puppetlabs/server/data/pg_certs/_local.cert.pem
             sslkey=/opt/puppetlabs/server/data/pg_certs/_local.private_key.pem
             sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem"
-    | - PGBASE 
-  run_command(${pg_basebackup}, ${destination_target})
+    | - PGBASE
+  run_command($pg_basebackup, $destination_target)
 
   # Delete the saved certs, they'll be properly re-populated by an agent run
-  run_command('rm -rf /opt/puppetlabs/server/data/pg_certs', ${destination_target})
+  run_command('rm -rf /opt/puppetlabs/server/data/pg_certs', $destination_target)
 
   # Start pe-postgresql.service
-  run_command('systemctl start pe-postgresql.service', ${destination_target})
+  run_command('systemctl start pe-postgresql.service', $destination_target)
 
   # Delete the previously add replication rules to prevent Puppet restarting
   # thing later
-  apply(${source_target}) {
+  apply($source_target) {
     file_line { 'replication-pe-ha-replication-map':
       ensure => absent,
       path   => "/opt/puppetlabs/server/data/postgresql/${psql_version}/data/pg_ident.conf",
@@ -95,8 +95,7 @@ plan peadm::subplans::db_populate(
   }
 
   # Reload pe-postgresql to revoke replication rules
-  run_command('systemctl reload pe-postgresql.service', ${source_target})
+  run_command('systemctl reload pe-postgresql.service', $source_target)
 
   return("Population of ${$destination_target.peadm::certname()} with data from s${$source_target.peadm::certname()} succeeded.")
 }
-
