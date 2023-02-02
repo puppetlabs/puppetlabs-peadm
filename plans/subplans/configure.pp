@@ -150,7 +150,7 @@ plan peadm::subplans::configure (
     )
   }
 
-  # Ensure Puppet agent service is running now that configuration is complete
+  # Configure Puppet agent service status now that configuration is complete
   $systemctl_state = $final_agent_state ? {
     'running' => 'start',
     'stopped' => 'stop'
