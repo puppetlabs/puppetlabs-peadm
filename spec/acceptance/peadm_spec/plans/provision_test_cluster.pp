@@ -15,47 +15,27 @@ plan peadm_spec::provision_test_cluster (
         ['primary', 'compiler']
       }
       'large-with-dr': {
-        ['primary', 'compiler',
-         'replica', 'compiler']
+        ['primary', 'compiler', 'replica', 'compiler']
       }
       'extra-large': {
         ['primary', 'primary-pdb-postgresql', 'compiler']
       }
       'extra-large-with-dr': {
-        ['primary', 'primary-pdb-postgresql', 'compiler',
-         'replica', 'replica-pdb-postgresql', 'compiler']
+        ['primary', 'primary-pdb-postgresql', 'compiler', 'replica', 'replica-pdb-postgresql', 'compiler']
       }
       'large-with-extra-compiler': {
         ['primary', 'compiler', 'unconfigured-compiler']
       }
       'extra-large-with-extra-compiler': {
-        ['primary', 'primary-pdb-postgresql', 'compiler', 'unconfigured-compiler' ]
+        ['primary', 'primary-pdb-postgresql', 'compiler', 'unconfigured-compiler']
       }
-    }
-    'standard-with-dr': {
-      ['primary', 'replica']
-    }
-    'large': {
-      ['primary', 'compiler']
-    }
-    'large-with-dr': {
-      ['primary', 'compiler',
-      'replica', 'compiler']
-    }
-    'extra-large': {
-      ['primary', 'primary-pdb-postgresql', 'compiler']
-    }
-    'extra-large-with-dr': {
-      ['primary', 'primary-pdb-postgresql', 'compiler',
-      'replica', 'replica-pdb-postgresql', 'compiler']
-    }
-    'extra-large-with-dr-and-spare-replica': {
-      ['primary', 'primary-pdb-postgresql', 'compiler',
-      'replica', 'replica-pdb-postgresql', 'compiler', 'spare-replica']
-    }
-    default: {
-      fail_plan("Unknown architecture: ${architecture}")
-    }
+      'extra-large-with-dr-and-spare-replica': {
+        ['primary', 'primary-pdb-postgresql', 'compiler',
+        'replica', 'replica-pdb-postgresql', 'compiler', 'spare-replica']
+      }
+      default: {
+        fail_plan("Unknown architecture: ${architecture}")
+      }
   }
 
   $provision_results =

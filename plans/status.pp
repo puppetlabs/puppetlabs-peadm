@@ -18,11 +18,11 @@ plan peadm::status(
 
   $results = run_task('peadm::infrastatus', $targets, { format => 'json' })
   # returns the data in a hash 
-  $stack_status = $results.reduce( {}) | $res, $item | {
+  $stack_status = $results.reduce({}) | $res, $item | {
     $data = $item.value[output]
     $stack_name = $item.target.peadm::certname()
     $status = peadm::determine_status($data, $colors).merge(stack_name => $stack_name )
-    $res.merge( { $stack_name => $status })
+    $res.merge({ $stack_name => $status })
   }
 
   $overall_degraded_stacks = $stack_status.filter | $item | { $item[1][status] =~ /degraded/ }

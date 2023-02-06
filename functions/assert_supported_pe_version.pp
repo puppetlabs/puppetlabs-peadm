@@ -40,5 +40,5 @@ function peadm::assert_supported_pe_version (
 # lint:endignore
   }
 
-  return( { 'supported' => $supported })
+  return({ 'supported' => $supported })
 }
