@@ -11,10 +11,20 @@ plan peadm::subplans::modify_certificate (
   $target = get_target($targets)
   $primary_target = get_target($primary_host)
 
-  # This plan doesn't work to reissue the master cert over the orchestrator due
-  # to pe-puppetserver needing to restart
   if ($primary_target == $target) {
-    $primary_target.peadm::fail_on_transport('pcp')
+    $primary_target.peadm::fail_on_transport('pcp', @(HEREDOC/n))
+      \nThe "pcp" transport is not available for use with the Primary
+      as peadm::subplans::modify_certificate will cause a restart of the
+      PE Orchestration service.
+
+      Use the "local" transport if running this plan directly from
+      the Primary node, or the "ssh" transport if running this
+      plan from an external Bolt host.
+
+      For information on configuring transports, see:
+
+          https://www.puppet.com/docs/bolt/latest/bolt_transports_reference.html
+      |-HEREDOC
   }
 
   # Figure out some information from the existing certificate
@@ -56,11 +66,11 @@ plan peadm::subplans::modify_certificate (
     extension_requests => $desired_exts,
     merge              => false,
   )
-
+# lint:ignore:strict_indent
   $ca_clean_result = run_command(@("HEREDOC"/L), $primary_target, _catch_errors => true).first
-        /opt/puppetlabs/bin/puppetserver ca clean --certname ${certname}
+    /opt/puppetlabs/bin/puppetserver ca clean --certname ${certname}
     |-HEREDOC
-
+# lint:endignore
   unless $ca_clean_result.ok {
     # fail the plan unless it's a known circumstance in which it's okay to proceed.
     # Scenario 1: the primary's cert can't be cleaned because it's already revoked.
@@ -85,6 +95,7 @@ plan peadm::subplans::modify_certificate (
     # w/ PCP transport. If using a task, we run into problems downloading
     # the task file at this point, because there is no longer a cert file
     # present on the agent.
+# lint:ignore:strict_indent
     run_command(@("HEREDOC"/L), $target)
       /opt/puppetlabs/bin/puppet ssl download_cert --certname ${certname} || \
       /opt/puppetlabs/bin/puppet certificate find --ca-location remote ${certname}
@@ -103,11 +114,12 @@ plan peadm::subplans::modify_certificate (
         /etc/puppetlabs/puppet/ssl/ca/signed/${certname}.pem \
       |-HEREDOC
     run_command(@("HEREDOC"/L), $target)
-            /opt/puppetlabs/bin/puppetserver ca generate \
+        /opt/puppetlabs/bin/puppetserver ca generate \
         --certname ${certname} \
         --subject-alt-names ${alt_names.join(',')} \
         --ca-client
       |-HEREDOC
+# lint:endignore
     run_task('service', $target, { action => 'start', name => 'pe-puppetserver' })
   }
 

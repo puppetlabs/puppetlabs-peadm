@@ -5,8 +5,32 @@ plan peadm_spec::provision_test_cluster (
 ) {
   $nodes =
     case $architecture {
-    'standard': {
-      ['primary']
+      'standard': {
+        ['primary']
+      }
+      'standard-with-dr': {
+        ['primary', 'replica']
+      }
+      'large': {
+        ['primary', 'compiler']
+      }
+      'large-with-dr': {
+        ['primary', 'compiler',
+         'replica', 'compiler']
+      }
+      'extra-large': {
+        ['primary', 'primary-pdb-postgresql', 'compiler']
+      }
+      'extra-large-with-dr': {
+        ['primary', 'primary-pdb-postgresql', 'compiler',
+         'replica', 'replica-pdb-postgresql', 'compiler']
+      }
+      'large-with-extra-compiler': {
+        ['primary', 'compiler', 'unconfigured-compiler']
+      }
+      'extra-large-with-extra-compiler': {
+        ['primary', 'primary-pdb-postgresql', 'compiler', 'unconfigured-compiler' ]
+      }
     }
     'standard-with-dr': {
       ['primary', 'replica']

@@ -18,7 +18,7 @@ plan peadm::subplans::prepare_agent (
 
   $status = run_task('package', $agent_target,
     action => 'status',
-    name   => 'puppet-agent').first['status']
+  name   => 'puppet-agent').first['status']
 
   if $status == 'uninstalled' {
     run_plan('peadm::util::insert_csr_extension_requests', $agent_target,
@@ -61,7 +61,7 @@ plan peadm::subplans::prepare_agent (
     # agent claims it has one, clean the agent to get to an agreed upon state
     # before moving onto the submit and sign process.
     if $certdata['certificate-exists'] and $certstatus['reason'] =~ /The private key is missing from/ {
-      out::message("Agent: ${agent_target.peadm::certname()} has a local cert but Primary: ${primary_target.peadm::certname()} does not, force agent clean")
+      out::message("Agent: ${agent_target.peadm::certname()} has a local cert but Primary: ${primary_target.peadm::certname()} does not, force agent clean") # lint:ignore:140chars
       run_task('peadm::ssl_clean', $agent_target, certname => $agent_target.peadm::certname())
     }
     $force_regenerate = false

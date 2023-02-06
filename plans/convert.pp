@@ -25,7 +25,7 @@ plan peadm::convert (
       'modify-primary-certs',
       'modify-infra-certs',
       'convert-node-groups',
-      'finalize']] $begin_at_step = undef,
+  'finalize']] $begin_at_step = undef,
 ) {
   peadm::assert_supported_bolt_version()
 
@@ -77,12 +77,14 @@ plan peadm::convert (
   }
 
   if (!$previously_configured_by_peadm and ($pe_version =~ SemVerRange('< 2019.7.0'))) {
+# lint:ignore:strict_indent
     fail_plan(@("EOL"/L))
       PE cluster cannot be converted! PE cluster must be a deployment \
       created by pe_xl, by an older version of peadm, or be PE version \
       2019.7.0 or newer. Detected PE version ${pe_version}, and did not detect \
       signs that the deployment was previously created by peadm/pe_xl.
       | EOL
+# lint:endignore
   }
 
   # Clusters A and B are used to divide PuppetDB availability for compilers. If
@@ -228,11 +230,13 @@ plan peadm::convert (
       }
     }
     else {
+# lint:ignore:strict_indent
       out::message(@("EOL"/L))
         NOTICE: Node groups not created/updated as part of convert because PE \
         version is too old to support them. Node groups will be updated when \
         the peadm::upgrade plan is run.
         | EOL
+# lint:endignore
     }
   }
 
@@ -246,7 +250,8 @@ plan peadm::convert (
     # Restart cluster compiler services that are likely not restarted by our
     # final Puppet run to increase chance everything is functional upon plan
     # completion
-    run_command('systemctl restart pe-puppetserver.service pe-puppetdb.service', $all_targets - $primary_target)
+    run_command('systemctl restart pe-puppetserver.service pe-puppetdb.service',
+    $all_targets - $primary_target - $primary_postgresql_target - $replica_postgresql_target)
   }
 
   return("Conversion to peadm Puppet Enterprise ${arch['architecture']} completed.")

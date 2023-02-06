@@ -19,7 +19,7 @@ describe 'peadm::assert_supported_pe_version' do
     end
 
     it 'accepts the newest supported version' do
-      is_expected.to run.with_params('2021.7.0').and_return({ 'supported' => true })
+      is_expected.to run.with_params('2021.7.2').and_return({ 'supported' => true })
     end
 
     it 'accepts a version in the middle' do

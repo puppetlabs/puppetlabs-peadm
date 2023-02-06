@@ -1,7 +1,9 @@
 plan peadm_spec::upgrade_test_cluster(
-  $architecture,
-  $version,
-  $download_mode
+  String[1]           $architecture,
+  String              $download_mode          = 'direct',
+  Optional[String[1]] $version                = undef,
+  Optional[String[1]] $pe_installer_source    = undef,
+  Boolean             $permit_unsafe_versions = false,
 ) {
   $t = get_targets('*')
   wait_until_available($t)
@@ -12,34 +14,36 @@ plan peadm_spec::upgrade_test_cluster(
   }
 
   $common_params = {
-    download_mode    => $download_mode,
-    version          => $version,
+    download_mode          => $download_mode,
+    version                => $version,
+    pe_installer_source    => $pe_installer_source,
+    permit_unsafe_versions => $permit_unsafe_versions,
   }
 
   $arch_params =
     case $architecture {
-    'standard': { {
+    'standard': {{
         primary_host => $t.filter |$n| { $n.vars['role'] == 'primary' },
     } }
-    'standard-with-dr': { {
+    'standard-with-dr': {{
         primary_host   => $t.filter |$n| { $n.vars['role'] == 'primary' },
         replica_host   => $t.filter |$n| { $n.vars['role'] == 'replica' },
     } }
-    'large': { {
+    'large': {{
         primary_host   => $t.filter |$n| { $n.vars['role'] == 'primary' },
         compiler_hosts => $t.filter |$n| { $n.vars['role'] == 'compiler' },
     } }
-    'large-with-dr': { {
+    'large-with-dr': {{
         primary_host   => $t.filter |$n| { $n.vars['role'] == 'primary' },
         replica_host   => $t.filter |$n| { $n.vars['role'] == 'replica' },
         compiler_hosts => $t.filter |$n| { $n.vars['role'] == 'compiler' },
     } }
-    'extra-large': { {
+    'extra-large': {{
         primary_host            => $t.filter |$n| { $n.vars['role'] == 'primary' },
         primary_postgresql_host => $t.filter |$n| { $n.vars['role'] == 'primary-pdb-postgresql' },
         compiler_hosts          => $t.filter |$n| { $n.vars['role'] == 'compiler' },
     } }
-    'extra-large-with-dr': { {
+    'extra-large-with-dr': {{
         primary_host             => $t.filter |$n| { $n.vars['role'] == 'primary' },
         primary_postgresql_host  => $t.filter |$n| { $n.vars['role'] == 'primary-pdb-postgresql' },
         replica_host             => $t.filter |$n| { $n.vars['role'] == 'replica' },

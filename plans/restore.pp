@@ -33,30 +33,30 @@ plan peadm::restore (
   # should be restored to. This could be as simple as just the primary server,
   # or it could be two separate PostgreSQL servers.
   $puppetdb_postgresql_targets = peadm::flatten_compact([
-    getvar('cluster.params.primary_postgresql_host') ? {
-      undef   => $primary_target,
-      default => peadm::get_targets(getvar('cluster.params.primary_postgresql_host'), 1),
-    },
-    getvar('cluster.params.replica_postgresql_host') ? {
-      undef   => $replica_target,
-      default => peadm::get_targets(getvar('cluster.params.replica_postgresql_host'), 1),
-    },
+      getvar('cluster.params.primary_postgresql_host') ? {
+        undef   => $primary_target,
+        default => peadm::get_targets(getvar('cluster.params.primary_postgresql_host'), 1),
+      },
+      getvar('cluster.params.replica_postgresql_host') ? {
+        undef   => $replica_target,
+        default => peadm::get_targets(getvar('cluster.params.replica_postgresql_host'), 1),
+      },
   ])
 
   $puppetdb_targets = peadm::flatten_compact([
-    $primary_target,
-    $replica_target,
-    $compiler_targets,
+      $primary_target,
+      $replica_target,
+      $compiler_targets,
   ])
 
-  $recovery_directory = "${dirname($input_file)}/${basename("${input_file}", '.tar.gz')}"
-
+  $recovery_directory = "${dirname($input_file)}/${basename($input_file, '.tar.gz')}"
+# lint:ignore:strict_indent
   run_command(@("CMD"/L), $primary_target)
     umask 0077 \
       && cd ${shellquote(dirname($recovery_directory))} \
       && tar -xzf ${shellquote($input_file)}
     | CMD
-
+# lint:endignore
   # Map of recovery option name to array of database hosts to restore the
   # relevant .dump content to.
   $restore_databases = {
@@ -87,6 +87,7 @@ plan peadm::restore (
 
   if getvar('recovery_opts.ca') {
     out::message('# Restoring ca and ssl certificates')
+# lint:ignore:strict_indent
     run_command(@("CMD"/L), $primary_target)
       /opt/puppetlabs/bin/puppet-backup restore \
         --scope=certs \
@@ -119,14 +120,15 @@ plan peadm::restore (
       && cp -rp ${shellquote($recovery_directory)}/keys.json /etc/puppetlabs/console-services/conf.d/secrets/ \
       || echo secret ldap key doesnt exist
     | CMD
-
+# lint:ignore:140chars
   # IF restoring orchestrator restore the secrets to /etc/puppetlabs/orchestration-services/conf.d/secrets/
   if getvar('recovery_opts.orchestrator') {
     out::message('# Restoring orchestrator secret keys')
     run_command(@("CMD"/L), $primary_target)
-      cp -rp ${shellquote($recovery_directory)}/orchestrator/secrets/* /etc/puppetlabs/orchestration-services/conf.d/secrets/
+                                          cp -rp ${shellquote($recovery_directory)}/orchestrator/secrets/* /etc/puppetlabs/orchestration-services/conf.d/secrets/ 
       | CMD
   }
+# lint:endignore
 
   #$database_to_restore.each |Integer $index, Boolean $value | {
   $restore_databases.each |$name,$database_targets| {
@@ -217,19 +219,20 @@ plan peadm::restore (
   #       or other factors.
   if getvar('recovery_opts.puppetdb') {
     run_command(@("CMD"/L), $primary_target)
-      /opt/puppetlabs/bin/puppet-db import ${shellquote($recovery_directory)}/puppetdb-archive.bin
+    /opt/puppetlabs/bin/puppet-db import ${shellquote($recovery_directory)}/puppetdb-archive.bin
       | CMD
+# lint:endignore
   }
 
   # Run Puppet to pick up last remaining config tweaks
   run_task('peadm::puppet_runonce', $primary_target)
 
-  apply($primary_target){
+  apply($primary_target) {
     file { $recovery_directory :
       ensure => 'absent',
-      force  => true
+      force  => true,
     }
   }
 
-  return("success")
+  return('success')
 }

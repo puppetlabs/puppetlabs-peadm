@@ -135,10 +135,12 @@ plan peadm::subplans::install (
   $precheck_results.each |$result| {
     $name = $result.target.peadm::certname()
     if ($name != $result['hostname']) {
+# lint:ignore:strict_indent
       warning(@("HEREDOC"))
         WARNING: Target name / hostname mismatch: target ${name} reports ${result['hostname']}
         Certificate name will be set to target name. Please ensure target name is correct and resolvable
         |-HEREDOC
+# lint:endignore
     }
     if ($result['platform'] != $platform) {
       fail_plan("Platform mismatch: target ${name} reports '${result['platform']}; expected ${platform}'")
@@ -156,7 +158,7 @@ plan peadm::subplans::install (
     ).map |$t| { $t.peadm::certname() },
   }
 
-  $primary_pe_conf = peadm::generate_pe_conf( {
+  $primary_pe_conf = peadm::generate_pe_conf({
       'console_admin_password'                                          => $console_password,
       'puppet_enterprise::puppet_master_host'                           => $primary_target.peadm::certname(),
       'pe_install::puppet_master_dnsaltnames'                           => $dns_alt_names,
@@ -169,13 +171,13 @@ plan peadm::subplans::install (
       },
   } + $puppetdb_database_temp_config + $pe_conf_data)
 
-  $primary_postgresql_pe_conf = peadm::generate_pe_conf( {
+  $primary_postgresql_pe_conf = peadm::generate_pe_conf({
       'console_admin_password'                => 'not used',
       'puppet_enterprise::puppet_master_host' => $primary_target.peadm::certname(),
       'puppet_enterprise::database_host'      => $primary_postgresql_target.peadm::certname(),
   } + $puppetdb_database_temp_config + $pe_conf_data)
 
-  $replica_postgresql_pe_conf = peadm::generate_pe_conf( {
+  $replica_postgresql_pe_conf = peadm::generate_pe_conf({
       'console_admin_password'                => 'not used',
       'puppet_enterprise::puppet_master_host' => $primary_target.peadm::certname(),
       'puppet_enterprise::database_host'      => $replica_postgresql_target.peadm::certname(),
@@ -189,20 +191,25 @@ plan peadm::subplans::install (
     $pe_conf = getvar("${var}_pe_conf")
 
     peadm::file_content_upload($pe_conf, '/tmp/pe.conf', $target)
+# lint:ignore:strict_indent
     run_task('peadm::mkdir_p_file', $target,
       path    => '/etc/puppetlabs/puppet/puppet.conf',
       content => @("HEREDOC"),
         [main]
         certname = ${target.peadm::certname()}
         | HEREDOC
+# lint:endignore
     )
   }
 
-  $pe_tarball_name     = "puppet-enterprise-${version}-${platform}.tar.gz"
-  $pe_tarball_source   = $pe_installer_source ? {
-    undef   => "https://s3.amazonaws.com/pe-builds/released/${version}/${pe_tarball_name}",
-    default => $pe_installer_source,
+  if $pe_installer_source {
+    $pe_tarball_name = $pe_installer_source.split('/')[-1]
+    $pe_tarball_source = $pe_installer_source
+  } else {
+    $pe_tarball_name   = "puppet-enterprise-${version}-${platform}.tar.gz"
+    $pe_tarball_source = "https://s3.amazonaws.com/pe-builds/released/${version}/${pe_tarball_name}"
   }
+
   $upload_tarball_path = "/tmp/${pe_tarball_name}"
 
   if $download_mode == 'bolthost' {

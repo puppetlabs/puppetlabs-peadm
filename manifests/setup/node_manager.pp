@@ -37,7 +37,6 @@ class peadm::setup::node_manager (
   Optional[String[1]] $internal_compiler_a_pool_address = $server_a_host,
   Optional[String[1]] $internal_compiler_b_pool_address = $server_b_host,
 ) {
-
   # "Not-configured" placeholder string. This will be used in places where we
   # cannot set an explicit null, and need to supply some kind of value.
   $notconf = 'not-configured'
@@ -85,7 +84,7 @@ class peadm::setup::node_manager (
     rule => ['or',
       ['and', ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/puppetdb-database']],
       ['=', 'name', $primary_host],
-    ]
+    ],
   }
 
   # Create data-only groups to store PuppetDB PostgreSQL database configuration
@@ -102,7 +101,7 @@ class peadm::setup::node_manager (
         'database_host_puppetdb' => pick($postgresql_a_host, $notconf),
       },
       'puppet_enterprise::profile::puppetdb'               => {
-        'database_host' => pick($postgresql_a_host, $notconf)
+        'database_host' => pick($postgresql_a_host, $notconf),
       },
     },
   }
@@ -125,12 +124,12 @@ class peadm::setup::node_manager (
         'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_b_pool_address].filter |$_| { $_ },
         # lint:endignore
         'puppetdb_port' => [8081],
-      }
+      },
     },
     data    => {
       # Workaround for GH-118
       'puppet_enterprise::profile::master::puppetdb' => {
-        'ha_enabled_replicas' => [ ],
+        'ha_enabled_replicas' => [],
       },
     },
   }
@@ -145,7 +144,7 @@ class peadm::setup::node_manager (
     ensure    => 'present',
     parent    => 'PE Infrastructure',
     classes   => {
-      'puppet_enterprise::profile::primary_master_replica' => { }
+      'puppet_enterprise::profile::primary_master_replica' => {},
     },
     variables => { 'peadm_replica' => true },
   }
@@ -183,14 +182,13 @@ class peadm::setup::node_manager (
         'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_a_pool_address].filter |$_| { $_ },
         # lint:endignore
         'puppetdb_port' => [8081],
-      }
+      },
     },
     data    => {
       # Workaround for GH-118
       'puppet_enterprise::profile::master::puppetdb' => {
-        'ha_enabled_replicas' => [ ],
+        'ha_enabled_replicas' => [],
       },
     },
   }
-
 }

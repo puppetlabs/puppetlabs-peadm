@@ -2,22 +2,20 @@
 #
 # lint:ignore:autoloader_layout
 class examples::compiler {
-
-  @@haproxy::balancermember { "${::clientcert}_puppetserver_listener":
+  @@haproxy::balancermember { "${facts['clientcert']}_puppetserver_listener":
     listening_service => 'puppetserver',
-    server_names      => $::fqdn,
-    ipaddresses       => $::ipaddress,
+    server_names      => $facts['networking']['fqdn'],
+    ipaddresses       => $facts['networking']['ip'],
     ports             => '8140',
     options           => 'check',
   }
 
-  @@haproxy::balancermember { "${::clientcert}_pcp-broker_listener":
+  @@haproxy::balancermember { "${facts['clientcert']}_pcp-broker_listener":
     listening_service => 'pcp-broker',
-    server_names      => $::fqdn,
-    ipaddresses       => $::ipaddress,
+    server_names      => $facts['networking']['fqdn'],
+    ipaddresses       => $facts['networking']['ip'],
     ports             => '8142',
     options           => 'check',
   }
-
 }
 # lint:endignore

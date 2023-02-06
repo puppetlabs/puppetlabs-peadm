@@ -62,7 +62,7 @@ plan peadm::status(
   if $format == 'table' {
     # Summary table
     out::message(
-      format::table( {
+      format::table({
           title => $table_title,
           head  => $table_head,
     rows  => $stack_table_rows }))
@@ -70,7 +70,7 @@ plan peadm::status(
     # Failed services table
     unless $bad_svc_rows.empty {
       out::message(
-        format::table( {
+        format::table({
             title => 'Failed Service Status',
             head  => $service_table_head,
       rows  => $bad_svc_rows.reduce([]) |$memo,$rows| { $memo + $rows } }))
@@ -79,7 +79,7 @@ plan peadm::status(
     # Operational services table
     if $verbose and ! $good_svc_rows.empty {
       out::message(
-        format::table( {
+        format::table({
             title => 'Operational Service Status',
             head  => $service_table_head,
       rows  => $good_svc_rows.reduce([]) |$memo,$rows| { $memo + $rows } }))

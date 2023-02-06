@@ -21,6 +21,9 @@
 #   The parameter should be set to a valid set of connection settings as
 #   documented for the PE RBAC /ds endpoint. See:
 #   https://puppet.com/docs/pe/latest/rbac_api_v1_directory.html#put_ds-request_format
+# @param final_agent_state
+#   Configures the state the puppet agent should be in on infrastructure nodes
+#   after PE is configured successfully.
 #
 plan peadm::install (
   # Standard
@@ -36,7 +39,7 @@ plan peadm::install (
 
   # Common Configuration
   String                            $console_password,
-  Peadm::Pe_version                 $version                          = '2021.7.0',
+  Peadm::Pe_version                 $version                          = '2021.7.2',
   Optional[String]                  $pe_installer_source              = undef,
   Optional[Array[String]]           $dns_alt_names                    = undef,
   Optional[String]                  $compiler_pool_address            = undef,
@@ -56,10 +59,11 @@ plan peadm::install (
   Optional[String]                  $license_key_content = undef,
 
   # Other
-  Optional[String]                  $stagingdir             = undef,
-  Enum[direct,bolthost]             $download_mode          = 'bolthost',
-  Boolean                           $permit_unsafe_versions = false,
-  String                            $token_lifetime         = '1y',
+  Optional[String]           $stagingdir             = undef,
+  Enum['running', 'stopped'] $final_agent_state      = 'running',
+  Enum['direct', 'bolthost'] $download_mode          = 'bolthost',
+  Boolean                    $permit_unsafe_versions = false,
+  String                     $token_lifetime         = '1y',
 ) {
   peadm::assert_supported_bolt_version()
 
@@ -121,6 +125,7 @@ plan peadm::install (
 
     # Other
     stagingdir                       => $stagingdir,
+    final_agent_state                => $final_agent_state,
   )
 
   # Return a string banner reporting on what was done

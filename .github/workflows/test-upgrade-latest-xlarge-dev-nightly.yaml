@@ -1,19 +1,17 @@
 ---
-name: "Install fips test matrix"
+name: "Upgrade to latest dev test nightly"
 
 on:
-  pull_request:
-    branches: [main]
-    types: [review_requested]
-  workflow_dispatch: {}
+  schedule:
+    - cron: '0 3 * * *'
 
 env:
   HONEYCOMB_WRITEKEY: 7f3c63a70eecc61d635917de46bea4e6
   HONEYCOMB_DATASET: litmus tests
 
 jobs:
-  test-install:
-    name: "PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }} with fips ${{ matrix.fips }}"
+  test-upgrade:
+    name: "PE ${{ matrix.version }} to nightly dev using ${{ matrix.architecture }} on ${{ matrix.image }}"
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true
@@ -24,16 +22,11 @@ jobs:
       fail-fast: false
       matrix:
         architecture:
-          - standard-with-dr
-          - large
-          - extra-large-with-dr
+          - 'extra-large-with-dr'
         version:
-          - 2019.8.12
-          - 2021.7.2
+          - '2021.7.2'
         image:
-          - rhel-8
-        fips:
-          - enable
+          - 'almalinux-cloud/almalinux-8'
 
     steps:
       - name: "Honeycomb: Start recording"
@@ -69,7 +62,7 @@ jobs:
         run: |
           echo ::group::honeycomb
             buildevents step $TRACE_ID $STEP_ID $STEP_START 'Set up environment'
-            echo STEP_ID=${{ matrix.architecture }}-${{ matrix.image }}-fips_${{ matrix.fips }}-provision >> $GITHUB_ENV
+            echo STEP_ID=${{ matrix.architecture }}-${{ matrix.image }}-provision >> $GITHUB_ENV
             echo STEP_START=$(date +%s) >> $GITHUB_ENV
           echo ::endgroup::
 
@@ -106,7 +99,7 @@ jobs:
         run: |
           echo ::group::honeycomb
             buildevents step $TRACE_ID $STEP_ID $STEP_START 'Provision test cluster'
-            echo STEP_ID=${{ matrix.architecture }}-${{ matrix.image }}-fips_${{ matrix.fips }}-install >> $GITHUB_ENV
+            echo STEP_ID=${{ matrix.architecture }}-${{ matrix.image }}-install >> $GITHUB_ENV
             echo STEP_START=$(date +%s) >> $GITHUB_ENV
           echo ::endgroup::
 
@@ -118,15 +111,45 @@ jobs:
               --inventoryfile spec/fixtures/litmus_inventory.yaml \
               --modulepath spec/fixtures/modules \
               architecture=${{ matrix.architecture }} \
-              version=${{ matrix.version }} \
-              fips=${{ matrix.fips }} 
+              version=${{ matrix.version }}
 
       - name: "Honeycomb: Record install time"
         if: ${{ always() }}
         run: |
           echo ::group::honeycomb
             buildevents step $TRACE_ID $STEP_ID $STEP_START 'Install PE on test cluster'
-            echo STEP_ID=${{ matrix.architecture }}-${{ matrix.image }}-fips_${{ matrix.fips }}-tear_down >> $GITHUB_ENV
+            echo STEP_ID=${{ matrix.architecture }}-${{ matrix.image }}-tear_down >> $GITHUB_ENV
+            echo STEP_START=$(date +%s) >> $GITHUB_ENV
+          echo ::endgroup::
+
+      - name: 'Activate twingate to obtain unreleased build'
+        uses: twingate/github-action@v1
+        with:
+          service-key: ${{ secrets.TWINGATE_PUBLIC_REPO_KEY }}
+
+      - name: 'Get latest build name'
+        id: latest
+        run: |
+          echo "::set-output name=ver::$(curl -q https://artifactory.delivery.puppetlabs.net/artifactory/generic_enterprise__local/main/ci-ready/LATEST)"
+
+      - name: 'Upgrade PE on test cluster'
+        timeout-minutes: 120
+        run: |
+          buildevents cmd $TRACE_ID $STEP_ID 'bolt plan run peadm_spec::upgrade_test_cluster' -- \
+            bundle exec bolt plan run peadm_spec::upgrade_test_cluster \
+              --inventoryfile spec/fixtures/litmus_inventory.yaml \
+              --modulepath spec/fixtures/modules \
+              permit_unsafe_versions=true \
+              download_mode="bolthost" \
+              architecture=${{ matrix.architecture }} \
+              pe_installer_source="https://artifactory.delivery.puppetlabs.net/artifactory/generic_enterprise__local/main/ci-ready/puppet-enterprise-${{ steps.latest.outputs.ver }}-el-8-x86_64.tar"
+
+      - name: "Honeycomb: Record upgrade time"
+        if: ${{ always() }}
+        run: |
+          echo ::group::honeycomb
+            buildevents step $TRACE_ID $STEP_ID $STEP_START 'Upgrade PE on test cluster'
+            echo STEP_ID=${{ matrix.architecture }}-${{ matrix.version_to_upgrade }}-tear_down >> $GITHUB_ENV
             echo STEP_START=$(date +%s) >> $GITHUB_ENV
           echo ::endgroup::
 

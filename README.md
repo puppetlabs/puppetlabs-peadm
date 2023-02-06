@@ -2,7 +2,7 @@
 
 This Puppet module contains Bolt plans used to deploy and manage Puppet Enterprise infrastructure. Plans are provided to automate common lifecycle activities in order to increase velocity and reduce the possibility of human error incurred by manually performing these activities.
 
-The peadm module is able to deploy and manage Puppet Enterprise 2019.x Standard, Large, and Extra Large architectures.
+The peadm module is able to deploy and manage Puppet Enterprise 2019.7 and higher for Standard, Large, and Extra Large architectures.
 
 #### Table of Contents
 
@@ -19,9 +19,12 @@ The peadm module is able to deploy and manage Puppet Enterprise 2019.x Standard,
 
 ## Expectations and support
 
-The peadm module is intended to be used only by Puppet Enterprise customers actively working with and being guided by Puppet Customer Success teams—specifically, the Professional Services and Solutions Architecture teams. Puppet Enterprise customers might be advised to begin using this tool after an introduction by their Technical Account manager (TAM) to the Solutions Architecture team or during a Professional Sevices (PS) engagement where the Puppet PS team aids and intructurs in the use of the tool. Independent use is not recommended for production environments without a comprehensive understanding of the peadm module.
+While the peadm module was initially built by the Puppet Solutions Architecture team to streamline particularly large and complex Puppet Enterprise deployments, but has matured to a point where we believe that users with a reasonable understanding of Puppet Enterprise architecture can use it on their own. 
 
-The peadm module is a services-led tool that is **supported** through Puppet Enterprise's standard and premium [support.puppet.com](https://support.puppet.com) service.
+As a Puppet Enterprise customer this tool is **supported** through Puppet Enterprise's standard and premium [support.puppet.com](https://support.puppet.com) service, and if you have questions or need assistance, you are welcome to reach out to your Support team for help, or to talk to your Sales or Technical Account Manager contacts to arrange a chat with one of us on the Solutions Architect team.
+
+We also love contributions! We're more than happy to also chat about any ideas you may have for improving this module, or offer guidance on ways you could get involved.
+
 
 ## Overview
 

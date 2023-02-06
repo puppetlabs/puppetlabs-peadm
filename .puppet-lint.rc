@@ -1,1 +1,3 @@
 --relative
+--no-strict_indent-check
+--no-manifest_whitespace_missing_newline_end_of_file-check

@@ -8,11 +8,9 @@ plan peadm::util::update_db_setting (
   Optional[Hash]                    $peadm_config    = undef,
   Boolean                           $override        = false
 ) {
-
   # FIX ME: Section needs to be parallelized, can't use built in functionality
   # of apply().
   get_targets($targets).each |$target| {
-
     if $override {
       $db = $postgresql_host
     } else {
@@ -23,9 +21,9 @@ plan peadm::util::update_db_setting (
       # Determine configuration by pairing target with existing availability letter
       # assignments, setting to the new node if no match is found.
       $target_group_letter = peadm::flatten_compact([$roles['compilers'],$roles['server']].map |$role| {
-        $role.map |$k,$v| {
-          if $target.peadm::certname() in $v { $k }
-        }
+          $role.map |$k,$v| {
+            if $target.peadm::certname() in $v { $k }
+          }
       })[0]
       $match = $roles['postgresql'][$target_group_letter]
       if $match {
@@ -35,7 +33,7 @@ plan peadm::util::update_db_setting (
       }
     }
 
-    $db_setting = "//${db}:5432/pe-puppetdb?ssl=true&sslfactory=org.postgresql.ssl.jdbc4.LibPQFactory&sslmode=verify-full&sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem&sslkey=/etc/puppetlabs/puppetdb/ssl/${target.peadm::certname()}.private_key.pk8&sslcert=/etc/puppetlabs/puppetdb/ssl/${$target.peadm::certname()}.cert.pem"
+    $db_setting = "//${db}:5432/pe-puppetdb?ssl=true&sslfactory=org.postgresql.ssl.jdbc4.LibPQFactory&sslmode=verify-full&sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem&sslkey=/etc/puppetlabs/puppetdb/ssl/${target.peadm::certname()}.private_key.pk8&sslcert=/etc/puppetlabs/puppetdb/ssl/${$target.peadm::certname()}.cert.pem" # lint:ignore:140chars
 
     # Introduces dependency so PEADM can modify INI files
     apply($target) {

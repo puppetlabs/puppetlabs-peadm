@@ -4,7 +4,6 @@ plan peadm::util::copy_file(
   Peadm::SingleTargetSpec $source_host,
   Stdlib::Absolutepath    $path
 ) {
-
   $source_target   = peadm::get_targets($source_host, 1)
   $replica_target  = $targets
 

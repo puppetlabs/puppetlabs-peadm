@@ -9,13 +9,14 @@
 # input returns undef.
 function peadm::certname(
   Variant[Target,
-          String,
-          Undef,
-          Array[Target,1,1],
-          Array[String,1,1],
-          Array[Undef,1,1],
-          Array[Any,0,0]] $target,
+    String,
+    Undef,
+    Array[Target,1,1],
+    Array[String,1,1],
+    Array[Undef,1,1],
+  Array[Any,0,0]] $target,
 ) >> Variant[String, Undef] {
+# lint:ignore:unquoted_string_in_case
   case $target {
     Target: {
       $target.vars['certname'] ? {
@@ -28,6 +29,7 @@ function peadm::certname(
         default => $target[0].vars['certname'],
         undef   => $target[0].name
       }
+# lint:endignore
     }
     String: {
       $target

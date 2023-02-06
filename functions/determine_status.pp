@@ -47,10 +47,10 @@
 # }
 function peadm::determine_status(Array $status_data, Boolean $use_colors = true) >> Hash {
   # convert the data into a hash with the sevice names as the keys
-  $hash_data = $status_data.reduce( {}) | $res, $data | {
-    $res.merge( { $data[service] => $data })
+  $hash_data = $status_data.reduce({}) | $res, $data | {
+    $res.merge({ $data[service] => $data })
   }
-  $out = $hash_data.reduce( {}) | $res, $svc_data | {
+  $out = $hash_data.reduce({}) | $res, $svc_data | {
     $service_name = $svc_data[0]
     $server = $svc_data[1][server]
     $res.merge("${service_name}/${$server}" => $svc_data[1][state] == 'running')
