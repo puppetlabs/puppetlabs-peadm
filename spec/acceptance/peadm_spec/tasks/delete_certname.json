@@ -1,0 +1,9 @@
+{
+  "description": "Delete a certname from the Postgres DB",
+  "parameters": {
+    "certname": {
+      "type": "String",
+      "description": "The certname to delete"
+    }
+  }
+}

@@ -22,6 +22,11 @@ plan peadm_spec::perform_failover(
   run_command('systemctl set-default basic.target', $primary_host, _catch_errors => true)
   run_task('reboot', $primary_host, shutdown_only => true, timeout => 0)
 
+  # remove the certname of the failed primary from the primary postgresql database
+  $primary_postgresql_host = $t.filter |$n| { $n.vars['role'] == 'primary-pdb-postgresql' }[0]
+  run_task('peadm_spec::delete_certname', $primary_postgresql_host,
+    certname => peadm::certname($primary_host))
+
   # promote the replica to new primary
   $replica_host = $t.filter |$n| { $n.vars['role'] == 'replica' }[0]
   out::verbose("Promoting replica host ${replica_host} to primary")
@@ -60,6 +65,12 @@ plan peadm_spec::perform_failover(
   if $new_replica_host == [] {
     fail_plan('"spare-replica" role missing from inventory, cannot continue')
   }
+
+  # run puppet on all infrastructure nodes (except the spare replica) 
+  # to remove the "failed" primary node
+  run_task('peadm::puppet_runonce', $t - $new_replica_host)
+
+  # TODO: remove the failed primary from the pe.conf file on the primary postgresql node
 
   out::verbose("Adding new replica host ${new_replica_host} to primary")
   run_plan('peadm::add_replica',
