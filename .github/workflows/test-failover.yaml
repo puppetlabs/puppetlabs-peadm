@@ -23,7 +23,7 @@ on:
       log_level:
         description: 'Bolt log level'
         required: false
-        default: 'verbose'
+        default: 'debug'
 
 env:
   HONEYCOMB_WRITEKEY: 7f3c63a70eecc61d635917de46bea4e6
