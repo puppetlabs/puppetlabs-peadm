@@ -175,7 +175,7 @@ jobs:
 
       - name: 'Swap primary and replica nodes in inventory'
         run: |
-          sed -i .sedbak 's/ primary/ ___replica___/;s/ replica/ ___primary___/;s/___//g' \
+          sed -i.sedbak 's/primary/__tmp__/g;s/replica/primary/g;s/__tmp__/replica/g' \
               spec/fixtures/litmus_inventory.yaml
 
       - name: 'Upgrade PE on test cluster'
