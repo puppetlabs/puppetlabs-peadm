@@ -100,6 +100,7 @@ Supported use cases:
 * `peadm::restore`: Restore the core user settings for puppet infrastructure from backup
 * `peadm::subplans::component_install`: Install a new PEADM component
 * `peadm::subplans::configure`: Configure first-time classification and DR setup
+* `peadm::subplans::db_populate`: Destructively (re)populates a new or existing database with the contents or a known good source
 * `peadm::subplans::install`: Perform initial installation of Puppet Enterprise Extra Large
 * `peadm::subplans::modify_certificate`
 * `peadm::subplans::prepare_agent`
@@ -1897,6 +1898,7 @@ The following parameters are available in the `peadm::upgrade` plan:
 * [`internal_compiler_a_pool_address`](#-peadm--upgrade--internal_compiler_a_pool_address)
 * [`internal_compiler_b_pool_address`](#-peadm--upgrade--internal_compiler_b_pool_address)
 * [`pe_installer_source`](#-peadm--upgrade--pe_installer_source)
+* [`final_agent_state`](#-peadm--upgrade--final_agent_state)
 * [`primary_host`](#-peadm--upgrade--primary_host)
 * [`replica_host`](#-peadm--upgrade--replica_host)
 * [`compiler_hosts`](#-peadm--upgrade--compiler_hosts)
@@ -1948,6 +1950,15 @@ standard public source. When specified, PEAdm will download directly from the
 URL given.
 
 Default value: `undef`
+
+##### <a name="-peadm--upgrade--final_agent_state"></a>`final_agent_state`
+
+Data type: `Enum['running', 'stopped']`
+
+Configures the state the puppet agent should be in on infrastructure nodes
+after PE is upgraded successfully.
+
+Default value: `'running'`
 
 ##### <a name="-peadm--upgrade--primary_host"></a>`primary_host`
 
