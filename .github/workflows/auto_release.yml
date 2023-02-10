@@ -1,15 +1,12 @@
-name: "Release Prep"
+name: "Auto release"
 
 on:
   workflow_dispatch:
-    inputs:
-      personal_access_token:
-        description: 'GitHub Personal Access Token'
-        required: true
 
 env:
   HONEYCOMB_WRITEKEY: 7f3c63a70eecc61d635917de46bea4e6 
   HONEYCOMB_DATASET: litmus tests
+  CHANGELOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   auto_release:
@@ -41,7 +38,7 @@ jobs:
       with:
         args: 'release prep --force'
       env:
-        CHANGELOG_GITHUB_TOKEN: "${{ github.event.inputs.personal_access_token }}"
+        CHANGELOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: "Get Version"
       if: ${{ github.repository_owner == 'puppetlabs' }}
