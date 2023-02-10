@@ -23,7 +23,7 @@ on:
       log_level:
         description: 'Bolt log level'
         required: false
-        default: 'trace'
+        default: 'verbose'
 
 env:
   HONEYCOMB_WRITEKEY: 7f3c63a70eecc61d635917de46bea4e6
@@ -175,7 +175,7 @@ jobs:
 
       - name: 'Swap primary and replica nodes in inventory'
         run: |
-          sed -i.sedbak 's/primary/__tmp__/g;s/replica/primary/g;s/__tmp__/replica/g' \
+          sed -i .sedbak 's/role: primary$/role: failed/;s/primary/__tmp__/;s/spare-replica/__tmp2__/;s/replica/primary/;s/__tmp__/replica/;s/__tmp2__/replica/' \
               spec/fixtures/litmus_inventory.yaml
 
       - name: 'Upgrade PE on test cluster'
