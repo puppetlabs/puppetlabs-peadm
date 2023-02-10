@@ -66,9 +66,9 @@ plan peadm_spec::perform_failover(
     fail_plan('"spare-replica" role missing from inventory, cannot continue')
   }
 
-  # run puppet on all infrastructure nodes (except the spare replica) 
+  # run puppet on all infrastructure nodes (except the failed primary and the spare replica) 
   # to remove the "failed" primary node
-  run_task('peadm::puppet_runonce', $t - $new_replica_host)
+  run_task('peadm::puppet_runonce', $t - $new_replica_host - $primary_host)
 
   # TODO: remove the failed primary from the pe.conf file on the primary postgresql node
 
@@ -76,7 +76,7 @@ plan peadm_spec::perform_failover(
   run_plan('peadm::add_replica',
     primary_host            => $replica_host.uri,
     replica_host            => $new_replica_host.uri,
-    replica_postgresql_host => $replica_postgresql_host ? { [] => undef, default => $replica_postgresql_host.uri },
+    replica_postgresql_host => $replica_postgresql_host ? {[] => undef, default => $replica_postgresql_host.uri },
   )
 
   $res3 = run_command("/opt/puppetlabs/bin/puppet query \'${query}\'", $replica_host)
