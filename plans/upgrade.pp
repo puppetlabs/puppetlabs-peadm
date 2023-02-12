@@ -16,6 +16,9 @@
 #   specified, PEAdm will attempt to download PE installation media from its
 #   standard public source. When specified, PEAdm will download directly from the
 #   URL given.
+# @param final_agent_state
+#   Configures the state the puppet agent should be in on infrastructure nodes
+#   after PE is upgraded successfully.
 #
 plan peadm::upgrade (
   # Standard
@@ -37,10 +40,11 @@ plan peadm::upgrade (
   Optional[String]            $internal_compiler_b_pool_address = undef,
 
   # Other
-  Optional[String]      $token_file             = undef,
-  String                $stagingdir             = '/tmp',
-  Enum[direct,bolthost] $download_mode          = 'bolthost',
-  Boolean               $permit_unsafe_versions = false,
+  Optional[String]           $token_file             = undef,
+  String                     $stagingdir             = '/tmp',
+  Enum['running', 'stopped'] $final_agent_state      = 'running',
+  Enum[direct,bolthost]      $download_mode          = 'bolthost',
+  Boolean                    $permit_unsafe_versions = false,
 
   Optional[Enum[
       'upgrade-primary',
@@ -349,9 +353,13 @@ plan peadm::upgrade (
   }
 
   peadm::plan_step('finalize') || {
-    # Ensure Puppet running on all infrastructure targets
+    $service_state = $final_agent_state ? {
+      'running' => 'start',
+      'stopped' => 'stop'
+    }
+    # Configure Puppet agent service status on all infrastructure targets
     run_task('service', $all_targets,
-      action => 'start',
+      action => $service_state,
       name   => 'puppet',
     )
   }

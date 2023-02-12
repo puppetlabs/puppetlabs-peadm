@@ -1,15 +1,12 @@
-name: "Release Prep"
+name: "Auto release"
 
 on:
   workflow_dispatch:
-    inputs:
-      personal_access_token:
-        description: 'GitHub Personal Access Token'
-        required: true
 
 env:
   HONEYCOMB_WRITEKEY: 7f3c63a70eecc61d635917de46bea4e6 
   HONEYCOMB_DATASET: litmus tests
+  CHANGELOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   auto_release:
@@ -37,11 +34,11 @@ jobs:
         persist-credentials: false
 
     - name: "PDK Release prep"
-      uses: docker://puppet/pdk:2.6.1.0
+      uses: docker://puppet/puppet-dev-tools:4.x
       with:
-        args: 'release prep --force'
+        args: 'pdk release prep --force --debug'
       env:
-        CHANGELOG_GITHUB_TOKEN: "${{ github.event.inputs.personal_access_token }}"
+        CHANGELOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: "Get Version"
       if: ${{ github.repository_owner == 'puppetlabs' }}

@@ -7,7 +7,7 @@ Gemfile:
   optional:
     ':development':
       - gem: 'github_changelog_generator'
-        version: '1.15.2' # Locked due to 1.16 no longer working for ruby lower than 3
+        version: '1.16.4' # Pinned to latest bug fix version
       - gem: 'octokit'
         version: '4.21.0' # Locked due to https://github.com/octokit/octokit.rb/issues/1391
 Rakefile:
@@ -30,6 +30,10 @@ spec/spec_helper.rb:
     - 'spec/docker/**/files/puppet-enterprise*'
     - 'spec/docker/.task_cache.json'
 .github/workflows/auto_release.yml:
-  unmanaged: true 
+  unmanaged: false 
 .github/workflows/release.yml:
   unmanaged: true
+.github/workflows/spec.yml:
+  unmanaged: false
+.travis.yml:
+  delete: true
