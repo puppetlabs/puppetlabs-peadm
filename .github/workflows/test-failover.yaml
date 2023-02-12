@@ -173,9 +173,17 @@ jobs:
           done 
           echo "${HOME}/pause absent, continuing workflow."
 
-      - name: 'Swap primary and replica nodes in inventory'
+      - name: Set up yq
+        uses: frenck/action-setup-yq@v1
+        with:
+          version: v4.30.5
+
+      - name: 'Update inventory'
         run: |
-          sed -i.sedbak 's/role: primary$/role: failed/;s/primary/__tmp__/;s/spare-replica/__tmp2__/;s/replica/primary/;s/__tmp__/replica/;s/__tmp2__/replica/' \
+          # Remove failed primary
+          yq -i 'del(.groups[].targets[] | select(.vars.role == "primary"))' spec/fixtures/litmus_inventory.yaml
+          # Swap primary and replica nodes
+          sed -i.sedbak 's/primary/__tmp__/;s/spare-replica/__tmp2__/;s/replica/primary/;s/__tmp__/replica/;s/__tmp2__/replica/' \
               spec/fixtures/litmus_inventory.yaml
 
       - name: 'Upgrade PE on test cluster'
