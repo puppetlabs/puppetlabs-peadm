@@ -185,6 +185,9 @@ jobs:
           # Swap primary and replica nodes
           sed -i.sedbak 's/primary/__tmp__/;s/spare-replica/__tmp2__/;s/replica/primary/;s/__tmp__/replica/;s/__tmp2__/replica/' \
               spec/fixtures/litmus_inventory.yaml
+          echo ::group::info:inventory
+            sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
+          echo ::endgroup::
 
       - name: 'Upgrade PE on test cluster'
         if: ${{ success() && github.event.inputs.version_to_upgrade != '' }}

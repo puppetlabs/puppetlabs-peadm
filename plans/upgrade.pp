@@ -255,6 +255,9 @@ plan peadm::upgrade (
       },
     )
 
+    # Show the peadm configuration before node manager setup
+    run_task('peadm::get_peadm_config', $primary_target)
+
     # Update classification. This needs to be done now because if we don't, and
     # the PE Compiler node groups are wrong, then the compilers won't be able to
     # successfully classify and update
@@ -275,6 +278,9 @@ plan peadm::upgrade (
         require                          => Class['peadm::setup::node_manager_yaml'],
       }
     }
+
+    # Show the peadm configuration after node manager setup
+    run_task('peadm::get_peadm_config', $primary_target)
   }
 
   peadm::plan_step('upgrade-primary-compilers') || {
