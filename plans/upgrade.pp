@@ -255,12 +255,34 @@ plan peadm::upgrade (
       },
     )
 
-    # Show the peadm configuration before node manager setup
+    # Log the peadm configuration before node manager setup
     run_task('peadm::get_peadm_config', $primary_target)
 
     # Update classification. This needs to be done now because if we don't, and
     # the PE Compiler node groups are wrong, then the compilers won't be able to
     # successfully classify and update
+
+    # First, determine the correct hosts for the A and B availability groups
+    $server_a_host = $cert_extensions.dig($primary_target.peadm::certname(), peadm::oid('peadm_availability_group')) ? {
+      'A'     => $primary_target.peadm::certname(),
+      default => $replica_target.peadm::certname(),
+    }
+
+    $server_b_host = $server_a_host ? {
+      $primary_target.peadm::certname() => $replica_target.peadm::certname(),
+      default                           => $primary_target.peadm::certname(),
+    }
+
+    $postgresql_a_host = $cert_extensions.dig($primary_postgresql_target.peadm::certname(), peadm::oid('peadm_availability_group')) ? {
+      'A'     => $primary_postgresql_target.peadm::certname(),
+      default => $replica_postgresql_target.peadm::certname(),
+    }
+
+    $postgresql_b_host = $postgresql_a_host ? {
+      $primary_postgresql_target.peadm::certname() => $replica_postgresql_target.peadm::certname(),
+      default                                      => $primary_postgresql_target.peadm::certname(),
+    }
+
     apply($primary_target) {
       class { 'peadm::setup::node_manager_yaml':
         primary_host => $primary_target.peadm::certname(),
@@ -268,19 +290,16 @@ plan peadm::upgrade (
 
       class { 'peadm::setup::node_manager':
         primary_host                     => $primary_target.peadm::certname(),
-        server_a_host                    => $primary_target.peadm::certname(),
-        server_b_host                    => $replica_target.peadm::certname(),
-        postgresql_a_host                => $primary_postgresql_target.peadm::certname(),
-        postgresql_b_host                => $replica_postgresql_target.peadm::certname(),
+        server_a_host                    => $server_a_host,
+        server_b_host                    => $server_b_host,
+        postgresql_a_host                => $postgresql_a_host,
+        postgresql_b_host                => $postgresql_b_host,
         compiler_pool_address            => $compiler_pool_address,
         internal_compiler_a_pool_address => $internal_compiler_a_pool_address,
         internal_compiler_b_pool_address => $internal_compiler_b_pool_address,
         require                          => Class['peadm::setup::node_manager_yaml'],
       }
     }
-
-    # Show the peadm configuration after node manager setup
-    run_task('peadm::get_peadm_config', $primary_target)
   }
 
   peadm::plan_step('upgrade-primary-compilers') || {
