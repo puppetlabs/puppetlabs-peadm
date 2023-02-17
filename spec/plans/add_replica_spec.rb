@@ -7,6 +7,7 @@ describe 'peadm::add_replica' do
     allow_apply
     allow_any_task
     allow_any_command
+    allow_any_out_message
   end
 
   describe 'basic functionality' do

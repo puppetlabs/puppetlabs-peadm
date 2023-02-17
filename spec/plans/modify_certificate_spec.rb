@@ -14,6 +14,7 @@ describe 'peadm::modify_certificate' do
       end
 
       it 'runs successfully ' do
+        allow_any_out_message
         allow_task('peadm::cert_data').always_return({ 'certname' => 'primary' })
         expect_plan('peadm::subplans::modify_certificate').be_called_times(3)
 

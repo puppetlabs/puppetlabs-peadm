@@ -1,6 +1,5 @@
 plan peadm_spec::add_replica(
-){
-
+) {
   $t = get_targets('*')
   wait_until_available($t)
 
@@ -22,5 +21,4 @@ plan peadm_spec::add_replica(
     replica_host            => $replica_host,
     replica_postgresql_host => $replica_postgresql_host ? { [] => undef, default => $replica_postgresql_host },
   )
-
 }

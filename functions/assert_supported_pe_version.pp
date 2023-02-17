@@ -12,7 +12,7 @@ function peadm::assert_supported_pe_version (
   if $permit_unsafe_versions {
 # lint:ignore:strict_indent
     warning(@("WARN"/L))
-      WARNING: Permitting unsafe PE versions. This is not supported or tested.
+        WARNING: Permitting unsafe PE versions. This is not supported or tested.
         Proceeding with this action could result in a broken PE Infrastructure.
       | WARN
 # lint:endignore
@@ -21,7 +21,7 @@ function peadm::assert_supported_pe_version (
   if (!$supported and $permit_unsafe_versions) {
 # lint:ignore:strict_indent
     warning(@("WARN"/L))
-      WARNING: PE version ${version} is NOT SUPPORTED!
+        WARNING: PE version ${version} is NOT SUPPORTED!
       | WARN
 # lint:endignore
   }

@@ -138,7 +138,7 @@ plan peadm::subplans::install (
 # lint:ignore:strict_indent
       warning(@("HEREDOC"))
         WARNING: Target name / hostname mismatch: target ${name} reports ${result['hostname']}
-                 Certificate name will be set to target name. Please ensure target name is correct and resolvable
+        Certificate name will be set to target name. Please ensure target name is correct and resolvable
         |-HEREDOC
 # lint:endignore
     }

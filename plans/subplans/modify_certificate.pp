@@ -106,7 +106,7 @@ plan peadm::subplans::modify_certificate (
     # The docs are broken, and the process is unclean. Sadface.
     run_task('service', $target, { action => 'stop', name => 'pe-puppetserver' })
     run_command(@("HEREDOC"/L), $target)
-      rm -f \
+            rm -f \
         /etc/puppetlabs/puppet/ssl/certs/${certname}.pem \
         /etc/puppetlabs/puppet/ssl/private_keys/${certname}.pem \
         /etc/puppetlabs/puppet/ssl/public_keys/${certname}.pem \

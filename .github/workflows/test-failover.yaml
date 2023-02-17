@@ -20,6 +20,10 @@ on:
         description: 'Boolean; whether or not to pause for ssh debugging'
         required: true
         default: 'false'
+      log_level:
+        description: 'Bolt log level'
+        required: false
+        default: 'debug'
 
 env:
   HONEYCOMB_WRITEKEY: 7f3c63a70eecc61d635917de46bea4e6
@@ -37,13 +41,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture:
-          - "extra-large-with-dr-and-spare-replica"
         version:
           - "${{ github.event.inputs.version }}"
         image:
           - "${{ github.event.inputs.image }}"
-
+        architecture:
+          - "extra-large-with-dr"
     steps:
       - name: 'Start SSH session'
         if: ${{ github.event.inputs.ssh-debugging == 'true' }}
@@ -89,7 +92,7 @@ jobs:
             echo STEP_START=$(date +%s) >> $GITHUB_ENV
           echo ::endgroup::
 
-      - name: 'Provision test cluster (specified architecture with added DR)'
+      - name: 'Provision test cluster (XL with spare replica)'
         timeout-minutes: 15
         run: |
           echo ::group::prepare
@@ -106,13 +109,7 @@ jobs:
                 --modulepath spec/fixtures/modules \
                 provider=provision_service \
                 image=${{ matrix.image }} \
-                architecture=${{ matrix.architecture }}-with-dr
-            buildevents cmd $TRACE_ID $STEP_ID 'bolt task run provision::provision_service' -- \
-              bundle exec bolt bolt task run provision::provision_service \
-                --modulepath spec/fixtures/modules \
-                action=provision
-                platform=${{ matrix.image }} \
-                vars="role: primary"
+                architecture=${{ matrix.architecture }}-and-spare-replica
           echo ::endgroup::
 
           echo ::group::info:request
@@ -136,7 +133,7 @@ jobs:
         timeout-minutes: 120
         run: |
           buildevents cmd $TRACE_ID $STEP_ID 'bolt plan run peadm_spec::install_test_cluster' -- \
-            bundle exec bolt plan run peadm_spec::install_test_cluster \
+            bundle exec bolt plan run peadm_spec::install_test_cluster --log_level ${{ github.event.inputs.log_level }} \
               --inventoryfile spec/fixtures/litmus_inventory.yaml \
               --modulepath spec/fixtures/modules \
               architecture=${{ matrix.architecture }} \
@@ -154,11 +151,9 @@ jobs:
       - name: 'Perform failover'
         run: |
           buildevents cmd $TRACE_ID $STEP_ID 'bolt plan run peadm_spec::perform_failover' -- \
-            bundle exec bolt plan run peadm_spec::perform_failover \
+            bundle exec bolt plan run peadm_spec::perform_failover --log_level ${{ github.event.inputs.log_level }} \
               --inventoryfile spec/fixtures/litmus_inventory.yaml \
-              --modulepath spec/fixtures/modules \
-              platform=${{ matrix.image }} \
-              vars="role: primary"
+              --modulepath spec/fixtures/modules
 
       - name: "Honeycomb: Record falover time"
         if: ${{ always() }}
@@ -178,20 +173,36 @@ jobs:
           done 
           echo "${HOME}/pause absent, continuing workflow."
 
+      - name: Set up yq
+        uses: frenck/action-setup-yq@v1
+        with:
+          version: v4.30.5
+
+      - name: 'Update inventory'
+        run: |
+          # Remove failed primary
+          yq -i 'del(.groups[].targets[] | select(.vars.role == "primary"))' spec/fixtures/litmus_inventory.yaml
+          # Swap primary and replica nodes
+          sed -i.sedbak 's/primary/__tmp__/;s/spare-replica/__tmp2__/;s/replica/primary/;s/__tmp__/replica/;s/__tmp2__/replica/' \
+              spec/fixtures/litmus_inventory.yaml
+          echo ::group::info:inventory
+            sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
+          echo ::endgroup::
+
       - name: 'Upgrade PE on test cluster'
-        if: ${{ always() && github.event.inputs.version_to_upgrade != '' }}
+        if: ${{ success() && github.event.inputs.version_to_upgrade != '' }}
         timeout-minutes: 120
         run: |
           buildevents cmd $TRACE_ID $STEP_ID 'bolt plan run peadm_spec::upgrade_test_cluster' -- \
-            bundle exec bolt plan run peadm_spec::upgrade_test_cluster \
+            bundle exec bolt plan run peadm_spec::upgrade_test_cluster --log_level ${{ github.event.inputs.log_level }} \
               --inventoryfile spec/fixtures/litmus_inventory.yaml \
               --modulepath spec/fixtures/modules \
-              architecture='extra-large-with-dr' \
+              architecture=${{ matrix.architecture }} \
               download_mode='direct' \
-              version=${{ matrix.version_to_upgrade }}
+              version=${{ github.event.inputs.version_to_upgrade }}
 
       - name: "Honeycomb: Record upgrade time"
-        if: ${{ always() && github.event.inputs.version_to_upgrade != '' }}
+        if: ${{ success() && github.event.inputs.version_to_upgrade != '' }}
         run: |
           echo ::group::honeycomb
             buildevents step $TRACE_ID $STEP_ID $STEP_START 'Upgrade PE on test cluster'

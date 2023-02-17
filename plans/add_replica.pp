@@ -5,10 +5,11 @@
 # @summary Replace a replica host for a Standard or Large architecture.
 #   Supported use cases:
 #   1: The existing replica is broken, we have a fresh new VM we want to provision the replica to.
-#      The new replica should have the same certname as the broken one.
 # @param primary_host - The hostname and certname of the primary Puppet server
 # @param replica_host - The hostname and certname of the replica VM
-# @param replica_postgresql_host - The hostname and certname of the host with the replica PE-PosgreSQL database. 
+# @param replica_postgresql_host - The hostname and certname of the host with the replica PE-PosgreSQL database.
+# @param token_file - (optional) the token file in a different location than the default.
+# 
 #   Can be a separate host in an XL architecture, or undef in Standard or Large.
 plan peadm::add_replica(
   # Standard or Large
@@ -119,7 +120,8 @@ plan peadm::add_replica(
     # Race condition, where the provision command checks PuppetDB status and
     # probably gets "starting", but fails out because that's not "running".
     # Can remove flag when that issue is fixed.
-    legacy     => true,
+    legacy     => false,
+    # _catch_errors => true, # testing
   )
 
   # start puppet service
