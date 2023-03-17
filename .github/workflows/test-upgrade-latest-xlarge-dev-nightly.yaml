@@ -123,7 +123,7 @@ jobs:
           echo ::endgroup::
 
       - name: 'Activate twingate to obtain unreleased build'
-        uses: twingate/github-action@v1
+        uses: timidri/twingate-github-action@main
         with:
           service-key: ${{ secrets.TWINGATE_PUBLIC_REPO_KEY }}
 
