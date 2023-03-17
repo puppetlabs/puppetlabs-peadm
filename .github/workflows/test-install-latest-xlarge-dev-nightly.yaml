@@ -4,6 +4,7 @@ name: "Install latest dev test nightly"
 on:
   schedule:
     - cron: '0 3 * * *'
+  workflow_dispatch:
 
 env:
   HONEYCOMB_WRITEKEY: 7f3c63a70eecc61d635917de46bea4e6
@@ -102,7 +103,7 @@ jobs:
           echo ::endgroup::
 
       - name: 'Activate twingate to obtain unreleased build'
-        uses: twingate/github-action@v1
+        uses: timidri/twingate-github-action
         with:
           service-key: ${{ secrets.TWINGATE_PUBLIC_REPO_KEY }}
 
