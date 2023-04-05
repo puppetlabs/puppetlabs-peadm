@@ -46,7 +46,7 @@ plan peadm::subplans::install (
   Hash                 $pe_conf_data        = {},
 
   # Code Manager
-  Boolean              $code_manager_auto_configure,
+  Optional[Boolean]              $code_manager_auto_configure,
   Optional[String]     $r10k_remote              = undef,
   Optional[String]     $r10k_private_key_file    = undef,
   Optional[Peadm::Pem] $r10k_private_key_content = undef,
