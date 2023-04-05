@@ -46,6 +46,7 @@ plan peadm::subplans::install (
   Hash                 $pe_conf_data        = {},
 
   # Code Manager
+  Boolean              $code_manager_auto_configure,
   Optional[String]     $r10k_remote              = undef,
   Optional[String]     $r10k_private_key_file    = undef,
   Optional[Peadm::Pem] $r10k_private_key_content = undef,
@@ -163,7 +164,7 @@ plan peadm::subplans::install (
       'puppet_enterprise::puppet_master_host'                           => $primary_target.peadm::certname(),
       'pe_install::puppet_master_dnsaltnames'                           => $dns_alt_names,
       'puppet_enterprise::puppetdb_database_host'                       => $primary_postgresql_target.peadm::certname(),
-      'puppet_enterprise::profile::master::code_manager_auto_configure' => true,
+      'puppet_enterprise::profile::master::code_manager_auto_configure' => $code_manager_auto_configure,
       'puppet_enterprise::profile::master::r10k_remote'                 => $r10k_remote,
       'puppet_enterprise::profile::master::r10k_private_key'            => $r10k_private_key ? {
         undef   => undef,
