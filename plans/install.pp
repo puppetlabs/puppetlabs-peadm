@@ -49,6 +49,7 @@ plan peadm::install (
   Optional[Peadm::Ldap_config]      $ldap_config                      = undef,
 
   # Code Manager
+  Optional[Boolean]                 $code_manager_auto_configure = true,
   Optional[String]                  $r10k_remote              = undef,
   Optional[String]                  $r10k_private_key_file    = undef,
   Optional[Peadm::Pem]              $r10k_private_key_content = undef,
@@ -89,6 +90,7 @@ plan peadm::install (
     pe_conf_data                   => $pe_conf_data,
 
     # Code Manager
+    code_manager_auto_configure => $code_manager_auto_configure,
     r10k_remote                    => $r10k_remote,
     r10k_private_key_file          => $r10k_private_key_file,
     r10k_private_key_content       => $r10k_private_key_content,
