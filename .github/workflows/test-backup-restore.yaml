@@ -75,7 +75,7 @@ jobs:
           echo ::endgroup::
 
       - name: Save inventory file A to an artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: inventory_A
           path: spec/fixtures/litmus_inventory.yaml
@@ -149,7 +149,7 @@ jobs:
           echo ::endgroup::
 
       - name: Save inventory file B to an artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: inventory_A
           path: spec/fixtures/litmus_inventory.yaml
@@ -194,11 +194,21 @@ jobs:
           path: spec/fixtures/
 
       - name: perform PE backup of cluster A
-        timeout-minutes: 120
+        timeout-minutes: 10
         run: |
+          echo ::group::prepare
+            mkdir -p $HOME/.ssh
+            echo 'Host *'                      >  $HOME/.ssh/config
+            echo '    ServerAliveInterval 150' >> $HOME/.ssh/config
+            echo '    ServerAliveCountMax 2'   >> $HOME/.ssh/config
+            bundle exec rake spec_prep
+          echo ::endgroup::
+
+          echo ::group::backup
             bundle exec bolt plan run peadm_spec::test_backup \
               --inventoryfile spec/fixtures/inventory_A/litmus_inventory.yaml \
               --modulepath spec/fixtures/modules
+          echo ::endgroup::
 
       - name: Wait while the pause file is present
         if: ${{ github.event.inputs.ssh-debugging == 'true' }}
@@ -212,7 +222,8 @@ jobs:
         if: ${{ always() }}
         continue-on-error: true
         run: |
-          if [ -f spec/fixtures/inventory_A/litmus_inventory.yaml ]; then
+          cp spec/fixtures/inventory_A/litmus_inventory.yaml spec/fixtures/litmus_inventory.yaml || true
+          if [ -f spec/fixtures/litmus_inventory.yaml ]; then
             echo ::group::tear_down
               bundle exec rake 'litmus:tear_down'
             echo ::endgroup::
@@ -226,7 +237,8 @@ jobs:
         if: ${{ always() }}
         continue-on-error: true
         run: |
-          if [ -f spec/fixtures/inventory_B/litmus_inventory.yaml ]; then
+          cp spec/fixtures/inventory_B/litmus_inventory.yaml spec/fixtures/litmus_inventory.yaml || true
+          if [ -f spec/fixtures/litmus_inventory.yaml ]; then
             echo ::group::tear_down
               bundle exec rake 'litmus:tear_down'
             echo ::endgroup::
