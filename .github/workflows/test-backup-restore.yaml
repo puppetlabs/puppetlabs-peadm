@@ -151,7 +151,7 @@ jobs:
       - name: Save inventory file B to an artifact
         uses: actions/upload-artifact@v3
         with:
-          name: inventory_A
+          name: inventory_B
           path: spec/fixtures/litmus_inventory.yaml
     
       - name: 'Install PE on test cluster'
