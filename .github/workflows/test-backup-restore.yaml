@@ -217,7 +217,7 @@ jobs:
           done
 
       - name: 'Tear down cluster A'
-        if: ${{ always() }}
+        # if: ${{ always() }}
         continue-on-error: true
         run: |
           cp spec/fixtures/inventory_A/litmus_inventory.yaml spec/fixtures/litmus_inventory.yaml || true
@@ -232,7 +232,7 @@ jobs:
           fi
 
       - name: 'Tear down cluster B'
-        if: ${{ always() }}
+        # if: ${{ always() }}
         continue-on-error: true
         run: |
           cp spec/fixtures/inventory_B/litmus_inventory.yaml spec/fixtures/litmus_inventory.yaml || true
