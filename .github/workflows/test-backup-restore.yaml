@@ -162,6 +162,7 @@ jobs:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
       LANG: 'en_US.UTF-8'
+    if: ${{ always() }}
     needs: [install-cluster-A, install-cluster-B]
 
     steps:
@@ -173,20 +174,24 @@ jobs:
           SSH_PASS: ${{ secrets.SSH_PASS }}
 
       - name: "Checkout Source"
+        if: ${{ always() }}
         uses: actions/checkout@v2
   
       - name: "Activate Ruby 2.7"
+        if: ${{ always() }}
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: "2.7"
           bundler-cache: true
   
       - name: Download artifacts
+        if: ${{ always() }}
         uses: actions/download-artifact@v3
         with:
           path: spec/fixtures/
 
       - name: perform PE backup of cluster A
+        if: needs.install-cluster-A.result == 'success' && needs.install-cluster-B.result == 'success' 
         timeout-minutes: 10
         run: |
           echo ::group::prepare
