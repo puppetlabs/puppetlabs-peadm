@@ -209,7 +209,7 @@ jobs:
           echo ::endgroup::
 
       - name: Wait while the pause file is present
-        if: ${{ github.event.inputs.ssh-debugging == 'true' }}
+        if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
         run: |
           while [ -f pause ]; do
             echo "Waiting for pause file to be removed"
