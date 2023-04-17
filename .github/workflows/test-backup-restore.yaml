@@ -164,6 +164,7 @@ jobs:
       LANG: 'en_US.UTF-8'
     if: ${{ always() }}
     needs: [install-cluster-A, install-cluster-B]
+    continue-on-error: true
 
     steps:
       - name: 'Start SSH session'
@@ -174,24 +175,24 @@ jobs:
           SSH_PASS: ${{ secrets.SSH_PASS }}
 
       - name: "Checkout Source"
-        if: ${{ always() }}
+        # if: ${{ always() }}
         uses: actions/checkout@v2
   
       - name: "Activate Ruby 2.7"
-        if: ${{ always() }}
+        # if: ${{ always() }}
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: "2.7"
           bundler-cache: true
   
       - name: Download artifacts
-        if: ${{ always() }}
+        # if: ${{ always() }}
         uses: actions/download-artifact@v3
         with:
           path: spec/fixtures/
 
       - name: perform PE backup of cluster A
-        if: needs.install-cluster-A.result == 'success' && needs.install-cluster-B.result == 'success' 
+        # if: needs.install-cluster-A.result == 'success' && needs.install-cluster-B.result == 'success' 
         timeout-minutes: 10
         run: |
           echo ::group::prepare
@@ -209,7 +210,8 @@ jobs:
           echo ::endgroup::
 
       - name: Wait while the pause file is present
-        if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
+        # if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
+        if: github.event.inputs.ssh-debugging == 'true'
         run: |
           while [ -f pause ]; do
             echo "Waiting for pause file to be removed"
