@@ -211,16 +211,17 @@ jobs:
               --modulepath spec/fixtures/modules
           echo ::endgroup::
 
-      - name: Wait while the pause file is present
+      - name: 'Wait as long as the file ${HOME}/pause file is present'
         continue-on-error: true
-      # if: always() && github.event.inputs.ssh-debugging == 'true'
+        # if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
         if: github.event.inputs.ssh-debugging == 'true'
         run: |
-          while [ -f pause ]; do
-            echo "Waiting for pause file to be removed"
+          while [ -f "${HOME}/pause" ] ; do
+            echo "${HOME}/pause present, sleeping for 60 seconds..."
             sleep 10
-          done
-
+          done 
+          echo "${HOME}/pause absent, continuing workflow."
+    
       - name: 'Tear down cluster A'
         # if: always()
         continue-on-error: true
