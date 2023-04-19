@@ -168,6 +168,7 @@ jobs:
 
     steps:
       - name: 'Start SSH session'
+        continue-on-error: true
         if: github.event.inputs.ssh-debugging == 'true' && needs.install-cluster-A.result != 'cancelled' && needs.install-cluster-B.result != 'cancelled'
         uses: luchihoratiu/debug-via-ssh@main
         with:
@@ -194,6 +195,7 @@ jobs:
       - name: perform PE backup of cluster A
         if: needs.install-cluster-A.result == 'success' && needs.install-cluster-B.result == 'success' 
         timeout-minutes: 10
+        continue-on-error: true
         run: |
           echo ::group::prepare
             mkdir -p $HOME/.ssh
@@ -210,7 +212,8 @@ jobs:
           echo ::endgroup::
 
       - name: Wait while the pause file is present
-        # if: always() && github.event.inputs.ssh-debugging == 'true'
+        continue-on-error: true
+      # if: always() && github.event.inputs.ssh-debugging == 'true'
         if: github.event.inputs.ssh-debugging == 'true'
         run: |
           while [ -f pause ]; do
@@ -220,7 +223,7 @@ jobs:
 
       - name: 'Tear down cluster A'
         # if: always()
-        # continue-on-error: true
+        continue-on-error: true
         run: |
           cp spec/fixtures/inventory_A/litmus_inventory.yaml spec/fixtures/litmus_inventory.yaml || true
           if [ -f spec/fixtures/litmus_inventory.yaml ]; then
