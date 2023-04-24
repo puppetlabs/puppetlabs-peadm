@@ -88,13 +88,14 @@ jobs:
               --modulepath spec/fixtures/modules \
               architecture=${{ inputs.architecture }} \
               version=${{ inputs.version }}
-              - name: 'Start SSH session'
-              continue-on-error: true
-              if: github.event.inputs.ssh-debugging == 'true' && needs.install-cluster-A.result != 'cancelled' && needs.install-cluster-B.result != 'cancelled'
-              uses: luchihoratiu/debug-via-ssh@main
-              with:
-                NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-                SSH_PASS: ${{ secrets.SSH_PASS }}
+
+      - name: 'Start SSH session'
+        continue-on-error: true
+        if: github.event.inputs.ssh-debugging == 'true' && needs.install-cluster-A.result != 'cancelled' && needs.install-cluster-B.result != 'cancelled'
+        uses: luchihoratiu/debug-via-ssh@main
+        with:
+          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+          SSH_PASS: ${{ secrets.SSH_PASS }}
       
           # - name: Download artifacts
           #   # if: always()
@@ -217,7 +218,7 @@ jobs:
         uses: lewagon/wait-on-check-action@v1.3.1
         with:
           ref: ${{ github.ref }}
-          check-name: 'Wait as long as the file ${HOME}/pause file is present'
+          check-name: "Backup: Cluster A: PE ${{ inputs.version }} ${{ inputs.architecture }} on ${{ inputs.image }}"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
       
