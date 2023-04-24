@@ -90,8 +90,7 @@ jobs:
               version=${{ inputs.version }}
 
       - name: 'Start SSH session'
-        continue-on-error: true
-        if: github.event.inputs.ssh-debugging == 'true' && needs.install-cluster-A.result != 'cancelled' && needs.install-cluster-B.result != 'cancelled'
+        if: github.event.inputs.ssh-debugging == 'true'
         uses: luchihoratiu/debug-via-ssh@main
         with:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
@@ -104,7 +103,6 @@ jobs:
           #     path: spec/fixtures/
     
       - name: perform PE backup of cluster A
-        if: needs.install-cluster-A.result == 'success' && needs.install-cluster-B.result == 'success' 
         timeout-minutes: 10
         continue-on-error: true
         run: |
@@ -134,8 +132,7 @@ jobs:
           echo "${HOME}/pause absent, continuing workflow."
     
       - name: 'Tear down cluster A'
-        # if: always()
-        continue-on-error: true
+        if: always()
         run: |
           if [ -f spec/fixtures/litmus_inventory.yaml ]; then
             echo ::group::tear_down
@@ -223,8 +220,7 @@ jobs:
           wait-interval: 10
       
       - name: 'Tear down cluster B'
-      # if: always()
-      # continue-on-error: true
+        if: always()
         run: |
           cp spec/fixtures/inventory_B/litmus_inventory.yaml spec/fixtures/litmus_inventory.yaml || true
           if [ -f spec/fixtures/litmus_inventory.yaml ]; then
