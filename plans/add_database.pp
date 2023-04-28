@@ -201,7 +201,7 @@ plan peadm::add_database(
     path    => '/etc/puppetlabs/enterprise/conf.d/pe.conf',
     content => ($pe_conf.parsejson()).to_json_pretty(),
   )
-  
+
   # Start frontend compiler services so catalogs can once again be compiled by
   # agents
   run_command('systemctl start pe-puppetserver.service pe-puppetdb.service', $compilers)
