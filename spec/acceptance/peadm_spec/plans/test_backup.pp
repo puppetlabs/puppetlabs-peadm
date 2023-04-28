@@ -9,7 +9,7 @@ plan peadm_spec::test_backup() {
 
   # run infra status on the primary
   $primary_host = $t.filter |$n| { $n.vars['role'] == 'primary' }[0]
-  out::verbose("Running peadm::status on primary host ${primary_host}")
+  out::message("Running peadm::status on primary host ${primary_host}")
   run_plan('peadm::status', $primary_host)
 
   $backup_options = {
