@@ -91,7 +91,7 @@ plan peadm::status(
       $summary_json = {
         'summary' => {
           'status' => $overall_status,
-          'stacks' => $stack_table_rows.hash,
+          'stacks' => Hash($stack_table_rows),
         },
         'failed' => $failed,
         'operational' => $passed,
