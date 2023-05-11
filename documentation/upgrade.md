@@ -1,6 +1,6 @@
 # Upgrade Puppet Enterprise using the peadm module
 
-Puppet Enterprise deployments provisioned using the peadm module can be upgrading using the peadm module as well.
+Puppet Enterprise deployments provisioned using the peadm module can also be upgraded using the peadm module.
 
 ## Usage
 
@@ -27,12 +27,12 @@ The following is an example parameters file for upgrading an Extra Large archite
 The upgrade plan may be run as:
 
 ```
-bolt plan run peadm::upgrade --params @params.json 
+bolt plan run peadm::upgrade --params @params.json
 ```
 
 ## Offline Usage
 
-The peadm::upgrade plan downloads installation content from an online repository by default. To perform an offline installation, you can prefetch the needed content and place it in the staging directory. If content is available in the staging directory, peadm::upgrade will not try to download it.
+The `peadm::upgrade` plan downloads installation content from an online repository by default. To perform an offline installation, you can prefetch the needed content and place it in the staging directory. If content is available in the staging directory, `peadm::upgrade` will not try to download it.
 
 The default staging directory is `/tmp`. If a different staging dir is being used, it can be specified using the `stagingdir` parameter to the peadm::upgrade plan.
 
@@ -40,13 +40,17 @@ The content needed is the PE installation tarball for the target version. The in
 
 Installation content can be downloaded from [https://puppet.com/try-puppet/puppet-enterprise/download/](https://puppet.com/try-puppet/puppet-enterprise/download/).
 
+Note if `pe_repo` classes have been declared (for agents with different OS/platform than your primary server - see [Install \*nix agents with PE package management](https://www.puppet.com/docs/pe/2021.7/installing_nix_agents.html#install_nix_agents_pe_package_management)), you must also stage the agent repo tarballs for the new PE version before running the `peadm::upgrade` plan, otherwise the plan will fail when it runs puppet to complete the upgrade, as it will not be able to download the agent repos from the internet.
+
+See [Upgrade agents without internet access](https://www.puppet.com/docs/pe/2021.7/upgrading_agents.html#upgrade_agents_without_internet_access) for the location of the agent staging directory on the primary server. From the **Puppet Release Information & Downloads** page linked in the agent upgrade documentation, select the required PE version and navigate to the **Agent Repos** section to download the corresponding agent repo tarball. Ensure the files are prefetched/downloaded from the correct section - the agent repo staging directory expects the agent ___repo___ tarballs (`.tar.gz`), NOT the agent package downloads available from the same page.
+
 ## Online usage
 
-The `peadm::install` plan can be configured to download installation content directly to hosts. To configure online installation, set the `download_mode` parameter of the `peadm::install` plan to `direct`. The direct mode is often more efficient when PE hosts have a route to the internet.
+The `peadm::upgrade` plan can be configured to download installation content directly to hosts. To configure online installation, set the `download_mode` parameter of the `peadm::upgrade` plan to `direct`. The direct mode is often more efficient when PE hosts have a route to the internet.
 
 ## Usage over the Orchestrator transport
 
-The peadm::upgrade plan can be used with the Orchestrator (pcp) transport, provided that the Bolt executor is running as root on the primary. To use the Orchestrator transport prepare an inventory file such as the following to set the default transport to be `pcp`, but the primary specifically to be `local`.
+The `peadm::upgrade` plan can be used with the Orchestrator (pcp) transport, provided that the Bolt executor is running as root on the primary. To use the Orchestrator transport prepare an inventory file such as the following to set the default transport to be `pcp`, but the primary specifically to be `local`.
 
 ```
 ---
@@ -75,10 +79,10 @@ groups:
 
 Additionally, you MUST pre-stage a copy of the PE installation media in /tmp on the PuppetDB PostgreSQL node(s), if present. The Orchestrator transport cannot be used to send large files to remote systems, and the plan will fail if tries.
 
-Pre-staging the installation media and using an inventory definition such as the example above, the peadm::upgrade plan can be run as normal. It will not rely on the Orchestrator service to operate on the primary, and it will use the Orchestrator transport to operate on other PE nodes.
+Pre-staging the installation media and using an inventory definition such as the example above, the `peadm::upgrade` plan can be run as normal. It will not rely on the Orchestrator service to operate on the primary, and it will use the Orchestrator transport to operate on other PE nodes.
 
 ```
-bolt plan run peadm::upgrade --params @params.json 
+bolt plan run peadm::upgrade --params @params.json
 ```
 
 ## Retry or resume plan
