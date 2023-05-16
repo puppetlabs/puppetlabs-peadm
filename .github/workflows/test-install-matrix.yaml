@@ -29,7 +29,8 @@ jobs:
           - extra-large-with-dr
         version:
           - 2019.8.12
-          - 2021.7.2
+          - 2021.7.3
+          - 2023.1.0
         image:
           - centos-7
           - almalinux-cloud/almalinux-8
