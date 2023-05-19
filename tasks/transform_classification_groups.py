@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""This module takes two classification outputs from source and targer puppet infrastructure and
+"""This module takes two classification outputs from source and target puppet infrastructure and
 takes the user defintions from the source and adds them to the infrastructure defintions of the
 target. Allowing the ability to restore a backup of user node definitions"""
 
