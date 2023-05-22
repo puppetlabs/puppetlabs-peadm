@@ -70,44 +70,12 @@ plan peadm::add_compiler(
   # Reload pe-postgresql.service
   run_command('systemctl reload pe-postgresql.service', $primary_postgresql_target)
 
-  # Install the puppet agent making sure to specify an availability group letter, A or B, as an extension request.
-  $dns_alt_names_flag = $dns_alt_names? {
-    undef   => [],
-    default => ["main:dns_alt_names=${dns_alt_names}"],
-  }
-
-  # Check for and merge csr_attributes.
-  run_plan('peadm::util::insert_csr_extension_requests', $compiler_target,
-    extension_requests => {
-      peadm::oid('pp_auth_role')             => 'pe_compiler',
-      peadm::oid('peadm_availability_group') => $avail_group_letter,
-    }
-  )
-
-  # we first assume that there is no agent installed on the node. If there is, nothing will happen.
-  run_task('peadm::agent_install', $compiler_target,
-    server        => $primary_target.peadm::certname(),
-    install_flags => $dns_alt_names_flag + [
-      '--puppet-service-ensure', 'stopped',
-      "main:certname=${compiler_target.peadm::certname()}",
-    ],
-  )
-
-  # If necessary, manually submit a CSR
-  # ignoring errors to simplify logic
-  run_task('peadm::submit_csr', $compiler_target, { '_catch_errors' => true })
-
-  # On primary, if necessary, sign the certificate request
-  run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$compiler_target.peadm::certname()] })
-
-  # If there was already a signed cert, force the certificate extensions we want
-  # TODO: update peadm::util::add_cert_extensions to take care of dns alt names
-  run_plan('peadm::modify_certificate', $compiler_target,
-    primary_host   => $primary_target.peadm::certname(),
-    add_extensions => {
-      peadm::oid('pp_auth_role')             => 'pe_compiler',
-      peadm::oid('peadm_availability_group') => $avail_group_letter,
-    },
+  # Install agent (if required) and regenerate agent certificate with peadm::subplans::component_install
+  run_plan('peadm::subplans::component_install', $compiler_target,
+    primary_host       => $primary_host,
+    avail_group_letter => $avail_group_letter,
+    dns_alt_names      => $dns_alt_names,
+    role               => 'pe_compiler',
   )
 
   # Source the global hiera.yaml from Primary and synchronize to new compiler
