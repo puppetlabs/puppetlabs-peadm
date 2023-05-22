@@ -88,10 +88,10 @@ plan peadm::add_compiler(
   run_task('peadm::puppet_runonce', $compiler_target)
 
   # On <primary_postgresql_host> run the puppet agent
-  run_task('peadm::puppet_runonce', peadm::flatten_compact([
-        $primary_postgresql_target,
-        $replica_puppetdb_target,
-  ]))
+  run_task('peadm::puppet_runonce', $primary_postgresql_target)
+
+  # On replica puppetdb
+  run_task('peadm::puppet_runonce', $replica_puppetdb_target)
 
   # On <primary_postgresql_host> start puppet.service
   run_command('systemctl start puppet.service', peadm::flatten_compact([
