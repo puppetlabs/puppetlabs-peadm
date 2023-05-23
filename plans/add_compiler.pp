@@ -70,7 +70,7 @@ plan peadm::add_compiler(
   # Reload pe-postgresql.service
   run_command('systemctl reload pe-postgresql.service', $primary_postgresql_target)
 
-  # Install agent (if required) and regenerate agent certificate with peadm::subplans::component_install
+  # Install agent (if required) and regenerate agent certificate to add required data with peadm::subplans::component_install
   run_plan('peadm::subplans::component_install', $compiler_target,
     primary_host       => $primary_host,
     avail_group_letter => $avail_group_letter,
@@ -90,7 +90,7 @@ plan peadm::add_compiler(
   # On <primary_postgresql_host> run the puppet agent
   run_task('peadm::puppet_runonce', $primary_postgresql_target)
 
-  # On replica puppetdb
+  # On replica puppetdb run the puppet agent
   run_task('peadm::puppet_runonce', $replica_puppetdb_target)
 
   # On <primary_postgresql_host> start puppet.service
