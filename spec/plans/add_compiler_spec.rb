@@ -38,15 +38,17 @@ describe 'peadm::add_compiler' do
       allow_standard_non_returning_calls
 
       expect_task('peadm::get_peadm_config').always_return(cfg)
+
       # TODO: Due to difficulty mocking get_targets, with_params modifier has been commented out
       expect_plan('peadm::subplans::component_install')
-        # .with_params({
-        #   'targets'            => 'compiler',
-        #   'primary_host'       => 'primary',
-        #   'avail_group_letter' => 'A',
-        #   'dns_alt_names'      => nil,
-        #   'role'               => 'pe_compiler'
-        # })
+      # .with_params({
+      #   'targets'            => 'compiler',
+      #   'primary_host'       => 'primary',
+      #   'avail_group_letter' => 'A',
+      #   'dns_alt_names'      => nil,
+      #   'role'               => 'pe_compiler'
+      # })
+
       expect_plan('peadm::util::copy_file').be_called_times(1)
       expect(run_plan('peadm::add_compiler', params)).to be_ok
     end
@@ -59,15 +61,17 @@ describe 'peadm::add_compiler' do
       it 'runs successfully when alt-names are specified' do
         allow_standard_non_returning_calls
         expect_task('peadm::get_peadm_config').always_return(cfg)
+
         # TODO: Due to difficulty mocking get_targets, with_params modifier has been commented out
         expect_plan('peadm::subplans::component_install')
-          # .with_params({
-          #   'targets'            => 'compiler',
-          #   'primary_host'       => 'primary',
-          #   'avail_group_letter' => 'A',
-          #   'dns_alt_names'      => 'foo,bar',
-          #   'role'               => 'pe_compiler'
-          # })
+        # .with_params({
+        #   'targets'            => 'compiler',
+        #   'primary_host'       => 'primary',
+        #   'avail_group_letter' => 'A',
+        #   'dns_alt_names'      => 'foo,bar',
+        #   'role'               => 'pe_compiler'
+        # })
+
         expect_plan('peadm::util::copy_file').be_called_times(1)
         expect(run_plan('peadm::add_compiler', params2)).to be_ok
       end
