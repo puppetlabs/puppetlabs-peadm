@@ -72,7 +72,7 @@ plan peadm::add_compiler(
 
   # Install agent (if required) and regenerate agent certificate to add required data with peadm::subplans::component_install
   run_plan('peadm::subplans::component_install', $compiler_target,
-    primary_host       => $primary_host,
+    primary_host       => $primary_target,
     avail_group_letter => $avail_group_letter,
     dns_alt_names      => $dns_alt_names,
     role               => 'pe_compiler',
