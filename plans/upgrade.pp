@@ -197,14 +197,14 @@ plan peadm::upgrade (
         path => '/etc/puppetlabs/enterprise/conf.d/pe.conf',
       ).first['content']
 
-      $pe_conf = ($current_pe_conf ? {
+      $pe_conf = stdlib::to_json_pretty($current_pe_conf ? {
           undef   => {},
-          default => $current_pe_conf.parsehocon(),
+          default => stdlib::parsehocon($current_pe_conf),
         } + {
           'console_admin_password'                => 'not used',
           'puppet_enterprise::puppet_master_host' => $primary_target.peadm::certname(),
           'puppet_enterprise::database_host'      => $target.peadm::certname(),
-      } + $profile_database_puppetdb_hosts).to_json_pretty()
+      } + $profile_database_puppetdb_hosts)
 
       write_file($pe_conf, '/etc/puppetlabs/enterprise/conf.d/pe.conf', $target)
     }

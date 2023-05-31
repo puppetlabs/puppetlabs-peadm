@@ -396,7 +396,7 @@ plan peadm::subplans::install (
 
     run_task('peadm::mkdir_p_file', $target,
       path    => '/etc/puppetlabs/enterprise/conf.d/pe.conf',
-      content => ($pe_conf.parsejson() - $puppetdb_database_temp_config).to_json_pretty(),
+      content => stdlib::to_json_pretty($pe_conf.parsejson() - $puppetdb_database_temp_config),
     )
   }
 

@@ -199,7 +199,7 @@ plan peadm::add_database(
 
   run_task('peadm::mkdir_p_file', $postgresql_target,
     path    => '/etc/puppetlabs/enterprise/conf.d/pe.conf',
-    content => ($pe_conf.parsejson()).to_json_pretty(),
+    content => stdlib::to_json_pretty($pe_conf.parsejson()),
   )
 
   # Start frontend compiler services so catalogs can once again be compiled by
