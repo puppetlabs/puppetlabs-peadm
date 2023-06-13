@@ -3,6 +3,26 @@ name: "Install test matrix"
 
 on:
   pull_request:
+    paths:
+      - '.github/workflows/**/*'
+      - 'spec/**/*'
+      - 'lib/**/*'
+      - 'tasks/**/*'
+      - 'functions/**/*'
+      - 'types/**/*'
+      - 'plans/**/*'
+      - 'hiera/**/*'
+      - 'manifests/**/*'
+      - 'templates/**/*'
+      - 'files/**/*'
+      - 'metadata.json'
+      - 'Rakefile'
+      - 'Gemfile'
+      - 'provision.yaml'
+      - '.rspec'
+      - '.rubocop.yml'
+      - '.puppet-lint.rc'
+      - '.fixtures.yml'
     branches: [main]
     types: [review_requested]
   workflow_dispatch: {}

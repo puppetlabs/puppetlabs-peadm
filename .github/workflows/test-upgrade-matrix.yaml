@@ -3,6 +3,27 @@ name: "Upgrade test matrix"
 
 on:
   pull_request:
+    paths:
+      - '.github/workflows/**/*'
+      - 'spec/**/*'
+      - 'lib/**/*'
+      - 'tasks/**/*'
+      - 'functions/**/*'
+      - 'types/**/*'
+      - 'plans/**/*'
+      - 'hiera/**/*'
+      - 'manifests/**/*'
+      - 'templates/**/*'
+      - 'files/**/*'
+      - 'metadata.json'
+      - 'Rakefile'
+      - 'Gemfile'
+      - 'provision.yaml'
+      - '.rspec'
+      - '.rubocop.yml'
+      - '.puppet-lint.rc'
+      - '.fixtures.yml'
+
     branches: [main]
     types: [review_requested]
   workflow_dispatch: {}
@@ -96,7 +117,7 @@ jobs:
           while [ -f "${HOME}/pause" ] ; do
             echo "${HOME}/pause present, sleeping for 60 seconds..."
             sleep 60
-          done 
+          done
           echo "${HOME}/pause absent, continuing workflow."
 
       - name: 'Upgrade PE on test cluster'

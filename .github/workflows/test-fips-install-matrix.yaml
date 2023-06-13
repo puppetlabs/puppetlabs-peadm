@@ -3,6 +3,26 @@ name: "Install fips test matrix"
 
 on:
   pull_request:
+    paths:
+      - '.github/workflows/**/*'
+      - 'spec/**/*'
+      - 'lib/**/*'
+      - 'tasks/**/*'
+      - 'functions/**/*'
+      - 'types/**/*'
+      - 'plans/**/*'
+      - 'hiera/**/*'
+      - 'manifests/**/*'
+      - 'templates/**/*'
+      - 'files/**/*'
+      - 'metadata.json'
+      - 'Rakefile'
+      - 'Gemfile'
+      - 'provision.yaml'
+      - '.rspec'
+      - '.rubocop.yml'
+      - '.puppet-lint.rc'
+      - '.fixtures.yml'
     branches: [main]
     types: [review_requested]
   workflow_dispatch: {}
@@ -83,7 +103,7 @@ jobs:
             --modulepath spec/fixtures/modules \
             architecture=${{ matrix.architecture }} \
             version=${{ matrix.version }} \
-            fips=${{ matrix.fips }} 
+            fips=${{ matrix.fips }}
 
       - name: 'Tear down test cluster'
         if: ${{ always() }}
