@@ -77,7 +77,7 @@ jobs:
             version=${{ matrix.version }}
 
       - name: 'Activate twingate to obtain unreleased build'
-        uses: timidri/twingate-github-action@main
+        uses: twingate/github-action@v1 # Change the version to the release that contains the sleep command
         with:
           service-key: ${{ secrets.TWINGATE_PUBLIC_REPO_KEY }}
 

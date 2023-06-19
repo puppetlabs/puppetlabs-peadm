@@ -13,7 +13,7 @@ on:
         required: true
         default: 'standard'
         description: 'PE architecture to test'
-        options: 
+        options:
         - standard
         - standard-with-dr
         - large
@@ -114,11 +114,11 @@ jobs:
           while [ -f "${HOME}/pause" ] ; do
             echo "${HOME}/pause present, sleeping for 60 seconds..."
             sleep 60
-          done 
+          done
           echo "${HOME}/pause absent, continuing workflow."
 
       - name: 'Activate twingate to obtain unreleased build'
-        uses: timidri/twingate-github-action@main
+        uses: twingate/github-action@v1 # Change the version to the release that contains the sleep command
         with:
           service-key: ${{ secrets.TWINGATE_PUBLIC_REPO_KEY }}
 
