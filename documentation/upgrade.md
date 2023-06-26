@@ -6,11 +6,11 @@ Puppet Enterprise deployments provisioned using the peadm module can also be upg
 
 The `peadm::upgrade` plan requires as input the version of PE to upgrade to, and the names of each PE infrastructure host. Primary, replica, compilers, etc.
 
-The following is an example parameters file for upgrading an Extra Large architecture deployment of PE 2021.0.1 to PE 2021.7.3.
+The following is an example parameters file for upgrading an Extra Large architecture deployment of PE 2021.0.1 to PE 2021.7.4.
 
 ```json
 {
-  "version": "2021.7.3",
+  "version": "2021.7.4",
   "primary_host": "pe-master-09a40c-0.us-west1-a.c.reidmv-peadm.internal",
   "primary_postgresql_host": "pe-psql-09a40c-0.us-west1-a.c.reidmv-peadm.internal",
   "replica_host": "pe-master-09a40c-1.us-west1-b.c.reidmv-peadm.internal",
