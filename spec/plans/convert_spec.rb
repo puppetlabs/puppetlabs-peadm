@@ -19,7 +19,7 @@ describe 'peadm::convert' do
     allow_apply
 
     expect_task('peadm::cert_data').return_for_targets('primary' => trustedjson)
-    expect_task('peadm::read_file').always_return({ 'content' => '2021.7.3' })
+    expect_task('peadm::read_file').always_return({ 'content' => '2021.7.4' })
 
     # For some reason, expect_plan() was not working??
     allow_plan('peadm::modify_certificate').always_return({})
