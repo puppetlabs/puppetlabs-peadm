@@ -15,7 +15,7 @@ require 'open3'
 $params = JSON.parse(STDIN.read)
 
 $logger = Logger.new(STDOUT)
-$logger.level = ($params['debug']) ? Logger::DEBUG : Logger::INFO
+$logger.level = $params['debug'] ? Logger::DEBUG : Logger::INFO
 
 def main; end
 

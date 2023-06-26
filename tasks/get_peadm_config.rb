@@ -74,14 +74,13 @@ class GetPEAdmConfig
 
   # Returns a list of compiler certnames and letters, based on a PuppetDB query
   def compilers
-    @compilers ||= begin
+    @compilers ||=
       pdb_query('inventory[certname,trusted.extensions] { trusted.extensions.pp_auth_role = "pe_compiler" }').map do |c|
         {
           'certname' => c['certname'],
           'letter'   => c.dig('trusted.extensions', '1.3.6.1.4.1.34380.1.1.9813'),
         }
       end
-    end
   end
 
   def server(role, letter, certname_array)
