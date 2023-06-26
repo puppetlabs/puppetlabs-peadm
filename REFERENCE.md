@@ -1544,6 +1544,7 @@ The following parameters are available in the `peadm::install` plan:
 * [`version`](#-peadm--install--version)
 * [`dns_alt_names`](#-peadm--install--dns_alt_names)
 * [`pe_conf_data`](#-peadm--install--pe_conf_data)
+* [`code_manager_auto_configure`](#-peadm--install--code_manager_auto_configure)
 * [`r10k_remote`](#-peadm--install--r10k_remote)
 * [`r10k_private_key_file`](#-peadm--install--r10k_private_key_file)
 * [`r10k_private_key_content`](#-peadm--install--r10k_private_key_content)
@@ -1682,6 +1683,14 @@ Data type: `Optional[Hash]`
 
 
 Default value: `{}`
+
+##### <a name="-peadm--install--code_manager_auto_configure"></a>`code_manager_auto_configure`
+
+Data type: `Optional[Boolean]`
+
+
+
+Default value: `true`
 
 ##### <a name="-peadm--install--r10k_remote"></a>`r10k_remote`
 
