@@ -24,7 +24,6 @@ on:
       - '.puppet-lint.rc'
       - '.fixtures.yml'
     branches: [main]
-    types: [review_requested]
   workflow_dispatch: {}
 
 jobs:
