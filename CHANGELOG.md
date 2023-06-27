@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.13.1](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.13.1) - 2023-06-27
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.13.0...v3.13.1)
+
+### Fixed
+
+-  (#366) Bump inifile and stdlib [#367](https://github.com/puppetlabs/puppetlabs-peadm/pull/367) ([CoMfUcIoS](https://github.com/CoMfUcIoS))
+
 ## [v3.13.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.13.0) - 2023-06-26
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.12.0...v3.13.0)
