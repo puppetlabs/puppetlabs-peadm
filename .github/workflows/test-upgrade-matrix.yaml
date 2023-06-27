@@ -25,7 +25,6 @@ on:
       - '.fixtures.yml'
 
     branches: [main]
-    types: [review_requested]
   workflow_dispatch: {}
 
 jobs:
