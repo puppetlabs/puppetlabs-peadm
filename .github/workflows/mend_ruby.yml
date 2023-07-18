@@ -1,4 +1,4 @@
-name: mend
+name: "mend-ruby"
 
 on:
   workflow_call:
