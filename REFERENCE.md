@@ -1648,6 +1648,8 @@ The following parameters are available in the `peadm::install` plan:
 * [`pe_installer_source`](#-peadm--install--pe_installer_source)
 * [`ldap_config`](#-peadm--install--ldap_config)
 * [`final_agent_state`](#-peadm--install--final_agent_state)
+* [`stagingdir`](#-peadm--install--stagingdir)
+* [`uploaddir`](#-peadm--install--uploaddir)
 * [`primary_host`](#-peadm--install--primary_host)
 * [`replica_host`](#-peadm--install--replica_host)
 * [`compiler_hosts`](#-peadm--install--compiler_hosts)
@@ -1665,7 +1667,6 @@ The following parameters are available in the `peadm::install` plan:
 * [`deploy_environment`](#-peadm--install--deploy_environment)
 * [`license_key_file`](#-peadm--install--license_key_file)
 * [`license_key_content`](#-peadm--install--license_key_content)
-* [`stagingdir`](#-peadm--install--stagingdir)
 * [`download_mode`](#-peadm--install--download_mode)
 * [`permit_unsafe_versions`](#-peadm--install--permit_unsafe_versions)
 * [`token_lifetime`](#-peadm--install--token_lifetime)
@@ -1729,6 +1730,24 @@ Configures the state the puppet agent should be in on infrastructure nodes
 after PE is configured successfully.
 
 Default value: `'running'`
+
+##### <a name="-peadm--install--stagingdir"></a>`stagingdir`
+
+Data type: `Optional[String]`
+
+Directory on the Bolt host where the installer tarball will be cached if
+download_mode is 'bolthost' (default)
+
+Default value: `undef`
+
+##### <a name="-peadm--install--uploaddir"></a>`uploaddir`
+
+Data type: `Optional[String]`
+
+Directory the installer tarball will be uploaded to or expected to be in
+for offline usage.
+
+Default value: `undef`
 
 ##### <a name="-peadm--install--primary_host"></a>`primary_host`
 
@@ -1855,14 +1874,6 @@ Data type: `Optional[String]`
 Default value: `undef`
 
 ##### <a name="-peadm--install--license_key_content"></a>`license_key_content`
-
-Data type: `Optional[String]`
-
-
-
-Default value: `undef`
-
-##### <a name="-peadm--install--stagingdir"></a>`stagingdir`
 
 Data type: `Optional[String]`
 
@@ -2028,6 +2039,8 @@ The following parameters are available in the `peadm::upgrade` plan:
 * [`pe_installer_source`](#-peadm--upgrade--pe_installer_source)
 * [`final_agent_state`](#-peadm--upgrade--final_agent_state)
 * [`r10k_known_hosts`](#-peadm--upgrade--r10k_known_hosts)
+* [`stagingdir`](#-peadm--upgrade--stagingdir)
+* [`uploaddir`](#-peadm--upgrade--uploaddir)
 * [`primary_host`](#-peadm--upgrade--primary_host)
 * [`replica_host`](#-peadm--upgrade--replica_host)
 * [`compiler_hosts`](#-peadm--upgrade--compiler_hosts)
@@ -2035,7 +2048,6 @@ The following parameters are available in the `peadm::upgrade` plan:
 * [`replica_postgresql_host`](#-peadm--upgrade--replica_postgresql_host)
 * [`version`](#-peadm--upgrade--version)
 * [`token_file`](#-peadm--upgrade--token_file)
-* [`stagingdir`](#-peadm--upgrade--stagingdir)
 * [`download_mode`](#-peadm--upgrade--download_mode)
 * [`permit_unsafe_versions`](#-peadm--upgrade--permit_unsafe_versions)
 * [`begin_at_step`](#-peadm--upgrade--begin_at_step)
@@ -2100,6 +2112,24 @@ information for hostname, key-type and public key.
 
 Default value: `undef`
 
+##### <a name="-peadm--upgrade--stagingdir"></a>`stagingdir`
+
+Data type: `String`
+
+Directory on the Bolt host where the installer tarball will be cached if
+download_mode is 'bolthost' (default)
+
+Default value: `'/tmp'`
+
+##### <a name="-peadm--upgrade--uploaddir"></a>`uploaddir`
+
+Data type: `String`
+
+Directory the installer tarball will be uploaded to or expected to be in
+for offline usage.
+
+Default value: `'/tmp'`
+
 ##### <a name="-peadm--upgrade--primary_host"></a>`primary_host`
 
 Data type: `Peadm::SingleTargetSpec`
@@ -2153,14 +2183,6 @@ Data type: `Optional[String]`
 
 
 Default value: `undef`
-
-##### <a name="-peadm--upgrade--stagingdir"></a>`stagingdir`
-
-Data type: `String`
-
-
-
-Default value: `'/tmp'`
 
 ##### <a name="-peadm--upgrade--download_mode"></a>`download_mode`
 

@@ -66,6 +66,7 @@ plan peadm::subplans::install (
 
   # Other
   String                $stagingdir             = '/tmp',
+  String                $uploaddir              = '/tmp',
   Enum[direct,bolthost] $download_mode          = 'bolthost',
   Boolean               $permit_unsafe_versions = false,
   String                $token_lifetime         = '1y',
@@ -221,7 +222,7 @@ plan peadm::subplans::install (
     $pe_tarball_source = "https://s3.amazonaws.com/pe-builds/released/${version}/${pe_tarball_name}"
   }
 
-  $upload_tarball_path = "/tmp/${pe_tarball_name}"
+  $upload_tarball_path = "${uploaddir}/${pe_tarball_name}"
 
   if $download_mode == 'bolthost' {
     # Download the PE tarball and send it to the nodes that need it
