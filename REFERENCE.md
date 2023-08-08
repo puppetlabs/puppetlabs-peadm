@@ -1552,6 +1552,7 @@ The following parameters are available in the `peadm::install` plan:
 * [`license_key_file`](#-peadm--install--license_key_file)
 * [`license_key_content`](#-peadm--install--license_key_content)
 * [`stagingdir`](#-peadm--install--stagingdir)
+* [`uploaddir`](#-peadm--install--uploaddir)
 * [`download_mode`](#-peadm--install--download_mode)
 * [`permit_unsafe_versions`](#-peadm--install--permit_unsafe_versions)
 * [`token_lifetime`](#-peadm--install--token_lifetime)
@@ -1748,6 +1749,14 @@ Data type: `Optional[String]`
 
 Default value: `undef`
 
+##### <a name="-peadm--install--uploaddir"></a>`uploaddir`
+
+Data type: `Optional[String]`
+
+
+
+Default value: `undef`
+
 ##### <a name="-peadm--install--download_mode"></a>`download_mode`
 
 Data type: `Enum['direct', 'bolthost']`
@@ -1913,6 +1922,7 @@ The following parameters are available in the `peadm::upgrade` plan:
 * [`version`](#-peadm--upgrade--version)
 * [`token_file`](#-peadm--upgrade--token_file)
 * [`stagingdir`](#-peadm--upgrade--stagingdir)
+* [`uploaddir`](#-peadm--upgrade--uploaddir)
 * [`download_mode`](#-peadm--upgrade--download_mode)
 * [`permit_unsafe_versions`](#-peadm--upgrade--permit_unsafe_versions)
 * [`begin_at_step`](#-peadm--upgrade--begin_at_step)
@@ -2026,7 +2036,15 @@ Data type: `String`
 
 
 
-Default value: `'/tmp'`
+Default value: `'/var/tmp'`
+
+##### <a name="-peadm--upgrade--uploaddir"></a>`uploaddir`
+
+Data type: `String`
+
+
+
+Default value: `'/var/tmp'`
 
 ##### <a name="-peadm--upgrade--download_mode"></a>`download_mode`
 

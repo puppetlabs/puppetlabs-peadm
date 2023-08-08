@@ -41,7 +41,8 @@ plan peadm::upgrade (
 
   # Other
   Optional[String]           $token_file             = undef,
-  String                     $stagingdir             = '/tmp',
+  String                     $stagingdir             = '/var/tmp',
+  String                     $uploaddir              = '/var/tmp',
   Enum['running', 'stopped'] $final_agent_state      = 'running',
   Enum[direct,bolthost]      $download_mode          = 'bolthost',
   Boolean                    $permit_unsafe_versions = false,
@@ -112,7 +113,7 @@ plan peadm::upgrade (
     $pe_tarball_source = "https://s3.amazonaws.com/pe-builds/released/${_version}/${pe_tarball_name}"
   }
 
-  $upload_tarball_path = "/tmp/${pe_tarball_name}"
+  $upload_tarball_path = "${uploaddir}/${pe_tarball_name}"
 
   peadm::assert_supported_bolt_version()
 

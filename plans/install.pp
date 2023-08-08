@@ -61,6 +61,7 @@ plan peadm::install (
 
   # Other
   Optional[String]           $stagingdir             = undef,
+  Optional[String]           $uploaddir              = undef,
   Enum['running', 'stopped'] $final_agent_state      = 'running',
   Enum['direct', 'bolthost'] $download_mode          = 'bolthost',
   Boolean                    $permit_unsafe_versions = false,
@@ -101,6 +102,7 @@ plan peadm::install (
 
     # Other
     stagingdir                     => $stagingdir,
+    uploaddir                      => $uploaddir,
     download_mode                  => $download_mode,
     permit_unsafe_versions         => $permit_unsafe_versions,
     token_lifetime                 => $token_lifetime,
