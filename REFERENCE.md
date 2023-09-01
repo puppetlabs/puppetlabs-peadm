@@ -37,6 +37,7 @@
 
 ### Data types
 
+* [`Peadm::Known_hosts`](#Peadm--Known_hosts)
 * [`Peadm::Ldap_config`](#Peadm--Ldap_config)
 * [`Peadm::Pe_version`](#Peadm--Pe_version)
 * [`Peadm::Pem`](#Peadm--Pem)
@@ -775,6 +776,23 @@ Data type: `TargetSpec`
 
 
 ## Data types
+
+### <a name="Peadm--Known_hosts"></a>`Peadm::Known_hosts`
+
+The Peadm::Known_hosts data type.
+
+Alias of
+
+```puppet
+Array[Struct[
+    'title'        => Optional[String[1]],
+    'ensure'       => Optional[Enum['present','absent']],
+    'name'         => String[1],
+    'type'         => String[1],
+    'key'          => String[1],
+    'host_aliases' => Optional[Variant[String[1],Array[String[1]]]],
+  ]]
+```
 
 ### <a name="Peadm--Ldap_config"></a>`Peadm::Ldap_config`
 
@@ -1548,6 +1566,7 @@ The following parameters are available in the `peadm::install` plan:
 * [`r10k_remote`](#-peadm--install--r10k_remote)
 * [`r10k_private_key_file`](#-peadm--install--r10k_private_key_file)
 * [`r10k_private_key_content`](#-peadm--install--r10k_private_key_content)
+* [`r10k_known_hosts`](#-peadm--install--r10k_known_hosts)
 * [`deploy_environment`](#-peadm--install--deploy_environment)
 * [`license_key_file`](#-peadm--install--license_key_file)
 * [`license_key_content`](#-peadm--install--license_key_content)
@@ -1711,6 +1730,14 @@ Default value: `undef`
 ##### <a name="-peadm--install--r10k_private_key_content"></a>`r10k_private_key_content`
 
 Data type: `Optional[Peadm::Pem]`
+
+
+
+Default value: `undef`
+
+##### <a name="-peadm--install--r10k_known_hosts"></a>`r10k_known_hosts`
+
+Data type: `Optional[Peadm::Known_hosts]`
 
 
 
