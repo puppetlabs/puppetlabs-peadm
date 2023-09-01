@@ -8,6 +8,8 @@ Add any additional context about the problem here.
 Mention any related issues or pull requests.
 
 ## Checklist
+- [ ] 🟢 Spec tests.
+- [ ] 🟢 Acceptance tests.
 
 #### Changes include test coverage?
 - [ ] Yes
