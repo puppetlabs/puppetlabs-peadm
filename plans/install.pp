@@ -53,6 +53,7 @@ plan peadm::install (
   Optional[String]                  $r10k_remote              = undef,
   Optional[String]                  $r10k_private_key_file    = undef,
   Optional[Peadm::Pem]              $r10k_private_key_content = undef,
+  Optional[Peadm::Known_hosts]      $r10k_known_hosts         = undef,
   Optional[String]                  $deploy_environment       = undef,
 
   # License Key
@@ -94,6 +95,7 @@ plan peadm::install (
     r10k_remote                    => $r10k_remote,
     r10k_private_key_file          => $r10k_private_key_file,
     r10k_private_key_content       => $r10k_private_key_content,
+    r10k_known_hosts               => $r10k_known_hosts,
 
     # License Key
     license_key_file               => $license_key_file,
