@@ -13,9 +13,10 @@
 #
 # @param r10k_known_hosts
 #   Puppet Enterprise 2023.3+ requires host key verification for the
-#   r10k_remote host. When setting \$r10k_private_key, you must also provide
-#   \$r10k_known_hosts information in the form of an array of hashes with
-#   'name', 'type' and 'key' information for hostname, key-type and public key.
+#   r10k_remote host when using ssh. When setting \$r10k_private_key, you must
+#   also provide \$r10k_known_hosts information in the form of an array of
+#   hashes with 'name', 'type' and 'key' information for hostname, key-type and
+#   public key.
 #
 # @param license_key_file
 #   The license key to use with Puppet Enterprise.  If this is a local file it
@@ -132,20 +133,6 @@ plan peadm::subplans::install (
   # either be undef or else the key content to write.
   $r10k_private_key = peadm::file_or_content('r10k_private_key', $r10k_private_key_file, $r10k_private_key_content)
 
-  # Determine whether r10k_known_hosts is required and has been provided.
-  $is_pe_2023_3_or_greater = (versioncmp($version, '2023.3.0') >= 0)
-  if (($is_pe_2023_3_or_greater) and
-      ($r10k_private_key =~ NotUndef) and
-      ($r10k_known_hosts =~ Undef)) {
-    fail_plan("In Puppet Enterprise 2023.3+ r10k 4.0 requires host key verification for the r10k_remote host. When setting \$r10k_private_key, you must also provide \$r10k_known_hosts information in the form of an array of hashes with 'name', 'type' and 'key' information for hostname, key-type and public key. Puppet Enterprise version: ${version}, r10k_known_hosts: ${r10k_known_hosts}")
-  }
-  $r10k_known_hosts_config = $r10k_known_hosts ? {
-    undef   => {},
-    default => {
-      'puppet_enterprise::profile::master::r10k_known_hosts' => $r10k_known_hosts,
-    },
-  }
-
   # Process user input for license key (same process as for r10k private key above).
   $license_key = peadm::file_or_content('license_key', $license_key_file, $license_key_content)
 
@@ -191,7 +178,8 @@ plan peadm::subplans::install (
         undef   => undef,
         default => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
       },
-  } + $r10k_known_hosts_config + $puppetdb_database_temp_config + $pe_conf_data)
+      'puppet_enterprise::profile::master::r10k_known_hosts'            => $r10k_known_hosts,
+  } + $puppetdb_database_temp_config + $pe_conf_data)
 
   $primary_postgresql_pe_conf = peadm::generate_pe_conf({
       'console_admin_password'                => 'not used',
