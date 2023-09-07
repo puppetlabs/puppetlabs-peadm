@@ -86,6 +86,7 @@ plan peadm::upgrade (
 
   out::message('# Gathering information')
 
+  # lint:ignore:strict_indent
   $primary_target.peadm::fail_on_transport('pcp', @(HEREDOC/n))
     \nThe "pcp" transport is not available for use with the Primary
     as peadm::upgrade will cause a restart of the
@@ -99,6 +100,7 @@ plan peadm::upgrade (
 
         https://www.puppet.com/docs/bolt/latest/bolt_transports_reference.html
     |-HEREDOC
+    # lint:endignore
 
   $platform = run_task('peadm::precheck', $primary_target).first['platform']
 
