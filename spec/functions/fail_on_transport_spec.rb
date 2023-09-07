@@ -25,7 +25,7 @@ describe 'peadm::fail_on_transport' do
   # Function testing depends on rspec-puppet magic in the opening describe
   # statement. Re-defining the subject just to give it a different name
   # would require duplicating rspec-puppet code, and that's a far worse sin.
-  # rubocop:disable Rspec/NamedSubject
+  # rubocop:disable RSpec/NamedSubject
   it 'raises an error when nodes use the specified transport' do
     expect { subject.execute(nodes, 'pcp') }.to raise_error(Puppet::PreformattedError, %r{target\.example uses pcp transport: This is not supported\.})
   end
@@ -37,5 +37,5 @@ describe 'peadm::fail_on_transport' do
   it 'raises no error when nodes do not use the specified transport' do
     expect { subject.execute(nodes, 'ssh') }.not_to raise_error
   end
-  # rubocop:enable Rspec/NamedSubject
+  # rubocop:enable RSpec/NamedSubject
 end
