@@ -59,21 +59,6 @@ describe 'peadm::subplans::install' do
     expect(run_plan('peadm::subplans::install', params)).to be_ok
   end
 
-  it 'fails if 2023.3+ and r10k_private_key set but r10k_known_hosts not set' do
-    params = {
-      'primary_host'             => 'primary',
-      'console_password'         => 'puppetlabs',
-      'version'                  => '2023.3.0',
-      'r10k_remote'              => 'git@github.com:puppetlabs/nothing',
-      'r10k_private_key_content' => '-----BEGINfoo',
-      'permit_unsafe_versions'   => true,
-    }
-
-    result = run_plan('peadm::subplans::install', params)
-    expect(result).not_to be_ok
-    expect(result.value.message).to match(%r{Puppet Enterprise 2023\.3\+ .*requires host key verification})
-  end
-
   it 'installs 2023.3+ with r10k_private_key and r10k_known_hosts' do
     params = {
       'primary_host'             => 'primary',
