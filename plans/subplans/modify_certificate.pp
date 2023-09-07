@@ -12,6 +12,7 @@ plan peadm::subplans::modify_certificate (
   $primary_target = get_target($primary_host)
 
   if ($primary_target == $target) {
+    # lint:ignore:strict_indent
     $primary_target.peadm::fail_on_transport('pcp', @(HEREDOC/n))
       \nThe "pcp" transport is not available for use with the Primary
       as peadm::subplans::modify_certificate will cause a restart of the
@@ -25,6 +26,7 @@ plan peadm::subplans::modify_certificate (
 
           https://www.puppet.com/docs/bolt/latest/bolt_transports_reference.html
       |-HEREDOC
+    # lint:endignore
   }
 
   # Figure out some information from the existing certificate
