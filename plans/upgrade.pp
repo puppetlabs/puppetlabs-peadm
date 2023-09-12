@@ -19,7 +19,12 @@
 # @param final_agent_state
 #   Configures the state the puppet agent should be in on infrastructure nodes
 #   after PE is upgraded successfully.
-#
+# @param r10k_known_hosts
+#   Puppet Enterprise 2023.3+ requires host key verification for the
+#   r10k_remote host when using ssh. you must provide \$r10k_known_hosts
+#   information in the form of an array of hashes with 'name', 'type' and 'key'
+#   information for hostname, key-type and public key.
+# 
 plan peadm::upgrade (
   # Standard
   Peadm::SingleTargetSpec           $primary_host,
@@ -33,11 +38,12 @@ plan peadm::upgrade (
   Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
 
   # Common Configuration
-  Optional[Peadm::Pe_version] $version                          = undef,
-  Optional[String]            $pe_installer_source              = undef,
-  Optional[String]            $compiler_pool_address            = undef,
-  Optional[String]            $internal_compiler_a_pool_address = undef,
-  Optional[String]            $internal_compiler_b_pool_address = undef,
+  Optional[Peadm::Pe_version]  $version                          = undef,
+  Optional[String]             $pe_installer_source              = undef,
+  Optional[String]             $compiler_pool_address            = undef,
+  Optional[String]             $internal_compiler_a_pool_address = undef,
+  Optional[String]             $internal_compiler_b_pool_address = undef,
+  Optional[Peadm::Known_hosts] $r10k_known_hosts                 = undef,
 
   # Other
   Optional[String]           $token_file             = undef,
@@ -209,6 +215,17 @@ plan peadm::upgrade (
       } + $profile_database_puppetdb_hosts)
 
       write_file($pe_conf, '/etc/puppetlabs/enterprise/conf.d/pe.conf', $target)
+    }
+
+    if $r10k_known_hosts != undef {
+      $current_pe_conf = peadm::get_pe_conf($primary_target)
+
+      # Append the r10k_known_hosts entry
+      $updated_pe_conf = $current_pe_conf + {
+        'puppet_enterprise::profile::master::r10k_known_hosts' => $r10k_known_hosts,
+      }
+
+      peadm::update_pe_conf($primary_target, $updated_pe_conf)
     }
   }
 
@@ -390,6 +407,8 @@ plan peadm::upgrade (
       name   => 'puppet',
     )
   }
+
+  peadm::check_version_and_known_hosts($current_pe_version, $_version, $r10k_known_hosts)
 
   return("Upgrade of Puppet Enterprise ${arch['architecture']} completed.")
 }
