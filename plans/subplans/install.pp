@@ -16,7 +16,8 @@
 #   r10k_remote host when using ssh. When setting \$r10k_private_key, you must
 #   also provide \$r10k_known_hosts information in the form of an array of
 #   hashes with 'name', 'type' and 'key' information for hostname, key-type and
-#   public key.
+#   public key. Please refer to the Puppet Enterprise 2023.3+ Configure Code
+#   Manager documentation for further details.
 #
 # @param license_key_file
 #   The license key to use with Puppet Enterprise.  If this is a local file it
