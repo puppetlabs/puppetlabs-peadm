@@ -20,6 +20,7 @@
 * [`peadm::assert_supported_pe_version`](#peadm--assert_supported_pe_version): Assert that the PE version given is supported by PEAdm
 * [`peadm::bolt_version`](#peadm--bolt_version)
 * [`peadm::certname`](#peadm--certname): Return the certname of the given target-like input
+* [`peadm::check_version_and_known_hosts`](#peadm--check_version_and_known_hosts): Checks PE verison and warns about setting r10k_known_hosts
 * [`peadm::convert_hash`](#peadm--convert_hash): converts two arrays into hash
 * [`peadm::convert_status`](#peadm--convert_status): Transforms a value in a human readable status with or without colors
 * [`peadm::determine_status`](#peadm--determine_status): Produces a summarized hash of the given status data
@@ -28,15 +29,18 @@
 * [`peadm::file_or_content`](#peadm--file_or_content)
 * [`peadm::flatten_compact`](#peadm--flatten_compact)
 * [`peadm::generate_pe_conf`](#peadm--generate_pe_conf): Generate a pe.conf file in JSON format
+* [`peadm::get_pe_conf`](#peadm--get_pe_conf)
 * [`peadm::get_targets`](#peadm--get_targets): Accept undef or a SingleTargetSpec, and return an Array[Target, 1, 0]. This differs from get_target() in that:   - It returns an Array[Target
 * [`peadm::node_manager_yaml_location`](#peadm--node_manager_yaml_location)
 * [`peadm::oid`](#peadm--oid)
 * [`peadm::plan_step`](#peadm--plan_step)
 * [`peadm::recovery_opts_default`](#peadm--recovery_opts_default)
+* [`peadm::update_pe_conf`](#peadm--update_pe_conf): Update the pe.conf file on a target with the provided hash
 * [`peadm::wait_until_service_ready`](#peadm--wait_until_service_ready): A convenience function to help remember port numbers for services and handle running the wait_until_service_ready task
 
 ### Data types
 
+* [`Peadm::Known_hosts`](#Peadm--Known_hosts)
 * [`Peadm::Ldap_config`](#Peadm--Ldap_config)
 * [`Peadm::Pe_version`](#Peadm--Pe_version)
 * [`Peadm::Pem`](#Peadm--Pem)
@@ -257,6 +261,56 @@ Variant[Target,
     Array[Undef,1,1],
   Array[Any,0,0]]
 ```
+
+
+
+### <a name="peadm--check_version_and_known_hosts"></a>`peadm::check_version_and_known_hosts`
+
+Type: Puppet Language
+
+Checks if the current PE version is less than 2023.3.0 and the target version is greater than or equal to 2023.3.0
+If both conditions are true and the r10k_known_hosts parameter is not defined, a warning message is displayed.
+
+#### `peadm::check_version_and_known_hosts(String $current_version, String $target_version, Optional[Peadm::Known_hosts] $r10k_known_hosts = undef)`
+
+Checks if the current PE version is less than 2023.3.0 and the target version is greater than or equal to 2023.3.0
+If both conditions are true and the r10k_known_hosts parameter is not defined, a warning message is displayed.
+
+Returns: `Any`
+
+##### `$current_version`
+
+Data type: `String`
+
+The current PE version
+
+##### `$target_version`
+
+Data type: `String`
+
+The target PE version
+
+##### `$r10k_known_hosts`
+
+Data type: `Optional[Peadm::Known_hosts]`
+
+The r10k_known_hosts parameter
+
+##### `current_version`
+
+Data type: `String`
+
+
+
+##### `target_version`
+
+Data type: `String`
+
+
+
+##### `r10k_known_hosts`
+
+Data type: `Optional[Peadm::Known_hosts]`
 
 
 
@@ -652,6 +706,24 @@ Data type: `Hash`
 A hash of settings to set in the config file. Any keys that are set to
 undef will not be included in the config file.
 
+### <a name="peadm--get_pe_conf"></a>`peadm::get_pe_conf`
+
+Type: Puppet Language
+
+The peadm::get_pe_conf function.
+
+#### `peadm::get_pe_conf(Target $target)`
+
+The peadm::get_pe_conf function.
+
+Returns: `Any`
+
+##### `target`
+
+Data type: `Target`
+
+
+
 ### <a name="peadm--get_targets"></a>`peadm::get_targets`
 
 Type: Puppet Language
@@ -748,6 +820,30 @@ The peadm::recovery_opts_default function.
 
 Returns: `Any`
 
+### <a name="peadm--update_pe_conf"></a>`peadm::update_pe_conf`
+
+Type: Puppet Language
+
+Update the pe.conf file on a target with the provided hash
+
+#### `peadm::update_pe_conf(Target $target, Hash $updated_pe_conf_hash)`
+
+The peadm::update_pe_conf function.
+
+Returns: `Any`
+
+##### `target`
+
+Data type: `Target`
+
+The target to update the pe.conf file on
+
+##### `updated_pe_conf_hash`
+
+Data type: `Hash`
+
+The hash to update the pe.conf file with
+
 ### <a name="peadm--wait_until_service_ready"></a>`peadm::wait_until_service_ready`
 
 Type: Puppet Language
@@ -775,6 +871,23 @@ Data type: `TargetSpec`
 
 
 ## Data types
+
+### <a name="Peadm--Known_hosts"></a>`Peadm::Known_hosts`
+
+The Peadm::Known_hosts data type.
+
+Alias of
+
+```puppet
+Array[Struct[
+    'title'        => Optional[String[1]],
+    'ensure'       => Optional[Enum['present','absent']],
+    'name'         => String[1],
+    'type'         => String[1],
+    'key'          => String[1],
+    'host_aliases' => Optional[Variant[String[1],Array[String[1]]]],
+  ]]
+```
 
 ### <a name="Peadm--Ldap_config"></a>`Peadm::Ldap_config`
 
@@ -1905,6 +2018,7 @@ The following parameters are available in the `peadm::upgrade` plan:
 * [`internal_compiler_b_pool_address`](#-peadm--upgrade--internal_compiler_b_pool_address)
 * [`pe_installer_source`](#-peadm--upgrade--pe_installer_source)
 * [`final_agent_state`](#-peadm--upgrade--final_agent_state)
+* [`r10k_known_hosts`](#-peadm--upgrade--r10k_known_hosts)
 * [`primary_host`](#-peadm--upgrade--primary_host)
 * [`replica_host`](#-peadm--upgrade--replica_host)
 * [`compiler_hosts`](#-peadm--upgrade--compiler_hosts)
@@ -1965,6 +2079,17 @@ Configures the state the puppet agent should be in on infrastructure nodes
 after PE is upgraded successfully.
 
 Default value: `'running'`
+
+##### <a name="-peadm--upgrade--r10k_known_hosts"></a>`r10k_known_hosts`
+
+Data type: `Optional[Peadm::Known_hosts]`
+
+Puppet Enterprise 2023.3+ requires host key verification for the
+r10k_remote host when using ssh. you must provide \$r10k_known_hosts
+information in the form of an array of hashes with 'name', 'type' and 'key'
+information for hostname, key-type and public key.
+
+Default value: `undef`
 
 ##### <a name="-peadm--upgrade--primary_host"></a>`primary_host`
 
