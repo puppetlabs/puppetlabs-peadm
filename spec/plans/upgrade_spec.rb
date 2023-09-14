@@ -23,7 +23,10 @@ describe 'peadm::upgrade' do
   it 'minimum variables to run' do
     allow_standard_non_returning_calls
 
-    expect_task('peadm::read_file').always_return({ 'content' => 'mock' })
+    expect_task('peadm::read_file')
+      .with_params('path' => '/opt/puppetlabs/server/pe_build')
+      .always_return({ 'content' => '2021.7.3' })
+
     expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary)
 
     expect(run_plan('peadm::upgrade',
@@ -34,7 +37,10 @@ describe 'peadm::upgrade' do
   it 'runs with a primary, compilers, but no replica' do
     allow_standard_non_returning_calls
 
-    expect_task('peadm::read_file').always_return({ 'content' => 'mock' })
+    expect_task('peadm::read_file')
+      .with_params('path' => '/opt/puppetlabs/server/pe_build')
+      .always_return({ 'content' => '2021.7.3' })
+
     expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary,
                                                        'compiler' => trusted_compiler)
 
