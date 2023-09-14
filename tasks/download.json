@@ -17,7 +17,7 @@
     "key_server": {
       "type": "String",
       "description": "The GPG keyserver to retrieve GPG keys from",
-      "default": "hkp://keyserver.ubuntu.com:11371"
+      "default": "hkp://keyserver.ubuntu.com:80"
     }
   },
   "input_method": "environment",
