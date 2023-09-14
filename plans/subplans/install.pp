@@ -11,6 +11,14 @@
 #   over to the primary at /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa
 #   If the file does not exist the value will simply be supplied to the primary
 #
+# @param r10k_known_hosts
+#   Puppet Enterprise 2023.3+ requires host key verification for the
+#   r10k_remote host when using ssh. When setting \$r10k_private_key, you must
+#   also provide \$r10k_known_hosts information in the form of an array of
+#   hashes with 'name', 'type' and 'key' information for hostname, key-type and
+#   public key. Please refer to the Puppet Enterprise 2023.3+ Configure Code
+#   Manager documentation for further details.
+#
 # @param license_key_file
 #   The license key to use with Puppet Enterprise.  If this is a local file it
 #   will be copied over to the MoM at /etc/puppetlabs/license.key
@@ -50,6 +58,7 @@ plan peadm::subplans::install (
   Optional[String]     $r10k_remote              = undef,
   Optional[String]     $r10k_private_key_file    = undef,
   Optional[Peadm::Pem] $r10k_private_key_content = undef,
+  Optional[Peadm::Known_hosts] $r10k_known_hosts = undef,
 
   # License key
   Optional[String]     $license_key_file    = undef,
@@ -125,7 +134,7 @@ plan peadm::subplans::install (
   # either be undef or else the key content to write.
   $r10k_private_key = peadm::file_or_content('r10k_private_key', $r10k_private_key_file, $r10k_private_key_content)
 
-  # Same for license key
+  # Process user input for license key (same process as for r10k private key above).
   $license_key = peadm::file_or_content('license_key', $license_key_file, $license_key_content)
 
   $precheck_results = run_task('peadm::precheck', $all_targets)
@@ -170,6 +179,7 @@ plan peadm::subplans::install (
         undef   => undef,
         default => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
       },
+      'puppet_enterprise::profile::master::r10k_known_hosts'            => $r10k_known_hosts,
   } + $puppetdb_database_temp_config + $pe_conf_data)
 
   $primary_postgresql_pe_conf = peadm::generate_pe_conf({

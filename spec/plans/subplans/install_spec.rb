@@ -4,7 +4,7 @@ describe 'peadm::subplans::install' do
   # Include the BoltSpec library functions
   include BoltSpec::Plans
 
-  it 'minimum variables to run' do
+  before(:each) do
     allow_any_task
     allow_any_plan
     allow_any_command
@@ -35,11 +35,45 @@ describe 'peadm::subplans::install' do
     # rubocop:enable AnyInstance
     ## </🤮>
     ##########
+  end
 
+  it 'minimum variables to run' do
     params = {
       'primary_host'     => 'primary',
       'console_password' => 'puppetlabs',
       'version'          => '2019.8.12',
+    }
+
+    expect(run_plan('peadm::subplans::install', params)).to be_ok
+  end
+
+  it 'installs 2023.2 without r10k_known_hosts' do
+    params = {
+      'primary_host'             => 'primary',
+      'console_password'         => 'puppetlabs',
+      'version'                  => '2023.2.0',
+      'r10k_remote'              => 'git@github.com:puppetlabs/nothing',
+      'r10k_private_key_content' => '-----BEGINfoo',
+    }
+
+    expect(run_plan('peadm::subplans::install', params)).to be_ok
+  end
+
+  it 'installs 2023.3+ with r10k_private_key and r10k_known_hosts' do
+    params = {
+      'primary_host'             => 'primary',
+      'console_password'         => 'puppetlabs',
+      'version'                  => '2023.3.0',
+      'r10k_remote'              => 'git@github.com:puppetlabs/nothing',
+      'r10k_private_key_content' => '-----BEGINfoo',
+      'r10k_known_hosts'         => [
+        {
+          'name' => 'test',
+          'type' => 'key-type',
+          'key'  => 'abcdef',
+        },
+      ],
+      'permit_unsafe_versions' => true,
     }
 
     expect(run_plan('peadm::subplans::install', params)).to be_ok
