@@ -218,14 +218,14 @@ plan peadm::upgrade (
     }
 
     if $r10k_known_hosts != undef {
-      $current_pe_conf = peadm::get_pe_conf($primary_target)
+      $current_pe_conf = peadm::get_pe_conf($primary_target[0])
 
       # Append the r10k_known_hosts entry
       $updated_pe_conf = $current_pe_conf + {
         'puppet_enterprise::profile::master::r10k_known_hosts' => $r10k_known_hosts,
       }
 
-      peadm::update_pe_conf($primary_target, $updated_pe_conf)
+      peadm::update_pe_conf($primary_target[0], $updated_pe_conf)
     }
   }
 
