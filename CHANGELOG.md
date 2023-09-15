@@ -5,27 +5,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
-## [v3.14](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.14) - 2023-09-15
-
-[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.13.1...v3.14)
-
-### Other
-
-- (PE-36822) Bumping supported PE from 2023.2 to 2023.3 [#383](https://github.com/puppetlabs/puppetlabs-peadm/pull/383) ([ragingra](https://github.com/ragingra))
-- (PE-36789) R10k Known hosts upgrade path [#382](https://github.com/puppetlabs/puppetlabs-peadm/pull/382) ([ragingra](https://github.com/ragingra))
-- (PE-36580) Add r10k_known_hosts to install plan [#380](https://github.com/puppetlabs/puppetlabs-peadm/pull/380) ([jpartlow](https://github.com/jpartlow))
-- PE-3PE-36464 metadata updated [#378](https://github.com/puppetlabs/puppetlabs-peadm/pull/378) ([AaronShannon](https://github.com/AaronShannon))
-- PE-36461 Pull request template added [#377](https://github.com/puppetlabs/puppetlabs-peadm/pull/377) ([AaronShannon](https://github.com/AaronShannon))
-- keyserver port 80 less likely to be blocked [#374](https://github.com/puppetlabs/puppetlabs-peadm/pull/374) ([h0tw1r3](https://github.com/h0tw1r3))
-- puppetlabs/stdlib: Require 9.x [#373](https://github.com/puppetlabs/puppetlabs-peadm/pull/373) ([bastelfreak](https://github.com/bastelfreak))
-- PE-36460 Add Mend Workflow [#372](https://github.com/puppetlabs/puppetlabs-peadm/pull/372) ([AaronShannon](https://github.com/AaronShannon))
-- PE-36459 .sync.yml and pdk updated [#370](https://github.com/puppetlabs/puppetlabs-peadm/pull/370) ([AaronShannon](https://github.com/AaronShannon))
-
 ## [v3.13.1](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.13.1) - 2023-06-27
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.13.0...v3.13.1)
 
-### Other
+### Fixed
 
 -  (#366) Bump inifile and stdlib [#367](https://github.com/puppetlabs/puppetlabs-peadm/pull/367) ([CoMfUcIoS](https://github.com/CoMfUcIoS))
 
@@ -35,13 +19,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 ### Added
 
-- Adding /etc/puppetlabs/enterprise/conf.d/pe.conf [#346](https://github.com/puppetlabs/puppetlabs-peadm/pull/346) ([16c7x](https://github.com/16c7x))
-
-### Other
-
 - (PE-36203) Updating supported to 2023.2 and default to 2021.7.4 [#363](https://github.com/puppetlabs/puppetlabs-peadm/pull/363) ([ragingra](https://github.com/ragingra))
 - Update metadata for stdlib version 9 [#361](https://github.com/puppetlabs/puppetlabs-peadm/pull/361) ([MartyEwings](https://github.com/MartyEwings))
 - (PE-36091) Updating PE-ADM Supported Version [#349](https://github.com/puppetlabs/puppetlabs-peadm/pull/349) ([ragingra](https://github.com/ragingra))
+- Adding /etc/puppetlabs/enterprise/conf.d/pe.conf [#346](https://github.com/puppetlabs/puppetlabs-peadm/pull/346) ([16c7x](https://github.com/16c7x))
 - Allow code manager auto configure to be passed as param [#341](https://github.com/puppetlabs/puppetlabs-peadm/pull/341) ([elainemccloskey](https://github.com/elainemccloskey))
 
 ## [v3.12.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.12.0) - 2023-02-17
@@ -94,6 +75,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.8.0...v3.9.0)
 
+### Added
+
+- allow to customize admin's token lifetime [#285](https://github.com/puppetlabs/puppetlabs-peadm/pull/285) ([vchepkov](https://github.com/vchepkov))
+
 ### Fixed
 
 - Ensure fips commands exists before using it [#289](https://github.com/puppetlabs/puppetlabs-peadm/pull/289) ([ody](https://github.com/ody))
@@ -101,10 +86,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 - Re-use sync_global_hiera plan [#281](https://github.com/puppetlabs/puppetlabs-peadm/pull/281) ([ody](https://github.com/ody))
 - Support the installation of PE on FIPS enabled RHEL [#280](https://github.com/puppetlabs/puppetlabs-peadm/pull/280) ([ody](https://github.com/ody))
 - Fetch installed PSQL version [#275](https://github.com/puppetlabs/puppetlabs-peadm/pull/275) ([ody](https://github.com/ody))
-
-### Other
-
-- allow to customize admin's token lifetime [#285](https://github.com/puppetlabs/puppetlabs-peadm/pull/285) ([vchepkov](https://github.com/vchepkov))
 
 ## [v3.8.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.8.0) - 2022-06-21
 
