@@ -1,0 +1,17 @@
+{
+    "version": "2023.3.0",
+    "primary_host": "pe-master-09a40c-0.us-west1-a.c.reidmv-peadm.internal",
+    "primary_postgresql_host": "pe-psql-09a40c-0.us-west1-a.c.reidmv-peadm.internal",
+    "replica_host": "pe-master-09a40c-1.us-west1-b.c.reidmv-peadm.internal",
+    "replica_postgresql_host": "pe-psql-09a40c-1.us-west1-b.c.reidmv-peadm.internal",
+    "compiler_hosts": [
+        "pe-compiler-09a40c-0.us-west1-a.c.reidmv-peadm.internal",
+        "pe-compiler-09a40c-1.us-west1-b.c.reidmv-peadm.internal",
+        "pe-compiler-09a40c-2.us-west1-c.c.reidmv-peadm.internal",
+        "pe-compiler-09a40c-3.us-west1-a.c.reidmv-peadm.internal"
+    ],
+    "r10k_known_hosts": [
+        {"name": "remotehostname", "type": "ssh-rsa", "key": "hash"},
+        {"name": "remotehostname2", "type": "ssh-rsa", "key": "hash"}
+    ]
+}

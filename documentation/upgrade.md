@@ -4,13 +4,15 @@ Puppet Enterprise deployments provisioned using the peadm module can also be upg
 
 ## Usage
 
-The `peadm::upgrade` plan requires as input the version of PE to upgrade to, and the names of each PE infrastructure host. Primary, replica, compilers, etc.
+The `peadm::upgrade` plan requires as input the version of PE to upgrade to, and the names of each PE infrastructure host. Primary, replica, compilers, etc. 
 
-The following is an example parameters file for upgrading an Extra Large architecture deployment of PE 2021.0.1 to PE 2021.7.4.
+Please note that when upgrading from before 2023.3 to 2023.3 or above and you are using code manager, it is nessesary to provide known hosts for r10k. r10k_known_hosts is an optional parameter and is only required one time when upgrading to 2023.3 or beyond. But if you currently use the SSH protocol to allow r10k to access your remote Git repository, your Code manager or r10k code management tool cannot function until you define the r10k_known_hosts parameter. Subsequent upgrades will already have this and it won't be required again. Please refer to the Puppet Enterprise 2023.3 Upgrade cautions for more details.
+
+The following is an example parameters file for upgrading an Extra Large architecture deployment of PE 2023.2.0 to PE 2023.3.0.
 
 ```json
 {
-  "version": "2021.7.4",
+  "version": "2023.3.0",
   "primary_host": "pe-master-09a40c-0.us-west1-a.c.reidmv-peadm.internal",
   "primary_postgresql_host": "pe-psql-09a40c-0.us-west1-a.c.reidmv-peadm.internal",
   "replica_host": "pe-master-09a40c-1.us-west1-b.c.reidmv-peadm.internal",
@@ -20,6 +22,10 @@ The following is an example parameters file for upgrading an Extra Large archite
     "pe-compiler-09a40c-1.us-west1-b.c.reidmv-peadm.internal",
     "pe-compiler-09a40c-2.us-west1-c.c.reidmv-peadm.internal",
     "pe-compiler-09a40c-3.us-west1-a.c.reidmv-peadm.internal"
+  ],
+  "r10k_known_hosts": [
+     {"name": "remotehostname", "type": "ssh-rsa", "key": "hash"},
+     {"name": "remotehostname2", "type": "ssh-rsa", "key": "hash"}
   ]
 }
 ```
@@ -115,9 +121,9 @@ Note: it is assumed that the Puppet primary is in cluster A when the upgrade sta
 1. Shut down the `pe-puppetdb` service on the compilers in cluster B
 2. If different from the primary (replica), run the `install-puppet-enterprise` script for the new PE version on the PuppetDB PostgreSQL node for cluster B
 3. If different from the primary (replica), Run `puppet agent -t` on the PuppetDB PostgreSQL node for cluster B
-5. Run `puppet agent -t` on the primary to ensure orchestration services are configured and restarted before the next steps
-6. Perform the replica upgrade using `puppet infra upgrade replica` for the primary (replica)
-7. Perform the compiler upgrade using `puppet infra upgrade compiler` for the compilers in cluster B
+4. Run `puppet agent -t` on the primary to ensure orchestration services are configured and restarted before the next steps
+5. Perform the replica upgrade using `puppet infra upgrade replica` for the primary (replica)
+6. Perform the compiler upgrade using `puppet infra upgrade compiler` for the compilers in cluster B
 
 **If Upgrading from 2019.5**
 
@@ -125,10 +131,10 @@ The following steps apply _only_ if upgrading from 2019.5 or older
 
 1. Run `puppet infra run convert_legacy_compiler` for all compilers
 2. Modify the peadm node groups "PE Compiler Group A" and "PE Compiler Group B" as follows:
-    * Re-parent the groups. They should be children of "PE Compiler"
-    * Remove configuration data (Hiera data). Leave the classes and class parameters
-    * Add the rule `trusted.extensions.pp_auth_role = pe_compiler`
-    * Remove the rule `trusted.extensions."1.3.6.1.4.1.34380.1.1.9812" = puppet/compiler`
+   * Re-parent the groups. They should be children of "PE Compiler"
+   * Remove configuration data (Hiera data). Leave the classes and class parameters
+   * Add the rule `trusted.extensions.pp_auth_role = pe_compiler`
+   * Remove the rule `trusted.extensions."1.3.6.1.4.1.34380.1.1.9812" = puppet/compiler`
 
 **Phase 4: resume puppet service**
 
