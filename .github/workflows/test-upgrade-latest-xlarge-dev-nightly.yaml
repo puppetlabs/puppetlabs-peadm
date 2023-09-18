@@ -3,7 +3,7 @@ name: "Upgrade to latest dev test nightly"
 
 on:
   schedule:
-    - cron: '0 3 * * *'
+    - cron: "0 3 * * *"
 
 jobs:
   test-upgrade:
@@ -12,16 +12,16 @@ jobs:
     env:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
-      LANG: 'en_US.UTF-8'
+      LANG: "en_US.UTF-8"
     strategy:
       fail-fast: false
       matrix:
         architecture:
-          - 'extra-large-with-dr'
+          - "extra-large-with-dr"
         version:
-          - '2021.7.4'
+          - "2021.7.4"
         image:
-          - 'almalinux-cloud/almalinux-8'
+          - "almalinux-cloud/almalinux-8"
 
     steps:
       - name: "Checkout Source"
@@ -40,7 +40,7 @@ jobs:
             bundle env
           echo ::endgroup::
 
-      - name: 'Provision test cluster'
+      - name: "Provision test cluster"
         timeout-minutes: 15
         run: |
           echo ::group::prepare
@@ -67,7 +67,7 @@ jobs:
             sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
           echo ::endgroup::
 
-      - name: 'Install PE on test cluster'
+      - name: "Install PE on test cluster"
         timeout-minutes: 120
         run: |
           bundle exec bolt plan run peadm_spec::install_test_cluster \
@@ -76,17 +76,17 @@ jobs:
             architecture=${{ matrix.architecture }} \
             version=${{ matrix.version }}
 
-      - name: 'Activate twingate to obtain unreleased build'
-        uses: timidri/twingate-github-action@main
+      - name: "Activate twingate to obtain unreleased build"
+        uses: comfucios/twingate-github-action@main
         with:
           service-key: ${{ secrets.TWINGATE_PUBLIC_REPO_KEY }}
 
-      - name: 'Get latest build name'
+      - name: "Get latest build name"
         id: latest
         run: |
           echo "::set-output name=ver::$(curl -q https://artifactory.delivery.puppetlabs.net/artifactory/generic_enterprise__local/main/ci-ready/LATEST)"
 
-      - name: 'Upgrade PE on test cluster'
+      - name: "Upgrade PE on test cluster"
         timeout-minutes: 120
         run: |
           bundle exec bolt plan run peadm_spec::upgrade_test_cluster \
@@ -97,7 +97,7 @@ jobs:
             architecture=${{ matrix.architecture }} \
             pe_installer_source="https://artifactory.delivery.puppetlabs.net/artifactory/generic_enterprise__local/main/ci-ready/puppet-enterprise-${{ steps.latest.outputs.ver }}-el-8-x86_64.tar"
 
-      - name: 'Tear down test cluster'
+      - name: "Tear down test cluster"
         if: ${{ always() }}
         continue-on-error: true
         run: |
