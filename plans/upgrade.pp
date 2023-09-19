@@ -24,7 +24,13 @@
 #   r10k_remote host when using ssh. you must provide \$r10k_known_hosts
 #   information in the form of an array of hashes with 'name', 'type' and 'key'
 #   information for hostname, key-type and public key.
-# 
+# @param stagingdir
+#   Directory on the Bolt host where the installer tarball will be cached if
+#   download_mode is 'bolthost' (default)
+# @param uploaddir
+#   Directory the installer tarball will be uploaded to or expected to be in
+#   for offline usage.
+#
 plan peadm::upgrade (
   # Standard
   Peadm::SingleTargetSpec           $primary_host,
@@ -48,6 +54,7 @@ plan peadm::upgrade (
   # Other
   Optional[String]           $token_file             = undef,
   String                     $stagingdir             = '/tmp',
+  String                     $uploaddir              = '/tmp',
   Enum['running', 'stopped'] $final_agent_state      = 'running',
   Enum[direct,bolthost]      $download_mode          = 'bolthost',
   Boolean                    $permit_unsafe_versions = false,
@@ -120,7 +127,7 @@ plan peadm::upgrade (
     $pe_tarball_source = "https://s3.amazonaws.com/pe-builds/released/${_version}/${pe_tarball_name}"
   }
 
-  $upload_tarball_path = "/tmp/${pe_tarball_name}"
+  $upload_tarball_path = "${uploaddir}/${pe_tarball_name}"
 
   peadm::assert_supported_bolt_version()
 
