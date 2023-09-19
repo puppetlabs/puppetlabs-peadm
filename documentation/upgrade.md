@@ -38,13 +38,15 @@ bolt plan run peadm::upgrade --params @params.json
 
 ## Offline Usage
 
-The `peadm::upgrade` plan downloads installation content from an online repository by default. To perform an offline installation, you can prefetch the needed content and place it in the staging directory. If content is available in the staging directory, `peadm::upgrade` will not try to download it.
+The `peadm::upgrade` plan downloads installation content from an online repository by default. To perform an offline installation, you can prefetch the needed content and place it in the staging directory on the Bolt host. If content is available in the staging directory, `peadm::upgrade` will not try to download it.
 
 The default staging directory is `/tmp`. If a different staging dir is being used, it can be specified using the `stagingdir` parameter to the peadm::upgrade plan.
 
 The content needed is the PE installation tarball for the target version. The installation content should be in the staging dir, and should have its original name. E.g. `/tmp/puppet-enterprise-2019.2.2-el-7-x86_64.tar.gz`.
 
 Installation content can be downloaded from [https://puppet.com/try-puppet/puppet-enterprise/download/](https://puppet.com/try-puppet/puppet-enterprise/download/).
+
+If you wish to prevent the bolt host from transferring the installer tarball to the targets you can place the installer tar files on the target hosts in the _upload directory_. This can save time over slow networks, but is best to just perform the bolt task on the target node (puppetserver). The default _upload directory_ is `/tmp`. If a different upload dir is being used, it can be specified using the `uploaddir` parameter to the peadm::upgrade plan.
 
 Note if `pe_repo` classes have been declared (for agents with different OS/platform than your primary server - see [Install \*nix agents with PE package management](https://www.puppet.com/docs/pe/2021.7/installing_nix_agents.html#install_nix_agents_pe_package_management)), you must also stage the agent repo tarballs for the new PE version before running the `peadm::upgrade` plan, otherwise the plan will fail when it runs puppet to complete the upgrade, as it will not be able to download the agent repos from the internet.
 

@@ -119,11 +119,11 @@ Example params.json Bolt parameters file (shown: Standard):
 }
 ```
 
-Review the [peadm::install plan](../plans/install.pp) to learn about more advanced installation options. For example, it is possible to: supply an ssh private key and git clone URL for a control-repo as part of installation; supply the LDAP configuration data for PE; and similar complete automation tie-ins.
+Review the [peadm::install plan](../plans/install.pp) to learn about more advanced installation options. For example, it is possible to: supply an ssh private key and git clone URL for a control-repo as part of installation; supply the LDAP configuration data for PE; specify where the installer tarball is uploaded; and similar complete automation tie-ins.
 
 ## Offline usage
 
-The peadm::install plan downloads installation content from an online repository by default. To perform an offline installation, you can prefetch the needed content and place it in the staging directory. If content is available in the staging directory, peadm::install will not try to download it.
+The peadm::install plan downloads installation content from an online repository by default. To perform an offline installation, you can prefetch the needed content and place it in the staging directory on the Bolt host. If content is available in the staging directory, peadm::install will not try to download it.
 
 The default staging directory is `/tmp`. If a different staging dir is being used, it can be specified using the `stagingdir` parameter to the peadm::install plan.
 
@@ -131,12 +131,13 @@ The content needed is the PE installation tarball for the target version. The in
 
 Installation content can be downloaded from [https://puppet.com/try-puppet/puppet-enterprise/download/](https://puppet.com/try-puppet/puppet-enterprise/download/).
 
-If you wish to prevent the bolt host from transferring the installer tarball to the targets you can place the installer tar files on the target hosts in the staging directory.   This can save time over slow networks, but is best to just perform the bolt task on the target node (puppetserver).  The tar file will need to exist in the staging directory for the following configuration:
+If you wish to prevent the bolt host from transferring the installer tarball to the targets you can place the installer tar files on the target hosts in the _upload directory_. This can save time over slow networks, but is best to just perform the bolt task on the target node (puppetserver). The default _upload directory_ is `/tmp`. If a different upload dir is being used, it can be specified using the `uploaddir` parameter to the peadm::install plan. With default parameters the tar file will need to exist in the directories for offline configuration:
 
 * /tmp on the Bolt host
 * /tmp on the primary
 * /tmp on the primary PuppetDB PostgreSQL (if used)
 * /tmp on the replica PuppetDB PostgreSQL (if used)
+
 ## Online usage
 
 The peadm::install plan can be configured to download installation content directly to hosts. To configure online installation, set the `download_mode` parameter of the `peadm::install` plan to `direct`. The direct mode is often more efficient when PE hosts have a route to the internet.
