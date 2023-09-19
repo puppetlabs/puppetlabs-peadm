@@ -3,8 +3,7 @@
 set -e
 
 if [ -x "/opt/puppetlabs/bin/puppet" ]; then
-  echo "ERROR: Puppet agent is already installed. Re-install, re-configuration, or upgrade not supported. Please uninstall the agent before running this task."
-  exit 1
+  echo "WARNING: Puppet agent is already installed. Re-install, re-configuration, or upgrade not supported and might fail."
 fi
 
 flags=$(echo $PT_install_flags | sed -e 's/^\["*//' -e 's/"*\]$//' -e 's/", *"/ /g')
