@@ -6,13 +6,13 @@
 # Parse noop parameter
 [ "$PT_noop" = "true" ] && NOOP_FLAG="--noop" || unset NOOP_FLAG
 
-# Wait for up to five minutes for an in-progress Puppet agent run to complete
+# Wait for an in-progress Puppet agent run to complete
 # TODO: right now the check is just for lock file existence. Improve the check
 #       to account for situations where the lockfile is stale.
 echo -n "Check for and wait up to 5 minutes for in-progress run to complete"
 lockfile=$(/opt/puppetlabs/bin/puppet config print agent_catalog_run_lockfile)
 n=0
-until [ $n -ge 300 ]
+until [ $n -ge "$PT_in_progress_timeout" ]
 do
   [ ! -e "$lockfile" ] && break
   echo -n .
