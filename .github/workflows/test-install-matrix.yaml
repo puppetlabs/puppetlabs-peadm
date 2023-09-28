@@ -44,7 +44,7 @@ jobs:
         version:
           - 2019.8.12
           - 2021.7.4
-          - 2023.3.0
+          - 2023.2.0
         image:
           - centos-7
           - almalinux-cloud/almalinux-8
