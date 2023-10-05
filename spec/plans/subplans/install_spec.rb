@@ -47,11 +47,11 @@ describe 'peadm::subplans::install' do
     expect(run_plan('peadm::subplans::install', params)).to be_ok
   end
 
-  it 'installs 2023.2 without r10k_known_hosts' do
+  it 'installs 2023.4 without r10k_known_hosts' do
     params = {
       'primary_host'             => 'primary',
       'console_password'         => 'puppetlabs',
-      'version'                  => '2023.2.0',
+      'version'                  => '2023.4.0',
       'r10k_remote'              => 'git@github.com:puppetlabs/nothing',
       'r10k_private_key_content' => '-----BEGINfoo',
     }
@@ -59,11 +59,11 @@ describe 'peadm::subplans::install' do
     expect(run_plan('peadm::subplans::install', params)).to be_ok
   end
 
-  it 'installs 2023.3+ with r10k_private_key and r10k_known_hosts' do
+  it 'installs 2023.4+ with r10k_private_key and r10k_known_hosts' do
     params = {
       'primary_host'             => 'primary',
       'console_password'         => 'puppetlabs',
-      'version'                  => '2023.3.0',
+      'version'                  => '2023.4.0',
       'r10k_remote'              => 'git@github.com:puppetlabs/nothing',
       'r10k_private_key_content' => '-----BEGINfoo',
       'r10k_known_hosts'         => [
