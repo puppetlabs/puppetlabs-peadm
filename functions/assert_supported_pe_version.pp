@@ -5,7 +5,7 @@ function peadm::assert_supported_pe_version (
   String $version,
   Boolean $permit_unsafe_versions = false,
 ) >> Struct[{ 'supported' => Boolean }] {
-  $oldest = '2019.8'
+  $oldest = '2019.7'
   $newest = '2023.4'
   $supported = ($version =~ SemVerRange(">= ${oldest} <= ${newest}"))
 
