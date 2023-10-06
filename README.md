@@ -19,7 +19,7 @@ The peadm module is able to deploy and manage Puppet Enterprise 2019.7 and highe
 
 ## Expectations and support
 
-While the peadm module was initially built by the Puppet Solutions Architecture team to streamline particularly large and complex Puppet Enterprise deployments, but has matured to a point where we believe that users with a reasonable understanding of Puppet Enterprise architecture can use it on their own. 
+While the peadm module was initially built by the Puppet Solutions Architecture team to streamline particularly large and complex Puppet Enterprise deployments, but has matured to a point where we believe that users with a reasonable understanding of Puppet Enterprise architecture can use it on their own.
 
 As a Puppet Enterprise customer this tool is **supported** through Puppet Enterprise's standard and premium [support.puppet.com](https://support.puppet.com) service, and if you have questions or need assistance, you are welcome to reach out to your Support team for help, or to talk to your Sales or Technical Account Manager contacts to arrange a chat with one of us on the Solutions Architect team.
 
@@ -77,6 +77,7 @@ Documentation pertaining to additional uses of peadm.
 * [Classification](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/classification.md)
 * [Testing](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/pre_post_checks.md)
 * [Docker Based Examples](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/docker_examples.md)
+* [Release Process](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/release_process.md)
 
 ## Getting Help
 
