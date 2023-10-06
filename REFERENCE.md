@@ -1344,6 +1344,12 @@ Data type: `Optional[Boolean]`
 
 If true, run Puppet in no-op mode
 
+##### `in_progress_timeout`
+
+Data type: `Integer`
+
+How many seconds to wait for a puppet run, that is already in progress
+
 ### <a name="rbac_token"></a>`rbac_token`
 
 Get and save an rbac token for the root user, admin rbac user
