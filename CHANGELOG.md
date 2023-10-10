@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.15.1](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.15.1) - 2023-10-10
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.15.0...v3.15.1)
+
+### Added
+
+- (#351) code_manager: Switch default to `undef` [#352](https://github.com/puppetlabs/puppetlabs-peadm/pull/352) ([bastelfreak](https://github.com/bastelfreak))
+
+### Fixed
+
+- Fix for plan peadm::add_compiler over pcp transport [#356](https://github.com/puppetlabs/puppetlabs-peadm/pull/356) ([jortencio](https://github.com/jortencio))
+
 ## [v3.15.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.15.0) - 2023-10-06
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.14.0...v3.15.0)
@@ -27,10 +39,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.13.0...v3.13.1)
 
-### Other
-
--  (#366) Bump inifile and stdlib [#367](https://github.com/puppetlabs/puppetlabs-peadm/pull/367) ([CoMfUcIoS](https://github.com/CoMfUcIoS))
-
 ## [v3.13.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.13.0) - 2023-06-26
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.12.0...v3.13.0)
@@ -39,10 +47,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 - Adding /etc/puppetlabs/enterprise/conf.d/pe.conf [#346](https://github.com/puppetlabs/puppetlabs-peadm/pull/346) ([16c7x](https://github.com/16c7x))
 - Allow code manager auto configure to be passed as param [#341](https://github.com/puppetlabs/puppetlabs-peadm/pull/341) ([elainemccloskey](https://github.com/elainemccloskey))
-
-### Other
-
-- (PE-36091) Updating PE-ADM Supported Version [#349](https://github.com/puppetlabs/puppetlabs-peadm/pull/349) ([ragingra](https://github.com/ragingra))
 
 ## [v3.12.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.12.0) - 2023-02-17
 
