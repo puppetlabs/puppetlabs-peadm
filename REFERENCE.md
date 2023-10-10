@@ -1823,7 +1823,7 @@ Data type: `Optional[Boolean]`
 
 
 
-Default value: `true`
+Default value: `undef`
 
 ##### <a name="-peadm--install--r10k_remote"></a>`r10k_remote`
 
