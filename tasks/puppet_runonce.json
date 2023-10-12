@@ -6,7 +6,7 @@
       "description": "If true, run Puppet in no-op mode"
     },
     "in_progress_timeout": {
-      "type": "Integer",
+      "type": "Integer[1]",
       "description": "How many seconds to wait for a puppet run, that is already in progress",
       "default": 600
     }
