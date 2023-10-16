@@ -2,6 +2,8 @@ name: "mend"
 
 on:
   pull_request:
+    types:
+      - closed
     branches:
       - "main"
   schedule:
@@ -10,7 +12,7 @@ on:
 
 jobs:
   mend:
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event.pull_request.merged == true && github.ref == 'refs/heads/main')
     runs-on: "ubuntu-latest"
 
     steps:
@@ -41,5 +43,5 @@ jobs:
           WS_APIKEY: ${{ secrets.MEND_API_KEY }}
           WS_WSS_URL: https://saas-eu.whitesourcesoftware.com/agent
           WS_USERKEY: ${{ secrets.MEND_TOKEN }}
-          WS_PRODUCTNAME: "Puppet Enterprise"
+          WS_PRODUCTNAME: InsTalleR
           WS_PROJECTNAME: ${{  github.event.repository.name }}
