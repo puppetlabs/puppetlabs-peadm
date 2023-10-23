@@ -85,9 +85,11 @@
 #### Public Plans
 
 * [`peadm::add_database`](#peadm--add_database)
+* [`peadm::backup_ca`](#peadm--backup_ca)
 * [`peadm::convert`](#peadm--convert): Convert an existing PE cluster to a PEAdm-managed cluster
 * [`peadm::install`](#peadm--install): Install a new PE cluster
 * [`peadm::modify_certificate`](#peadm--modify_certificate): Modify the certificate of one or more targets
+* [`peadm::restore_ca`](#peadm--restore_ca)
 * [`peadm::status`](#peadm--status): Return status information from one or more PE clusters in a table format
 * [`peadm::upgrade`](#peadm--upgrade): Upgrade a PEAdm-managed cluster
 
@@ -1527,6 +1529,31 @@ Optional[Enum[
 
 Default value: `undef`
 
+### <a name="peadm--backup_ca"></a>`peadm::backup_ca`
+
+The peadm::backup_ca class.
+
+#### Parameters
+
+The following parameters are available in the `peadm::backup_ca` plan:
+
+* [`target`](#-peadm--backup_ca--target)
+* [`output_directory`](#-peadm--backup_ca--output_directory)
+
+##### <a name="-peadm--backup_ca--target"></a>`target`
+
+Data type: `Peadm::SingleTargetSpec`
+
+
+
+##### <a name="-peadm--backup_ca--output_directory"></a>`output_directory`
+
+Data type: `Optional[String]`
+
+
+
+Default value: `'/tmp'`
+
 ### <a name="peadm--convert"></a>`peadm::convert`
 
 This plan sets required certificate extensions on PE nodes, and configures
@@ -1964,6 +1991,38 @@ Data type: `Boolean`
 
 
 Default value: `false`
+
+### <a name="peadm--restore_ca"></a>`peadm::restore_ca`
+
+The peadm::restore_ca class.
+
+#### Parameters
+
+The following parameters are available in the `peadm::restore_ca` plan:
+
+* [`target`](#-peadm--restore_ca--target)
+* [`file_path`](#-peadm--restore_ca--file_path)
+* [`recovery_directory`](#-peadm--restore_ca--recovery_directory)
+
+##### <a name="-peadm--restore_ca--target"></a>`target`
+
+Data type: `Peadm::SingleTargetSpec`
+
+
+
+##### <a name="-peadm--restore_ca--file_path"></a>`file_path`
+
+Data type: `String`
+
+
+
+##### <a name="-peadm--restore_ca--recovery_directory"></a>`recovery_directory`
+
+Data type: `Optional[String]`
+
+
+
+Default value: `'/tmp/peadm_recovery'`
 
 ### <a name="peadm--status"></a>`peadm::status`
 
