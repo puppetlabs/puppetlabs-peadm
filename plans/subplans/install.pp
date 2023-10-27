@@ -136,10 +136,10 @@ plan peadm::subplans::install (
   $r10k_private_key = peadm::file_or_content('r10k_private_key', $r10k_private_key_file, $r10k_private_key_content)
 
   # enable code manager if:
-  # * it isn't explicitly disabled *and* the user provided r10k repo+key
+  # * it isn't explicitly disabled *and* the user provided r10k repo (key is optional, repo could be a local absolute path or https URL)
   # * a replica is present
   # * one or multiple compiler are present
-  $_code_manager_auto_configure = if $r10k_private_key and $code_manager_auto_configure {
+  $_code_manager_auto_configure = if $r10k_remote and $code_manager_auto_configure {
     true
   } elsif $replica_host {
     true
