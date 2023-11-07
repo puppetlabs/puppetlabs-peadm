@@ -16,6 +16,7 @@ The peadm module is able to deploy and manage Puppet Enterprise 2019.7 and highe
   - [Usage](#usage)
   - [Reference](#reference)
   - [Getting Help](#getting-help)
+  - [License](#license)
 
 ## Expectations and support
 
@@ -83,3 +84,7 @@ Documentation pertaining to additional uses of peadm.
 
 * If you find bugs with this module, please make use of [issues](https://github.com/puppetlabs/puppetlabs-peadm/issues) in the project on GitHub
 * If you are a Puppet Enterprise (PE) customer that uses peadm to manage a deployment of PE and are currently having an outage or need assistance troubleshooting another issue, e.g. upgrades, contact the [Support Team](https://support.puppet.com)
+
+## License
+
+This codebase is licensed under Apache 2.0. However, the open source dependencies included in this codebase might be subject to other software licenses such as AGPL, GPL2.0, and MIT.
