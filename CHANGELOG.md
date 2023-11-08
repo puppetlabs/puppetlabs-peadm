@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.16.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.16.0) - 2023-11-08
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.15.1...v3.16.0)
+
+### Added
+
+- (PE-35906) Adding plans for backing up and restoring CA [#400](https://github.com/puppetlabs/puppetlabs-peadm/pull/400) ([ragingra](https://github.com/ragingra))
+
+### Fixed
+
+- peadm::install: Depend code-manager setup on r10k remote presence, not r10k ssh key [#401](https://github.com/puppetlabs/puppetlabs-peadm/pull/401) ([bastelfreak](https://github.com/bastelfreak))
+
 ## [v3.15.1](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.15.1) - 2023-10-10
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.15.0...v3.15.1)
