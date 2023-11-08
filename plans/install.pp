@@ -24,6 +24,12 @@
 # @param final_agent_state
 #   Configures the state the puppet agent should be in on infrastructure nodes
 #   after PE is configured successfully.
+# @param stagingdir
+#   Directory on the Bolt host where the installer tarball will be cached if
+#   download_mode is 'bolthost' (default)
+# @param uploaddir
+#   Directory the installer tarball will be uploaded to or expected to be in
+#   for offline usage.
 #
 plan peadm::install (
   # Standard
@@ -39,7 +45,7 @@ plan peadm::install (
 
   # Common Configuration
   String                            $console_password,
-  Peadm::Pe_version                 $version                          = '2021.7.2',
+  Peadm::Pe_version                 $version                          = '2021.7.4',
   Optional[String]                  $pe_installer_source              = undef,
   Optional[Array[String]]           $dns_alt_names                    = undef,
   Optional[String]                  $compiler_pool_address            = undef,
@@ -49,10 +55,11 @@ plan peadm::install (
   Optional[Peadm::Ldap_config]      $ldap_config                      = undef,
 
   # Code Manager
-  Optional[Boolean]                 $code_manager_auto_configure = true,
+  Optional[Boolean]                 $code_manager_auto_configure = undef,
   Optional[String]                  $r10k_remote              = undef,
   Optional[String]                  $r10k_private_key_file    = undef,
   Optional[Peadm::Pem]              $r10k_private_key_content = undef,
+  Optional[Peadm::Known_hosts]      $r10k_known_hosts         = undef,
   Optional[String]                  $deploy_environment       = undef,
 
   # License Key
@@ -61,6 +68,7 @@ plan peadm::install (
 
   # Other
   Optional[String]           $stagingdir             = undef,
+  Optional[String]           $uploaddir              = undef,
   Enum['running', 'stopped'] $final_agent_state      = 'running',
   Enum['direct', 'bolthost'] $download_mode          = 'bolthost',
   Boolean                    $permit_unsafe_versions = false,
@@ -94,6 +102,7 @@ plan peadm::install (
     r10k_remote                    => $r10k_remote,
     r10k_private_key_file          => $r10k_private_key_file,
     r10k_private_key_content       => $r10k_private_key_content,
+    r10k_known_hosts               => $r10k_known_hosts,
 
     # License Key
     license_key_file               => $license_key_file,
@@ -101,6 +110,7 @@ plan peadm::install (
 
     # Other
     stagingdir                     => $stagingdir,
+    uploaddir                      => $uploaddir,
     download_mode                  => $download_mode,
     permit_unsafe_versions         => $permit_unsafe_versions,
     token_lifetime                 => $token_lifetime,

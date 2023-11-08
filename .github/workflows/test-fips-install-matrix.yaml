@@ -3,13 +3,28 @@ name: "Install fips test matrix"
 
 on:
   pull_request:
+    paths:
+      - ".github/workflows/**/*"
+      - "spec/**/*"
+      - "lib/**/*"
+      - "tasks/**/*"
+      - "functions/**/*"
+      - "types/**/*"
+      - "plans/**/*"
+      - "hiera/**/*"
+      - "manifests/**/*"
+      - "templates/**/*"
+      - "files/**/*"
+      - "metadata.json"
+      - "Rakefile"
+      - "Gemfile"
+      - "provision.yaml"
+      - ".rspec"
+      - ".rubocop.yml"
+      - ".puppet-lint.rc"
+      - ".fixtures.yml"
     branches: [main]
-    types: [review_requested]
   workflow_dispatch: {}
-
-env:
-  HONEYCOMB_WRITEKEY: 7f3c63a70eecc61d635917de46bea4e6
-  HONEYCOMB_DATASET: litmus tests
 
 jobs:
   test-install:
@@ -18,8 +33,7 @@ jobs:
     env:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
-      BUILDEVENT_FILE: '../buildevents.txt'
-      LANG: 'en_US.UTF-8'
+      LANG: "en_US.UTF-8"
     strategy:
       fail-fast: false
       matrix:
@@ -29,25 +43,14 @@ jobs:
           - extra-large-with-dr
         version:
           - 2019.8.12
-          - 2021.7.2
+          - 2021.7.5
+          - 2023.5.0
         image:
           - rhel-8
         fips:
           - enable
 
     steps:
-      - name: "Honeycomb: Start recording"
-        uses: puppetlabs/kvrhdn-gha-buildevents@pdk-templates-v1
-        with:
-          apikey: ${{ env.HONEYCOMB_WRITEKEY }}
-          dataset: ${{ env.HONEYCOMB_DATASET }}
-          job-status: ${{ job.status }}
-
-      - name: "Honeycomb: Start first step"
-        run: |
-          echo STEP_ID=setup-test-cluster >> $GITHUB_ENV
-          echo STEP_START=$(date +%s) >> $GITHUB_ENV
-
       - name: "Checkout Source"
         uses: actions/checkout@v2
 
@@ -61,19 +64,10 @@ jobs:
         if: ${{ github.repository_owner == 'puppetlabs' }}
         run: |
           echo ::group::info:bundler
-            buildevents cmd $TRACE_ID $STEP_ID 'bundle env' -- bundle env
+            bundle env
           echo ::endgroup::
 
-      - name: "Honeycomb: Record environment setup time"
-        if: ${{ always() }}
-        run: |
-          echo ::group::honeycomb
-            buildevents step $TRACE_ID $STEP_ID $STEP_START 'Set up environment'
-            echo STEP_ID=${{ matrix.architecture }}-${{ matrix.image }}-fips_${{ matrix.fips }}-provision >> $GITHUB_ENV
-            echo STEP_START=$(date +%s) >> $GITHUB_ENV
-          echo ::endgroup::
-
-      - name: 'Provision test cluster'
+      - name: "Provision test cluster"
         timeout-minutes: 15
         run: |
           echo ::group::prepare
@@ -81,16 +75,15 @@ jobs:
             echo 'Host *'                      >  $HOME/.ssh/config
             echo '    ServerAliveInterval 150' >> $HOME/.ssh/config
             echo '    ServerAliveCountMax 2'   >> $HOME/.ssh/config
-            buildevents cmd $TRACE_ID $STEP_ID 'rake spec_prep' -- bundle exec rake spec_prep
+            bundle exec rake spec_prep
           echo ::endgroup::
 
           echo ::group::provision
-            buildevents cmd $TRACE_ID $STEP_ID 'bolt plan run peadm_spec::provision_test_cluster' -- \
-              bundle exec bolt plan run peadm_spec::provision_test_cluster \
-                --modulepath spec/fixtures/modules \
-                provider=provision_service \
-                image=${{ matrix.image }} \
-                architecture=${{ matrix.architecture }}
+            bundle exec bolt plan run peadm_spec::provision_test_cluster \
+              --modulepath spec/fixtures/modules \
+              provider=provision_service \
+              image=${{ matrix.image }} \
+              architecture=${{ matrix.architecture }}
           echo ::endgroup::
 
           echo ::group::info:request
@@ -101,52 +94,26 @@ jobs:
             sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
           echo ::endgroup::
 
-      - name: "Honeycomb: Record provision time"
-        if: ${{ always() }}
-        run: |
-          echo ::group::honeycomb
-            buildevents step $TRACE_ID $STEP_ID $STEP_START 'Provision test cluster'
-            echo STEP_ID=${{ matrix.architecture }}-${{ matrix.image }}-fips_${{ matrix.fips }}-install >> $GITHUB_ENV
-            echo STEP_START=$(date +%s) >> $GITHUB_ENV
-          echo ::endgroup::
-
-      - name: 'Install PE on test cluster'
+      - name: "Install PE on test cluster"
         timeout-minutes: 120
         run: |
-          buildevents cmd $TRACE_ID $STEP_ID 'bolt plan run peadm_spec::install_test_cluster' -- \
-            bundle exec bolt plan run peadm_spec::install_test_cluster \
-              --inventoryfile spec/fixtures/litmus_inventory.yaml \
-              --modulepath spec/fixtures/modules \
-              architecture=${{ matrix.architecture }} \
-              version=${{ matrix.version }} \
-              fips=${{ matrix.fips }} 
+          bundle exec bolt plan run peadm_spec::install_test_cluster \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules \
+            architecture=${{ matrix.architecture }} \
+            version=${{ matrix.version }} \
+            fips=${{ matrix.fips }}
 
-      - name: "Honeycomb: Record install time"
-        if: ${{ always() }}
-        run: |
-          echo ::group::honeycomb
-            buildevents step $TRACE_ID $STEP_ID $STEP_START 'Install PE on test cluster'
-            echo STEP_ID=${{ matrix.architecture }}-${{ matrix.image }}-fips_${{ matrix.fips }}-tear_down >> $GITHUB_ENV
-            echo STEP_START=$(date +%s) >> $GITHUB_ENV
-          echo ::endgroup::
-
-      - name: 'Tear down test cluster'
+      - name: "Tear down test cluster"
         if: ${{ always() }}
         continue-on-error: true
         run: |
           if [ -f spec/fixtures/litmus_inventory.yaml ]; then
             echo ::group::tear_down
-              buildevents cmd $TRACE_ID $STEP_ID 'rake litmus:tear_down' -- bundle exec rake 'litmus:tear_down'
+              bundle exec rake 'litmus:tear_down'
             echo ::endgroup::
 
             echo ::group::info:request
               cat request.json || true; echo
             echo ::endgroup::
           fi
-
-      - name: "Honeycomb: Record tear down time"
-        if: ${{ always() }}
-        run: |
-          echo ::group::honeycomb
-            buildevents step $TRACE_ID $STEP_ID $STEP_START 'Tear down test cluster'
-          echo ::endgroup::

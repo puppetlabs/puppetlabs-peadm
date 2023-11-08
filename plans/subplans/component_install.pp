@@ -10,19 +10,29 @@ plan peadm::subplans::component_install(
   Peadm::SingleTargetSpec                $targets,
   Peadm::SingleTargetSpec                $primary_host,
   Enum['A', 'B']                         $avail_group_letter,
-  Optional[Variant[String[1], Array]] $dns_alt_names = undef,
+  Optional[Variant[String[1], Array]]    $dns_alt_names = undef,
   Optional[String[1]]                    $role          = undef
 ) {
   $component_target          = peadm::get_targets($targets, 1)
   $primary_target            = peadm::get_targets($primary_host, 1)
 
-  run_plan('peadm::subplans::prepare_agent', $component_target,
-    primary_host           => $primary_target,
-    dns_alt_names          => peadm::flatten_compact([$dns_alt_names]),
-    certificate_extensions => {
+  # Set pp_auth_role instead of peadm_role for compiler role
+  if $role == 'pe_compiler' {
+    $certificate_extensions = {
+      peadm::oid('pp_auth_role')             => 'pe_compiler',
+      peadm::oid('peadm_availability_group') => $avail_group_letter,
+    }
+  } else {
+    $certificate_extensions = {
       peadm::oid('peadm_role')               => $role,
       peadm::oid('peadm_availability_group') => $avail_group_letter,
     }
+  }
+
+  run_plan('peadm::subplans::prepare_agent', $component_target,
+    primary_host           => $primary_target,
+    dns_alt_names          => peadm::flatten_compact([$dns_alt_names]),
+    certificate_extensions => $certificate_extensions,
   )
 
   # On component, run the puppet agent to finish initial configuring of component

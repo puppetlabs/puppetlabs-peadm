@@ -20,6 +20,7 @@
 * [`peadm::assert_supported_pe_version`](#peadm--assert_supported_pe_version): Assert that the PE version given is supported by PEAdm
 * [`peadm::bolt_version`](#peadm--bolt_version)
 * [`peadm::certname`](#peadm--certname): Return the certname of the given target-like input
+* [`peadm::check_version_and_known_hosts`](#peadm--check_version_and_known_hosts): Checks PE verison and warns about setting r10k_known_hosts
 * [`peadm::convert_hash`](#peadm--convert_hash): converts two arrays into hash
 * [`peadm::convert_status`](#peadm--convert_status): Transforms a value in a human readable status with or without colors
 * [`peadm::determine_status`](#peadm--determine_status): Produces a summarized hash of the given status data
@@ -28,15 +29,18 @@
 * [`peadm::file_or_content`](#peadm--file_or_content)
 * [`peadm::flatten_compact`](#peadm--flatten_compact)
 * [`peadm::generate_pe_conf`](#peadm--generate_pe_conf): Generate a pe.conf file in JSON format
+* [`peadm::get_pe_conf`](#peadm--get_pe_conf)
 * [`peadm::get_targets`](#peadm--get_targets): Accept undef or a SingleTargetSpec, and return an Array[Target, 1, 0]. This differs from get_target() in that:   - It returns an Array[Target
 * [`peadm::node_manager_yaml_location`](#peadm--node_manager_yaml_location)
 * [`peadm::oid`](#peadm--oid)
 * [`peadm::plan_step`](#peadm--plan_step)
 * [`peadm::recovery_opts_default`](#peadm--recovery_opts_default)
+* [`peadm::update_pe_conf`](#peadm--update_pe_conf): Update the pe.conf file on a target with the provided hash
 * [`peadm::wait_until_service_ready`](#peadm--wait_until_service_ready): A convenience function to help remember port numbers for services and handle running the wait_until_service_ready task
 
 ### Data types
 
+* [`Peadm::Known_hosts`](#Peadm--Known_hosts)
 * [`Peadm::Ldap_config`](#Peadm--Ldap_config)
 * [`Peadm::Pe_version`](#Peadm--Pe_version)
 * [`Peadm::Pem`](#Peadm--Pem)
@@ -81,9 +85,11 @@
 #### Public Plans
 
 * [`peadm::add_database`](#peadm--add_database)
+* [`peadm::backup_ca`](#peadm--backup_ca)
 * [`peadm::convert`](#peadm--convert): Convert an existing PE cluster to a PEAdm-managed cluster
 * [`peadm::install`](#peadm--install): Install a new PE cluster
 * [`peadm::modify_certificate`](#peadm--modify_certificate): Modify the certificate of one or more targets
+* [`peadm::restore_ca`](#peadm--restore_ca)
 * [`peadm::status`](#peadm--status): Return status information from one or more PE clusters in a table format
 * [`peadm::upgrade`](#peadm--upgrade): Upgrade a PEAdm-managed cluster
 
@@ -257,6 +263,56 @@ Variant[Target,
     Array[Undef,1,1],
   Array[Any,0,0]]
 ```
+
+
+
+### <a name="peadm--check_version_and_known_hosts"></a>`peadm::check_version_and_known_hosts`
+
+Type: Puppet Language
+
+Checks if the current PE version is less than 2023.3.0 and the target version is greater than or equal to 2023.3.0
+If both conditions are true and the r10k_known_hosts parameter is not defined, a warning message is displayed.
+
+#### `peadm::check_version_and_known_hosts(String $current_version, String $target_version, Optional[Peadm::Known_hosts] $r10k_known_hosts = undef)`
+
+Checks if the current PE version is less than 2023.3.0 and the target version is greater than or equal to 2023.3.0
+If both conditions are true and the r10k_known_hosts parameter is not defined, a warning message is displayed.
+
+Returns: `Any`
+
+##### `$current_version`
+
+Data type: `String`
+
+The current PE version
+
+##### `$target_version`
+
+Data type: `String`
+
+The target PE version
+
+##### `$r10k_known_hosts`
+
+Data type: `Optional[Peadm::Known_hosts]`
+
+The r10k_known_hosts parameter
+
+##### `current_version`
+
+Data type: `String`
+
+
+
+##### `target_version`
+
+Data type: `String`
+
+
+
+##### `r10k_known_hosts`
+
+Data type: `Optional[Peadm::Known_hosts]`
 
 
 
@@ -652,6 +708,24 @@ Data type: `Hash`
 A hash of settings to set in the config file. Any keys that are set to
 undef will not be included in the config file.
 
+### <a name="peadm--get_pe_conf"></a>`peadm::get_pe_conf`
+
+Type: Puppet Language
+
+The peadm::get_pe_conf function.
+
+#### `peadm::get_pe_conf(Target $target)`
+
+The peadm::get_pe_conf function.
+
+Returns: `Any`
+
+##### `target`
+
+Data type: `Target`
+
+
+
 ### <a name="peadm--get_targets"></a>`peadm::get_targets`
 
 Type: Puppet Language
@@ -748,6 +822,30 @@ The peadm::recovery_opts_default function.
 
 Returns: `Any`
 
+### <a name="peadm--update_pe_conf"></a>`peadm::update_pe_conf`
+
+Type: Puppet Language
+
+Update the pe.conf file on a target with the provided hash
+
+#### `peadm::update_pe_conf(Target $target, Hash $updated_pe_conf_hash)`
+
+The peadm::update_pe_conf function.
+
+Returns: `Any`
+
+##### `target`
+
+Data type: `Target`
+
+The target to update the pe.conf file on
+
+##### `updated_pe_conf_hash`
+
+Data type: `Hash`
+
+The hash to update the pe.conf file with
+
 ### <a name="peadm--wait_until_service_ready"></a>`peadm::wait_until_service_ready`
 
 Type: Puppet Language
@@ -775,6 +873,23 @@ Data type: `TargetSpec`
 
 
 ## Data types
+
+### <a name="Peadm--Known_hosts"></a>`Peadm::Known_hosts`
+
+The Peadm::Known_hosts data type.
+
+Alias of
+
+```puppet
+Array[Struct[
+    'title'        => Optional[String[1]],
+    'ensure'       => Optional[Enum['present','absent']],
+    'name'         => String[1],
+    'type'         => String[1],
+    'key'          => String[1],
+    'host_aliases' => Optional[Variant[String[1],Array[String[1]]]],
+  ]]
+```
 
 ### <a name="Peadm--Ldap_config"></a>`Peadm::Ldap_config`
 
@@ -1414,6 +1529,31 @@ Optional[Enum[
 
 Default value: `undef`
 
+### <a name="peadm--backup_ca"></a>`peadm::backup_ca`
+
+The peadm::backup_ca class.
+
+#### Parameters
+
+The following parameters are available in the `peadm::backup_ca` plan:
+
+* [`target`](#-peadm--backup_ca--target)
+* [`output_directory`](#-peadm--backup_ca--output_directory)
+
+##### <a name="-peadm--backup_ca--target"></a>`target`
+
+Data type: `Peadm::SingleTargetSpec`
+
+
+
+##### <a name="-peadm--backup_ca--output_directory"></a>`output_directory`
+
+Data type: `Optional[String]`
+
+
+
+Default value: `'/tmp'`
+
 ### <a name="peadm--convert"></a>`peadm::convert`
 
 This plan sets required certificate extensions on PE nodes, and configures
@@ -1535,6 +1675,8 @@ The following parameters are available in the `peadm::install` plan:
 * [`pe_installer_source`](#-peadm--install--pe_installer_source)
 * [`ldap_config`](#-peadm--install--ldap_config)
 * [`final_agent_state`](#-peadm--install--final_agent_state)
+* [`stagingdir`](#-peadm--install--stagingdir)
+* [`uploaddir`](#-peadm--install--uploaddir)
 * [`primary_host`](#-peadm--install--primary_host)
 * [`replica_host`](#-peadm--install--replica_host)
 * [`compiler_hosts`](#-peadm--install--compiler_hosts)
@@ -1544,13 +1686,14 @@ The following parameters are available in the `peadm::install` plan:
 * [`version`](#-peadm--install--version)
 * [`dns_alt_names`](#-peadm--install--dns_alt_names)
 * [`pe_conf_data`](#-peadm--install--pe_conf_data)
+* [`code_manager_auto_configure`](#-peadm--install--code_manager_auto_configure)
 * [`r10k_remote`](#-peadm--install--r10k_remote)
 * [`r10k_private_key_file`](#-peadm--install--r10k_private_key_file)
 * [`r10k_private_key_content`](#-peadm--install--r10k_private_key_content)
+* [`r10k_known_hosts`](#-peadm--install--r10k_known_hosts)
 * [`deploy_environment`](#-peadm--install--deploy_environment)
 * [`license_key_file`](#-peadm--install--license_key_file)
 * [`license_key_content`](#-peadm--install--license_key_content)
-* [`stagingdir`](#-peadm--install--stagingdir)
 * [`download_mode`](#-peadm--install--download_mode)
 * [`permit_unsafe_versions`](#-peadm--install--permit_unsafe_versions)
 * [`token_lifetime`](#-peadm--install--token_lifetime)
@@ -1615,6 +1758,24 @@ after PE is configured successfully.
 
 Default value: `'running'`
 
+##### <a name="-peadm--install--stagingdir"></a>`stagingdir`
+
+Data type: `Optional[String]`
+
+Directory on the Bolt host where the installer tarball will be cached if
+download_mode is 'bolthost' (default)
+
+Default value: `undef`
+
+##### <a name="-peadm--install--uploaddir"></a>`uploaddir`
+
+Data type: `Optional[String]`
+
+Directory the installer tarball will be uploaded to or expected to be in
+for offline usage.
+
+Default value: `undef`
+
 ##### <a name="-peadm--install--primary_host"></a>`primary_host`
 
 Data type: `Peadm::SingleTargetSpec`
@@ -1665,7 +1826,7 @@ Data type: `Peadm::Pe_version`
 
 
 
-Default value: `'2021.7.2'`
+Default value: `'2021.7.4'`
 
 ##### <a name="-peadm--install--dns_alt_names"></a>`dns_alt_names`
 
@@ -1682,6 +1843,14 @@ Data type: `Optional[Hash]`
 
 
 Default value: `{}`
+
+##### <a name="-peadm--install--code_manager_auto_configure"></a>`code_manager_auto_configure`
+
+Data type: `Optional[Boolean]`
+
+
+
+Default value: `undef`
 
 ##### <a name="-peadm--install--r10k_remote"></a>`r10k_remote`
 
@@ -1707,6 +1876,14 @@ Data type: `Optional[Peadm::Pem]`
 
 Default value: `undef`
 
+##### <a name="-peadm--install--r10k_known_hosts"></a>`r10k_known_hosts`
+
+Data type: `Optional[Peadm::Known_hosts]`
+
+
+
+Default value: `undef`
+
 ##### <a name="-peadm--install--deploy_environment"></a>`deploy_environment`
 
 Data type: `Optional[String]`
@@ -1724,14 +1901,6 @@ Data type: `Optional[String]`
 Default value: `undef`
 
 ##### <a name="-peadm--install--license_key_content"></a>`license_key_content`
-
-Data type: `Optional[String]`
-
-
-
-Default value: `undef`
-
-##### <a name="-peadm--install--stagingdir"></a>`stagingdir`
 
 Data type: `Optional[String]`
 
@@ -1823,6 +1992,38 @@ Data type: `Boolean`
 
 Default value: `false`
 
+### <a name="peadm--restore_ca"></a>`peadm::restore_ca`
+
+The peadm::restore_ca class.
+
+#### Parameters
+
+The following parameters are available in the `peadm::restore_ca` plan:
+
+* [`target`](#-peadm--restore_ca--target)
+* [`file_path`](#-peadm--restore_ca--file_path)
+* [`recovery_directory`](#-peadm--restore_ca--recovery_directory)
+
+##### <a name="-peadm--restore_ca--target"></a>`target`
+
+Data type: `Peadm::SingleTargetSpec`
+
+
+
+##### <a name="-peadm--restore_ca--file_path"></a>`file_path`
+
+Data type: `String`
+
+
+
+##### <a name="-peadm--restore_ca--recovery_directory"></a>`recovery_directory`
+
+Data type: `Optional[String]`
+
+
+
+Default value: `'/tmp/peadm_recovery'`
+
 ### <a name="peadm--status"></a>`peadm::status`
 
 Return status information from one or more PE clusters in a table format
@@ -1896,6 +2097,9 @@ The following parameters are available in the `peadm::upgrade` plan:
 * [`internal_compiler_b_pool_address`](#-peadm--upgrade--internal_compiler_b_pool_address)
 * [`pe_installer_source`](#-peadm--upgrade--pe_installer_source)
 * [`final_agent_state`](#-peadm--upgrade--final_agent_state)
+* [`r10k_known_hosts`](#-peadm--upgrade--r10k_known_hosts)
+* [`stagingdir`](#-peadm--upgrade--stagingdir)
+* [`uploaddir`](#-peadm--upgrade--uploaddir)
 * [`primary_host`](#-peadm--upgrade--primary_host)
 * [`replica_host`](#-peadm--upgrade--replica_host)
 * [`compiler_hosts`](#-peadm--upgrade--compiler_hosts)
@@ -1903,7 +2107,6 @@ The following parameters are available in the `peadm::upgrade` plan:
 * [`replica_postgresql_host`](#-peadm--upgrade--replica_postgresql_host)
 * [`version`](#-peadm--upgrade--version)
 * [`token_file`](#-peadm--upgrade--token_file)
-* [`stagingdir`](#-peadm--upgrade--stagingdir)
 * [`download_mode`](#-peadm--upgrade--download_mode)
 * [`permit_unsafe_versions`](#-peadm--upgrade--permit_unsafe_versions)
 * [`begin_at_step`](#-peadm--upgrade--begin_at_step)
@@ -1956,6 +2159,35 @@ Configures the state the puppet agent should be in on infrastructure nodes
 after PE is upgraded successfully.
 
 Default value: `'running'`
+
+##### <a name="-peadm--upgrade--r10k_known_hosts"></a>`r10k_known_hosts`
+
+Data type: `Optional[Peadm::Known_hosts]`
+
+Puppet Enterprise 2023.3+ requires host key verification for the
+r10k_remote host when using ssh. you must provide \$r10k_known_hosts
+information in the form of an array of hashes with 'name', 'type' and 'key'
+information for hostname, key-type and public key.
+
+Default value: `undef`
+
+##### <a name="-peadm--upgrade--stagingdir"></a>`stagingdir`
+
+Data type: `String`
+
+Directory on the Bolt host where the installer tarball will be cached if
+download_mode is 'bolthost' (default)
+
+Default value: `'/tmp'`
+
+##### <a name="-peadm--upgrade--uploaddir"></a>`uploaddir`
+
+Data type: `String`
+
+Directory the installer tarball will be uploaded to or expected to be in
+for offline usage.
+
+Default value: `'/tmp'`
 
 ##### <a name="-peadm--upgrade--primary_host"></a>`primary_host`
 
@@ -2010,14 +2242,6 @@ Data type: `Optional[String]`
 
 
 Default value: `undef`
-
-##### <a name="-peadm--upgrade--stagingdir"></a>`stagingdir`
-
-Data type: `String`
-
-
-
-Default value: `'/tmp'`
 
 ##### <a name="-peadm--upgrade--download_mode"></a>`download_mode`
 

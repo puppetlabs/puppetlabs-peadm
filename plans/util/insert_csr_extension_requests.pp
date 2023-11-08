@@ -22,7 +22,7 @@ plan peadm::util::insert_csr_extension_requests (
 
     run_task('peadm::mkdir_p_file', $target,
       path    => '/etc/puppetlabs/puppet/csr_attributes.yaml',
-      content => $csr_file_data.to_yaml,
+      content => stdlib::to_yaml($csr_file_data),
     )
   }
 }

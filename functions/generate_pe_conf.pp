@@ -14,7 +14,7 @@ function peadm::generate_pe_conf (
 
   # Remove anything that is undef, then output to JSON (and therefore HOCON,
   # because HOCON is a superset of JSON)
-  $settings.filter |$key,$value| {
-    $value != undef
-  }.to_json_pretty()
+  stdlib::to_json_pretty($settings.filter |$key,$value| {
+      $value != undef
+  })
 }

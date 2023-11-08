@@ -5,6 +5,7 @@ plan peadm::util::retrieve_and_upload(
   String[1]  $local_path,
   String[1]  $upload_path,
 ) {
+  # lint:ignore:strict_indent
   $nodes.peadm::fail_on_transport('pcp', @(HEREDOC/n))
     \nThe "pcp" transport is not available for uploading PE installers as
     the ".tar.gz" file is too large to send over the PE Orchestrator
@@ -26,6 +27,7 @@ plan peadm::util::retrieve_and_upload(
 
         https://www.puppet.com/docs/bolt/latest/bolt_transports_reference.html
     |-HEREDOC
+    # lint:endignore
 
   $exists = without_default_logging() || {
     run_command("test -e '${local_path}'", 'local://localhost',

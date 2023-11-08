@@ -19,6 +19,17 @@
 # @param final_agent_state
 #   Configures the state the puppet agent should be in on infrastructure nodes
 #   after PE is upgraded successfully.
+# @param r10k_known_hosts
+#   Puppet Enterprise 2023.3+ requires host key verification for the
+#   r10k_remote host when using ssh. you must provide \$r10k_known_hosts
+#   information in the form of an array of hashes with 'name', 'type' and 'key'
+#   information for hostname, key-type and public key.
+# @param stagingdir
+#   Directory on the Bolt host where the installer tarball will be cached if
+#   download_mode is 'bolthost' (default)
+# @param uploaddir
+#   Directory the installer tarball will be uploaded to or expected to be in
+#   for offline usage.
 #
 plan peadm::upgrade (
   # Standard
@@ -33,15 +44,17 @@ plan peadm::upgrade (
   Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
 
   # Common Configuration
-  Optional[Peadm::Pe_version] $version                          = undef,
-  Optional[String]            $pe_installer_source              = undef,
-  Optional[String]            $compiler_pool_address            = undef,
-  Optional[String]            $internal_compiler_a_pool_address = undef,
-  Optional[String]            $internal_compiler_b_pool_address = undef,
+  Optional[Peadm::Pe_version]  $version                          = undef,
+  Optional[String]             $pe_installer_source              = undef,
+  Optional[String]             $compiler_pool_address            = undef,
+  Optional[String]             $internal_compiler_a_pool_address = undef,
+  Optional[String]             $internal_compiler_b_pool_address = undef,
+  Optional[Peadm::Known_hosts] $r10k_known_hosts                 = undef,
 
   # Other
   Optional[String]           $token_file             = undef,
   String                     $stagingdir             = '/tmp',
+  String                     $uploaddir              = '/tmp',
   Enum['running', 'stopped'] $final_agent_state      = 'running',
   Enum[direct,bolthost]      $download_mode          = 'bolthost',
   Boolean                    $permit_unsafe_versions = false,
@@ -86,6 +99,7 @@ plan peadm::upgrade (
 
   out::message('# Gathering information')
 
+  # lint:ignore:strict_indent
   $primary_target.peadm::fail_on_transport('pcp', @(HEREDOC/n))
     \nThe "pcp" transport is not available for use with the Primary
     as peadm::upgrade will cause a restart of the
@@ -99,6 +113,7 @@ plan peadm::upgrade (
 
         https://www.puppet.com/docs/bolt/latest/bolt_transports_reference.html
     |-HEREDOC
+    # lint:endignore
 
   $platform = run_task('peadm::precheck', $primary_target).first['platform']
 
@@ -112,7 +127,7 @@ plan peadm::upgrade (
     $pe_tarball_source = "https://s3.amazonaws.com/pe-builds/released/${_version}/${pe_tarball_name}"
   }
 
-  $upload_tarball_path = "/tmp/${pe_tarball_name}"
+  $upload_tarball_path = "${uploaddir}/${pe_tarball_name}"
 
   peadm::assert_supported_bolt_version()
 
@@ -197,16 +212,27 @@ plan peadm::upgrade (
         path => '/etc/puppetlabs/enterprise/conf.d/pe.conf',
       ).first['content']
 
-      $pe_conf = ($current_pe_conf ? {
+      $pe_conf = stdlib::to_json_pretty($current_pe_conf ? {
           undef   => {},
-          default => $current_pe_conf.parsehocon(),
+          default => stdlib::parsehocon($current_pe_conf),
         } + {
           'console_admin_password'                => 'not used',
           'puppet_enterprise::puppet_master_host' => $primary_target.peadm::certname(),
           'puppet_enterprise::database_host'      => $target.peadm::certname(),
-      } + $profile_database_puppetdb_hosts).to_json_pretty()
+      } + $profile_database_puppetdb_hosts)
 
       write_file($pe_conf, '/etc/puppetlabs/enterprise/conf.d/pe.conf', $target)
+    }
+
+    if $r10k_known_hosts != undef {
+      $current_pe_conf = peadm::get_pe_conf($primary_target[0])
+
+      # Append the r10k_known_hosts entry
+      $updated_pe_conf = $current_pe_conf + {
+        'puppet_enterprise::profile::master::r10k_known_hosts' => $r10k_known_hosts,
+      }
+
+      peadm::update_pe_conf($primary_target[0], $updated_pe_conf)
     }
   }
 
@@ -388,6 +414,8 @@ plan peadm::upgrade (
       name   => 'puppet',
     )
   }
+
+  peadm::check_version_and_known_hosts($current_pe_version, $_version, $r10k_known_hosts)
 
   return("Upgrade of Puppet Enterprise ${arch['architecture']} completed.")
 }

@@ -190,6 +190,18 @@ plan peadm::add_database(
     }
   }
 
+  # The pe.conf file needs to be in place or future upgrades will fail.
+  $pe_conf = peadm::generate_pe_conf({
+      'console_admin_password'                => 'not used',
+      'puppet_enterprise::puppet_master_host' => $primary_host.peadm::certname(),
+      'puppet_enterprise::database_host'      => $postgresql_target.peadm::certname(),
+  })
+
+  run_task('peadm::mkdir_p_file', $postgresql_target,
+    path    => '/etc/puppetlabs/enterprise/conf.d/pe.conf',
+    content => stdlib::to_json_pretty($pe_conf.parsejson()),
+  )
+
   # Start frontend compiler services so catalogs can once again be compiled by
   # agents
   run_command('systemctl start pe-puppetserver.service pe-puppetdb.service', $compilers)

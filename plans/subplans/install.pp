@@ -11,6 +11,14 @@
 #   over to the primary at /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa
 #   If the file does not exist the value will simply be supplied to the primary
 #
+# @param r10k_known_hosts
+#   Puppet Enterprise 2023.3+ requires host key verification for the
+#   r10k_remote host when using ssh. When setting \$r10k_private_key, you must
+#   also provide \$r10k_known_hosts information in the form of an array of
+#   hashes with 'name', 'type' and 'key' information for hostname, key-type and
+#   public key. Please refer to the Puppet Enterprise 2023.3+ Configure Code
+#   Manager documentation for further details.
+#
 # @param license_key_file
 #   The license key to use with Puppet Enterprise.  If this is a local file it
 #   will be copied over to the MoM at /etc/puppetlabs/license.key
@@ -46,10 +54,11 @@ plan peadm::subplans::install (
   Hash                 $pe_conf_data        = {},
 
   # Code Manager
-  Optional[Boolean]    $code_manager_auto_configure = true,
+  Optional[Boolean]    $code_manager_auto_configure = undef,
   Optional[String]     $r10k_remote              = undef,
   Optional[String]     $r10k_private_key_file    = undef,
   Optional[Peadm::Pem] $r10k_private_key_content = undef,
+  Optional[Peadm::Known_hosts] $r10k_known_hosts = undef,
 
   # License key
   Optional[String]     $license_key_file    = undef,
@@ -57,6 +66,7 @@ plan peadm::subplans::install (
 
   # Other
   String                $stagingdir             = '/tmp',
+  String                $uploaddir              = '/tmp',
   Enum[direct,bolthost] $download_mode          = 'bolthost',
   Boolean               $permit_unsafe_versions = false,
   String                $token_lifetime         = '1y',
@@ -125,7 +135,21 @@ plan peadm::subplans::install (
   # either be undef or else the key content to write.
   $r10k_private_key = peadm::file_or_content('r10k_private_key', $r10k_private_key_file, $r10k_private_key_content)
 
-  # Same for license key
+  # enable code manager if:
+  # * it isn't explicitly disabled *and* the user provided r10k repo (key is optional, repo could be a local absolute path or https URL)
+  # * a replica is present
+  # * one or multiple compiler are present
+  $_code_manager_auto_configure = if $r10k_remote and $code_manager_auto_configure {
+    true
+  } elsif $replica_host {
+    true
+  } elsif $compiler_hosts {
+    true
+  } else {
+    $code_manager_auto_configure
+  }
+
+  # Process user input for license key (same process as for r10k private key above).
   $license_key = peadm::file_or_content('license_key', $license_key_file, $license_key_content)
 
   $precheck_results = run_task('peadm::precheck', $all_targets)
@@ -164,13 +188,14 @@ plan peadm::subplans::install (
       'puppet_enterprise::puppet_master_host'                           => $primary_target.peadm::certname(),
       'pe_install::puppet_master_dnsaltnames'                           => $dns_alt_names,
       'puppet_enterprise::puppetdb_database_host'                       => $primary_postgresql_target.peadm::certname(),
-      'puppet_enterprise::profile::master::code_manager_auto_configure' => $code_manager_auto_configure,
+      'puppet_enterprise::profile::master::code_manager_auto_configure' => $_code_manager_auto_configure,
       'puppet_enterprise::profile::master::r10k_remote'                 => $r10k_remote,
       'puppet_enterprise::profile::master::r10k_private_key'            => $r10k_private_key ? {
         undef   => undef,
         default => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
       },
-  } + $puppetdb_database_temp_config + $pe_conf_data)
+      'puppet_enterprise::profile::master::r10k_known_hosts'            => $r10k_known_hosts,
+  }.delete_undef_values + $puppetdb_database_temp_config + $pe_conf_data)
 
   $primary_postgresql_pe_conf = peadm::generate_pe_conf({
       'console_admin_password'                => 'not used',
@@ -211,7 +236,7 @@ plan peadm::subplans::install (
     $pe_tarball_source = "https://s3.amazonaws.com/pe-builds/released/${version}/${pe_tarball_name}"
   }
 
-  $upload_tarball_path = "/tmp/${pe_tarball_name}"
+  $upload_tarball_path = "${uploaddir}/${pe_tarball_name}"
 
   if $download_mode == 'bolthost' {
     # Download the PE tarball and send it to the nodes that need it
@@ -396,7 +421,7 @@ plan peadm::subplans::install (
 
     run_task('peadm::mkdir_p_file', $target,
       path    => '/etc/puppetlabs/enterprise/conf.d/pe.conf',
-      content => ($pe_conf.parsejson() - $puppetdb_database_temp_config).to_json_pretty(),
+      content => stdlib::to_json_pretty($pe_conf.parsejson() - $puppetdb_database_temp_config),
     )
   }
 

@@ -21,8 +21,8 @@ plan peadm::status(
   $stack_status = $results.reduce({}) | $res, $item | {
     $data = $item.value[output]
     $stack_name = $item.target.peadm::certname()
-    $status = peadm::determine_status($data, $colors).merge(stack_name => $stack_name )
-    $res.merge({ $stack_name => $status })
+    $status = stdlib::merge(peadm::determine_status($data, $colors), { stack_name => $stack_name })
+    stdlib::merge($res, { $stack_name => $status })
   }
 
   $overall_degraded_stacks = $stack_status.filter | $item | { $item[1][status] =~ /degraded/ }
@@ -45,7 +45,7 @@ plan peadm::status(
   $passed_table_rows = $overall_passed_stacks.map | $item | { [$item[0], $item[1][status]] }
 
   # produce array of degraded or failed services
-  $bad_svc_rows = $overall_failed_stacks.merge($overall_degraded_stacks).map | $item | {
+  $bad_svc_rows = stdlib::merge($overall_failed_stacks, $overall_degraded_stacks).map | $item | {
     $item[1][failed].map | $svc | {
       [$item[0], *$svc[0].split('/'), peadm::convert_status($svc[1], undef, $colors)]
     }
@@ -91,7 +91,7 @@ plan peadm::status(
       $summary_json = {
         'summary' => {
           'status' => $overall_status,
-          'stacks' => $stack_table_rows.hash,
+          'stacks' => Hash($stack_table_rows),
         },
         'failed' => $failed,
         'operational' => $passed,

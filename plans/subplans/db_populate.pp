@@ -13,8 +13,8 @@ plan peadm::subplans::db_populate(
 
   # Always ensure Puppet is stopped or it'll remove rules that allow replication
   run_command('systemctl stop puppet.service', peadm::flatten_compact([
-    $source_target,
-    $destination_target,
+        $source_target,
+        $destination_target,
   ]))
 
   # Retrieve source's PSQL version
