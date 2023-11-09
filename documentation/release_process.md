@@ -8,4 +8,4 @@
 - [ ] Kick off the [Release Prep](https://github.com/puppetlabs/puppetlabs-peadm/actions/workflows/release-prep.yml) action selecting the branch you want to release from and enter the release version number.
 - [ ] Review and merge the Release PREP Pull Request. Make sure to verify the checklist items in the Pull Request description.
 - [ ] Once the Release Prep Pull Request is merged, Kick off  [Publish module](https://github.com/puppetlabs/puppetlabs-peadm/actions/workflows/release.yml) action selecting the branch you created the Release Prep Pull Request from.
-- [ ] Check Puppet Forge to make sure the module was published
+- [ ] Check [Puppet Forge](https://forge.puppet.com/modules/puppetlabs/peadm/readme) to make sure the module was published
