@@ -7,7 +7,7 @@ describe 'peadm::install' do
     it 'runs successfully with the minimum required parameters' do
       expect_plan('peadm::subplans::install')
       expect_plan('peadm::subplans::configure')
-      expect(run_plan('peadm::install', 'primary_host' => 'primary', 'console_password' => 'puppetlabs')).to be_ok
+      expect(run_plan('peadm::install', 'primary_host' => 'primary', 'console_password' => 'puppetlabs', 'version' => '2021.7.6')).to be_ok
     end
   end
 end

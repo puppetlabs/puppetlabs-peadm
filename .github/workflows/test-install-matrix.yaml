@@ -43,7 +43,7 @@ jobs:
           - extra-large-with-dr
         version:
           - 2019.8.12
-          - 2021.7.5
+          - 2021.7.6
           - 2023.5.0
         image:
           - centos-7
