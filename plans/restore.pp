@@ -73,7 +73,6 @@ plan peadm::restore (
     run_task('peadm::backup_classification', $primary_target,
       directory => $recovery_directory
     )
-    out::message("# Backed up current classification to ${recovery_directory}/classification_backup.json")
 
     run_task('peadm::transform_classification_groups', $primary_target,
       source_directory  => "${recovery_directory}/classifier",
@@ -81,7 +80,7 @@ plan peadm::restore (
     )
 
     run_task('peadm::restore_classification', $primary_target,
-      classification_file => "${recovery_directory}/classification_backup.json",
+      classification_file => "${recovery_directory}/transformed_classification.json",
     )
   }
 
@@ -93,7 +92,7 @@ plan peadm::restore (
         --scope=certs \
         --tempdir=${shellquote($recovery_directory)} \
         --force \
-        ${shellquote($recovery_directory)}/classifier/pe_backup-*tgz
+        ${shellquote($recovery_directory)}/ca/pe_backup-*tgz
       | CMD
   }
 
@@ -102,8 +101,12 @@ plan peadm::restore (
   # TODO: consider adding a heuristic to skip when innappropriate due to size
   #       or other factors.
   if getvar('recovery_opts.puppetdb') {
+    out::message('# Exporting puppetdb')
     run_command(@("CMD"/L), $primary_target)
-      /opt/puppetlabs/bin/puppet-db export ${shellquote($recovery_directory)}/puppetdb-archive.bin
+      /opt/puppetlabs/bin/puppet-db export \
+        --cert=$(/opt/puppetlabs/bin/puppet config print hostcert) \
+        --key=$(/opt/puppetlabs/bin/puppet config print hostprivkey) \
+        ${shellquote($recovery_directory)}/puppetdb-archive.bin
       | CMD
   }
 
@@ -125,7 +128,7 @@ plan peadm::restore (
   if getvar('recovery_opts.orchestrator') {
     out::message('# Restoring orchestrator secret keys')
     run_command(@("CMD"/L), $primary_target)
-                                          cp -rp ${shellquote($recovery_directory)}/orchestrator/secrets/* /etc/puppetlabs/orchestration-services/conf.d/secrets/ 
+      cp -rp ${shellquote($recovery_directory)}/orchestrator/secrets/* /etc/puppetlabs/orchestration-services/conf.d/secrets/ 
       | CMD
   }
 # lint:endignore
