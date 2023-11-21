@@ -6,6 +6,12 @@ on:
   workflow_dispatch:
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "tests"
+        run: |
+          echo github.event.comment.body
   Spec:
     if: |
       github.repository_owner == 'puppetlabs' ||
@@ -16,7 +22,7 @@ jobs:
   Acceptance:
     if: |
       github.repository_owner == 'puppetlabs' ||
-      contains(github.event.comment.body, '/ci run tests')
+      contains(github.event.comment
     uses: "puppetlabs/cat-github-actions/.github/workflows/module_acceptance.yml@main"
     with:
       flags: "--provision-service"
