@@ -222,7 +222,10 @@ plan peadm::restore (
   #       or other factors.
   if getvar('recovery_opts.puppetdb') {
     run_command(@("CMD"/L), $primary_target)
-    /opt/puppetlabs/bin/puppet-db import ${shellquote($recovery_directory)}/puppetdb-archive.bin
+      /opt/puppetlabs/bin/puppet-db import \
+      --cert=$(/opt/puppetlabs/bin/puppet config print hostcert) \
+      --key=$(/opt/puppetlabs/bin/puppet config print hostprivkey) \
+      ${shellquote($recovery_directory)}/puppetdb-archive.bin
       | CMD
 # lint:endignore
   }
