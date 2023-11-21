@@ -99,8 +99,10 @@
 * `peadm::add_replica`: Replace a replica host for a Standard or Large architecture.
 Supported use cases:
 1: The existing replica is broken, we have a fresh new VM we want to provision the replica to.
+* `peadm::backup`: Backup the core user settings for puppet infrastructure
 * `peadm::misc::divert_code_manager`: This plan exists to account for a scenario where a PE XL
 * `peadm::modify_cert_extensions`
+* `peadm::restore`: Restore the core user settings for puppet infrastructure from backup
 * `peadm::subplans::component_install`: Install a new PEADM component
 * `peadm::subplans::configure`: Configure first-time classification and DR setup
 * `peadm::subplans::db_populate`: Destructively (re)populates a new or existing database with the contents or a known good source
@@ -949,7 +951,7 @@ Struct[{
     'puppetdb'     => Optional[Boolean],
     'rbac'         => Optional[Boolean],
     'activity'     => Optional[Boolean],
-    'ca'           => Optional[Boolean[false]],
+    'ca'           => Optional[Boolean],
     'classifier'   => Optional[Boolean],
 }]
 ```

@@ -3,6 +3,6 @@ type Peadm::Recovery_opts = Struct[{
     'puppetdb'     => Optional[Boolean],
     'rbac'         => Optional[Boolean],
     'activity'     => Optional[Boolean],
-    'ca'           => Optional[Boolean[false]],
+    'ca'           => Optional[Boolean],
     'classifier'   => Optional[Boolean],
 }]
