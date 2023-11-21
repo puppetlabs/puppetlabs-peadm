@@ -8,12 +8,12 @@ on:
 
 jobs:
   Spec:
-    if: ${{ github.repository_owner == 'puppetlabs' }} && ${{ github.event.pull_request.draft == false }}
+    if: ${{ github.event.pull_request.draft == false }} && ${{ github.repository_owner == 'puppetlabs' }}
     uses: "puppetlabs/cat-github-actions/.github/workflows/module_ci.yml@main"
     secrets: "inherit"
 
   Acceptance:
-    if: ${{ github.repository_owner == 'puppetlabs' }} && ${{ github.event.pull_request.draft == false }}
+    if: ${{ github.event.pull_request.draft == false }} && ${{ github.repository_owner == 'puppetlabs' }}
     uses: "puppetlabs/cat-github-actions/.github/workflows/module_acceptance.yml@main"
     with:
       flags: "--provision-service"
