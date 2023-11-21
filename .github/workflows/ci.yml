@@ -1,23 +1,22 @@
 name: "ci"
 
 on:
-  pull_request:
-    branches:
-      - "main"
+  pull_request_review_comment:
+    types: [created]
   workflow_dispatch:
 
 jobs:
   Spec:
     if: |
-      github.repository_owner == 'puppetlabs' &&
-      !github.event.pull_request.draft
+      github.repository_owner == 'puppetlabs' ||
+      contains(github.event.comment.body, '/ci run tests')
     uses: "puppetlabs/cat-github-actions/.github/workflows/module_ci.yml@main"
     secrets: "inherit"
 
   Acceptance:
     if: |
-      github.repository_owner == 'puppetlabs' &&
-      !github.event.pull_request.draft
+      github.repository_owner == 'puppetlabs' ||
+      contains(github.event.comment.body, '/ci run tests')
     uses: "puppetlabs/cat-github-actions/.github/workflows/module_acceptance.yml@main"
     with:
       flags: "--provision-service"
