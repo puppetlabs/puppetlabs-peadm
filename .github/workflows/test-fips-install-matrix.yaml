@@ -7,8 +7,17 @@ on:
   workflow_dispatch: {}
 
 jobs:
+  echo:
+    name: "Echo comment"
+    runs-on: ubuntu-20.04
+    steps:
+      - name: "Echo comment"
+        run: |
+          echo ::group::info:comment
+            echo "${{ github.event.comment.body }}"
+          echo ::endgroup::
   test-install:
-    if: contains(github.event.comment.body, 'ci run tests')
+    if: contains(github.event.comment.body, '/test-install')
     name: "PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }} with fips ${{ matrix.fips }}"
     runs-on: ubuntu-20.04
     env:
