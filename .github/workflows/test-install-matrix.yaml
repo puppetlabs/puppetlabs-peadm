@@ -28,6 +28,7 @@ on:
 
 jobs:
   test-install:
+    if: ${{ github.event.pull_request.draft == false }}
     name: "PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}"
     runs-on: ubuntu-20.04
     env:

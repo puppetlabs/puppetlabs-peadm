@@ -4,54 +4,55 @@ name: "Upgrade test matrix"
 on:
   pull_request:
     paths:
-      - '.github/workflows/**/*'
-      - 'spec/**/*'
-      - 'lib/**/*'
-      - 'tasks/**/*'
-      - 'functions/**/*'
-      - 'types/**/*'
-      - 'plans/**/*'
-      - 'hiera/**/*'
-      - 'manifests/**/*'
-      - 'templates/**/*'
-      - 'files/**/*'
-      - 'metadata.json'
-      - 'Rakefile'
-      - 'Gemfile'
-      - 'provision.yaml'
-      - '.rspec'
-      - '.rubocop.yml'
-      - '.puppet-lint.rc'
-      - '.fixtures.yml'
+      - ".github/workflows/**/*"
+      - "spec/**/*"
+      - "lib/**/*"
+      - "tasks/**/*"
+      - "functions/**/*"
+      - "types/**/*"
+      - "plans/**/*"
+      - "hiera/**/*"
+      - "manifests/**/*"
+      - "templates/**/*"
+      - "files/**/*"
+      - "metadata.json"
+      - "Rakefile"
+      - "Gemfile"
+      - "provision.yaml"
+      - ".rspec"
+      - ".rubocop.yml"
+      - ".puppet-lint.rc"
+      - ".fixtures.yml"
 
     branches: [main]
   workflow_dispatch: {}
 
 jobs:
   test-upgrade:
+    if: ${{ github.event.pull_request.draft == false }}
     name: "PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}"
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
-      LANG: 'en_US.UTF-8'
+      LANG: "en_US.UTF-8"
     strategy:
       fail-fast: false
       matrix:
         architecture:
-          - 'standard'
-          - 'extra-large-with-dr'
+          - "standard"
+          - "extra-large-with-dr"
         version:
-          - '2019.8.12'
+          - "2019.8.12"
         version_to_upgrade:
-          - '2021.7.4'
+          - "2021.7.4"
         image:
-          - 'almalinux-cloud/almalinux-8'
+          - "almalinux-cloud/almalinux-8"
         download_mode:
-          - 'direct'
+          - "direct"
 
     steps:
-      - name: 'Start SSH session'
+      - name: "Start SSH session"
         if: ${{ github.event.inputs.ssh-debugging == 'true' }}
         uses: luchihoratiu/debug-via-ssh@main
         with:
@@ -74,7 +75,7 @@ jobs:
             bundle env
           echo ::endgroup::
 
-      - name: 'Provision test cluster'
+      - name: "Provision test cluster"
         timeout-minutes: 15
         run: |
           echo ::group::prepare
@@ -101,7 +102,7 @@ jobs:
             sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
           echo ::endgroup::
 
-      - name: 'Install PE on test cluster'
+      - name: "Install PE on test cluster"
         timeout-minutes: 120
         run: |
           bundle exec bolt plan run peadm_spec::install_test_cluster \
@@ -110,7 +111,7 @@ jobs:
             architecture=${{ matrix.architecture }} \
             version=${{ matrix.version }}
 
-      - name: 'Wait as long as the file ${HOME}/pause file is present'
+      - name: "Wait as long as the file ${HOME}/pause file is present"
         if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
         run: |
           while [ -f "${HOME}/pause" ] ; do
@@ -119,7 +120,7 @@ jobs:
           done
           echo "${HOME}/pause absent, continuing workflow."
 
-      - name: 'Upgrade PE on test cluster'
+      - name: "Upgrade PE on test cluster"
         timeout-minutes: 120
         run: |
           bundle exec bolt plan run peadm_spec::upgrade_test_cluster \
@@ -129,7 +130,7 @@ jobs:
             download_mode=${{ matrix.download_mode }} \
             version=${{ matrix.version_to_upgrade }}
 
-      - name: 'Tear down test cluster'
+      - name: "Tear down test cluster"
         if: ${{ always() }}
         continue-on-error: true
         run: |
