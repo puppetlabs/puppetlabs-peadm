@@ -2,34 +2,13 @@
 name: "Upgrade test matrix"
 
 on:
-  pull_request:
-    paths:
-      - ".github/workflows/**/*"
-      - "spec/**/*"
-      - "lib/**/*"
-      - "tasks/**/*"
-      - "functions/**/*"
-      - "types/**/*"
-      - "plans/**/*"
-      - "hiera/**/*"
-      - "manifests/**/*"
-      - "templates/**/*"
-      - "files/**/*"
-      - "metadata.json"
-      - "Rakefile"
-      - "Gemfile"
-      - "provision.yaml"
-      - ".rspec"
-      - ".rubocop.yml"
-      - ".puppet-lint.rc"
-      - ".fixtures.yml"
-
-    branches: [main]
+  pull_request_review_comment:
+    types: [created]
   workflow_dispatch: {}
 
 jobs:
   test-upgrade:
-    if: ${{ github.event.pull_request.draft == false }}
+    if: contains(github.event.comment.body, 'ci run tests')
     name: "PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}"
     runs-on: ubuntu-20.04
     env:
