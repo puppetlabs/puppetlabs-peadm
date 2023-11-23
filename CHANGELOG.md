@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.16.1](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.16.1) - 2023-11-23
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.16.0...v3.16.1)
+
+### Other
+
+- (PE-37192) Updating default install version to 2021.7.6 [#406](https://github.com/puppetlabs/puppetlabs-peadm/pull/406) ([ragingra](https://github.com/ragingra))
+- (MAINT) Update release_process.md [#405](https://github.com/puppetlabs/puppetlabs-peadm/pull/405) ([Jo-Lillie](https://github.com/Jo-Lillie))
+
 ## [v3.16.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.16.0) - 2023-11-08
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.15.1...v3.16.0)
