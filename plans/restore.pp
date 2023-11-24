@@ -36,6 +36,11 @@ plan peadm::restore (
     $cluster = $_cluster
   }
 
+  $error = getvar('cluster.error')
+  if $error {
+    fail_plan($error)
+  }
+
   $arch = peadm::assert_supported_architecture(
     getvar('cluster.params.primary_host'),
     getvar('cluster.params.replica_host'),

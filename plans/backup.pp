@@ -3,8 +3,6 @@
 #
 # This plan can backup data as outlined at insert doc
 # 
-# TODO
-# - make sure backup warns and stops if run on a non-peadm-compatible cluster
 plan peadm::backup (
   # This plan should be run on the primary server
   Peadm::SingleTargetSpec $targets,
@@ -19,6 +17,10 @@ plan peadm::backup (
 
   $recovery_opts = (peadm::recovery_opts_default() + $backup)
   $cluster = run_task('peadm::get_peadm_config', $targets).first.value
+  $error = getvar('cluster.error')
+  if $error {
+    fail_plan($error)
+  }
   $arch = peadm::assert_supported_architecture(
     getvar('cluster.params.primary_host'),
     getvar('cluster.params.replica_host'),
