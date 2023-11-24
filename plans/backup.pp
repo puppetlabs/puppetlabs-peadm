@@ -3,6 +3,8 @@
 #
 # This plan can backup data as outlined at insert doc
 # 
+# TODO
+# - make sure backup warns and stops if run on a non-peadm-compatible cluster
 plan peadm::backup (
   # This plan should be run on the primary server
   Peadm::SingleTargetSpec $targets,

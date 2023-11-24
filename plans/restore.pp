@@ -3,6 +3,9 @@
 #
 # This plan can restore data to puppet infrastructure for DR and rebuilds
 # 
+# TODO
+# - make sure restore tries to leave the system in a running state if possible
+# - merge the restore of certs, config and code scope to one puppet-backup restore command
 plan peadm::restore (
   # This plan should be run on the primary server
   Peadm::SingleTargetSpec $targets,
@@ -28,7 +31,7 @@ plan peadm::restore (
     out::message('Failed to get cluster configuration, loading from backup...')
     $result = download_file("${recovery_directory}/peadm/peadm_config.json", 'peadm_config.json', $targets).first.value
     $cluster = loadjson(getvar('result.path'))
-    out::message('Cluster configuration loadad from backup')
+    out::message('Cluster configuration loaded from backup')
   } else {
     $cluster = $_cluster
   }
@@ -158,7 +161,7 @@ plan peadm::restore (
   run_command(@("CMD"/L), $primary_target)
     test -f ${shellquote($recovery_directory)}/rbac/keys.json \
       && cp -rp ${shellquote($recovery_directory)}/keys.json /etc/puppetlabs/console-services/conf.d/secrets/ \
-      || echo secret ldap key doesn't exist
+      || echo secret ldap key doesn\'t exist
     | CMD
 # lint:ignore:140chars
   # IF restoring orchestrator restore the secrets to /etc/puppetlabs/orchestration-services/conf.d/secrets/
