@@ -12,11 +12,27 @@ plan peadm::restore (
 
   # Path to the recovery tarball
   Pattern[/.*\.tar\.gz$/] $input_file,
+
+  # Do we want to merge existing puppetdb content to the restored content?
+  Boolean $merge_puppetdb = false,
 ) {
   peadm::assert_supported_bolt_version()
 
   $recovery_opts = (peadm::recovery_opts_default() + $restore)
-  $cluster = run_task('peadm::get_peadm_config', $targets).first.value
+  $recovery_directory = "${dirname($input_file)}/${basename($input_file, '.tar.gz')}"
+
+  # try to load the cluster configuration by running peadm::get_peadm_config, but allow for errors to happen
+  $_cluster = run_task('peadm::get_peadm_config', $targets, { '_catch_errors' => true }).first.value
+  if $_cluster == undef {
+    # failed to get cluster config, load from backup
+    out::message('Failed to get cluster configuration, loading from backup...')
+    $result = download_file("${recovery_directory}/peadm/peadm_config.json", 'peadm_config.json', $targets).first.value
+    $cluster = loadjson(getvar('result.path'))
+    out::message('Cluster configuration loadad from backup')
+  } else {
+    $cluster = $_cluster
+  }
+
   $arch = peadm::assert_supported_architecture(
     getvar('cluster.params.primary_host'),
     getvar('cluster.params.replica_host'),
@@ -49,7 +65,6 @@ plan peadm::restore (
       $compiler_targets,
   ])
 
-  $recovery_directory = "${dirname($input_file)}/${basename($input_file, '.tar.gz')}"
 # lint:ignore:strict_indent
   run_command(@("CMD"/L), $primary_target)
     umask 0077 \
@@ -96,11 +111,33 @@ plan peadm::restore (
       | CMD
   }
 
+  if getvar('recovery_opts.code') {
+    out::message('# Restoring code')
+    run_command(@("CMD"/L), $primary_target)
+      /opt/puppetlabs/bin/puppet-backup restore \
+        --scope=code \
+        --tempdir=${shellquote($recovery_directory)} \
+        --force \
+        ${shellquote($recovery_directory)}/code/pe_backup-*tgz
+      | CMD
+  }
+
+  if getvar('recovery_opts.config') {
+    out::message('# Restoring config')
+    run_command(@("CMD"/L), $primary_target)
+      /opt/puppetlabs/bin/puppet-backup restore \
+        --scope=config \
+        --tempdir=${shellquote($recovery_directory)} \
+        --force \
+        ${shellquote($recovery_directory)}/config/pe_backup-*tgz
+      | CMD
+  }
+
   # Use PuppetDB's /pdb/admin/v1/archive API to SAVE data currently in PuppetDB.
   # Otherwise we'll completely lose it if/when we restore.
   # TODO: consider adding a heuristic to skip when innappropriate due to size
   #       or other factors.
-  if getvar('recovery_opts.puppetdb') {
+  if getvar('recovery_opts.puppetdb') and $merge_puppetdb {
     out::message('# Exporting puppetdb')
     run_command(@("CMD"/L), $primary_target)
       /opt/puppetlabs/bin/puppet-db export \
@@ -121,7 +158,7 @@ plan peadm::restore (
   run_command(@("CMD"/L), $primary_target)
     test -f ${shellquote($recovery_directory)}/rbac/keys.json \
       && cp -rp ${shellquote($recovery_directory)}/keys.json /etc/puppetlabs/console-services/conf.d/secrets/ \
-      || echo secret ldap key doesnt exist
+      || echo secret ldap key doesn't exist
     | CMD
 # lint:ignore:140chars
   # IF restoring orchestrator restore the secrets to /etc/puppetlabs/orchestration-services/conf.d/secrets/
@@ -220,7 +257,7 @@ plan peadm::restore (
   # into the restored database.
   # TODO: consider adding a heuristic to skip when innappropriate due to size
   #       or other factors.
-  if getvar('recovery_opts.puppetdb') {
+  if getvar('recovery_opts.puppetdb') and $merge_puppetdb {
     run_command(@("CMD"/L), $primary_target)
       /opt/puppetlabs/bin/puppet-db import \
       --cert=$(/opt/puppetlabs/bin/puppet config print hostcert) \

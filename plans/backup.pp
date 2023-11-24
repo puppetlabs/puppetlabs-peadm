@@ -49,7 +49,23 @@ plan peadm::backup (
       ensure => 'directory',
       owner  => 'root',
       group  => 'root',
-      mode   => '0700',
+      mode   => '0711',
+    }
+
+    # create a backup subdir for peadm configration
+    file { "${backup_directory}/peadm":
+      ensure => 'directory',
+      owner  => 'root',
+      group  => 'root',
+      mode   => '0711',
+    }
+
+    # backup the cluster config
+    file { "${backup_directory}/peadm/peadm_config.json":
+      content => stdlib::to_json_pretty($cluster),
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0600',
     }
 
     # Create a subdir for each backup type selected
@@ -58,7 +74,7 @@ plan peadm::backup (
         ensure => 'directory',
         owner  => 'root',
         group  => 'root',
-        mode   => '0700',
+        mode   => '0711',
       }
     }
   }
@@ -75,6 +91,22 @@ plan peadm::backup (
 # lint:ignore:strict_indent
     run_command(@("CMD"), $primary_target)
       /opt/puppetlabs/bin/puppet-backup create --dir=${shellquote($backup_directory)}/ca --scope=certs
+      | CMD
+  }
+
+  if getvar('recovery_opts.code') {
+    out::message('# Backing up code')
+    # run_command("chown pe-postgres ${shellquote($backup_directory)}/code", $primary_target)
+    run_command(@("CMD"), $primary_target)
+      /opt/puppetlabs/bin/puppet-backup create --dir=${shellquote($backup_directory)}/code --scope=code
+      | CMD
+  }
+
+  if getvar('recovery_opts.config') {
+    out::message('# Backing up config')
+    run_command("chown pe-postgres ${shellquote($backup_directory)}/config", $primary_target)
+    run_command(@("CMD"), $primary_target)
+      /opt/puppetlabs/bin/puppet-backup create --dir=${shellquote($backup_directory)}/config --scope=config
       | CMD
   }
 
