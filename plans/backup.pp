@@ -56,7 +56,7 @@ plan peadm::backup (
   }
 
   # Create backup folders
-  apply($primary_target) {
+  apply($targets) {
     file { $backup_directory :
       ensure => 'directory',
       owner  => 'root',
@@ -93,7 +93,7 @@ plan peadm::backup (
 
   if getvar('recovery_opts.classifier') {
     out::message('# Backing up classification')
-    run_task('peadm::backup_classification', $primary_target,
+    run_task('peadm::backup_classification', $targets,
       directory => "${backup_directory}/classifier",
     )
   }
@@ -101,23 +101,23 @@ plan peadm::backup (
   if getvar('recovery_opts.ca') {
     out::message('# Backing up ca and ssl certificates')
 # lint:ignore:strict_indent
-    run_command(@("CMD"), $primary_target)
+    run_command(@("CMD"), $targets)
       /opt/puppetlabs/bin/puppet-backup create --dir=${shellquote($backup_directory)}/ca --scope=certs
       | CMD
   }
 
   if getvar('recovery_opts.code') {
     out::message('# Backing up code')
-    # run_command("chown pe-postgres ${shellquote($backup_directory)}/code", $primary_target)
-    run_command(@("CMD"), $primary_target)
+    # run_command("chown pe-postgres ${shellquote($backup_directory)}/code", $targets)
+    run_command(@("CMD"), $targets)
       /opt/puppetlabs/bin/puppet-backup create --dir=${shellquote($backup_directory)}/code --scope=code
       | CMD
   }
 
   if getvar('recovery_opts.config') {
     out::message('# Backing up config')
-    run_command("chown pe-postgres ${shellquote($backup_directory)}/config", $primary_target)
-    run_command(@("CMD"), $primary_target)
+    run_command("chown pe-postgres ${shellquote($backup_directory)}/config", $targets)
+    run_command(@("CMD"), $targets)
       /opt/puppetlabs/bin/puppet-backup create --dir=${shellquote($backup_directory)}/config --scope=config
       | CMD
   }
@@ -126,7 +126,7 @@ plan peadm::backup (
   if getvar('recovery_opts.rbac') {
     out::message('# Backing up ldap secret key if it exists')
 # lint:ignore:140chars
-    run_command(@("CMD"/L), $primary_target)
+    run_command(@("CMD"/L), $targets)
       test -f /etc/puppetlabs/console-services/conf.d/secrets/keys.json \
         && cp -rp /etc/puppetlabs/console-services/conf.d/secrets ${shellquote($backup_directory)}/rbac/ \
         || echo secret ldap key doesnt exist
@@ -137,13 +137,13 @@ plan peadm::backup (
   # IF backing up orchestrator back up the secrets too /etc/puppetlabs/orchestration-services/conf.d/secrets/
   if getvar('recovery_opts.orchestrator') {
     out::message('# Backing up orchestrator secret keys')
-    run_command(@("CMD"), $primary_target)
+    run_command(@("CMD"), $targets)
       cp -rp /etc/puppetlabs/orchestration-services/conf.d/secrets ${shellquote($backup_directory)}/orchestrator/ 
       | CMD
   }
 # lint:endignore
   $backup_databases.each |$name,$database_target| {
-    run_command(@("CMD"/L), $primary_target)
+    run_command(@("CMD"/L), $targets)
       /opt/puppetlabs/server/bin/pg_dump -Fd -Z3 -j4 \
         -f ${shellquote($backup_directory)}/${shellquote($name)}/pe-${shellquote($name)}.dump.d \
         "sslmode=verify-ca \
@@ -156,7 +156,7 @@ plan peadm::backup (
       | CMD
   }
 
-  run_command(@("CMD"/L), $primary_target)
+  run_command(@("CMD"/L), $targets)
     umask 0077 \
       && cd ${shellquote(dirname($backup_directory))} \
       && tar -czf ${shellquote($backup_directory)}.tar.gz ${shellquote(basename($backup_directory))} \
