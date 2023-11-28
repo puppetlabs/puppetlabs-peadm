@@ -1,4 +1,6 @@
-plan peadm_spec::test_backup() {
+plan peadm_spec::test_restore(
+  String[1] $input_file,
+) {
   $t = get_targets('*')
   wait_until_available($t)
 
@@ -7,8 +9,11 @@ plan peadm_spec::test_backup() {
     $target.set_var('certname', $fqdn.first['stdout'].chomp)
   }
 
-  # run infra status on the primary
   $primary_host = $t.filter |$n| { $n.vars['role'] == 'primary' }[0]
+
+  run_plan('peadm::restore', $primary_host, { 'backup_type' => 'recovery', 'input_file' => $input_file })
+
+  # run infra status on the primary
   out::message("Running peadm::status on primary host ${primary_host}")
   $result = run_plan('peadm::status', $primary_host, { 'format' => 'json' })
 
@@ -19,5 +24,4 @@ plan peadm_spec::test_backup() {
   } else {
     fail_plan('Cluster is not healthy, aborting')
   }
-  run_plan('peadm::backup', $primary_host, { 'output_directory' => '/tmp', 'backup_type' => 'recovery' })
 }
