@@ -12,9 +12,9 @@ plan peadm_spec::test_backup() {
   out::message("Running peadm::status on primary host ${primary_host}")
   $result = run_plan('peadm::status', $primary_host, { 'format' => 'json' })
 
-  out::message($result.first.value)
+  out::message($result)
 
-  if $result.first.value['failed'] == undef { # empty array
+  if empty($result['failed']) {
     out::message('Cluster is healthy, continuing')
   } else {
     fail_plan('Cluster is not healthy, aborting')

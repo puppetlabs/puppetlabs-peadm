@@ -23,7 +23,7 @@ on:
 
 jobs:
   backup:
-    name: "Backup: Cluster A: PE ${{ inputs.version }} ${{ inputs.architecture }} on ${{ inputs.image }}"
+    name: "Backup cluster: PE ${{ inputs.version }} ${{ inputs.architecture }} on ${{ inputs.image }}"
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true
@@ -88,9 +88,10 @@ jobs:
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             architecture=${{ inputs.architecture }} \
-            version=${{ inputs.version }}
+            version=${{ inputs.version }} \
+            --stream
 
-      - name: Perform PE backup of cluster
+      - name: Perform peadm backup of cluster
         timeout-minutes: 10
         continue-on-error: true
         run: |
@@ -134,7 +135,11 @@ jobs:
 
           bundle exec bolt command run "puppet infrastructure status" -t $primary
 
+<<<<<<< HEAD
       - name: Perform PE restore of cluster
+=======
+      - name: Perform peadm restore of cluster
+>>>>>>> 182e6f1ed721891605e410dc09e5ad0b6cd19d74
         timeout-minutes: 10
         continue-on-error: true
         run: |
