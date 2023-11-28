@@ -107,7 +107,7 @@ jobs:
             bundle exec bolt plan run peadm_spec::test_backup \
               --inventoryfile spec/fixtures/litmus_inventory.yaml \
               --modulepath spec/fixtures/modules
-          echo ::endgroup::          
+          echo ::endgroup::
 
       - name: "Wait as long as the file ${HOME}/pause file is present"
         continue-on-error: true
@@ -135,11 +135,7 @@ jobs:
 
           bundle exec bolt command run "puppet infrastructure status" -t $primary
 
-<<<<<<< HEAD
-      - name: Perform PE restore of cluster
-=======
       - name: Perform peadm restore of cluster
->>>>>>> 182e6f1ed721891605e410dc09e5ad0b6cd19d74
         timeout-minutes: 10
         continue-on-error: true
         run: |
@@ -161,8 +157,8 @@ jobs:
       - name: Output PE cluster status
         run: |
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary" | .uri)' spec/fixtures/litmus_inventory.yaml)
-          bundle exec bolt command run "puppet infrastructure status" -t $primary 
-          
+          bundle exec bolt command run "puppet infrastructure status" -t $primary
+
       - name: "Wait as long as the file ${HOME}/pause2 file is present"
         continue-on-error: true
         # if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
