@@ -7,6 +7,9 @@ plan peadm::backup (
   # This plan should be run on the primary server
   Peadm::SingleTargetSpec $targets,
 
+  # backup type determines the backup options
+  Enum['recovery', 'migration', 'custom'] $backup_type = 'recovery',
+
   # Which data to backup
   Peadm::Recovery_opts    $backup = {},
 
@@ -15,7 +18,6 @@ plan peadm::backup (
 ) {
   peadm::assert_supported_bolt_version()
 
-  $recovery_opts = (peadm::recovery_opts_default() + $backup)
   $cluster = run_task('peadm::get_peadm_config', $targets).first.value
   $error = getvar('cluster.error')
   if $error {
@@ -28,6 +30,12 @@ plan peadm::backup (
     getvar('cluster.params.replica_postgresql_host'),
     getvar('cluster.params.compiler_hosts'),
   )
+
+  $recovery_opts = $backup_type? {
+    'recovery'  => peadm::recovery_opts_default(),
+    'migration' => peadm::migration_opts_default(),
+    'custom'    => peadm::migration_opts_all() + $backup,
+  }
 
   $timestamp = Timestamp.new().strftime('%Y-%m-%dT%H%M%SZ')
   $backup_directory = "${output_directory}/pe-backup-${timestamp}"

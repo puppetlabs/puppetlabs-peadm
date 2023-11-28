@@ -5,10 +5,13 @@
 # 
 # TODO
 # - make sure restore tries to leave the system in a running state if possible
-# - merge the restore of certs, config and code scope to one puppet-backup restore command
+# - potentially merge the restore of certs, config and code scope to one puppet-backup restore command
 plan peadm::restore (
   # This plan should be run on the primary server
   Peadm::SingleTargetSpec $targets,
+
+  # restore type determines the restore options
+  Enum['recovery', 'migration', 'custom'] $restore_type = 'recovery',
 
   # Which data to restore
   Peadm::Recovery_opts    $restore = {},
@@ -21,12 +24,12 @@ plan peadm::restore (
 ) {
   peadm::assert_supported_bolt_version()
 
-  $recovery_opts = (peadm::recovery_opts_default() + $restore)
   $recovery_directory = "${dirname($input_file)}/${basename($input_file, '.tar.gz')}"
 
   # try to load the cluster configuration by running peadm::get_peadm_config, but allow for errors to happen
   $_cluster = run_task('peadm::get_peadm_config', $targets, { '_catch_errors' => true }).first.value
-  if $_cluster == undef {
+  out::message("cluster: ${_cluster}")
+  if $_cluster == undef or getvar('_cluster.params') == undef {
     # failed to get cluster config, load from backup
     out::message('Failed to get cluster configuration, loading from backup...')
     $result = download_file("${recovery_directory}/peadm/peadm_config.json", 'peadm_config.json', $targets).first.value
@@ -48,6 +51,12 @@ plan peadm::restore (
     getvar('cluster.params.replica_postgresql_host'),
     getvar('cluster.params.compiler_hosts'),
   )
+
+  $recovery_opts = $restore_type? {
+    'recovery'  => peadm::recovery_opts_default(),
+    'migration' => peadm::migration_opts_default(),
+    'custom'    => peadm::migration_opts_all() + $restore,
+  }
 
   $primary_target   = peadm::get_targets(getvar('cluster.params.primary_host'), 1)
   $replica_target   = peadm::get_targets(getvar('cluster.params.replica_host'), 1)
