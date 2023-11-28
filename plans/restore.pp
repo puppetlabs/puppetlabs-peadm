@@ -83,7 +83,7 @@ plan peadm::restore (
   ])
 
 # lint:ignore:strict_indent
-  run_command(@("CMD"/L), $primary_target)
+  run_command(@("CMD"/L), $targets)
     umask 0077 \
       && cd ${shellquote(dirname($recovery_directory))} \
       && tar -xzf ${shellquote($input_file)}
@@ -102,16 +102,16 @@ plan peadm::restore (
 
   if getvar('recovery_opts.classifier') {
     out::message('# Restoring classification')
-    run_task('peadm::backup_classification', $primary_target,
+    run_task('peadm::backup_classification', $targets,
       directory => $recovery_directory
     )
 
-    run_task('peadm::transform_classification_groups', $primary_target,
+    run_task('peadm::transform_classification_groups', $targets,
       source_directory  => "${recovery_directory}/classifier",
       working_directory => $recovery_directory
     )
 
-    run_task('peadm::restore_classification', $primary_target,
+    run_task('peadm::restore_classification', $targets,
       classification_file => "${recovery_directory}/transformed_classification.json",
     )
   }
@@ -119,7 +119,7 @@ plan peadm::restore (
   if getvar('recovery_opts.ca') {
     out::message('# Restoring ca and ssl certificates')
 # lint:ignore:strict_indent
-    run_command(@("CMD"/L), $primary_target)
+    run_command(@("CMD"/L), $targets)
       /opt/puppetlabs/bin/puppet-backup restore \
         --scope=certs \
         --tempdir=${shellquote($recovery_directory)} \
@@ -130,7 +130,7 @@ plan peadm::restore (
 
   if getvar('recovery_opts.code') {
     out::message('# Restoring code')
-    run_command(@("CMD"/L), $primary_target)
+    run_command(@("CMD"/L), $targets)
       /opt/puppetlabs/bin/puppet-backup restore \
         --scope=code \
         --tempdir=${shellquote($recovery_directory)} \
@@ -141,7 +141,7 @@ plan peadm::restore (
 
   if getvar('recovery_opts.config') {
     out::message('# Restoring config')
-    run_command(@("CMD"/L), $primary_target)
+    run_command(@("CMD"/L), $targets)
       /opt/puppetlabs/bin/puppet-backup restore \
         --scope=config \
         --tempdir=${shellquote($recovery_directory)} \
@@ -156,7 +156,7 @@ plan peadm::restore (
   #       or other factors.
   if getvar('recovery_opts.puppetdb') and $merge_puppetdb {
     out::message('# Exporting puppetdb')
-    run_command(@("CMD"/L), $primary_target)
+    run_command(@("CMD"/L), $targets)
       /opt/puppetlabs/bin/puppet-db export \
         --cert=$(/opt/puppetlabs/bin/puppet config print hostcert) \
         --key=$(/opt/puppetlabs/bin/puppet config print hostprivkey) \
@@ -165,14 +165,14 @@ plan peadm::restore (
   }
 
   ## shutdown services
-  run_command(@("CMD"/L), $primary_target)
+  run_command(@("CMD"/L), $targets)
     systemctl stop pe-console-services pe-nginx pxp-agent pe-puppetserver \
                    pe-orchestration-services puppet pe-puppetdb
     | CMD
 
   # Restore secrets/keys.json if it exists
   out::message('# Restoring ldap secret key if it exists')
-  run_command(@("CMD"/L), $primary_target)
+  run_command(@("CMD"/L), $targets)
     test -f ${shellquote($recovery_directory)}/rbac/keys.json \
       && cp -rp ${shellquote($recovery_directory)}/keys.json /etc/puppetlabs/console-services/conf.d/secrets/ \
       || echo secret ldap key doesn\'t exist
@@ -181,7 +181,7 @@ plan peadm::restore (
   # IF restoring orchestrator restore the secrets to /etc/puppetlabs/orchestration-services/conf.d/secrets/
   if getvar('recovery_opts.orchestrator') {
     out::message('# Restoring orchestrator secret keys')
-    run_command(@("CMD"/L), $primary_target)
+    run_command(@("CMD"/L), $targets)
       cp -rp ${shellquote($recovery_directory)}/orchestrator/secrets/* /etc/puppetlabs/orchestration-services/conf.d/secrets/ 
       | CMD
   }
@@ -219,7 +219,7 @@ plan peadm::restore (
     # Restore database. If there are multiple database restore targets, perform
     # the restore(s) in parallel.
     parallelize($database_targets) |$database_target| {
-      run_command(@("CMD"/L), $primary_target)
+      run_command(@("CMD"/L), $targets)
         /opt/puppetlabs/server/bin/pg_restore \
           -j 4 \
           -d "sslmode=verify-ca \
@@ -261,7 +261,7 @@ plan peadm::restore (
   # Use `puppet infra` to ensure correct file permissions, restart services,
   # etc. Make sure not to try and get config data from the classifier, which
   # isn't yet up and running.
-  run_command(@("CMD"/L), $primary_target)
+  run_command(@("CMD"/L), $targets)
     /opt/puppetlabs/bin/puppet-infrastructure configure --no-recover
     | CMD
 
@@ -275,7 +275,7 @@ plan peadm::restore (
   # TODO: consider adding a heuristic to skip when innappropriate due to size
   #       or other factors.
   if getvar('recovery_opts.puppetdb') and $merge_puppetdb {
-    run_command(@("CMD"/L), $primary_target)
+    run_command(@("CMD"/L), $targets)
       /opt/puppetlabs/bin/puppet-db import \
       --cert=$(/opt/puppetlabs/bin/puppet config print hostcert) \
       --key=$(/opt/puppetlabs/bin/puppet config print hostprivkey) \
@@ -285,9 +285,9 @@ plan peadm::restore (
   }
 
   # Run Puppet to pick up last remaining config tweaks
-  run_task('peadm::puppet_runonce', $primary_target)
+  run_task('peadm::puppet_runonce', $targets)
 
-  apply($primary_target) {
+  apply($targets) {
     file { $recovery_directory :
       ensure => 'absent',
       force  => true,
