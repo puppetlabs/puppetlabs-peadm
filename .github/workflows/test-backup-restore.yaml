@@ -129,11 +129,11 @@ jobs:
         run: |
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
           echo "Removing ssl directories"
-          bundle exec bolt command run "rm -rf /etc/puppetlabs/puppetserver/ca /etc/puppetlabs/puppet/ssl" -t $primary
+          bundle exec bolt command run "rm -rf /etc/puppetlabs/puppetserver/ca /etc/puppetlabs/puppet/ssl" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
           echo "Removing config file"
-          bundle exec bolt command run "rm /etc/puppetlabs/enterprise/conf.d/pe.conf" -t $primary
+          bundle exec bolt command run "rm /etc/puppetlabs/enterprise/conf.d/pe.conf" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
 
-          bundle exec bolt command run "puppet infrastructure status" -t $primary
+          bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
 
       - name: Perform peadm restore of cluster
         timeout-minutes: 10
@@ -148,16 +148,16 @@ jobs:
           echo ::endgroup::
 
           echo ::group::restore
-            TARBALL=$(echo /tmp/pe-backup*gz)
-            bundle exec bolt plan run peadm_spec::test_restore input_file="$TARBALL" \
+            bundle exec bolt plan run peadm_spec::test_restore \
               --inventoryfile spec/fixtures/litmus_inventory.yaml \
-              --modulepath spec/fixtures/modules
+              --modulepath spec/fixtures/modules \
+              --stream
           echo ::endgroup::
 
       - name: Output PE cluster status
         run: |
-          primary=$(yq '.groups[].targets[] | select(.vars.role == "primary" | .uri)' spec/fixtures/litmus_inventory.yaml)
-          bundle exec bolt command run "puppet infrastructure status" -t $primary
+          primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
+          bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
 
       - name: "Wait as long as the file ${HOME}/pause2 file is present"
         continue-on-error: true

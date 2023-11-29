@@ -1,6 +1,4 @@
-plan peadm_spec::test_restore(
-  String[1] $input_file,
-) {
+plan peadm_spec::test_restore() {
   $t = get_targets('*')
   wait_until_available($t)
 
@@ -11,7 +9,9 @@ plan peadm_spec::test_restore(
 
   $primary_host = $t.filter |$n| { $n.vars['role'] == 'primary' }[0]
 
-  run_plan('peadm::restore', $primary_host, { 'backup_type' => 'recovery', 'input_file' => $input_file })
+  input_file=$(ls /tmp/pe-backup*gz)
+
+  run_plan('peadm::restore', $primary_host, { 'restore_type' => 'recovery', 'input_file' => $input_file })
 
   # run infra status on the primary
   out::message("Running peadm::status on primary host ${primary_host}")
