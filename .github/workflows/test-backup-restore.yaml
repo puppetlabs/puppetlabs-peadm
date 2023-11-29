@@ -127,7 +127,7 @@ jobs:
 
       - name: Break PE cluster
         run: |
-          primary=$(yq '.groups[].targets[] | select(.vars.role == "primary" | .uri)' spec/fixtures/litmus_inventory.yaml)
+          primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
           echo "Removing ssl directories"
           bundle exec bolt command run "rm -rf /etc/puppetlabs/puppetserver/ca /etc/puppetlabs/puppet/ssl" -t $primary
           echo "Removing config file"
