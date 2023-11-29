@@ -9,7 +9,9 @@ plan peadm_spec::test_restore() {
 
   $primary_host = $t.filter |$n| { $n.vars['role'] == 'primary' }[0]
 
-  $input_file = run_command('ls /tmp/pe-backup*gz', $primary_host)
+  # get the latest backup file, if more than one exists
+  $result = run_command('ls -t /tmp/pe-backup*gz | head -1', $primary_host).first.value
+  $input_file = getvar('result.stdout')
 
   run_plan('peadm::restore', $primary_host, { 'restore_type' => 'recovery', 'input_file' => $input_file })
 
