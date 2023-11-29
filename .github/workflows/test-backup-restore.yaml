@@ -109,6 +109,11 @@ jobs:
               --modulepath spec/fixtures/modules
           echo ::endgroup::
 
+      - name: Set up yq
+        uses: frenck/action-setup-yq@v1
+        with:
+          version: v4.30.5
+      
       - name: "Wait as long as the file ${HOME}/pause file is present"
         continue-on-error: true
         # if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
@@ -119,11 +124,6 @@ jobs:
             sleep 10
           done 
           echo "${HOME}/pause absent, continuing workflow."
-
-      - name: Set up yq
-        uses: frenck/action-setup-yq@v1
-        with:
-          version: v4.30.5
 
       - name: Break PE cluster
         run: |
