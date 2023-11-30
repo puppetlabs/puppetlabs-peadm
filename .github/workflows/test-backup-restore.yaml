@@ -113,17 +113,6 @@ jobs:
         uses: frenck/action-setup-yq@v1
         with:
           version: v4.30.5
-      
-      - name: "Wait as long as the file ${HOME}/pause file is present"
-        continue-on-error: true
-        # if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
-        if: github.event.inputs.ssh-debugging == 'true'
-        run: |
-          while [ -f "${HOME}/pause" ] ; do
-            echo "${HOME}/pause present, sleeping for 60 seconds..."
-            sleep 10
-          done 
-          echo "${HOME}/pause absent, continuing workflow."
 
       - name: Break PE cluster
         run: |
@@ -159,16 +148,16 @@ jobs:
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
           bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
 
-      - name: "Wait as long as the file ${HOME}/pause2 file is present"
+      - name: "Wait as long as the file ${HOME}/pause file is present"
         continue-on-error: true
-        # if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
-        if: github.event.inputs.ssh-debugging == 'true'
+        if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
+        # if: github.event.inputs.ssh-debugging == 'true'
         run: |
-          while [ -f "${HOME}/pause2" ] ; do
-            echo "${HOME}/pause2 present, sleeping for 60 seconds..."
+          while [ -f "${HOME}/pause" ] ; do
+            echo "${HOME}/pause present, sleeping for 60 seconds..."
             sleep 10
           done 
-          echo "${HOME}/pause2 absent, continuing workflow."
+          echo "${HOME}/pause absent, continuing workflow."
 
       - name: "Tear down cluster"
         if: always()
