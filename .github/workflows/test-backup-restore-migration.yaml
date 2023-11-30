@@ -15,7 +15,7 @@ on:
       version:
         description: "PE version to install"
         required: true
-        default: "2023.5.0"
+        default: "2021.7.4"
       ssh-debugging:
         description: "Boolean; whether or not to pause for ssh debugging"
         required: true
@@ -23,7 +23,7 @@ on:
 
 jobs:
   backup:
-    name: "Backup cluster: PE ${{ inputs.version }} ${{ inputs.architecture }} on ${{ inputs.image }}"
+    name: "Backup: Cluster A: PE ${{ inputs.version }} ${{ inputs.architecture }} on ${{ inputs.image }}"
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true
@@ -81,6 +81,12 @@ jobs:
             sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
           echo ::endgroup::
 
+      # - name: Save inventory file A to an artifact
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: inventory_A
+      #     path: spec/fixtures/litmus_inventory.yaml
+
       - name: "Install PE on test cluster"
         timeout-minutes: 120
         run: |
@@ -88,10 +94,22 @@ jobs:
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             architecture=${{ inputs.architecture }} \
-            version=${{ inputs.version }} \
-            --stream
+            version=${{ inputs.version }}
 
-      - name: Perform peadm backup of cluster
+      - name: "Start SSH session"
+        if: github.event.inputs.ssh-debugging == 'true'
+        uses: luchihoratiu/debug-via-ssh@main
+        with:
+          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+          SSH_PASS: ${{ secrets.SSH_PASS }}
+
+          # - name: Download artifacts
+          #   # if: always()
+          #   uses: actions/download-artifact@v3
+          #   with:
+          #     path: spec/fixtures/
+
+      - name: perform PE backup of cluster A
         timeout-minutes: 10
         continue-on-error: true
         run: |
@@ -109,24 +127,57 @@ jobs:
               --modulepath spec/fixtures/modules
           echo ::endgroup::
 
-      - name: Set up yq
-        uses: frenck/action-setup-yq@v1
-        with:
-          version: v4.30.5
-
-      - name: Break PE cluster
-        run: |
-          primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
-          echo "Removing ssl directories"
-          bundle exec bolt command run "rm -rf /etc/puppetlabs/puppetserver/ca /etc/puppetlabs/puppet/ssl" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
-          echo "Removing classifier database"
-          bundle exec bolt command run "rm -rf /opt/puppetlabs/server/data/postgresql/classifier" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
-
-          bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
-
-      - name: Perform peadm restore of cluster
-        timeout-minutes: 10
+      - name: "Wait as long as the file ${HOME}/pause file is present"
         continue-on-error: true
+        # if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
+        if: github.event.inputs.ssh-debugging == 'true'
+        run: |
+          while [ -f "${HOME}/pause" ] ; do
+            echo "${HOME}/pause present, sleeping for 60 seconds..."
+            sleep 10
+          done 
+          echo "${HOME}/pause absent, continuing workflow."
+
+      - name: "Tear down cluster A"
+        if: always()
+        run: |
+          if [ -f spec/fixtures/litmus_inventory.yaml ]; then
+            echo ::group::tear_down
+              bundle exec rake 'litmus:tear_down'
+            echo ::endgroup::
+
+            echo ::group::info:request
+              cat request.json || true; echo
+            echo ::endgroup::
+          fi
+
+  restore:
+    name: "Restore: Cluster B: PE ${{ inputs.version }} ${{ inputs.architecture }} on ${{ inputs.image }}"
+    runs-on: ubuntu-20.04
+    env:
+      BOLT_GEM: true
+      BOLT_DISABLE_ANALYTICS: true
+      LANG: "en_US.UTF-8"
+
+    steps:
+      - name: "Checkout Source"
+        uses: actions/checkout@v2
+
+      - name: "Activate Ruby 2.7"
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "2.7"
+          bundler-cache: true
+
+      - name: "Print bundle environment"
+        if: ${{ github.repository_owner == 'puppetlabs' }}
+        run: |
+          echo ::group::info:bundler
+            bundle env
+          echo ::endgroup::
+
+      - name: "Provision test cluster"
+        timeout-minutes: 15
         run: |
           echo ::group::prepare
             mkdir -p $HOME/.ssh
@@ -136,32 +187,49 @@ jobs:
             bundle exec rake spec_prep
           echo ::endgroup::
 
-          echo ::group::restore
-            bundle exec bolt plan run peadm_spec::test_restore \
-              --inventoryfile spec/fixtures/litmus_inventory.yaml \
-              --modulepath spec/fixtures/modules \
-              --stream
+          echo ::group::provision
+              bundle exec bolt plan run peadm_spec::provision_test_cluster \
+                --modulepath spec/fixtures/modules \
+                provider=provision_service \
+                image=${{ inputs.image }} \
+                architecture=${{ inputs.architecture }}
           echo ::endgroup::
 
-      - name: Output PE cluster status
-        run: |
-          primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
-          bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
+          echo ::group::info:request
+            cat request.json || true; echo
+          echo ::endgroup::
 
-      - name: "Wait as long as the file ${HOME}/pause file is present"
-        continue-on-error: true
-        if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
-        # if: github.event.inputs.ssh-debugging == 'true'
-        run: |
-          while [ -f "${HOME}/pause" ] ; do
-            echo "${HOME}/pause present, sleeping for 60 seconds..."
-            sleep 10
-          done 
-          echo "${HOME}/pause absent, continuing workflow."
+          echo ::group::info:inventory
+            sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
+          echo ::endgroup::
 
-      - name: "Tear down cluster"
+      # - name: Save inventory file B to an artifact
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: inventory_B
+      #     path: spec/fixtures/litmus_inventory.yaml
+
+      - name: "Install PE on test cluster"
+        timeout-minutes: 120
+        run: |
+          bundle exec bolt plan run peadm_spec::install_test_cluster \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules \
+            architecture=${{ inputs.architecture }} \
+            version=${{ inputs.version }}
+
+      - name: Wait for backup to finish
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: "Backup: Cluster A: PE ${{ inputs.version }} ${{ inputs.architecture }} on ${{ inputs.image }}"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+
+      - name: "Tear down cluster B"
         if: always()
         run: |
+          cp spec/fixtures/inventory_B/litmus_inventory.yaml spec/fixtures/litmus_inventory.yaml || true
           if [ -f spec/fixtures/litmus_inventory.yaml ]; then
             echo ::group::tear_down
               bundle exec rake 'litmus:tear_down'
