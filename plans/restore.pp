@@ -25,6 +25,13 @@ plan peadm::restore (
   peadm::assert_supported_bolt_version()
 
   $recovery_directory = "${dirname($input_file)}/${basename($input_file, '.tar.gz')}"
+# lint:ignore:strict_indent
+  run_command(@("CMD"/L), $targets)
+    umask 0077 \
+      && cd ${shellquote(dirname($recovery_directory))} \
+      && tar -xzf ${shellquote($input_file)}
+    | CMD
+# lint:endignore
 
   # try to load the cluster configuration by running peadm::get_peadm_config, but allow for errors to happen
   $_cluster = run_task('peadm::get_peadm_config', $targets, { '_catch_errors' => true }).first.value
@@ -82,13 +89,6 @@ plan peadm::restore (
       $compiler_targets,
   ])
 
-# lint:ignore:strict_indent
-  run_command(@("CMD"/L), $targets)
-    umask 0077 \
-      && cd ${shellquote(dirname($recovery_directory))} \
-      && tar -xzf ${shellquote($input_file)}
-    | CMD
-# lint:endignore
   # Map of recovery option name to array of database hosts to restore the
   # relevant .dump content to.
   $restore_databases = {
