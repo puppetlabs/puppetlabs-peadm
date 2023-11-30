@@ -6,7 +6,7 @@ plan peadm_spec::test_restore() {
     $fqdn = run_command('hostname -f', $target)
     $target.set_var('certname', $fqdn.first['stdout'].chomp)
 
-    $command = "echo '${target.vars['certname']} ${target.uri}' | sudo tee -a /etc/hosts"
+    $command = "echo '${target.uri} ${target.vars['certname']}' | sudo tee -a /etc/hosts"
     run_command($command, 'localhost')
   }
 
@@ -14,7 +14,7 @@ plan peadm_spec::test_restore() {
 
   # get the latest backup file, if more than one exists
   $result = run_command('ls -t /tmp/pe-backup*gz | head -1', $primary_host).first.value
-  $input_file = getvar('result.stdout')
+  $input_file = strip(getvar('result.stdout'))
 
   run_plan('peadm::restore', $primary_host, { 'restore_type' => 'recovery', 'input_file' => $input_file })
 
