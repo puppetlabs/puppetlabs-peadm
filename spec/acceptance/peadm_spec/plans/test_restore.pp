@@ -4,13 +4,20 @@ plan peadm_spec::test_restore() {
 
   parallelize($t) |$target| {
     $fqdn = run_command('hostname -f', $target)
-    $target.set_var('certname', $fqdn.first['stdout'].chomp)
-
-    $command = "echo '${target.uri} ${target.vars['certname']}' | sudo tee -a /etc/hosts"
-    run_command($command, 'localhost')
+    $certname = $fqdn.first['stdout'].chomp
+    $target.set_var('certname', $certname)
   }
 
-  $primary_host = $t.filter |$n| { $n.vars['role'] == 'primary' }[0]
+  $targets_with_name = $t.map |$target| {
+    Target.new({
+        'uri' => $target.uri,
+        'name' => $target.vars['certname'],
+        'config' => $target.config,
+        'vars' => $target.vars,
+    })
+  }
+
+  $primary_host = $targets_with_name.filter |$n| { $n.vars['role'] == 'primary' }[0]
 
   # get the latest backup file, if more than one exists
   $result = run_command('ls -t /tmp/pe-backup*gz | head -1', $primary_host).first.value
@@ -20,11 +27,11 @@ plan peadm_spec::test_restore() {
 
   # run infra status on the primary
   out::message("Running peadm::status on primary host ${primary_host}")
-  $result = run_plan('peadm::status', $primary_host, { 'format' => 'json' })
+  $status = run_plan('peadm::status', $primary_host, { 'format' => 'json' })
 
-  out::message($result)
+  out::message($status)
 
-  if empty($result['failed']) {
+  if empty($status['failed']) {
     out::message('Cluster is healthy, continuing')
   } else {
     fail_plan('Cluster is not healthy, aborting')
