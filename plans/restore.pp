@@ -18,9 +18,6 @@ plan peadm::restore (
 
   # Path to the recovery tarball
   Pattern[/.*\.tar\.gz$/] $input_file,
-
-  # Do we want to merge existing puppetdb content to the restored content?
-  Boolean $merge_puppetdb = false,
 ) {
   peadm::assert_supported_bolt_version()
 
@@ -116,45 +113,57 @@ plan peadm::restore (
     )
   }
 
-  if getvar('recovery_opts.ca') {
-    out::message('# Restoring ca and ssl certificates')
-# lint:ignore:strict_indent
-    run_command(@("CMD"/L), $primary_target)
-      /opt/puppetlabs/bin/puppet-backup restore \
-        --scope=certs \
-        --tempdir=${shellquote($recovery_directory)} \
-        --force \
-        ${shellquote($recovery_directory)}/ca/pe_backup-*tgz
-      | CMD
-  }
+  if $restore_type == 'recovery' {
+    out::message('# Restoring ca, certs, code and config for recovery')
+  # lint:ignore:strict_indent
+      run_command(@("CMD"/L), $primary_target)
+        /opt/puppetlabs/bin/puppet-backup restore \
+          --scope=certs,code,config \
+          --tempdir=${shellquote($recovery_directory)} \
+          --force \
+          ${shellquote($recovery_directory)}/recovery/pe_backup-*tgz
+        | CMD
+  # lint:endignore
+  } else {
+    if getvar('recovery_opts.ca') {
+      out::message('# Restoring ca and ssl certificates')
+  # lint:ignore:strict_indent
+      run_command(@("CMD"/L), $primary_target)
+        /opt/puppetlabs/bin/puppet-backup restore \
+          --scope=certs \
+          --tempdir=${shellquote($recovery_directory)} \
+          --force \
+          ${shellquote($recovery_directory)}/ca/pe_backup-*tgz
+        | CMD
+    }
 
-  if getvar('recovery_opts.code') {
-    out::message('# Restoring code')
-    run_command(@("CMD"/L), $primary_target)
-      /opt/puppetlabs/bin/puppet-backup restore \
-        --scope=code \
-        --tempdir=${shellquote($recovery_directory)} \
-        --force \
-        ${shellquote($recovery_directory)}/code/pe_backup-*tgz
-      | CMD
-  }
+    if getvar('recovery_opts.code') {
+      out::message('# Restoring code')
+      run_command(@("CMD"/L), $primary_target)
+        /opt/puppetlabs/bin/puppet-backup restore \
+          --scope=code \
+          --tempdir=${shellquote($recovery_directory)} \
+          --force \
+          ${shellquote($recovery_directory)}/code/pe_backup-*tgz
+        | CMD
+    }
 
-  if getvar('recovery_opts.config') {
-    out::message('# Restoring config')
-    run_command(@("CMD"/L), $primary_target)
-      /opt/puppetlabs/bin/puppet-backup restore \
-        --scope=config \
-        --tempdir=${shellquote($recovery_directory)} \
-        --force \
-        ${shellquote($recovery_directory)}/config/pe_backup-*tgz
-      | CMD
+    if getvar('recovery_opts.config') {
+      out::message('# Restoring config')
+      run_command(@("CMD"/L), $primary_target)
+        /opt/puppetlabs/bin/puppet-backup restore \
+          --scope=config \
+          --tempdir=${shellquote($recovery_directory)} \
+          --force \
+          ${shellquote($recovery_directory)}/config/pe_backup-*tgz
+        | CMD
+    }
   }
-
   # Use PuppetDB's /pdb/admin/v1/archive API to SAVE data currently in PuppetDB.
   # Otherwise we'll completely lose it if/when we restore.
   # TODO: consider adding a heuristic to skip when innappropriate due to size
   #       or other factors.
-  if getvar('recovery_opts.puppetdb') and $merge_puppetdb {
+  if getvar('recovery_opts.puppetdb') and $restore_type == 'migration' {
     out::message('# Exporting puppetdb')
     run_command(@("CMD"/L), $primary_target)
       /opt/puppetlabs/bin/puppet-db export \
@@ -274,7 +283,7 @@ plan peadm::restore (
   # into the restored database.
   # TODO: consider adding a heuristic to skip when innappropriate due to size
   #       or other factors.
-  if getvar('recovery_opts.puppetdb') and $merge_puppetdb {
+  if getvar('recovery_opts.puppetdb') and $restore_type == 'migration' {
     run_command(@("CMD"/L), $primary_target)
       /opt/puppetlabs/bin/puppet-db import \
       --cert=$(/opt/puppetlabs/bin/puppet config print hostcert) \

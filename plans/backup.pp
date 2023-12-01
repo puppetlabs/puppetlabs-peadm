@@ -89,6 +89,16 @@ plan peadm::backup (
         mode   => '0711',
       }
     }
+
+    if $backup_type == 'recovery' {
+      # create a backup subdir for recovery configuration
+      file { "${backup_directory}/recovery":
+        ensure => 'directory',
+        owner  => 'root',
+        group  => 'root',
+        mode   => '0711',
+      }
+    }
   }
 
   if getvar('recovery_opts.classifier') {
@@ -98,30 +108,39 @@ plan peadm::backup (
     )
   }
 
-  if getvar('recovery_opts.ca') {
-    out::message('# Backing up ca and ssl certificates')
+  if $backup_type == 'recovery' {
+    out::message('# Backing up ca, certs, code and config for recovery')
 # lint:ignore:strict_indent
     run_command(@("CMD"), $targets)
-      /opt/puppetlabs/bin/puppet-backup create --dir=${shellquote($backup_directory)}/ca --scope=certs
+      /opt/puppetlabs/bin/puppet-backup create --dir=${shellquote($backup_directory)}/recovery \
+      --scope=certs,code,config
       | CMD
-  }
+# lint:endignore
+  } else {
+    if getvar('recovery_opts.ca') {
+      out::message('# Backing up ca and ssl certificates')
+  # lint:ignore:strict_indent
+      run_command(@("CMD"), $targets)
+        /opt/puppetlabs/bin/puppet-backup create --dir=${shellquote($backup_directory)}/ca --scope=certs
+        | CMD
+    }
 
-  if getvar('recovery_opts.code') {
-    out::message('# Backing up code')
-    # run_command("chown pe-postgres ${shellquote($backup_directory)}/code", $targets)
-    run_command(@("CMD"), $targets)
-      /opt/puppetlabs/bin/puppet-backup create --dir=${shellquote($backup_directory)}/code --scope=code
-      | CMD
-  }
+    if getvar('recovery_opts.code') {
+      out::message('# Backing up code')
+      # run_command("chown pe-postgres ${shellquote($backup_directory)}/code", $targets)
+      run_command(@("CMD"), $targets)
+        /opt/puppetlabs/bin/puppet-backup create --dir=${shellquote($backup_directory)}/code --scope=code
+        | CMD
+    }
 
-  if getvar('recovery_opts.config') {
-    out::message('# Backing up config')
-    run_command("chown pe-postgres ${shellquote($backup_directory)}/config", $targets)
-    run_command(@("CMD"), $targets)
-      /opt/puppetlabs/bin/puppet-backup create --dir=${shellquote($backup_directory)}/config --scope=config
-      | CMD
+    if getvar('recovery_opts.config') {
+      out::message('# Backing up config')
+      run_command("chown pe-postgres ${shellquote($backup_directory)}/config", $targets)
+      run_command(@("CMD"), $targets)
+        /opt/puppetlabs/bin/puppet-backup create --dir=${shellquote($backup_directory)}/config --scope=config
+        | CMD
+    }
   }
-
   # Check if /etc/puppetlabs/console-services/conf.d/secrets/keys.json exists and if so back it up
   if getvar('recovery_opts.rbac') {
     out::message('# Backing up ldap secret key if it exists')
