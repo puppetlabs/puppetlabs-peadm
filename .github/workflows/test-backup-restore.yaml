@@ -128,7 +128,10 @@ jobs:
       - name: Reinstall PE primary in a non-peadm way
         run: |
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
-          bundle exec bolt task run reinstall_pe version=${{ inputs.version }} -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
+          bundle exec bolt task run peadm_spec::reinstall_pe version=${{ inputs.version }} -t $primary \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules
+            --verbose --stream
 
       - name: Perform peadm restore of cluster
         timeout-minutes: 30
