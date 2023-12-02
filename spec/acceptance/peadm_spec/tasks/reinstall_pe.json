@@ -1,0 +1,14 @@
+{
+  "description": "Delete a certname from the Postgres DB",
+  "parameters": {
+    "version": {
+      "type": "String[1]",
+      "description": "The PE version to install"
+    },
+    "arch": {
+      "type": "String[1]",
+      "description": "The hardware architecture to install",
+      "default": "el-8-x86_64"
+    }
+  }
+}
