@@ -120,8 +120,8 @@ jobs:
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
           echo "Removing ssl directories"
           bundle exec bolt command run "rm -rf /etc/puppetlabs/puppetserver/ca /etc/puppetlabs/puppet/ssl" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
-          # echo "Removing classifier database"
-          # bundle exec bolt command run "rm -rf /opt/puppetlabs/server/data/postgresql/classifier" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
+          echo "Removing classifier database"
+          bundle exec bolt command run "rm -rf /opt/puppetlabs/server/data/postgresql/classifier" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
 
           bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
 
