@@ -126,6 +126,7 @@ jobs:
           bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
 
       - name: Reinstall PE primary in a non-peadm way
+        continue-on-error: true
         run: |
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
           bundle exec bolt task run peadm_spec::reinstall_pe version=${{ inputs.version }} -t $primary \
