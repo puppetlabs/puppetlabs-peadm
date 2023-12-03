@@ -1,6 +1,5 @@
 #!/bin/bash -e
 # This task reinstalls PE and needs to run as root.
-# It assumes el-8-x86_64
 
 # Uninstall PE if installed
 /opt/puppetlabs/bin/puppet-enterprise-uninstaller -p -d -y || true 

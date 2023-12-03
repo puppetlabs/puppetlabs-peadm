@@ -1,5 +1,5 @@
 {
-  "description": "Delete a certname from the Postgres DB",
+  "description": "Reinstall PE",
   "parameters": {
     "version": {
       "type": "String[1]",
@@ -7,7 +7,7 @@
     },
     "arch": {
       "type": "String[1]",
-      "description": "The hardware architecture to install",
+      "description": "The PE installation platform",
       "default": "el-8-x86_64"
     }
   }
