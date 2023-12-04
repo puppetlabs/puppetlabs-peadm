@@ -1,17 +1,18 @@
-# @api private
-# @summary Restore the core user settings for puppet infrastructure from backup
+# @summary Restore puppet primary configuration
 #
-# This plan can restore data to puppet infrastructure for DR and rebuilds
-# 
-# TODO
-# - make sure restore tries to leave the system in a running state if possible
-# - potentially merge the restore of certs, config and code scope to one puppet-backup restore command
+# @param targets These are a list of the primary puppetservers from one or multiple puppet clusters
+# @param backup_type Currently, the `recovery` and `custom` restore types are supported
+# @param restore A hash of custom backup options, see the peadm::recovery_opts_default() function for the default values
+# @param input_file The file containing the backup to restore from
+# @example 
+#   bolt plan run peadm::restore -t primary1.example.com,primary2.example.com input_file=/tmp/peadm-backup.tar.gz
+#
 plan peadm::restore (
   # This plan should be run on the primary server
   Peadm::SingleTargetSpec $targets,
 
   # restore type determines the restore options
-  Enum['recovery', 'migration', 'custom'] $restore_type = 'recovery',
+  Enum['recovery', 'custom'] $restore_type = 'recovery',
 
   # Which data to restore
   Peadm::Recovery_opts    $restore = {},

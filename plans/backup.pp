@@ -1,20 +1,24 @@
-# @api private
-# @summary Backup the core user settings for puppet infrastructure
+# @summary Backup puppet primary configuration
 #
-# This plan can backup data as outlined at insert doc
-# 
+# @param targets These are a list of the primary puppetservers from one or multiple puppet clusters
+# @param backup_type Currently, the recovery and custom backup types are supported
+# @param backup A hash of custom backup options, see the peadm::recovery_opts_default() function for the default values
+# @param output_directory The directory to place the backup in
+# @example 
+#   bolt plan run peadm::backup -t primary1.example.com,primary2.example.com
+#
 plan peadm::backup (
   # This plan should be run on the primary server
-  Peadm::SingleTargetSpec $targets,
+  Peadm::SingleTargetSpec     $targets,
 
   # backup type determines the backup options
-  Enum['recovery', 'migration', 'custom'] $backup_type = 'recovery',
+  Enum['recovery', 'custom']  $backup_type = 'recovery',
 
   # Which data to backup
-  Peadm::Recovery_opts    $backup = {},
+  Peadm::Recovery_opts        $backup = {},
 
   # Where to put the backup folder
-  String                  $output_directory = '/tmp',
+  String                      $output_directory = '/tmp',
 ) {
   peadm::assert_supported_bolt_version()
 
