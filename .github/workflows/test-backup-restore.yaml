@@ -2,6 +2,9 @@
 name: "Backup and restore test"
 
 on:
+  pull_request_target:
+    types: [ready_for_review]
+
   workflow_dispatch:
     inputs:
       image:
@@ -23,7 +26,8 @@ on:
 
 jobs:
   backup:
-    name: "Backup cluster: PE ${{ inputs.version }} ${{ inputs.architecture }} on ${{ inputs.image }}"
+    name: "Backup cluster: PE ${{ github.event.inputs.version || '2023.5.0' }} ${{ github.event.inputs.architecture || 'extra-large' }} on ${{ github.event.inputs.image || 'almalinux-cloud/almalinux-8' }}"
+
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true
@@ -69,8 +73,8 @@ jobs:
               bundle exec bolt plan run peadm_spec::provision_test_cluster \
                 --modulepath spec/fixtures/modules \
                 provider=provision_service \
-                image=${{ inputs.image }} \
-                architecture=${{ inputs.architecture }}
+                image=${{ github.event.inputs.image || 'almalinux-cloud/almalinux-8' }} \
+                architecture=${{ github.event.inputs.architecture || 'extra-large' }}
           echo ::endgroup::
 
           echo ::group::info:request
@@ -87,8 +91,8 @@ jobs:
           bundle exec bolt plan run peadm_spec::install_test_cluster \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
-            architecture=${{ inputs.architecture }} \
-            version=${{ inputs.version }} \
+            architecture=${{ github.event.inputs.architecture || 'extra-large' }} \
+            version=${{ github.event.inputs.version || '2023.5.0' }} \
             --stream
 
       - name: Perform peadm backup of cluster
@@ -129,7 +133,7 @@ jobs:
         continue-on-error: true
         run: |
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
-          bundle exec bolt task run peadm_spec::reinstall_pe version=${{ inputs.version }} -t $primary \
+          bundle exec bolt task run peadm_spec::reinstall_pe version=${{ github.event.inputs.version || '2023.5.0' }} -t $primary \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules
             --verbose --stream
