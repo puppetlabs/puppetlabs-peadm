@@ -1,4 +1,8 @@
 ---
+# TODO:
+# - [ ] test on XL, also break the puppetdb database
+# - [ ] test custom scenario for only restoring primary
+# - [ ] test custom scenario for only restoring puppetdb (on external server)
 name: "Backup and restore test"
 
 on:
