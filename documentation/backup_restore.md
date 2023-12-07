@@ -28,7 +28,7 @@ bolt plan run peadm::restore --targets my.primary.vm input_file="/tmp/my_backup.
 
 ## Using `recovery` backup and restore
 
-When you run a `recovery` backup plan, the primary server configuration is backed up in full. In the event of a primary server failure, this backup can be used to restore the PE installation to the state it was in when the backup was created.
+When you run a `recovery` backup plan, the primary server configuration is backed up in full. In the event of a primary server failure, this backup can be used to to restore your primary server and all services (including database services running on external servers) to the exact state they were in at the time of the backup.
 
 You can create a `recovery` backup as follows:
 ```
