@@ -51,6 +51,8 @@ bolt plan run peadm::restore --targets my.primary.vm input_file="/tmp/my_backup.
 To specify the items that are backed up and restored, define the `backup_type` or `restore_type` parameters as `custom`.
 Otherwise, the default type is `recovery`.
 
+**Note:** To customize the list of items that are backed up and restored, you must define the `backup` and `restore` parameters, specifying the items you want to exclude.
+
 To specify the `custom` items, you can create and reference `params.json` files as shown in the following examples.
 
 To specify custom backup options:
