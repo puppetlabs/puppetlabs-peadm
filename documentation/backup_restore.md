@@ -7,7 +7,7 @@ If your PE installation is managed by `peadm`, you can back up and restore PE us
 **Important:** If your PE installation is not managed by `peadm`, you cannot use the `peadm::backup` and `peadm::restore` plans. For information on converting to a `peadm` managed installation, see [Convert](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/convert.md).  
 
 When running the backup and restore plans, you can define the `backup_type` and `restore_type` parameters with either of the following values:
-* `recovery`: Use this type to create a full backup of your primary server, including data for all services. This allows you to restore your primary server and all services (including database services running on external servers) to the exact state they were in at the time of the backup.
+* `recovery`: Use this type to create a full backup of your primary server, including data for all services, including database services running on external servers. This allows you to restore your primary server and all services to the exact state they were in at the time of the backup.
 * `custom`: Use this type when you want to selectively back up and restore data for specific services. 
 
 If no type is specified, the default is `recovery`.
