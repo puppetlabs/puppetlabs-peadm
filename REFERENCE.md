@@ -324,7 +324,7 @@ converts two arrays into hash
 
 #### Examples
 
-##### 
+##### Using function
 
 ```puppet
 peadm::convert_hash(['type', 'status'], [['xl', 'running'], ['large', 'failed']])
@@ -341,7 +341,7 @@ Returns: `Array`
 
 ##### Examples
 
-###### 
+###### Using function
 
 ```puppet
 peadm::convert_hash(['type', 'status'], [['xl', 'running'], ['large', 'failed']])
@@ -465,7 +465,7 @@ Type: Puppet Language
 
 #### Examples
 
-##### 
+##### Using function
 
 ```puppet
 peadm::determine_status($data, true)
@@ -519,7 +519,7 @@ Returns: `Hash` A simplified hash of of status data for the given stack
 
 ##### Examples
 
-###### 
+###### Using function
 
 ```puppet
 peadm::determine_status($data, true)
@@ -2030,7 +2030,7 @@ Return status information from one or more PE clusters in a table format
 
 #### Examples
 
-##### 
+##### Using plan
 
 ```puppet
 peadm::status($targets, 'table', true, true)
