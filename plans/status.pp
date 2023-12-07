@@ -5,7 +5,7 @@
 # @param summarize Controls the type of json output to render, defaults to true
 # @param verbose Toggles the output to show all the operationally services, can be loads more data
 # @param colors Toggles the usage of colors, you may want to disable if the format is json
-# @example 
+# @example Using plan
 #   peadm::status($targets, 'table', true, true)
 plan peadm::status(
   TargetSpec $targets,
@@ -17,7 +17,7 @@ plan peadm::status(
   peadm::assert_supported_bolt_version()
 
   $results = run_task('peadm::infrastatus', $targets, { format => 'json' })
-  # returns the data in a hash 
+  # returns the data in a hash
   $stack_status = $results.reduce({}) | $res, $item | {
     $data = $item.value[output]
     $stack_name = $item.target.peadm::certname()
