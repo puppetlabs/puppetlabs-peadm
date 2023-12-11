@@ -1,10 +1,10 @@
 # Backup and restore Puppet Enterprise (PE) 
 
-If your PE installation is managed by `peadm`, you can back up and restore PE using this process:
+If your PE installation is managed by PEADM, you can back up and restore PE using this process:
 1. Use the `peadm::backup` plan to create a backup of your primary server.
 2. Use the `peadm::restore` plan to restore PE from a `peadm::backup`.
 
-**Important:** If your PE installation is not managed by `peadm`, you cannot use the `peadm::backup` and `peadm::restore` plans. For information on converting to a `peadm` managed installation, see [Convert](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/convert.md).  
+**Important:** If your PE installation is not managed by PEADM, you cannot use the `peadm::backup` and `peadm::restore` plans. For information on converting to a PEADM-managed installation, see [Convert](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/convert.md).  
 
 When running the backup and restore plans, you can define the `backup_type` and `restore_type` parameters with either of the following values:
 * `recovery`: Use this type to create a full backup of your primary server, including data for all services. This allows you to restore your primary server and all services (including database services running on external servers) to the exact state they were in at the time of the backup.
@@ -116,6 +116,6 @@ The following table shows the items you can specify and indicates what is includ
 | `puppetdb`        | PuppetDB database (including support for XL where puppetdb is running on an external db server)          | ✅                 |
 | `rbac`            | RBAC database                                                                                            |                    |
 
-**Note**: The `peadm` backup and restore plans utilize the `puppet-backup` tool for backing up and restoring `ca`, `code` and `config`. For `config`, the data backed up includes the `activity`, `classifier`, `orchestrator`, and `rbac` databases.
+**Note**: The PEADM backup and restore plans utilize the `puppet-backup` tool for backing up and restoring `ca`, `code` and `config`. For `config`, the data backed up includes the `activity`, `classifier`, `orchestrator`, and `rbac` databases.
 
 **Note:** The output for the `peadm::backup` plan differs from the output that is returned when you manually run the [`puppet-backup create` command](https://puppet.com/docs/pe/latest/backing_up_and_restoring_pe.html#back_up_pe_infrastructure).
