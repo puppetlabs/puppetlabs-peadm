@@ -53,7 +53,7 @@ This is the standard workflow for installing and using PEADM.
 * PEADM is compatible with Puppet Enterprise 2019.8.1 or newer versions.
 * To use PEADM, you must first [install Bolt](https://www.puppet.com/docs/bolt/latest/bolt_installing) version 3.17.0 or newer.
 * PEADM supports PE installations on the following operating systems: EL 7, EL 8, Ubuntu 18.04, or Ubuntu 20.04.
-* To successfully convert your current PE installation to a PEADM-managed installation, the PE setting for editing classifier configuration data must be enabled. This setting is enabled by default on new PE installations, but it can be disabled if you remove the relevant configuration from your global hiera.yaml file. See the [PE docs](https://www.puppet.com/docs/pe/latest/config_console.html#enable_console_configuration_data) for more information.
+* To successfully convert your current PE installation to a PEADM-managed installation, the PE setting for editing classifier configuration data must be enabled. This setting is enabled by default on new PE installations, but it can be disabled if the relevant configuration was removed from your global hiera.yaml file. See the [PE docs](https://www.puppet.com/docs/pe/latest/config_console.html#enable_console_configuration_data) for more information.
 
 ## Usage
 
