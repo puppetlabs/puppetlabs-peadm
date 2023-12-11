@@ -57,7 +57,7 @@ This is the standard workflow for installing and using PEADM.
 
 ## Usage
 
-For instructions on using PEADM plans, see the following PEADM docs.
+For instructions on using PEADM plans, see the following PEADM docs:
 
 * [Install](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/install.md)
 * [Upgrade](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/upgrade.md)
