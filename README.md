@@ -45,7 +45,7 @@ This is the standard workflow for installing and using PEADM.
 
 ### What PEADM does not affect
 
-* PEADM does not impact regular PE operations. After using it to deploy a new PE installation or upgrade an existing one, PEADM is not required until you want to use to upgrading PE or expand your installation.
+* PEADM does not impact regular PE operations. After using it to deploy a new PE installation or upgrade an existing one, PEADM is not required until you want to use it to upgrade PE or expand your installation.
 * Using PEADM to install PE or upgrade PE does not prevent you from using documented PE procedures such as setting up disaster recovery or performing a manual upgrade.
 
 ### Requirements
