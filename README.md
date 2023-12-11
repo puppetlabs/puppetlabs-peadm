@@ -4,7 +4,7 @@ The Puppet Enterprise Administration Module (PEADM) contains a set of Bolt plans
 
 You can use PEADM to deploy and manage PE installations for standard, large, and extra-large architectures.
 
-**Important**: PEADM is compatible with PE 2019.8.1 and later versions. If your PE version is older than 2019.8.1 and want to use PEADM, you must upgrade PE before converting your installation to a PEADM-managed installation.
+**Important**: PEADM is compatible with PE 2019.8.1 and later versions. If your PE version is older than 2019.8.1 and you want to use PEADM, you must upgrade PE before converting your installation to a PEADM-managed installation.
 
 #### Table of contents
 
