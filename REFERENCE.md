@@ -1340,6 +1340,12 @@ Run the Puppet agent one time
 
 #### Parameters
 
+##### `environment`
+
+Data type: `Optional[String]`
+
+If set, run Puppet in specified code environment
+
 ##### `noop`
 
 Data type: `Optional[Boolean]`
