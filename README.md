@@ -1,61 +1,63 @@
-# Puppet Enterprise (pe) Administration (adm) Module
+# Puppet Enterprise Administration Module (PEADM)
 
-This Puppet module contains Bolt plans used to deploy and manage Puppet Enterprise infrastructure. Plans are provided to automate common lifecycle activities in order to increase velocity and reduce the possibility of human error incurred by manually performing these activities.
+The Puppet Enterprise Administration Module (PEADM) contains a set of Bolt plans designed for deploying and managing Puppet Enterprise (PE) infrastructure. These plans automate key PE lifecycle activities to accelerate deployment and reduce the risk of human error.
 
-The peadm module is able to deploy and manage Puppet Enterprise 2019.7 and higher for Standard, Large, and Extra Large architectures.
+You can use PEADM to deploy and manage PE installations for standard, large, and extra-large architectures.
 
-#### Table of Contents
+**Important**: PEADM is compatible with PE 2019.8.1 and later versions. If your PE version is older than 2019.8.1 and you want to use PEADM, you must upgrade PE before converting your installation to a PEADM-managed installation.
 
-- [Puppet Enterprise (pe) Administration (adm) Module](#puppet-enterprise-pe-administration-adm-module)
-      - [Table of Contents](#table-of-contents)
-  - [Expectations and support](#expectations-and-support)
+#### Table of contents
+
+- [Puppet Enterprise Administration Module (PEADM)](#puppet-enterprise-pe-administration-adm-module)
+      - [Table of contents](#table-of-contents)
+  - [Support](#support)
   - [Overview](#overview)
-    - [What peadm affects](#what-peadm-affects)
-    - [What peadm does not affect](#what-peadm-does-not-affect)
+    - [What PEADM affects](#what-peadm-affects)
+    - [What PEADM does not affect](#what-peadm-does-not-affect)
     - [Requirements](#requirements)
   - [Usage](#usage)
   - [Reference](#reference)
-  - [Getting Help](#getting-help)
+  - [Getting help](#getting-help)
   - [License](#license)
 
-## Expectations and support
+## Support
 
-While the peadm module was initially built by the Puppet Solutions Architecture team to streamline particularly large and complex Puppet Enterprise deployments, but has matured to a point where we believe that users with a reasonable understanding of Puppet Enterprise architecture can use it on their own.
-
-As a Puppet Enterprise customer this tool is **supported** through Puppet Enterprise's standard and premium [support.puppet.com](https://support.puppet.com) service, and if you have questions or need assistance, you are welcome to reach out to your Support team for help, or to talk to your Sales or Technical Account Manager contacts to arrange a chat with one of us on the Solutions Architect team.
-
-We also love contributions! We're more than happy to also chat about any ideas you may have for improving this module, or offer guidance on ways you could get involved.
+PEADM is a supported PE module. If you are a PE customer with the standard or premium support service, you can contact [Support](https://portal.perforce.com/s/topic/0TO4X000000DbNgWAK/puppet) or your Technical Account Manager for assistance.
 
 
 ## Overview
 
-The normal usage pattern for peadm is as follows.
+This is the standard workflow for installing and using PEADM.
 
-1. Users set up a Bolt host from which they can run peadm plans. The Bolt host can be any machine that has ssh access to all of the PE nodes.
-2. Users run the `peadm::install` plan to bootstrap a new PE cluster. Depending on the architecture chosen, peadm may create some node groups in the classifier to set parameters on the built-in `puppet_enterprise` module, tuning it for large or extra large architectures.
-3. Users use and operate their PE cluster as normal. The peadm module is not used again until the next upgrade.
-4. When it is time to upgrade, users run the `peadm::upgrade` plan from their Bolt host to accelerate and aid in the upgrade process.
+1. To enable the execution of PEADM plans, install Bolt on a jump host with SSH access to all nodes in your installation.
+2. On the Bolt host, run the `peadm::install` plan to bootstrap a new PE installation. For large or extra-large architectures, PEADM creates node groups in the classifier to set relevant parameters in the `puppet_enterprise` module.
+3. Use PE as normal. PEADM is not required until your next upgrade.
+4. When you are ready to upgrade PE, run the `peadm::upgrade` plan from the Bolt host.
 
-### What peadm affects
+### What PEADM affects
 
-* The `peadm::install` plan adds a number of custom OID trusted facts to the certificates of PE infrastructure nodes as it deploys them. These trusted facts are later used by the plans to quickly and correctly identify nodes in particular roles.
-* Up to four node groups may be created to help configure `puppet_enterprise` class parameters for PE infrastructure roles. The most notable configuration is the designation of compilers as being either "A" or "B" nodes for availability.
+* The `peadm::install` plan adds a number of custom original identifier (OID) trusted facts to the certificates of deployed PE infrastructure nodes. These trusted facts are used by PEADM plans to identify nodes that host PE infrastructure components.
+* Depending on the scale of your architecture, up to four node groups may be created to configure `puppet_enterprise` class parameters for the following PE infrastructure components: 
+    * The primary server
+    * The primary server replica
+    * PostgreSQL nodes (database servers)
+    * Compilers (compiler hosts are designated as belonging to availability group A or B)
 
-### What peadm does not affect
+### What PEADM does not affect
 
-* The peadm module is not required to exist or be present outside of the point(s) in time it is used to create a new PE cluster, or upgrade an existing cluster. No new Puppet classes or other persistent content not provided out-of-box by PE itself is applied to PE infrastructure nodes by the peadm module.
-* Having used the peadm module to install or to upgrade a PE cluster is not known to affect or curtail the ability to use any normal, documented PE procedures, e.g. failover to a replica, or manual upgrade of a cluster.
+* PEADM does not impact regular PE operations. After using it to deploy a new PE installation or upgrade an existing one, PEADM is not required until you want to use it to upgrade PE or expand your installation.
+* Using PEADM to install PE or upgrade PE does not prevent you from using documented PE procedures such as setting up disaster recovery or performing a manual upgrade.
 
 ### Requirements
 
-* Puppet Enterprise 2019.8.1 or newer (tested with PE 2021.7)
-* Bolt 3.17.0 or newer (tested with Bolt 3.21.0)
-* EL 7, EL 8, Ubuntu 18.04, or Ubuntu 20.04
-* Classifier Data enabled. This PE feature is enabled by default on new installs, but can be disabled by users if they remove the relevant configuration from their global hiera.yaml file. See the [PE docs](https://puppet.com/docs/pe/latest/config_console.html#task-5039) for more information.
+* PEADM is compatible with Puppet Enterprise 2019.8.1 or newer versions.
+* To use PEADM, you must first [install Bolt](https://www.puppet.com/docs/bolt/latest/bolt_installing) version 3.17.0 or newer.
+* PEADM supports PE installations on the following operating systems: EL 7, EL 8, Ubuntu 18.04, or Ubuntu 20.04.
+* To successfully convert your current PE installation to a PEADM-managed installation, ensure that the PE setting for editing classifier configuration data is enabled. This setting is enabled by default on new PE installations, but it could be disabled if the relevant configuration was removed from your global hiera.yaml file. See the [PE docs](https://www.puppet.com/docs/pe/latest/config_console.html#enable_console_configuration_data) for more information.
 
 ## Usage
 
-Follow the links below to usage instructions for each peadm plan.
+For instructions on using PEADM plans, see the following PEADM docs:
 
 * [Install](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/install.md)
 * [Upgrade](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/upgrade.md)
@@ -64,26 +66,26 @@ Follow the links below to usage instructions for each peadm plan.
 
 ## Reference
 
-Information from the Puppet documentation site that will help you understand which architecture is right for you.
+To understand which architecture is right for you, see the following information on the Puppet documentation site:
 
-* [PE Architecture Documentation](https://puppet.com/docs/pe/latest/choosing_an_architecture.html)
-* [PE Multi-region reference architecture](https://puppet.com/docs/patterns-and-tactics/latest/reference-architectures/pe-multi-region-reference-architectures.html)
+* [PE architectures](https://puppet.com/docs/pe/latest/choosing_an_architecture.html)
+* [PE multi-region reference architectures](https://puppet.com/docs/patterns-and-tactics/latest/reference-architectures/pe-multi-region-reference-architectures.html)
 
 
-Documentation pertaining to additional uses of peadm.
+To learn more about the PEADM module and its uses, see the following PEADM docs:
 
-* [DR Component Recovery](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/recovery.md)
+* [Recovery procedures](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/recovery.md)
 * [Architectures](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/architectures.md)
-* [Expanding Deployment](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/expanding.md)
+* [Expanding deployment](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/expanding.md)
 * [Classification](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/classification.md)
 * [Testing](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/pre_post_checks.md)
-* [Docker Based Examples](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/docker_examples.md)
-* [Release Process](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/release_process.md)
+* [Docker based examples](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/docker_examples.md)
+* [Release process](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/release_process.md)
 
-## Getting Help
+## Getting help
 
-* If you find bugs with this module, please make use of [issues](https://github.com/puppetlabs/puppetlabs-peadm/issues) in the project on GitHub
-* If you are a Puppet Enterprise (PE) customer that uses peadm to manage a deployment of PE and are currently having an outage or need assistance troubleshooting another issue, e.g. upgrades, contact the [Support Team](https://support.puppet.com)
+* If you find a bug, you can [create a GitHub issue](https://github.com/puppetlabs/puppetlabs-peadm/issues).
+* For PE customers using PEADM and experiencing outages or other issues, [contact the Support team](https://portal.perforce.com/s/topic/0TO4X000000DbNgWAK/puppet).
 
 ## License
 
