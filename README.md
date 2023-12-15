@@ -27,12 +27,15 @@ PEADM is a supported PE module. If you are a PE customer with the standard or pr
 
 ## Overview
 
-This is the standard workflow for installing and using PEADM.
+This is the standard workflow for using PEADM to deploy a new PE installation.
 
-1. To start using PEADM, [install Bolt](https://www.puppet.com/docs/bolt/latest/bolt_installing) on a jump host with SSH access to all nodes in your installation, and add the PEADM module to your Bolt project.
-2. On the Bolt host, run the `peadm::install` plan to bootstrap a new PE installation. For large or extra-large architectures, PEADM creates node groups in the classifier to set relevant parameters in the `puppet_enterprise` module.
-3. Use PE as normal. PEADM is not required until your next upgrade.
-4. When you are ready to upgrade PE, run the `peadm::upgrade` plan from the Bolt host.
+1. [Install Bolt](https://www.puppet.com/docs/bolt/latest/bolt_installing) on a jump host.
+2. To create a Bolt project that includes the PEADM module, run:</br>`mkdir <YOUR_PROJECT> && cd <YOUR_PROJECT> && bolt project init <YOUR_PROJECT> --modules puppetlabs-peadm`
+3. In the Bolt project directory, update the `inventory.yaml` file with connection information for the servers you plan to use for hosting PE infrastructure.
+4. In the Bolt project directory, create a `params.json` file containing the installation parameters. 
+5. Run `peadm::install --params @params.json`.
+
+Typically after using PEADM to install PE, the module is not required again until you want to automate an upgrade by using the `peadm::upgrade` plan.
 
 ### What PEADM affects
 
