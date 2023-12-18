@@ -1354,7 +1354,7 @@ If true, run Puppet in no-op mode
 
 ##### `in_progress_timeout`
 
-Data type: `Integer`
+Data type: `Integer[1]`
 
 How many seconds to wait for a puppet run, that is already in progress
 
