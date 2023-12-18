@@ -5,30 +5,60 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.16.1](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.16.1) - 2023-11-23
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.16.0...v3.16.1)
+
+### Other
+
+- (PE-37192) Updating default install version to 2021.7.6 [#406](https://github.com/puppetlabs/puppetlabs-peadm/pull/406) ([ragingra](https://github.com/ragingra))
+- (MAINT) Update release_process.md [#405](https://github.com/puppetlabs/puppetlabs-peadm/pull/405) ([Jo-Lillie](https://github.com/Jo-Lillie))
+
+## [v3.16.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.16.0) - 2023-11-08
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.15.1...v3.16.0)
+
+### Added
+
+- (PE-35906) Adding plans for backing up and restoring CA [#400](https://github.com/puppetlabs/puppetlabs-peadm/pull/400) ([ragingra](https://github.com/ragingra))
+
+### Fixed
+
+- peadm::install: Depend code-manager setup on r10k remote presence, not r10k ssh key [#401](https://github.com/puppetlabs/puppetlabs-peadm/pull/401) ([bastelfreak](https://github.com/bastelfreak))
+
+## [v3.15.1](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.15.1) - 2023-10-10
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.15.0...v3.15.1)
+
+### Added
+
+- (#351) code_manager: Switch default to `undef` [#352](https://github.com/puppetlabs/puppetlabs-peadm/pull/352) ([bastelfreak](https://github.com/bastelfreak))
+
+### Fixed
+
+- Fix for plan peadm::add_compiler over pcp transport [#356](https://github.com/puppetlabs/puppetlabs-peadm/pull/356) ([jortencio](https://github.com/jortencio))
+
+## [v3.15.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.15.0) - 2023-10-06
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.14.0...v3.15.0)
+
+### Added
+
+- support configurable installer target upload path [#376](https://github.com/puppetlabs/puppetlabs-peadm/pull/376) ([h0tw1r3](https://github.com/h0tw1r3))
+- agent_install: Enable Agent upgrades [#343](https://github.com/puppetlabs/puppetlabs-peadm/pull/343) ([bastelfreak](https://github.com/bastelfreak))
+
 ## [v3.14.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.14.0) - 2023-09-15
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.13.1...v3.14.0)
 
-### Other
+### Added
 
-- Revert "Release prep v3.14 (#384)" [#385](https://github.com/puppetlabs/puppetlabs-peadm/pull/385) ([AaronShannon](https://github.com/AaronShannon))
-- (PE-36822) Bumping supported PE from 2023.2 to 2023.3 [#383](https://github.com/puppetlabs/puppetlabs-peadm/pull/383) ([ragingra](https://github.com/ragingra))
 - (PE-36789) R10k Known hosts upgrade path [#382](https://github.com/puppetlabs/puppetlabs-peadm/pull/382) ([ragingra](https://github.com/ragingra))
 - (PE-36580) Add r10k_known_hosts to install plan [#380](https://github.com/puppetlabs/puppetlabs-peadm/pull/380) ([jpartlow](https://github.com/jpartlow))
-- PE-3PE-36464 metadata updated [#378](https://github.com/puppetlabs/puppetlabs-peadm/pull/378) ([AaronShannon](https://github.com/AaronShannon))
-- PE-36461 Pull request template added [#377](https://github.com/puppetlabs/puppetlabs-peadm/pull/377) ([AaronShannon](https://github.com/AaronShannon))
-- keyserver port 80 less likely to be blocked [#374](https://github.com/puppetlabs/puppetlabs-peadm/pull/374) ([h0tw1r3](https://github.com/h0tw1r3))
-- puppetlabs/stdlib: Require 9.x [#373](https://github.com/puppetlabs/puppetlabs-peadm/pull/373) ([bastelfreak](https://github.com/bastelfreak))
-- PE-36460 Add Mend Workflow [#372](https://github.com/puppetlabs/puppetlabs-peadm/pull/372) ([AaronShannon](https://github.com/AaronShannon))
-- PE-36459 .sync.yml and pdk updated [#370](https://github.com/puppetlabs/puppetlabs-peadm/pull/370) ([AaronShannon](https://github.com/AaronShannon))
 
 ## [v3.13.1](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.13.1) - 2023-06-27
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.13.0...v3.13.1)
-
-### Other
-
--  (#366) Bump inifile and stdlib [#367](https://github.com/puppetlabs/puppetlabs-peadm/pull/367) ([CoMfUcIoS](https://github.com/CoMfUcIoS))
 
 ## [v3.13.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.13.0) - 2023-06-26
 
@@ -37,12 +67,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 ### Added
 
 - Adding /etc/puppetlabs/enterprise/conf.d/pe.conf [#346](https://github.com/puppetlabs/puppetlabs-peadm/pull/346) ([16c7x](https://github.com/16c7x))
-
-### Other
-
-- (PE-36203) Updating supported to 2023.2 and default to 2021.7.4 [#363](https://github.com/puppetlabs/puppetlabs-peadm/pull/363) ([ragingra](https://github.com/ragingra))
-- Update metadata for stdlib version 9 [#361](https://github.com/puppetlabs/puppetlabs-peadm/pull/361) ([MartyEwings](https://github.com/MartyEwings))
-- (PE-36091) Updating PE-ADM Supported Version [#349](https://github.com/puppetlabs/puppetlabs-peadm/pull/349) ([ragingra](https://github.com/ragingra))
 - Allow code manager auto configure to be passed as param [#341](https://github.com/puppetlabs/puppetlabs-peadm/pull/341) ([elainemccloskey](https://github.com/elainemccloskey))
 
 ## [v3.12.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.12.0) - 2023-02-17
@@ -240,16 +264,16 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/2.5.0...v3.0.0)
 
+### Changed
+- Global rename of primary/replica and postgresql parameters [#161](https://github.com/puppetlabs/puppetlabs-peadm/pull/161) ([timidri](https://github.com/timidri))
+- Language and terminology updates [#153](https://github.com/puppetlabs/puppetlabs-peadm/pull/153) ([davidsandilands](https://github.com/davidsandilands))
+
 ### Added
 
 - Update workflow PE defaults to latest LTS [#170](https://github.com/puppetlabs/puppetlabs-peadm/pull/170) ([reidmv](https://github.com/reidmv))
 - Add add_replica plan [#166](https://github.com/puppetlabs/puppetlabs-peadm/pull/166) ([timidri](https://github.com/timidri))
 - Support latest PE release [#157](https://github.com/puppetlabs/puppetlabs-peadm/pull/157) ([ody](https://github.com/ody))
 - Add add_compiler plan [#154](https://github.com/puppetlabs/puppetlabs-peadm/pull/154) ([timidri](https://github.com/timidri))
-
-### Changed
-- Global rename of primary/replica and postgresql parameters [#161](https://github.com/puppetlabs/puppetlabs-peadm/pull/161) ([timidri](https://github.com/timidri))
-- Language and terminology updates [#153](https://github.com/puppetlabs/puppetlabs-peadm/pull/153) ([davidsandilands](https://github.com/davidsandilands))
 
 ### Fixed
 

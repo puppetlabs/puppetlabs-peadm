@@ -54,7 +54,7 @@ plan peadm::subplans::install (
   Hash                 $pe_conf_data        = {},
 
   # Code Manager
-  Optional[Boolean]    $code_manager_auto_configure = true,
+  Optional[Boolean]    $code_manager_auto_configure = undef,
   Optional[String]     $r10k_remote              = undef,
   Optional[String]     $r10k_private_key_file    = undef,
   Optional[Peadm::Pem] $r10k_private_key_content = undef,
@@ -135,6 +135,20 @@ plan peadm::subplans::install (
   # either be undef or else the key content to write.
   $r10k_private_key = peadm::file_or_content('r10k_private_key', $r10k_private_key_file, $r10k_private_key_content)
 
+  # enable code manager if:
+  # * it isn't explicitly disabled *and* the user provided r10k repo (key is optional, repo could be a local absolute path or https URL)
+  # * a replica is present
+  # * one or multiple compiler are present
+  $_code_manager_auto_configure = if $r10k_remote and $code_manager_auto_configure {
+    true
+  } elsif $replica_host {
+    true
+  } elsif $compiler_hosts {
+    true
+  } else {
+    $code_manager_auto_configure
+  }
+
   # Process user input for license key (same process as for r10k private key above).
   $license_key = peadm::file_or_content('license_key', $license_key_file, $license_key_content)
 
@@ -174,14 +188,14 @@ plan peadm::subplans::install (
       'puppet_enterprise::puppet_master_host'                           => $primary_target.peadm::certname(),
       'pe_install::puppet_master_dnsaltnames'                           => $dns_alt_names,
       'puppet_enterprise::puppetdb_database_host'                       => $primary_postgresql_target.peadm::certname(),
-      'puppet_enterprise::profile::master::code_manager_auto_configure' => $code_manager_auto_configure,
+      'puppet_enterprise::profile::master::code_manager_auto_configure' => $_code_manager_auto_configure,
       'puppet_enterprise::profile::master::r10k_remote'                 => $r10k_remote,
       'puppet_enterprise::profile::master::r10k_private_key'            => $r10k_private_key ? {
         undef   => undef,
         default => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
       },
       'puppet_enterprise::profile::master::r10k_known_hosts'            => $r10k_known_hosts,
-  } + $puppetdb_database_temp_config + $pe_conf_data)
+  }.delete_undef_values + $puppetdb_database_temp_config + $pe_conf_data)
 
   $primary_postgresql_pe_conf = peadm::generate_pe_conf({
       'console_admin_password'                => 'not used',

@@ -4,25 +4,25 @@ name: "Install fips test matrix"
 on:
   pull_request:
     paths:
-      - '.github/workflows/**/*'
-      - 'spec/**/*'
-      - 'lib/**/*'
-      - 'tasks/**/*'
-      - 'functions/**/*'
-      - 'types/**/*'
-      - 'plans/**/*'
-      - 'hiera/**/*'
-      - 'manifests/**/*'
-      - 'templates/**/*'
-      - 'files/**/*'
-      - 'metadata.json'
-      - 'Rakefile'
-      - 'Gemfile'
-      - 'provision.yaml'
-      - '.rspec'
-      - '.rubocop.yml'
-      - '.puppet-lint.rc'
-      - '.fixtures.yml'
+      - ".github/workflows/**/*"
+      - "spec/**/*"
+      - "lib/**/*"
+      - "tasks/**/*"
+      - "functions/**/*"
+      - "types/**/*"
+      - "plans/**/*"
+      - "hiera/**/*"
+      - "manifests/**/*"
+      - "templates/**/*"
+      - "files/**/*"
+      - "metadata.json"
+      - "Rakefile"
+      - "Gemfile"
+      - "provision.yaml"
+      - ".rspec"
+      - ".rubocop.yml"
+      - ".puppet-lint.rc"
+      - ".fixtures.yml"
     branches: [main]
   workflow_dispatch: {}
 
@@ -33,7 +33,7 @@ jobs:
     env:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
-      LANG: 'en_US.UTF-8'
+      LANG: "en_US.UTF-8"
     strategy:
       fail-fast: false
       matrix:
@@ -43,8 +43,8 @@ jobs:
           - extra-large-with-dr
         version:
           - 2019.8.12
-          - 2021.7.2
-          - 2023.2.0
+          - 2021.7.6
+          - 2023.5.0
         image:
           - rhel-8
         fips:
@@ -67,7 +67,7 @@ jobs:
             bundle env
           echo ::endgroup::
 
-      - name: 'Provision test cluster'
+      - name: "Provision test cluster"
         timeout-minutes: 15
         run: |
           echo ::group::prepare
@@ -94,7 +94,7 @@ jobs:
             sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
           echo ::endgroup::
 
-      - name: 'Install PE on test cluster'
+      - name: "Install PE on test cluster"
         timeout-minutes: 120
         run: |
           bundle exec bolt plan run peadm_spec::install_test_cluster \
@@ -104,7 +104,7 @@ jobs:
             version=${{ matrix.version }} \
             fips=${{ matrix.fips }}
 
-      - name: 'Tear down test cluster'
+      - name: "Tear down test cluster"
         if: ${{ always() }}
         continue-on-error: true
         run: |

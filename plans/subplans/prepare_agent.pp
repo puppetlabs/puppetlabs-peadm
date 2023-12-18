@@ -87,6 +87,7 @@ plan peadm::subplans::prepare_agent (
   run_plan('peadm::modify_certificate', $agent_target,
     primary_host     => $primary_target,
     add_extensions   => $certificate_extensions,
+    dns_alt_names    => $dns_alt_names,
     force_regenerate => $force_regenerate
   )
 }

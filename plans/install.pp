@@ -45,7 +45,7 @@ plan peadm::install (
 
   # Common Configuration
   String                            $console_password,
-  Peadm::Pe_version                 $version                          = '2021.7.4',
+  Peadm::Pe_version                 $version                          = '2021.7.6',
   Optional[String]                  $pe_installer_source              = undef,
   Optional[Array[String]]           $dns_alt_names                    = undef,
   Optional[String]                  $compiler_pool_address            = undef,
@@ -55,7 +55,7 @@ plan peadm::install (
   Optional[Peadm::Ldap_config]      $ldap_config                      = undef,
 
   # Code Manager
-  Optional[Boolean]                 $code_manager_auto_configure = true,
+  Optional[Boolean]                 $code_manager_auto_configure = undef,
   Optional[String]                  $r10k_remote              = undef,
   Optional[String]                  $r10k_private_key_file    = undef,
   Optional[Peadm::Pem]              $r10k_private_key_content = undef,
