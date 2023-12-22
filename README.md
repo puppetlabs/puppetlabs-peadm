@@ -27,12 +27,31 @@ PEADM is a supported PE module. If you are a PE customer with the standard or pr
 
 ## Overview
 
-This is the standard workflow for installing and using PEADM.
+This is the standard workflow for installing PEADM.
 
-1. To enable the execution of PEADM plans, install Bolt on a jump host with SSH access to all nodes in your installation.
-2. On the Bolt host, run the `peadm::install` plan to bootstrap a new PE installation. For large or extra-large architectures, PEADM creates node groups in the classifier to set relevant parameters in the `puppet_enterprise` module.
-3. Use PE as normal. PEADM is not required until your next upgrade.
-4. When you are ready to upgrade PE, run the `peadm::upgrade` plan from the Bolt host.
+1. [Install Bolt](https://www.puppet.com/docs/bolt/latest/bolt_installing) on a jump host.
+2. To create a Bolt project that includes the PEADM module, run:</br>`mkdir <YOUR_PROJECT> && cd <YOUR_PROJECT> && bolt project init <YOUR_PROJECT> --modules puppetlabs-peadm`
+3. In the Bolt project directory, update the `inventory.yaml` file with connection information for the servers you plan to use for hosting PE infrastructure. For example:
+```yaml
+---
+groups:
+  - name: puppet-enterprise-nodes
+    config:
+      transport: ssh
+      ssh:
+        host-key-check: false
+        user: centos
+        run-as: root
+    targets:
+      - pe-xl-core-0.lab1.puppet.vm
+      - pe-xl-core-1.lab1.puppet.vm
+      - pe-xl-core-2.lab1.puppet.vm
+      - pe-xl-core-3.lab1.puppet.vm
+      - name: pe-xl-compiler-0.lab1.puppet.vm
+        uri: 10.234.6.45
+      - name: pe-xl-compiler-1.lab1.puppet.vm
+        uri: 10.234.14.131
+```
 
 ### What PEADM affects
 
