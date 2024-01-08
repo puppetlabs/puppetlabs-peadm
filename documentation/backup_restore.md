@@ -1,47 +1,61 @@
-# Backup and Restore Puppet Enterprise using the PEADM module
+# Backup and restore Puppet Enterprise (PE) 
 
-## Introduction
+If your PE installation is managed by PEADM, you can back up and restore PE using this process:
+1. Use the `peadm::backup` plan to create a backup of your primary server.
+2. Use the `peadm::restore` plan to restore PE from a `peadm::backup`.
 
-The PEADM backup and restore supports two types: `recovery` and `custom`.
-You can select the type by providing the parameter `backup_type` for backup and `restore_type` for restore.
-`recovery` is the default backup/restore type.
+**Important:** If your PE installation is not managed by PEADM, you cannot use the `peadm::backup` and `peadm::restore` plans. For information on converting to a PEADM-managed installation, see [Convert](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/convert.md).  
 
-The backup file will be named `pe-backup-YYYY-MM-DDTHHMMSSZ.tar.gz` and placed in `/tmp` by default. The output directory can be overridden with
-the parameter `output_directory`.
+When running the backup and restore plans, you can define the `backup_type` and `restore_type` parameters with either of the following values:
+* `recovery`: Use this type to create a full backup of your primary server, including data for all services. This allows you to restore your primary server and all services (including database services running on external servers) to the exact state they were in at the time of the backup.
+* `custom`: Use this type when you want to selectively back up and restore data for specific services. 
 
-The restore needs to specify the backup file path to restore from in its `input_file` parameter.
+If no type is specified, the default is `recovery`.
 
-**Important note**: peadm backup and restore can only be used on PE installs which are created using PEADM. Also, you can only use `peadm::restore` on a backup created by `peadm::backup`.
+When backing up or restoring PE, you must use the `--targets` option to specify the hostname (FQDN) of your primary server.
+ 
+The backup file created is named `pe-backup-YYYY-MM-DDTHHMMSSZ.tar.gz` and placed by default in `/tmp`. To specify a different location for the backup file, you can define the `output_directory` parameter.
 
-A backup and restore need to specify the primary server as the target.
-
-## Recovery backup type
-
-When backup type `recovery` is selected, the primary backup created is intended to be used to recover the primary it if it fails. This means that the primary's configuration will be restored to exactly the state it was in when the backup was created.
-
-You can create a recovery backup as follows:
+This example shows how to run a `recovery` backup which places the backup file in a custom location.  
 ```
-bolt plan run peadm::backup --targets my.primary.vm backup_type=recovery
-```
-or, simply,
-```
-bolt plan run peadm::backup --targets my.primary.vm
+bolt plan run peadm::backup --targets my.primary.vm backup_type=recovery output_directory=/custom_path
 ```
 
-To restore from this backup, you can do:
+When restoring PE, you must define the `input_file` parameter to specify the path to the backup file you want to use. For example:
 ```
 bolt plan run peadm::restore --targets my.primary.vm input_file="/tmp/my_backup.tar.gz"
 ```
 
-The recovery restore will also work if some or all services are down on the primary. The restore process will restart the services at the end.
+## Using `recovery` backup and restore
 
-## Custom backup type
+When you run a `recovery` backup plan, the primary server configuration is backed up in full. In the event of a primary server failure, this backup can be used to to restore your primary server and all services (including database services running on external servers) to the exact state they were in at the time of the backup.
 
-When selecting the `custom` backup type, the user can choose which items are backed up and/or restored using the `backup` (or `restore`) plan parameter.
-This parameter can be omitted, in which case all options will be turned on by default.
+You can create a `recovery` backup as follows:
+```
+bolt plan run peadm::backup --targets my.primary.vm backup_type=recovery
+```
+Alternatively, because `recovery` is the default type, you can use this simplified command:
+```
+bolt plan run peadm::backup --targets my.primary.vm
+```
 
-To specify custom backup (restore) options, it is best to create a `params.json` file like follows:
+To restore your installation from this backup, run:
+```
+bolt plan run peadm::restore --targets my.primary.vm input_file="/tmp/my_backup.tar.gz"
+```
 
+**Tip**: Restoring from a `recovery` backup restarts any services that are unavailable on the primary server.
+
+## Using `custom` backup and restore
+
+To specify the items that are backed up and restored, define the `backup_type` or `restore_type` parameters as `custom`.
+Otherwise, the default type is `recovery`.
+
+**Note:** To customize the list of items that are backed up and restored, you must define the `backup` and `restore` parameters, specifying the items you want to exclude.
+
+To specify the `custom` items, you can create and reference `params.json` files as shown in the following examples.
+
+To specify custom backup options:
 ```json
 {
   "backup_type" : "custom",
@@ -58,12 +72,12 @@ To specify custom backup (restore) options, it is best to create a `params.json`
 }
 ```
 
-To backup using this parameter file, do:
+To create a backup using the options specified in this parameter file, run:
 ```
 bolt plan run peadm::backup --targets my.primary.vm --params @params.json
 ```
 
-or, for restore,
+To specify custom restore options:
 
 ```json
 {
@@ -82,27 +96,26 @@ or, for restore,
 }
 ```
 
-To restore using this parameter file, do:
+To restore PE using the options specified in this parameter file, run:
 ```
 bolt plan run peadm::restore --targets my.primary.vm --params @params.json
 ```
 
 ## What exactly is backed up and restored?
 
-These are the explanations of the different backup/restore items:
+The following table shows the items you can specify and indicates what is included in `recovery`:
 
-| Item         | Comments                                                                                               | Used in `recovery` |
-| ------------ | ------------------------------------------------------------------------------------------------------ | ------------------ |
-| activity     | Activity database                                                                                      |                    |
-| ca           | CA and ssl certificates                                                                                | ✅                  |
-| classifier   | Classifier database. Restore will merge user-defined node groups and not overwrite system node groups. |                    |
-| code         | Code directory                                                                                         | ✅                  |
-| config       | Configuration files and databases (databases are restored literally)                                   | ✅                  |
-| orchestrator | Orchestrator database                                                                                  |                    |
-| puppetdb     | PuppetDB database (including support for XL where puppetdb is running on an external db server)        | ✅                  |
-| rbac         | RBAC database                                                                                          |                    |
+| Data or service   | Explanation                                                                                              | Used in `recovery` |
+| ------------------| -------------------------------------------------------------------------------------------------------- | ------------------ |
+| `activity `       | Activity database                                                                                        |                    |
+| `ca `             | CA and ssl certificates                                                                                  | ✅                 |
+| `classifier`      | Classifier database. Restore merges user-defined node groups rather than overwriting system node groups. |                    |
+| `code`            | Code directory                                                                                           | ✅                 |
+| `config`          | Configuration files and databases (databases are restored literally)                                     | ✅                 |
+| `orchestrator `   | Orchestrator database                                                                                    |                    |
+| `puppetdb`        | PuppetDB database (including support for XL where puppetdb is running on an external db server)          | ✅                 |
+| `rbac`            | RBAC database                                                                                            |                    |
 
-**Note**: `ca`, `code` and `config` are backed up using the `puppet-backup create` command and restored using the `puppet-backup restore` command. 
-The `config` item includes backups of `activity`, `classifier`, `orchestrator` and `rbac` databases.
+**Note**: The PEADM backup and restore plans utilize the `puppet-backup` tool for backing up and restoring `ca`, `code` and `config`. For `config`, the data backed up includes the `activity`, `classifier`, `orchestrator`, and `rbac` databases.
 
-**Note:** It is important to highlight that the `peadm::backup` plan's output is different than the one you will get when you backup manually using [the `puppet-backup create` command.](https://puppet.com/docs/pe/latest/backing_up_and_restoring_pe.html#back_up_pe_infrastructure).
+**Note:** The output for the `peadm::backup` plan differs from the output that is returned when you manually run the [`puppet-backup create` command](https://puppet.com/docs/pe/latest/backing_up_and_restoring_pe.html#back_up_pe_infrastructure).
