@@ -130,8 +130,8 @@ jobs:
           bundle exec bolt command run "rm -rf /etc/puppetlabs/puppetserver/ca /etc/puppetlabs/puppet/ssl" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
           echo "Removing classifier database"
           bundle exec bolt command run "rm -rf /opt/puppetlabs/server/data/postgresql/classifier" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
-
           bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
+          #TODO if arch is XL, run pe-uninstaller on the primary database
 
       - name: Reinstall PE primary in a non-peadm way
         continue-on-error: true
@@ -142,7 +142,7 @@ jobs:
             --modulepath spec/fixtures/modules
             --verbose --stream
 
-      - name: Perform peadm restore of cluster
+      - name: Perform peadm restore of primary server
         timeout-minutes: 30
         continue-on-error: true
         run: |
@@ -161,6 +161,12 @@ jobs:
               --stream
           echo ::endgroup::
 
+      #TODO new step to run only if arch is XL
+      # - clean the primary db certificate on the primary server (puppet ca clean --certname <primary_db>)
+      # - run the pe installer on the primary db server
+      # - run the add_database plan on the primary db server
+      # - run the peadm restore plan with the option "recover_primary_db" set to true
+      # add docs to README about actions the customer needs to do to recover the primary db
       - name: Output PE cluster status
         run: |
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)

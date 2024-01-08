@@ -1,3 +1,6 @@
+#TODO parametrize the plan so it can do:
+# - a recovery restore of the primary server
+# - a recovery restore of the primary db server
 plan peadm_spec::test_restore() {
   $t = get_targets('*')
   wait_until_available($t)
