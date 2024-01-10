@@ -1,7 +1,7 @@
 # @summary Restore puppet primary configuration
 #
 # @param targets These are a list of the primary puppetservers from one or multiple puppet clusters
-# @param backup_type Currently, the `recovery` and `custom` restore types are supported
+# @param restore_type Choose from `recovery`, `recovery-db` and `custom`
 # @param restore A hash of custom backup options, see the peadm::recovery_opts_default() function for the default values
 # @param input_file The file containing the backup to restore from
 # @example 
@@ -12,10 +12,10 @@ plan peadm::restore (
   Peadm::SingleTargetSpec $targets,
 
   # restore type determines the restore options
-  Enum['recovery', 'custom'] $restore_type = 'recovery',
+  Enum['recovery', 'recovery-db', 'custom'] $restore_type = 'recovery',
 
   # Which data to restore
-  Peadm::Recovery_opts    $restore = {},
+  Peadm::Recovery_opts $restore = {},
 
   # Path to the recovery tarball
   Pattern[/.*\.tar\.gz$/] $input_file,
@@ -58,9 +58,10 @@ plan peadm::restore (
   )
 
   $recovery_opts = $restore_type? {
-    'recovery'  => peadm::recovery_opts_default(),
-    'migration' => peadm::migration_opts_default(),
-    'custom'    => peadm::migration_opts_all() + $restore,
+    'recovery'     => peadm::recovery_opts_default(),
+    'recovery-db'  => { 'puppetdb' => true, },
+    'migration'    => peadm::migration_opts_default(),
+    'custom'       => peadm::migration_opts_all() + $restore,
   }
 
   $primary_target   = peadm::get_targets(getvar('cluster.params.primary_host'), 1)
@@ -125,6 +126,8 @@ plan peadm::restore (
           ${shellquote($recovery_directory)}/recovery/pe_backup-*tgz
         | CMD
   # lint:endignore
+  } elsif $restore_type == 'recovery-db' {
+    out::message('# Restoring primary database for recovery')
   } else {
     if getvar('recovery_opts.ca') {
       out::message('# Restoring ca and ssl certificates')

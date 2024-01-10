@@ -1,7 +1,11 @@
 #TODO parametrize the plan so it can do:
 # - a recovery restore of the primary server
 # - a recovery restore of the primary db server
-plan peadm_spec::test_restore() {
+plan peadm_spec::test_restore(
+  # restore type determines the restore options
+  Enum['recovery', 'recovery-db'] $restore_type = 'recovery',
+
+) {
   $t = get_targets('*')
   wait_until_available($t)
 
@@ -26,7 +30,7 @@ plan peadm_spec::test_restore() {
   $result = run_command('ls -t /tmp/pe-backup*gz | head -1', $primary_host).first.value
   $input_file = strip(getvar('result.stdout'))
 
-  run_plan('peadm::restore', $primary_host, { 'restore_type' => 'recovery', 'input_file' => $input_file })
+  run_plan('peadm::restore', $primary_host, { 'restore_type' => restore_type, 'input_file' => $input_file })
 
   # run infra status on the primary
   out::message("Running peadm::status on primary host ${primary_host}")
