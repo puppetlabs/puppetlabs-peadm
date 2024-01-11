@@ -15,7 +15,7 @@
 echo -n "Check for and wait up to 5 minutes for in-progress run to complete"
 lockfile=$(/opt/puppetlabs/bin/puppet config print agent_catalog_run_lockfile)
 n=0
-until [ $n -ge 300 ]
+until [ $n -ge "$PT_in_progress_timeout" ]
 do
   [ ! -e "$lockfile" ] && break
   echo -n .
