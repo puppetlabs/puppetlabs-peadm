@@ -30,7 +30,7 @@ plan peadm_spec::test_restore(
   $result = run_command('ls -t /tmp/pe-backup*gz | head -1', $primary_host).first.value
   $input_file = strip(getvar('result.stdout'))
 
-  run_plan('peadm::restore', $primary_host, { 'restore_type' => restore_type, 'input_file' => $input_file })
+  run_plan('peadm::restore', $primary_host, { 'restore_type' => $restore_type, 'input_file' => $input_file })
 
   # run infra status on the primary
   out::message("Running peadm::status on primary host ${primary_host}")

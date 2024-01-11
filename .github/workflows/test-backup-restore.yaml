@@ -19,6 +19,14 @@ on:
         description: "PE architecture to test"
         required: true
         default: "standard"
+        type: choice
+        options:
+          - standard
+          - standard-with-dr
+          - large
+          - large-with-dr
+          - extra-large
+          - extra-large-with-dr
       version:
         description: "PE version to install"
         required: true
@@ -133,14 +141,25 @@ jobs:
           bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
           #TODO if arch is XL, run pe-uninstaller on the primary database
 
+          if [ ${{ github.event.inputs.architecture || 'extra-large' }} == 'extra-large' ]; then
+            echo "Uninstalling PE from primary database"
+            primary_db=$(yq '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .uri' spec/fixtures/litmus_inventory.yaml)
+            bundle exec bolt task run peadm_spec::reinstall_pe version=${{ github.event.inputs.version || '2023.5.0' }} -t $primary_db \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules \
+            --verbose \
+            --stream
+          fi
+
       - name: Reinstall PE primary in a non-peadm way
         continue-on-error: true
         run: |
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
           bundle exec bolt task run peadm_spec::reinstall_pe version=${{ github.event.inputs.version || '2023.5.0' }} -t $primary \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
-            --modulepath spec/fixtures/modules
-            --verbose --stream
+            --modulepath spec/fixtures/modules \
+            --verbose \
+            --stream
 
       - name: Perform peadm restore of primary server
         timeout-minutes: 30
@@ -154,6 +173,9 @@ jobs:
             bundle exec rake spec_prep
           echo ::endgroup::
 
+          primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
+          bundle exec bolt command run "echo '[Service]' | sudo tee /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf; echo 'TimeoutStartSec=1' | sudo tee -a /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf; echo 'TimeoutStopSec=1' | sudo tee -a /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf; echo 'Restart=no' | sudo tee -a /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf; sudo systemctl daemon-reload" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
+
           echo ::group::restore
             bundle exec bolt plan run peadm_spec::test_restore \
               --inventoryfile spec/fixtures/litmus_inventory.yaml \
@@ -161,12 +183,40 @@ jobs:
               --stream
           echo ::endgroup::
 
+          bundle exec bolt command run "systemctl stop pe-puppetdb.service && rm /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf && systemctl daemon-reload" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
+
       #TODO new step to run only if arch is XL
       # - clean the primary db certificate on the primary server (puppet ca clean --certname <primary_db>)
       # - run the pe installer on the primary db server
       # - run the add_database plan on the primary db server
       # - run the peadm restore plan with the option "recover_primary_db" set to true
       # add docs to README about actions the customer needs to do to recover the primary db
+
+      - name: Setup Primary DB in XL
+        if: ${{ github.event.inputs.architecture || 'extra-large' }} == 'extra-large'
+        run: |
+          primary_db=$(yq '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .uri' spec/fixtures/litmus_inventory.yaml)
+          primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
+          db_hostname=$(bundle exec bolt command run "hostname -f" -t $primary_db --inventoryfile spec/fixtures/litmus_inventory.yaml | grep -oP 'litmus-\w+\.c\.ia-content\.internal')
+          primary_hostname=$(bundle exec bolt command run "hostname -f" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml | grep -oP 'litmus-\w+\.c\.ia-content\.internal')
+          bundle exec bolt command run "puppetserver ca clean --certname $db_hostname" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
+          # bundle exec bolt plan run peadm::add_database -t $primary_db primary_host=$primary \
+          #   --inventoryfile spec/fixtures/litmus_inventory.yaml \
+          #   --modulepath spec/fixtures/modules
+
+          bundle exec bolt plan run peadm::subplans::component_install -t $primary_db \
+            primary_host=$primary_hostname \
+            avail_group_letter='A' \
+            role='puppet/puppetdb-database' \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules \
+            --stream
+
+          bundle exec bolt plan run peadm_spec::test_restore restore_type="recovery-db" \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules \
+            --stream
+
       - name: Output PE cluster status
         run: |
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
