@@ -11,6 +11,9 @@ elif grep -qi redhat /etc/os-release && [[ "$(cat /proc/sys/crypto/fips_enabled)
   osfamily="redhatfips"
 else
   osfamily="el"
+  if grep -qi amazon /etc/os-release && grep -qi 'VERSION_ID="2"' /etc/os-release; then
+    version=7
+  fi
 fi
 
 # OS-specific modifications
