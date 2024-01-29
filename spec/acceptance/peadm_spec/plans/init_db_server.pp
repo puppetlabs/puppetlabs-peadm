@@ -75,7 +75,7 @@ plan peadm_spec::init_db_server(
   )
 
   run_plan('peadm::subplans::component_install', $db_target, {
-      primary_host => $primary_target.peadm::certname(),
+      primary_host => $primary_target,
       avail_group_letter => 'A',
       role => 'puppet/puppetdb-database',
   })

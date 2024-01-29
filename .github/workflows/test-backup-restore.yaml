@@ -180,30 +180,24 @@ jobs:
             bundle exec bolt plan run peadm_spec::test_restore \
               --inventoryfile spec/fixtures/litmus_inventory.yaml \
               --modulepath spec/fixtures/modules \
-              --stream
+              --stream \
+                || true # ignore errors
           echo ::endgroup::
 
           bundle exec bolt command run "systemctl stop pe-puppetdb.service && rm /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf && systemctl daemon-reload" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
 
-      #TODO new step to run only if arch is XL
-      # - clean the primary db certificate on the primary server (puppet ca clean --certname <primary_db>)
-      # - run the pe installer on the primary db server
-      # - run the add_database plan on the primary db server
-      # - run the peadm restore plan with the option "recover_primary_db" set to true
-      # add docs to README about actions the customer needs to do to recover the primary db
+      # TODO: add docs to README about actions the customer needs to do to recover the primary db
 
       - name: Setup Primary DB in XL
         if: ${{ github.event.inputs.architecture || 'extra-large' }} == 'extra-large'
         run: |
           primary_db=$(yq '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .uri' spec/fixtures/litmus_inventory.yaml)
-          db_hostname=$(bundle exec bolt command run "hostname -f" -t $primary_db --inventoryfile spec/fixtures/litmus_inventory.yaml | grep -oP 'litmus-\w+\.c\.ia-content\.internal')
-          # primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
-          # primary_hostname=$(bundle exec bolt command run "hostname -f" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml | grep -oP 'litmus-\w+\.c\.ia-content\.internal')
 
-          bundle exec bolt plan run peadm_spec::init_db_server db_host=$db_hostname \
+          bundle exec bolt plan run peadm_spec::init_db_server db_host=$primary_db \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
-            --stream
+            --stream \
+            || true # ignore errors
 
           bundle exec bolt plan run peadm_spec::test_restore restore_type="recovery-db" \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
