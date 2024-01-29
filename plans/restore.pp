@@ -300,6 +300,10 @@ plan peadm::restore (
   # Run Puppet to pick up last remaining config tweaks
   run_task('peadm::puppet_runonce', $primary_target)
 
+  if $restore_type == 'recovery-db' {
+    run_task('peadm::puppet_runonce', $puppetdb_postgresql_targets)
+  }
+
   apply($primary_target) {
     file { $recovery_directory :
       ensure => 'absent',

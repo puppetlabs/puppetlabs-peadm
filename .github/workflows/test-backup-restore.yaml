@@ -144,7 +144,7 @@ jobs:
           if [ ${{ github.event.inputs.architecture || 'extra-large' }} == 'extra-large' ]; then
             echo "Uninstalling PE from primary database"
             primary_db=$(yq '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .uri' spec/fixtures/litmus_inventory.yaml)
-            bundle exec bolt task run peadm_spec::reinstall_pe version=${{ github.event.inputs.version || '2023.5.0' }} -t $primary_db \
+            bundle exec bolt command run "/opt/puppetlabs/bin/puppet-enterprise-uninstaller -p -d -y || true" -t $primary_db \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             --verbose \
@@ -196,18 +196,11 @@ jobs:
         if: ${{ github.event.inputs.architecture || 'extra-large' }} == 'extra-large'
         run: |
           primary_db=$(yq '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .uri' spec/fixtures/litmus_inventory.yaml)
-          primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
           db_hostname=$(bundle exec bolt command run "hostname -f" -t $primary_db --inventoryfile spec/fixtures/litmus_inventory.yaml | grep -oP 'litmus-\w+\.c\.ia-content\.internal')
-          primary_hostname=$(bundle exec bolt command run "hostname -f" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml | grep -oP 'litmus-\w+\.c\.ia-content\.internal')
-          bundle exec bolt command run "puppetserver ca clean --certname $db_hostname" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
-          # bundle exec bolt plan run peadm::add_database -t $primary_db primary_host=$primary \
-          #   --inventoryfile spec/fixtures/litmus_inventory.yaml \
-          #   --modulepath spec/fixtures/modules
+          # primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
+          # primary_hostname=$(bundle exec bolt command run "hostname -f" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml | grep -oP 'litmus-\w+\.c\.ia-content\.internal')
 
-          bundle exec bolt plan run peadm::subplans::component_install -t $primary_db \
-            primary_host=$primary_hostname \
-            avail_group_letter='A' \
-            role='puppet/puppetdb-database' \
+          bundle exec bolt plan run peadm_spec::init_db_server db_host=$db_hostname \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             --stream
