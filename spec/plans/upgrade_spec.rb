@@ -31,7 +31,7 @@ describe 'peadm::upgrade' do
 
     expect(run_plan('peadm::upgrade',
                     'primary_host' => 'primary',
-                    'version' => '2021.7.6')).to be_ok
+                    'version' => '2021.7.7')).to be_ok
   end
 
   it 'runs with a primary, compilers, but no replica' do
@@ -47,7 +47,7 @@ describe 'peadm::upgrade' do
     expect(run_plan('peadm::upgrade',
                     'primary_host' => 'primary',
                     'compiler_hosts' => 'compiler',
-                    'version' => '2021.7.6')).to be_ok
+                    'version' => '2021.7.7')).to be_ok
   end
 
   it 'fails if the primary uses the pcp transport' do
