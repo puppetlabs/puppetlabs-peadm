@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.17.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.17.0) - 2024-02-07
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.16.1...v3.17.0)
+
+### Other
+
+- add environment parameter to puppet_runonce task [#402](https://github.com/puppetlabs/puppetlabs-peadm/pull/402) ([vchepkov](https://github.com/vchepkov))
+
 ## [v3.16.1](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.16.1) - 2023-11-23
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.16.0...v3.16.1)
