@@ -44,7 +44,7 @@ jobs:
         version:
           - '2019.8.12'
         version_to_upgrade:
-          - '2021.7.6'
+          - '2021.7.7'
         image:
           - 'almalinux-cloud/almalinux-8'
         download_mode:
