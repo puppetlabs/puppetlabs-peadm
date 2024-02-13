@@ -176,6 +176,9 @@ jobs:
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
           bundle exec bolt command run "echo '[Service]' | sudo tee /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf; echo 'TimeoutStartSec=1' | sudo tee -a /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf; echo 'TimeoutStopSec=1' | sudo tee -a /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf; echo 'Restart=no' | sudo tee -a /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf; sudo systemctl daemon-reload" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
 
+          #TODO update the restore to:
+          # - restore the puppetdb in the standard cases
+          # - not restore the puppetdb if there is a broken external db
           echo ::group::restore
             bundle exec bolt plan run peadm_spec::test_restore \
               --inventoryfile spec/fixtures/litmus_inventory.yaml \
@@ -193,12 +196,24 @@ jobs:
         run: |
           primary_db=$(yq '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .uri' spec/fixtures/litmus_inventory.yaml)
 
-          bundle exec bolt plan run peadm_spec::init_db_server db_host=$primary_db \
-            --inventoryfile spec/fixtures/litmus_inventory.yaml \
-            --modulepath spec/fixtures/modules \
-            --stream \
-            || true # ignore errors
 
+          # bundle exec bolt plan run peadm_spec::init_db_server db_host=$primary_db \
+          #   --inventoryfile spec/fixtures/litmus_inventory.yaml \
+          #   --modulepath spec/fixtures/modules \
+          #   --stream \
+          #   || true # ignore errors
+
+          #TODO: update peadm configuration by running the plan peadm::util::update_classification 
+          # specifying the restored peadm config except providing "undef" for both database hosts 
+          # (this will initialise puppetdb on the primary)
+          # should this ^^^ be part of the restore plan with recovery-db restore type?
+
+          #TODO: run peadm::add_database on the primary db
+          # after this step, we expect this to be the state:
+          # - the primary (external) postgresql server is up and running
+          # - puppet primary points to the external server for its puppetdb
+
+          # restore the puppetdb database
           bundle exec bolt plan run peadm_spec::test_restore restore_type="recovery-db" \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
