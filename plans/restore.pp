@@ -128,6 +128,19 @@ plan peadm::restore (
   # lint:endignore
   } elsif $restore_type == 'recovery-db' {
     out::message('# Restoring primary database for recovery')
+    # lint:ignore:strict_indent
+    run_plan('peadm::util::update_classification', $primary_target,
+        postgresql_a_host => undef,
+        postgresql_b_host => undef,
+        peadm_config      => $cluster
+      )
+    # lint:endignore
+
+    run_task('peadm::puppet_runonce', $primary_target)
+
+    run_plan('peadm::add_database', getvar('cluster.params.primary_postgresql_host'), primary_host => $primary_target)
+
+    # should db data restore be done here?
   } else {
     if getvar('recovery_opts.ca') {
       out::message('# Restoring ca and ssl certificates')

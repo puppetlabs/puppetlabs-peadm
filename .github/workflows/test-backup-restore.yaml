@@ -194,8 +194,7 @@ jobs:
       - name: Setup Primary DB in XL
         if: ${{ github.event.inputs.architecture || 'extra-large' }} == 'extra-large'
         run: |
-          primary_db=$(yq '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .uri' spec/fixtures/litmus_inventory.yaml)
-
+          # primary_db=$(yq '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .uri' spec/fixtures/litmus_inventory.yaml)
 
           # bundle exec bolt plan run peadm_spec::init_db_server db_host=$primary_db \
           #   --inventoryfile spec/fixtures/litmus_inventory.yaml \
