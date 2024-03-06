@@ -11,11 +11,15 @@ plan peadm::util::sanitize_pg_pe_conf (
   run_task('peadm::read_file', $targets,
     path => $path,
   ).map |$result| {
-    $sanitized = $result['content'].loadjson() + {
+    out::message("Sanitizing pe.conf on ${result.value}")
+    $sanitized = $result.value['content'].parsejson() + {
       'puppet_enterprise::puppet_master_host' => $primary_target.peadm::certname(),
-      'puppet_enterprise::database_host'      => $result.target.peadm::certname(),
+      'puppet_enterprise::puppetdb_database_host'      => $result.target.peadm::certname(),
     }
+
+    out::message("Sanitized ${sanitized}")
+
     # Return the result of file_content_upload. There is only one target
-    peadm::file_content_upload($sanitized, $path, $result.target)[0]
+    peadm::file_content_upload(stdlib::to_json_pretty($sanitized), $path, $result.target)[0]
   }
 }

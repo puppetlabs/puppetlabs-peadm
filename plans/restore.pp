@@ -1,11 +1,11 @@
 # @summary Restore puppet primary configuration
 #
-# @param targets These are a list of the primary puppetservers from one or multiple puppet clusters
+# @param targets This should be the primary puppetserver for the puppet cluster
 # @param restore_type Choose from `recovery`, `recovery-db` and `custom`
 # @param restore A hash of custom backup options, see the peadm::recovery_opts_default() function for the default values
 # @param input_file The file containing the backup to restore from
 # @example 
-#   bolt plan run peadm::restore -t primary1.example.com,primary2.example.com input_file=/tmp/peadm-backup.tar.gz
+#   bolt plan run peadm::restore -t primary1.example.com input_file=/tmp/peadm-backup.tar.gz
 #
 plan peadm::restore (
   # This plan should be run on the primary server
@@ -33,16 +33,20 @@ plan peadm::restore (
 
   # try to load the cluster configuration by running peadm::get_peadm_config, but allow for errors to happen
   $_cluster = run_task('peadm::get_peadm_config', $targets, { '_catch_errors' => true }).first.value
-  out::message("cluster: ${_cluster}")
+
+  $result = download_file("${recovery_directory}/peadm/peadm_config.json", 'peadm_config.json', $targets).first.value
+  $cluster_backup = loadjson(getvar('result.path'))
+
   if $_cluster == undef or getvar('_cluster.params') == undef {
     # failed to get cluster config, load from backup
     out::message('Failed to get cluster configuration, loading from backup...')
-    $result = download_file("${recovery_directory}/peadm/peadm_config.json", 'peadm_config.json', $targets).first.value
-    $cluster = loadjson(getvar('result.path'))
+    $cluster = $cluster_backup
     out::message('Cluster configuration loaded from backup')
   } else {
     $cluster = $_cluster
   }
+
+  out::message("cluster: ${cluster}")
 
   $error = getvar('cluster.error')
   if $error {
@@ -130,18 +134,46 @@ plan peadm::restore (
     out::message('# Restoring primary database for recovery')
     # lint:ignore:strict_indent
     run_plan('peadm::util::update_classification', $primary_target,
-        postgresql_a_host => undef,
-        postgresql_b_host => undef,
+        postgresql_a_host => getvar('cluster.params.primary_host'),
         peadm_config      => $cluster
       )
     # lint:endignore
 
+    run_plan('peadm::util::sanitize_pe_conf', $primary_target)
+    # lint:ignore:strict_indent
+    run_command(@("CMD"/L), $primary_target)
+      rm -f /etc/puppetlabs/puppet/user_data.conf
+      | CMD
+    # lint:endignore
+
+    # lint:ignore:strict_indent
+    run_command(@("CMD"/L), $primary_target)
+      systemctl stop pe-puppetdb
+      | CMD
+    # lint:endignore
+
+        # lint:ignore:strict_indent
+    run_command(@("CMD"/L), $primary_target)
+      puppet infra configure
+      | CMD
+    # lint:endignore    
+
+    run_task('peadm::puppet_runonce', $primary_target)
     run_task('peadm::puppet_runonce', $primary_target)
 
-    run_plan('peadm::add_database', getvar('cluster.params.primary_postgresql_host'), primary_host => $primary_target)
+    run_plan('peadm::add_database', getvar('cluster_backup.params.primary_postgresql_host'), primary_host => $primary_target)
 
-    # should db data restore be done here?
-  } else {
+  #   restore from snapshot
+  # - run classification update
+  # - run sanitize pe.conf
+  # - remove user_data.conf
+  # - stop puppetdb
+  # - run puppet infrastructure configure
+  # - do 2 puppet agent runs
+  # - add db
+
+    # fail_plan('Testing db restore')
+} else {
     if getvar('recovery_opts.ca') {
       out::message('# Restoring ca and ssl certificates')
   # lint:ignore:strict_indent

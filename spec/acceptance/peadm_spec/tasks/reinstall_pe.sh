@@ -2,7 +2,9 @@
 # This task reinstalls PE and needs to run as root.
 
 # Uninstall PE if installed
-/opt/puppetlabs/bin/puppet-enterprise-uninstaller -p -d -y || true 
+if [[ "$PT_uninstall" == true ]]; then
+  /opt/puppetlabs/bin/puppet-enterprise-uninstaller -p -d -y || true
+fi
 
 # Download PE
 INSTALLER="puppet-enterprise-${PT_version}-${PT_arch}"

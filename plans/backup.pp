@@ -84,6 +84,14 @@ plan peadm::backup (
       mode    => '0600',
     }
 
+    # backup the recovery options
+    file { "${backup_directory}/peadm/recovery_opts.json":
+      content => stdlib::to_json_pretty($recovery_opts),
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0600',
+    }
+
     # Create a subdir for each backup type selected
     $recovery_opts.filter |$_,$val| { $val == true }.each |$dir,$_| {
       file { "${backup_directory}/${dir}":
