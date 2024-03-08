@@ -1,6 +1,6 @@
 plan peadm_spec::init_db_server(
-  Peadm::SingleTargetSpec $db_host,
-  String[1] $pe_version = '2023.4.0',
+  String[1] $db_host,
+  String[1] $pe_version = '2023.5.0',
   String[1] $pe_platform = 'el-8-x86_64',
 ) {
   $t = get_targets('*')
@@ -67,6 +67,9 @@ plan peadm_spec::init_db_server(
     path   => $upload_tarball_path,
   )
 
+  run_task('service', $compiler_targets, { action => 'stop', name => 'pe-puppetdb',  _catch_errors => true })
+  run_task('service', $primary_target, { action => 'restart', name => 'pe-puppetdb',  _catch_errors => true })
+
   # Run the PE installer on the puppetdb database hosts
   run_task('peadm::pe_install', $db_target,
     tarball               => $upload_tarball_path,
@@ -79,4 +82,6 @@ plan peadm_spec::init_db_server(
       avail_group_letter => 'A',
       role => 'puppet/puppetdb-database',
   })
+  run_task('service', $compiler_targets, { action => 'start', name => 'pe-puppetdb',  _catch_errors => true })
+  run_task('service', $compiler_targets, { action => 'restart', name => 'pe-puppetserver',  _catch_errors => true })
 }
