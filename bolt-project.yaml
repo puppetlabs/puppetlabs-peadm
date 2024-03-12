@@ -1,0 +1,9 @@
+---
+name: peadm
+stream: true
+modules:
+  - puppetlabs/stdlib
+  - puppet/format
+  - name: node_manager
+    git: https://github.com/WhatsARanjit/puppet-node_manager
+    ref: master

@@ -133,7 +133,9 @@ plan peadm::restore (
   } elsif $restore_type == 'recovery-db' {
     out::message('# Restoring primary database for recovery')
     run_plan('peadm_spec::init_db_server', {
-        'db_host' => getvar('cluster.params.primary_postgresql_host'),
+        db_host => getvar('cluster.params.primary_postgresql_host'),
+        install_pe => true,
+        pe_version => getvar('cluster.params.pe_version'),
         _catch_errors => true
       }
     )
