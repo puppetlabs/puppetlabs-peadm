@@ -37,9 +37,8 @@ on:
         default: "false"
 
 jobs:
-  backup:
-    name: "Backup cluster: PE ${{ github.event.inputs.version || '2023.5.0' }} ${{ github.event.inputs.architecture || 'extra-large' }} on ${{ github.event.inputs.image || 'almalinux-cloud/almalinux-8' }}"
-
+  backup-restore-test:
+    name: "Backup, break and restore cluster: PE ${{ github.event.inputs.version || '2023.5.0' }} ${{ github.event.inputs.architecture || 'extra-large' }} on ${{ github.event.inputs.image || 'almalinux-cloud/almalinux-8' }}"
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true
@@ -131,7 +130,7 @@ jobs:
         with:
           version: v4.30.5
 
-      - name: Break PE cluster
+      - name: Break the primary host
         run: |
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
           echo "Removing ssl directories"
@@ -141,27 +140,18 @@ jobs:
           bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
           #TODO if arch is XL, run pe-uninstaller on the primary database
 
-          if [ ${{ github.event.inputs.architecture || 'extra-large' }} == 'extra-large' ]; then
-            echo "Uninstalling PE from primary database"
-            primary_db=$(yq '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .uri' spec/fixtures/litmus_inventory.yaml)
-            bundle exec bolt command run "/opt/puppetlabs/bin/puppet-enterprise-uninstaller -p -d -y || true" -t $primary_db \
-            --inventoryfile spec/fixtures/litmus_inventory.yaml \
-            --modulepath spec/fixtures/modules \
-            --verbose \
-            --stream
-          fi
-
-      - name: Reinstall PE primary in a non-peadm way
+      - name: Reinstall PE on the primary host
         continue-on-error: true
+        # TODO: move reinstall_pe plan to the peadm::utils folder
         run: |
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
-          bundle exec bolt task run peadm_spec::reinstall_pe version=${{ github.event.inputs.version || '2023.5.0' }} -t $primary \
+          bundle exec bolt task run peadm_spec::reinstall_pe uninstall=true version=${{ github.event.inputs.version || '2023.5.0' }} -t $primary \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             --verbose \
             --stream
 
-      - name: Perform peadm restore of primary server
+      - name: Perform peadm recovery restore of primary server
         timeout-minutes: 30
         continue-on-error: true
         run: |
@@ -189,28 +179,34 @@ jobs:
 
           bundle exec bolt command run "systemctl stop pe-puppetdb.service && rm /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf && systemctl daemon-reload" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
 
+      - name: Output PE cluster status
+        run: |
+          primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
+          bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
+
       # TODO: add docs to README about actions the customer needs to do to recover the primary db
+
+      - name: Break external DB
+        if: ${{ github.event.inputs.architecture || 'extra-large' }} == 'extra-large'
+        run: |
+          echo "Uninstalling PE from primary database"
+          primary_db=$(yq '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .uri' spec/fixtures/litmus_inventory.yaml)
+          bundle exec bolt command run "/opt/puppetlabs/bin/puppet-enterprise-uninstaller -p -d -y || true" -t $primary_db \
+          --inventoryfile spec/fixtures/litmus_inventory.yaml \
+          --modulepath spec/fixtures/modules \
+          --verbose \
+          --stream
 
       - name: Setup Primary DB in XL
         if: ${{ github.event.inputs.architecture || 'extra-large' }} == 'extra-large'
+        # TODO: move peadm_spec::init_db_server plan to the peadm::utils folder
         run: |
-          # primary_db=$(yq '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .uri' spec/fixtures/litmus_inventory.yaml)
-
-          # bundle exec bolt plan run peadm_spec::init_db_server db_host=$primary_db \
-          #   --inventoryfile spec/fixtures/litmus_inventory.yaml \
-          #   --modulepath spec/fixtures/modules \
-          #   --stream \
-          #   || true # ignore errors
-
-          #TODO: update peadm configuration by running the plan peadm::util::update_classification 
-          # specifying the restored peadm config except providing "undef" for both database hosts 
-          # (this will initialise puppetdb on the primary)
-          # should this ^^^ be part of the restore plan with recovery-db restore type?
-
-          #TODO: run peadm::add_database on the primary db
-          # after this step, we expect this to be the state:
-          # - the primary (external) postgresql server is up and running
-          # - puppet primary points to the external server for its puppetdb
+          primary_db=$(yq '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .uri' spec/fixtures/litmus_inventory.yaml)
+          bundle exec bolt plan run peadm_spec::init_db_server db_host=$primary_db \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules \
+            --stream \
+            || true # ignore errors
 
           # restore the puppetdb database
           bundle exec bolt plan run peadm_spec::test_restore restore_type="recovery-db" \
@@ -222,6 +218,9 @@ jobs:
         run: |
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
           bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
+
+      - name: Smoke test
+        run: "echo 'Smoke test'"
 
       - name: "Wait as long as the file ${HOME}/pause file is present"
         continue-on-error: true
