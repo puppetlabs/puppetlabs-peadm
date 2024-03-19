@@ -184,6 +184,10 @@ jobs:
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
           bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
 
+      # perform a smoke test. Test of "green" puppet infra status is already done insite peadm_spec::test_restore
+      - name: Smoke test
+        run: "echo 'Smoke test'"
+
       # TODO: add docs to README about actions the customer needs to do to recover the primary db
 
       - name: Break external DB
@@ -203,6 +207,7 @@ jobs:
         run: |
           primary_db=$(yq '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .uri' spec/fixtures/litmus_inventory.yaml)
           bundle exec bolt plan run peadm_spec::init_db_server db_host=$primary_db \
+            install_pe=true \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             --stream \
@@ -219,6 +224,7 @@ jobs:
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
           bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
 
+      # perform a smoke test. Test of "green" puppet infra status is already done insite peadm_spec::test_restore
       - name: Smoke test
         run: "echo 'Smoke test'"
 
