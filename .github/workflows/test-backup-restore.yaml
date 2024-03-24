@@ -140,6 +140,11 @@ jobs:
           bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
           #TODO if arch is XL, run pe-uninstaller on the primary database
 
+      - name: Output PE cluster status
+        run: |
+          primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
+          bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
+
       - name: Reinstall PE on the primary host
         continue-on-error: true
         # TODO: move reinstall_pe plan to the peadm::utils folder
@@ -164,7 +169,7 @@ jobs:
           echo ::endgroup::
 
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
-          bundle exec bolt command run "echo '[Service]' | sudo tee /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf; echo 'TimeoutStartSec=1' | sudo tee -a /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf; echo 'TimeoutStopSec=1' | sudo tee -a /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf; echo 'Restart=no' | sudo tee -a /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf; sudo systemctl daemon-reload" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
+          # bundle exec bolt command run "echo '[Service]' | sudo tee /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf; echo 'TimeoutStartSec=1' | sudo tee -a /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf; echo 'TimeoutStopSec=1' | sudo tee -a /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf; echo 'Restart=no' | sudo tee -a /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf; sudo systemctl daemon-reload" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
 
           #TODO update the restore to:
           # - restore the puppetdb in the standard cases
@@ -177,7 +182,7 @@ jobs:
                 || true # ignore errors
           echo ::endgroup::
 
-          bundle exec bolt command run "systemctl stop pe-puppetdb.service && rm /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf && systemctl daemon-reload" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
+          # bundle exec bolt command run "systemctl stop pe-puppetdb.service && rm /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf && systemctl daemon-reload && systemctl start pe-puppetdb" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
 
       - name: Output PE cluster status
         run: |
@@ -186,7 +191,11 @@ jobs:
 
       # perform a smoke test. Test of "green" puppet infra status is already done insite peadm_spec::test_restore
       - name: Smoke test
-        run: "echo 'Smoke test'"
+        run: |
+          bundle exec bolt plan run peadm_spec::puppet_run_test \
+              --inventoryfile spec/fixtures/litmus_inventory.yaml \
+              --modulepath spec/fixtures/modules \
+              --stream
 
       # TODO: add docs to README about actions the customer needs to do to recover the primary db
 
@@ -200,6 +209,11 @@ jobs:
           --modulepath spec/fixtures/modules \
           --verbose \
           --stream
+
+      - name: Output PE cluster status
+        run: |
+          primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
+          bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
 
       - name: Setup Primary DB in XL
         if: ${{ github.event.inputs.architecture || 'extra-large' }} == 'extra-large'
@@ -226,7 +240,11 @@ jobs:
 
       # perform a smoke test. Test of "green" puppet infra status is already done insite peadm_spec::test_restore
       - name: Smoke test
-        run: "echo 'Smoke test'"
+        run: |
+          bundle exec bolt plan run peadm_spec::puppet_run_test \
+              --inventoryfile spec/fixtures/litmus_inventory.yaml \
+              --modulepath spec/fixtures/modules \
+              --stream
 
       - name: "Wait as long as the file ${HOME}/pause file is present"
         continue-on-error: true
