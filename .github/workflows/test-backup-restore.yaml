@@ -137,7 +137,6 @@ jobs:
           bundle exec bolt command run "rm -rf /etc/puppetlabs/puppetserver/ca /etc/puppetlabs/puppet/ssl" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
           echo "Removing classifier database"
           bundle exec bolt command run "rm -rf /opt/puppetlabs/server/data/postgresql/classifier" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
-          bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
           #TODO if arch is XL, run pe-uninstaller on the primary database
 
       - name: Output PE cluster status
@@ -147,10 +146,9 @@ jobs:
 
       - name: Reinstall PE on the primary host
         continue-on-error: true
-        # TODO: move reinstall_pe plan to the peadm::utils folder
         run: |
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
-          bundle exec bolt task run peadm_spec::reinstall_pe uninstall=true version=${{ github.event.inputs.version || '2023.5.0' }} -t $primary \
+          bundle exec bolt task run peadm::reinstall_pe uninstall=true version=${{ github.event.inputs.version || '2023.5.0' }} -t $primary \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             --verbose \
@@ -169,7 +167,6 @@ jobs:
           echo ::endgroup::
 
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
-          # bundle exec bolt command run "echo '[Service]' | sudo tee /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf; echo 'TimeoutStartSec=1' | sudo tee -a /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf; echo 'TimeoutStopSec=1' | sudo tee -a /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf; echo 'Restart=no' | sudo tee -a /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf; sudo systemctl daemon-reload" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
 
           #TODO update the restore to:
           # - restore the puppetdb in the standard cases
@@ -182,14 +179,11 @@ jobs:
                 || true # ignore errors
           echo ::endgroup::
 
-          # bundle exec bolt command run "systemctl stop pe-puppetdb.service && rm /etc/systemd/system/pe-puppetdb.service.d/10-shortcircuit.conf && systemctl daemon-reload && systemctl start pe-puppetdb" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
-
       - name: Output PE cluster status
         run: |
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
           bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
 
-      # perform a smoke test. Test of "green" puppet infra status is already done insite peadm_spec::test_restore
       - name: Smoke test
         run: |
           bundle exec bolt plan run peadm_spec::puppet_run_test \
@@ -217,10 +211,9 @@ jobs:
 
       - name: Setup Primary DB in XL
         if: ${{ github.event.inputs.architecture || 'extra-large' }} == 'extra-large'
-        # TODO: move peadm_spec::init_db_server plan to the peadm::utils folder
         run: |
           primary_db=$(yq '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .uri' spec/fixtures/litmus_inventory.yaml)
-          bundle exec bolt plan run peadm_spec::init_db_server db_host=$primary_db \
+          bundle exec bolt plan run peadm::util::init_db_server db_host=$primary_db \
             install_pe=true \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
@@ -238,7 +231,6 @@ jobs:
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
           bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
 
-      # perform a smoke test. Test of "green" puppet infra status is already done insite peadm_spec::test_restore
       - name: Smoke test
         run: |
           bundle exec bolt plan run peadm_spec::puppet_run_test \

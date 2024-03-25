@@ -1,5 +1,5 @@
 {
-  "description": "Reinstall PE",
+  "description": "Reinstall PE, only to be used to restore PE",
   "parameters": {
     "version": {
       "type": "String[1]",

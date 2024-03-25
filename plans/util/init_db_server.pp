@@ -1,4 +1,4 @@
-plan peadm_spec::init_db_server(
+plan peadm::util::init_db_server(
   String[1] $db_host,
   Boolean $install_pe = false,
   String[1] $pe_version = '2023.5.0',
