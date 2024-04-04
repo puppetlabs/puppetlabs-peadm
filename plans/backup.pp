@@ -38,7 +38,7 @@ plan peadm::backup (
   $recovery_opts = $backup_type? {
     'recovery'  => peadm::recovery_opts_default(),
     'migration' => peadm::migration_opts_default(),
-    'custom'    => peadm::migration_opts_all() + $backup,
+    'custom'    => peadm::recovery_opts_all() + $backup,
   }
 
   $timestamp = Timestamp.new().strftime('%Y-%m-%dT%H%M%SZ')
@@ -124,8 +124,7 @@ plan peadm::backup (
     out::message('# Backing up ca, certs, code and config for recovery')
 # lint:ignore:strict_indent
     run_command(@("CMD"), $targets)
-      /opt/puppetlabs/bin/puppet-backup create --dir=${shellquote($backup_directory)}/recovery \
-      --scope=certs,code,config
+      /opt/puppetlabs/bin/puppet-backup create --dir=${shellquote($backup_directory)}/recovery --scope=certs,code,config
       | CMD
 # lint:endignore
   } else {
@@ -169,11 +168,12 @@ plan peadm::backup (
   if getvar('recovery_opts.orchestrator') {
     out::message('# Backing up orchestrator secret keys')
     run_command(@("CMD"), $targets)
-      cp -rp /etc/puppetlabs/orchestration-services/conf.d/secrets ${shellquote($backup_directory)}/orchestrator/ 
+      cp -rp /etc/puppetlabs/orchestration-services/conf.d/secrets ${shellquote($backup_directory)}/orchestrator/
       | CMD
   }
 # lint:endignore
   $backup_databases.each |$name,$database_target| {
+    out::message("# Backing up database pe-${shellquote($name)}")
     run_command(@("CMD"/L), $targets)
       /opt/puppetlabs/server/bin/pg_dump -Fd -Z3 -j4 \
         -f ${shellquote($backup_directory)}/${shellquote($name)}/pe-${shellquote($name)}.dump.d \
