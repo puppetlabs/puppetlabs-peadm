@@ -2,23 +2,68 @@ require 'spec_helper'
 
 describe 'peadm::restore' do
   include BoltSpec::Plans
-  let(:params) { { 'targets' => 'primary', 'backup_timestamp' => '2022-03-29_16:57:41' } }
-
-  it 'runs with default params' do
+  let(:recovery_params) { 
+    { 
+      'targets'      => 'primary', 
+      'input_file'   => '/input/file.tar.gz',
+      'restore_type' => 'recovery'
+    }
+  }
+  let(:recovery_db_params) { 
+    { 
+      'targets'      => 'primary', 
+      'input_file'   => '/input/file.tar.gz',
+      'restore_type' => 'recovery-db'
+    } 
+  }
+  let(:cluster) { { 'params' => { 'primary_host' => 'primary', 'primary_postgresql_host' => 'postgres' } } }
+  before(:each) do
     allow_apply
-    pending('a lack of support for functions requires a workaround to be written')
-    expect_task('peadm::get_peadm_config').always_return({ 'primary_postgresql_host' => 'postgres' })
-    expect_out_message.with_params('# Backing up ca and ssl certificates')
-    # The commands all have a timestamp in them and frankly its proved to hard with bolt spec to work this out
-    allow_any_command
-    expect_out_message.with_params('# Restoring classification')
-    expect_out_message.with_params('# Backed up current classification to /tmp/classification_backup.json')
-    expect_out_message.with_params('# Restoring ca and ssl certificates')
-    expect_out_message.with_params('# Restoring database pe-orchestrator')
-    expect_out_message.with_params('# Restoring database pe-activity')
-    expect_out_message.with_params('# Restoring database pe-rbac')
-    expect_out_message.with_params('# Restoring classification')
-    expect_task('peadm::backup_classification')
-    expect(run_plan('peadm::restore', params)).to be_ok
+
+    expect_task('peadm::get_peadm_config').always_return(cluster)
+    expect_out_message.with_params("cluster: " + cluster.to_s.gsub(/"/,'').gsub(/=>/,' => '))
+    expect_download('/input/file/peadm/peadm_config.json')
+    allow_task('peadm::puppet_runonce')
   end
+
+  it 'runs with recovery params' do
+    # allow_any_command
+    expect_out_message.with_params('# Restoring database pe-puppetdb')
+    expect_out_message.with_params('# Restoring ca, certs, code and config for recovery')
+
+    expect_command("umask 0077   && cd /input   && tar -xzf /input/file.tar.gz\n")
+    expect_command("/opt/puppetlabs/bin/puppet-backup restore   --scope=certs,code,config   --tempdir=/input/file   --force   /input/file/recovery/pe_backup-*tgz\n")
+    expect_command("systemctl stop pe-console-services pe-nginx pxp-agent pe-puppetserver                pe-orchestration-services puppet pe-puppetdb\n")
+    expect_command("test -f /input/file/rbac/keys.json   && cp -rp /input/file/keys.json /etc/puppetlabs/console-services/conf.d/secrets/   || echo secret ldap key doesn't exist\n")
+    expect_command("su - pe-postgres -s /bin/bash -c   \"/opt/puppetlabs/server/bin/psql      --tuples-only      -d 'pe-puppetdb'      -c 'DROP SCHEMA IF EXISTS pglogical CASCADE;'\"\n")
+    expect_command("su - pe-postgres -s /bin/bash -c   \"/opt/puppetlabs/server/bin/psql      -d 'pe-puppetdb'      -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'\"\n")
+    expect_command('su - pe-postgres -s /bin/bash -c   "/opt/puppetlabs/server/bin/psql      -d \'pe-puppetdb\'      -c \'ALTER USER \\"pe-puppetdb\\" WITH SUPERUSER;\'"' + "\n")
+    expect_command('/opt/puppetlabs/server/bin/pg_restore   -j 4   -d "sslmode=verify-ca       host=postgres       sslcert=/etc/puppetlabs/puppetdb/ssl/primary.cert.pem       sslkey=/etc/puppetlabs/puppetdb/ssl/primary.private_key.pem       sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem       dbname=pe-puppetdb       user=pe-puppetdb"   -Fd /input/file/puppetdb/pe-puppetdb.dump.d' + "\n")
+    expect_command('su - pe-postgres -s /bin/bash -c   "/opt/puppetlabs/server/bin/psql      -d \'pe-puppetdb\'      -c \'ALTER USER \\"pe-puppetdb\\" WITH NOSUPERUSER;\'"' + "\n")
+    expect_command('su - pe-postgres -s /bin/bash -c   "/opt/puppetlabs/server/bin/psql      -d \'pe-puppetdb\'      -c \'DROP EXTENSION IF EXISTS pglogical CASCADE;\'"' + "\n")
+    expect_command("/opt/puppetlabs/bin/puppet-infrastructure configure --no-recover\n")
+
+    expect(run_plan('peadm::restore', recovery_params)).to be_ok
+  end
+
+  it 'runs with recovery-db params' do
+    allow_any_command
+    expect_out_message.with_params('# Restoring primary database for recovery')
+    expect_out_message.with_params('# Restoring database pe-puppetdb')
+
+    # expect_command("umask 0077   && cd /input   && tar -xzf /input/file.tar.gz\n")
+    # expect_command("/opt/puppetlabs/bin/puppet-backup restore   --scope=certs,code,config   --tempdir=/input/file   --force   /input/file/recovery/pe_backup-*tgz\n")
+    # expect_command("systemctl stop pe-console-services pe-nginx pxp-agent pe-puppetserver                pe-orchestration-services puppet pe-puppetdb\n")
+    # expect_command("test -f /input/file/rbac/keys.json   && cp -rp /input/file/keys.json /etc/puppetlabs/console-services/conf.d/secrets/   || echo secret ldap key doesn't exist\n")
+    # expect_command("su - pe-postgres -s /bin/bash -c   \"/opt/puppetlabs/server/bin/psql      --tuples-only      -d 'pe-puppetdb'      -c 'DROP SCHEMA IF EXISTS pglogical CASCADE;'\"\n")
+    # expect_command("su - pe-postgres -s /bin/bash -c   \"/opt/puppetlabs/server/bin/psql      -d 'pe-puppetdb'      -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'\"\n")
+    # expect_command('su - pe-postgres -s /bin/bash -c   "/opt/puppetlabs/server/bin/psql      -d \'pe-puppetdb\'      -c \'ALTER USER \\"pe-puppetdb\\" WITH SUPERUSER;\'"' + "\n")
+    # expect_command('/opt/puppetlabs/server/bin/pg_restore   -j 4   -d "sslmode=verify-ca       host=postgres       sslcert=/etc/puppetlabs/puppetdb/ssl/primary.cert.pem       sslkey=/etc/puppetlabs/puppetdb/ssl/primary.private_key.pem       sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem       dbname=pe-puppetdb       user=pe-puppetdb"   -Fd /input/file/puppetdb/pe-puppetdb.dump.d' + "\n")
+    # expect_command('su - pe-postgres -s /bin/bash -c   "/opt/puppetlabs/server/bin/psql      -d \'pe-puppetdb\'      -c \'ALTER USER \\"pe-puppetdb\\" WITH NOSUPERUSER;\'"' + "\n")
+    # expect_command('su - pe-postgres -s /bin/bash -c   "/opt/puppetlabs/server/bin/psql      -d \'pe-puppetdb\'      -c \'DROP EXTENSION IF EXISTS pglogical CASCADE;\'"' + "\n")
+    # expect_command("/opt/puppetlabs/bin/puppet-infrastructure configure --no-recover\n")
+
+    expect(run_plan('peadm::restore', recovery_db_params)).to be_ok
+  end
+
 end

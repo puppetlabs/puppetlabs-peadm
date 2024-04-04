@@ -192,7 +192,7 @@ plan peadm::restore (
   run_command(@("CMD"/L), $primary_target)
     test -f ${shellquote($recovery_directory)}/rbac/keys.json \
       && cp -rp ${shellquote($recovery_directory)}/keys.json /etc/puppetlabs/console-services/conf.d/secrets/ \
-      || echo secret ldap key doesn\'t exist
+      || echo secret ldap key doesn't exist
     | CMD
 # lint:ignore:140chars
   # IF restoring orchestrator restore the secrets to /etc/puppetlabs/orchestration-services/conf.d/secrets/
@@ -206,7 +206,7 @@ plan peadm::restore (
 
   #$database_to_restore.each |Integer $index, Boolean $value | {
   $restore_databases.each |$name,$database_targets| {
-    out::message("# Restoring ${name} database")
+    out::message("# Restoring database pe-${name}")
     $dbname = "pe-${shellquote($name)}"
 
     # Drop pglogical extensions and schema if present
