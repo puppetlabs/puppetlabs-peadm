@@ -205,6 +205,7 @@ jobs:
           --stream
 
       - name: Output PE cluster status
+        if: ${{ github.event.inputs.architecture || 'extra-large' }} == 'extra-large'
         run: |
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
           bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
@@ -227,11 +228,13 @@ jobs:
             --stream
 
       - name: Output PE cluster status
+        if: ${{ github.event.inputs.architecture || 'extra-large' }} == 'extra-large'
         run: |
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
           bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
 
       - name: Smoke test
+        if: ${{ github.event.inputs.architecture || 'extra-large' }} == 'extra-large'
         run: |
           bundle exec bolt plan run peadm_spec::puppet_run_test \
               --inventoryfile spec/fixtures/litmus_inventory.yaml \
