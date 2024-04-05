@@ -2,7 +2,7 @@
 # @param status_data Raw json data as returned by puppet infra status --format=json
 # @param use_colors Adds colors to the status, defaults to true
 # @return A simplified hash of of status data for the given stack
-# @example 
+# @example Using function
 #  peadm::determine_status($data, true)
 #  {
 #   "failed" => {
