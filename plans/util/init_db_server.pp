@@ -20,7 +20,6 @@ plan peadm::util::init_db_server(
   out::message("db_target certname: ${db_target.peadm::certname()}")
   out::message("primary_target: ${primary_target}")
   out::message("compiler_targets: ${compiler_targets}")
-  # fail_plan('testing eop')
   run_command("/opt/puppetlabs/bin/puppetserver ca clean --certname ${db_target.peadm::certname()}", $primary_target)
 
 # lint:ignore:strict_indent
