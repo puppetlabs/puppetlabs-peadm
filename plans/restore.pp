@@ -65,7 +65,7 @@ plan peadm::restore (
     'recovery'     => peadm::recovery_opts_default(),
     'recovery-db'  => { 'puppetdb' => true, },
     'migration'    => peadm::migration_opts_default(),
-    'custom'       => peadm::migration_opts_all() + $restore,
+    'custom'       => peadm::recovery_opts_all() + $restore,
   }
 
   $primary_target   = peadm::get_targets(getvar('cluster.params.primary_host'), 1)
@@ -104,19 +104,25 @@ plan peadm::restore (
   }
 
   if getvar('recovery_opts.classifier') {
-    out::message('# Restoring classification')
-    run_task('peadm::backup_classification', $primary_target,
-      directory => $recovery_directory
-    )
+    if $restore_type == 'migration' {
+      out::message('# Migrating classification')
+      run_task('peadm::backup_classification', $primary_target,
+        directory => $recovery_directory
+      )
 
-    run_task('peadm::transform_classification_groups', $primary_target,
-      source_directory  => "${recovery_directory}/classifier",
-      working_directory => $recovery_directory
-    )
+      run_task('peadm::transform_classification_groups', $primary_target,
+        source_directory  => "${recovery_directory}/classifier",
+        working_directory => $recovery_directory
+      )
 
-    run_task('peadm::restore_classification', $primary_target,
-      classification_file => "${recovery_directory}/transformed_classification.json",
-    )
+      run_task('peadm::restore_classification', $primary_target,
+        classification_file => "${recovery_directory}/transformed_classification.json",
+      )
+    } else {
+      run_task('peadm::restore_classification', $primary_target,
+        classification_file => "${recovery_directory}/classifier/classification_backup.json",
+      )
+    }
   }
 
   if $restore_type == 'recovery' {
