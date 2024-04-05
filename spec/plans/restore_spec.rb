@@ -39,17 +39,21 @@ describe 'peadm::restore' do
   }
 
   let(:cluster) { { 'params' => { 'primary_host' => 'primary', 'primary_postgresql_host' => 'postgres' } } }
+
   before(:each) do
     allow_apply
 
-    expect_task('peadm::get_peadm_config').always_return(cluster)
     expect_out_message.with_params("cluster: " + cluster.to_s.gsub(/"/,'').gsub(/=>/,' => '))
     expect_out_message.with_params('# Restoring ldap secret key if it exists')
-    expect_download("#{backup_dir}/peadm/peadm_config.json")
     allow_task('peadm::puppet_runonce')
   end
 
-  it 'runs with recovery params' do
+  # only run for tests that have the :valid_cluster tag
+  before(:each, :valid_cluster => true) do
+    expect_task('peadm::get_peadm_config').always_return(cluster)
+  end
+
+  it 'runs with recovery params', :valid_cluster => true do
     expect_out_message.with_params('# Restoring database pe-puppetdb')
     expect_out_message.with_params('# Restoring ca, certs, code and config for recovery')
 
@@ -68,7 +72,7 @@ describe 'peadm::restore' do
     expect(run_plan('peadm::restore', recovery_params)).to be_ok
   end
 
-  it 'runs with recovery-db params' do
+  it 'runs with recovery-db params', :valid_cluster => true do
     allow_any_command
 
     expect_out_message.with_params('# Restoring primary database for recovery')
@@ -77,7 +81,7 @@ describe 'peadm::restore' do
     expect(run_plan('peadm::restore', recovery_db_params)).to be_ok
   end
 
-  it 'runs with classifier-only params' do
+  it 'runs with classifier-only params', :valid_cluster =>  true do
     allow_any_command
 
     expect_task('peadm::restore_classification').with_params({
@@ -85,6 +89,24 @@ describe 'peadm::restore' do
     })
 
     expect(run_plan('peadm::restore', classifier_only_params)).to be_ok
+  end
+
+  it 'runs with recovery params, no valid cluster', :valid_cluster => false do
+    allow_any_command
+
+    # simulate a failure to get the cluster configuration
+    expect_task('peadm::get_peadm_config').always_return({})
+    expect_out_message.with_params("Failed to get cluster configuration, loading from backup...")
+
+    # download mocked to return the path to the file fixtures/peadm_config.json
+    expect_download("#{backup_dir}/peadm/peadm_config.json").return do |targets, source, destination, params|
+      results = targets.map do |target|
+        Bolt::Result.new(target, value: { 'path' => File.expand_path(File.join(fixtures, 'peadm_config.json'))})
+      end
+
+      Bolt::ResultSet.new(results)
+    end
+    expect(run_plan('peadm::restore', recovery_params)).to be_ok
   end
 
 end

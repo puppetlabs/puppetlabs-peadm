@@ -34,13 +34,11 @@ plan peadm::restore (
   # try to load the cluster configuration by running peadm::get_peadm_config, but allow for errors to happen
   $_cluster = run_task('peadm::get_peadm_config', $targets, { '_catch_errors' => true }).first.value
 
-  $result = download_file("${recovery_directory}/peadm/peadm_config.json", 'peadm_config.json', $targets).first.value
-  $cluster_backup = loadjson(getvar('result.path'))
-
   if $_cluster == undef or getvar('_cluster.params') == undef {
     # failed to get cluster config, load from backup
     out::message('Failed to get cluster configuration, loading from backup...')
-    $cluster = $cluster_backup
+    $result = download_file("${recovery_directory}/peadm/peadm_config.json", 'peadm_config.json', $targets).first.value
+    $cluster = loadjson(getvar('result.path'))
     out::message('Cluster configuration loaded from backup')
   } else {
     $cluster = $_cluster
