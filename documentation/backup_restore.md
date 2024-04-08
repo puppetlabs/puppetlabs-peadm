@@ -134,7 +134,7 @@ The following table shows the items you can specify and indicates what is includ
 
 ## Recovering a broken primary server
 
-When your primary server is broken, you might not be able to use the `recovery` restore directly because the primary server is not in an operational state. In this case, follow the steps below to restore your primary server:
+If you cannot run the `recovery` restore plan directly because your primary server is not operational, you can use the following process to restore PE:
 1. Make sure you have a `recovery` backup of your primary server.
 1. Uninstall and reinstall Puppet Enterprise on the broken primary server. Make sure you are installing the same PE version as your current primary server was running. Optionally, you can use the `peadm::reinstall_pe` task as follows:
    ```
