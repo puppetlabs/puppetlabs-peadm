@@ -140,7 +140,7 @@ If you cannot run the `recovery` restore plan directly because your primary serv
    ```
     bolt task run peadm::reinstall_pe --targets my.primary.vm uninstall=true version=2023.5.0
    ```
-1. Perform a `recovery` restore of your primary server using the backup. For example:
+1. Perform a `recovery` restore of your primary server, specifying the backup file that you want to use. For example:
    ```
     bolt plan run peadm::restore --targets my.primary.vm input_file="/tmp/my_backup.tar.gz" restore_type=recovery
    ```
