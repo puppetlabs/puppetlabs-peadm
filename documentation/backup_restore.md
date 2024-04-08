@@ -6,7 +6,7 @@
   - [Using `custom` backup and restore](#using-custom-backup-and-restore)
   - [What exactly is backed up and restored?](#what-exactly-is-backed-up-and-restored)
   - [Recovering a broken primary server](#recovering-a-broken-primary-server)
-  - [Recovering a broken external primary database server in an Extra Large (XL) installation](#recovering-a-broken-external-primary-database-server-in-an-extra-large-xl-installation)
+  - [Recovering a broken database server in an extra-large installation](#recovering-a-broken-database-server-in-an-extra-large-installation)
 
 ## Introduction to PEADM backup and restore
 
