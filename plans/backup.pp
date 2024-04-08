@@ -1,11 +1,11 @@
 # @summary Backup puppet primary configuration
 #
-# @param targets These are a list of the primary puppetservers from one or multiple puppet clusters
+# @param targets This should be the primary puppetserver for the puppet cluster
 # @param backup_type Currently, the recovery and custom backup types are supported
 # @param backup A hash of custom backup options, see the peadm::recovery_opts_default() function for the default values
 # @param output_directory The directory to place the backup in
 # @example 
-#   bolt plan run peadm::backup -t primary1.example.com,primary2.example.com
+#   bolt plan run peadm::backup -t primary1.example.com
 #
 plan peadm::backup (
   # This plan should be run on the primary server

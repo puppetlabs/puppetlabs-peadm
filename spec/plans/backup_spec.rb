@@ -59,6 +59,28 @@ describe 'peadm::backup' do
     expect(run_plan('peadm::backup', default_params)).to be_ok
   end
 
+  it 'runs with backup type recovery by default' do
+    expect_out_message.with_params('# Backing up ca, certs, code and config for recovery')
+    expect_out_message.with_params('# Backing up database pe-puppetdb')
+
+    expect_command("/opt/puppetlabs/bin/puppet-backup create --dir=/tmp/pe-backup-1970-01-01T000000Z/recovery --scope=certs,code,config\n")
+    expect_command('/opt/puppetlabs/server/bin/pg_dump -Fd -Z3 -j4   -f /tmp/pe-backup-1970-01-01T000000Z/puppetdb/pe-puppetdb.dump.d   "sslmode=verify-ca    host=postgres    user=pe-puppetdb    sslcert=/etc/puppetlabs/puppetdb/ssl/primary.cert.pem    sslkey=/etc/puppetlabs/puppetdb/ssl/primary.private_key.pem    sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem    dbname=pe-puppetdb"' + "\n")
+    expect_command('umask 0077   && cd /tmp   && tar -czf /tmp/pe-backup-1970-01-01T000000Z.tar.gz pe-backup-1970-01-01T000000Z   && rm -rf /tmp/pe-backup-1970-01-01T000000Z' + "\n")
+
+    expect(run_plan('peadm::backup', { 'targets' => 'primary' })).to be_ok
+  end
+
+  it 'runs with backup and defined output folder' do
+    expect_out_message.with_params('# Backing up ca, certs, code and config for recovery')
+    expect_out_message.with_params('# Backing up database pe-puppetdb')
+
+    expect_command("/opt/puppetlabs/bin/puppet-backup create --dir=/user/home/folder/pe-backup-1970-01-01T000000Z/recovery --scope=certs,code,config\n")
+    expect_command('/opt/puppetlabs/server/bin/pg_dump -Fd -Z3 -j4   -f /user/home/folder/pe-backup-1970-01-01T000000Z/puppetdb/pe-puppetdb.dump.d   "sslmode=verify-ca    host=postgres    user=pe-puppetdb    sslcert=/etc/puppetlabs/puppetdb/ssl/primary.cert.pem    sslkey=/etc/puppetlabs/puppetdb/ssl/primary.private_key.pem    sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem    dbname=pe-puppetdb"' + "\n")
+    expect_command('umask 0077   && cd /user/home/folder   && tar -czf /user/home/folder/pe-backup-1970-01-01T000000Z.tar.gz pe-backup-1970-01-01T000000Z   && rm -rf /user/home/folder/pe-backup-1970-01-01T000000Z' + "\n")
+
+    expect(run_plan('peadm::backup', { 'targets' => 'primary', 'output_directory' => '/user/home/folder' })).to be_ok
+  end
+
   it 'runs with backup type custom, classifier only' do
     expect_task('peadm::backup_classification').with_params({ 'directory' => '/tmp/pe-backup-1970-01-01T000000Z/classifier' })
     expect_out_message.with_params('# Backing up classification')
