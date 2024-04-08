@@ -171,5 +171,5 @@ To do this, use the plan `peadm::util::init_db_server` as follows:
    ```
     bolt plan run peadm::restore --targets my.primary.vm input_file="/tmp/my_backup.tar.gz" restore_type=recovery-db
    ```
-   **Note**: You should use the `restore_type=recovery-db` parameter to recover the database server. 
+   **Important**: You must use the `restore_type=recovery-db` parameter to recover the database server. 
    **Note**: You should specify the primary host (not the primary database host) as the target for the restore plan.
