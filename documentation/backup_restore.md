@@ -22,7 +22,7 @@ When running the backup and restore plans, you can define the `backup_type` and 
 
 If no type is specified, the default is `recovery`.
 
-(When running the restore plan, an additional restore type `recovery-db` is available to recover a failed primary database server (see [Recovering a broken external primary database server in an Extra Large (XL) installation](#recovering-a-broken-external-primary-database-server-in-an-extra-large-xl-installation)).)
+(When running the restore plan, you can use the `recovery-db` restore type to recover a failed database server (see [Recovering a broken database server in an extra-large installation](#recovering-a-broken-database-server-in-an-extra-large-installation)).)
 
 When backing up or restoring PE, you must use the `--targets` option to specify the hostname (FQDN) of your primary server.
  
