@@ -134,26 +134,29 @@ The following table shows the items you can specify and indicates what is includ
 
 ## Recovering a broken primary server
 
+**Important**: To complete the recovery process outlined here, you must have a recovery backup of your primary server.
+
 If you cannot run the `recovery` restore plan directly because your primary server is not operational, you can use the following process to restore PE:
-1. Make sure you have a `recovery` backup of your primary server.
 1. On the node hosting the broken primary server, uninstall and reinstall PE, ensuring that you re-install the same PE version. Optionally, you can use the `peadm::reinstall_pe` task as follows:
-   ```
+    ```
     bolt task run peadm::reinstall_pe --targets my.primary.vm uninstall=true version=2023.5.0
-   ```
+    ```
 1. Perform a `recovery` restore of your primary server, specifying the backup file that you want to use. For example:
-   ```
+    ```
     bolt plan run peadm::restore --targets my.primary.vm input_file="/tmp/my_backup.tar.gz" restore_type=recovery
-   ```
+    ```
 
 ## Recovering a broken database server in an extra-large installation
 
+**Important**: To complete the recovery process outlined here, you must have a recovery backup of your primary server.
+
 When your primary database server is broken, you might not be able to use the `recovery` restore directly because the puppetdb database will not be operational. In this case, follow the steps below to restore your primary database:
-1. Make sure you have a `recovery` backup of your primary server.
+
 1. Reinstall Puppet Enterprise on the broken database server and reconfigure and re-sign its certificate. Make sure you are installing the same PE version as your current primary server was running.
 To do this, use the plan `peadm::util::init_db_server` as follows:
-   ```
+    ```
     bolt plan run peadm::util::init_db_server db_host=my.primary_db.vm pe_version=2023.5.0 install_pe=true
-   ```
+    ```
 
     This plan will perform the following:
 
@@ -168,8 +171,8 @@ To do this, use the plan `peadm::util::init_db_server` as follows:
      1. Restart the puppetserver service on the compilers.
 
 1. Perform a `recovery-db` restore of your database server, specifying the backup file that you want to use. For example:
-   ```
+    ```
     bolt plan run peadm::restore --targets my.primary.vm input_file="/tmp/my_backup.tar.gz" restore_type=recovery-db
-   ```
+    ```
    **Important**: You must use the `restore_type=recovery-db` parameter to recover the database server. 
    **Important**: You must specify the primary server host node (not the database server host node) as the target for the restore plan.
