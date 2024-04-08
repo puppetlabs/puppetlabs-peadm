@@ -167,7 +167,7 @@ To do this, use the plan `peadm::util::init_db_server` as follows:
      1. Start the puppetdb service on the compilers.
      1. Restart the puppetserver service on the compilers.
 
-1. Perform a `recovery-db` restore of your primary database server using the backup. For example:
+1. Perform a `recovery-db` restore of your database server, specifying the backup file that you want to use. For example:
    ```
     bolt plan run peadm::restore --targets my.primary.vm input_file="/tmp/my_backup.tar.gz" restore_type=recovery-db
    ```
