@@ -145,7 +145,7 @@ If you cannot run the `recovery` restore plan directly because your primary serv
     bolt plan run peadm::restore --targets my.primary.vm input_file="/tmp/my_backup.tar.gz" restore_type=recovery
    ```
 
-## Recovering a broken external primary database server in an Extra Large (XL) installation
+## Recovering a broken database server in an extra-large installation
 
 When your primary database server is broken, you might not be able to use the `recovery` restore directly because the puppetdb database will not be operational. In this case, follow the steps below to restore your primary database:
 1. Make sure you have a `recovery` backup of your primary server.
