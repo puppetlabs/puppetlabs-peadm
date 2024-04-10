@@ -124,9 +124,9 @@ The following table shows the items you can specify and indicates what is includ
 | `classifier`    | Classifier database. Restore merges user-defined node groups rather than overwriting system node groups. |                    |
 | `code`          | Code directory                                                                                           | ✅                  |
 | `config`        | Configuration files and databases (databases are restored literally)                                     | ✅                  |
-| `orchestrator ` | Orchestrator database                                                                                    |                    |
+| `orchestrator ` | Orchestrator database and secrets                                                                                    |                    |
 | `puppetdb`      | PuppetDB database (including support for XL where puppetdb is running on an external db server)          | ✅                  |
-| `rbac`          | RBAC database                                                                                            |                    |
+| `rbac`          | RBAC database and secrets                                                                                            |                    |
 
 **Note**: The PEADM backup and restore plans utilize the `puppet-backup` tool for backing up and restoring `ca`, `code` and `config`. For `config`, the data backed up includes the `activity`, `classifier`, `orchestrator`, and `rbac` databases.
 
