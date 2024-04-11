@@ -118,7 +118,7 @@ jobs:
           echo "${HOME}/pause absent, continuing workflow."
 
       - name: "Activate twingate to obtain unreleased build"
-        uses: comfucios/twingate-github-action@main
+        uses: twingate/github-action@main
         with:
           service-key: ${{ secrets.TWINGATE_PUBLIC_REPO_KEY }}
 
