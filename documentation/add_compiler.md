@@ -1,6 +1,6 @@
-# Add Compiler to support PCP
+# Add Compiler
 
-The peadm::add_compler plan can be used to add a new compiler to a PE architecture or replace an existing one with new configuration.
+The peadm::add_compiler plan can be used to add a new compiler to a PE architecture or replace an existing one with new configuration.
 
 ## Add compiler to an exising PE instance
 
@@ -24,10 +24,10 @@ See the [install](install.md#reference-architectures) documentation for a list o
 bolt plan run peadm::add_compiler --params @params.json 
 ```
 
-This call will retreive the current peadm config to determain the setup rules needed for a compiler's secondary PuppetDB instances. The provided server will be configured with the appropriate rules for Puppet Server access from compiler. The puppet.service will be stopped and the pe-postgresql.service will be reloaded. If required and agent ewill be installed and regenerated agent certificate to add required data with peadm::subplans::component_install. Puppet agent will run on the following components;
+This call will retreive the current peadm config to determain the setup rules needed for a compiler's secondary PuppetDB instances. The provided server will be configured with the appropriate rules for Puppet Server access from compiler. The puppet.service will be stopped and the pe-postgresql.service will be reloaded. If required and agent will be installed and regenerated agent certificate to add required data with peadm::subplans::component_install. Puppet agent will run on the following components
 * _\<compiler-host\>_
 * _\<primary_postgresql_host\>_
-* _\<replica puppetdb\>_
+* _\<replica postgres host\>_
 * _\<primary_postgresql_host\>_
 
- The puppet.service will be restarted
+ The puppet.service will then be restarted

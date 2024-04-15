@@ -90,7 +90,7 @@ plan peadm::add_compiler(
   # On <primary_postgresql_host> run the puppet agent
   run_task('peadm::puppet_runonce', $primary_postgresql_target)
 
-  # On replica puppetdb run the puppet agent
+  # On replica postgres host run the puppet agent
   run_task('peadm::puppet_runonce', $replica_puppetdb_target)
 
   # On <primary_postgresql_host> start puppet.service
