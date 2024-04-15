@@ -2,7 +2,7 @@
 
 The peadm::add_compiler plan can be used to add a new compiler to a PE architecture or replace an existing one with new configuration.
 
-## Add compiler to an exising PE instance
+## Add a compiler to an existing PE cluster
 
 Prepare to run the plan using a params.json file such as this one:
 
