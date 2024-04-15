@@ -30,4 +30,4 @@ This call will retreive the current peadm config to determain the setup rules ne
 * _\<replica postgres host\>_
 * _\<primary_postgresql_host\>_
 
- The puppet.service will then be restarted
+ The `puppet` service is then restarted.
