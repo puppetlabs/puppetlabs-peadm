@@ -24,7 +24,7 @@ See the [install](install.md#reference-architectures) documentation for a list o
 bolt plan run peadm::add_compiler --params @params.json 
 ```
 
-This call will retreive the current peadm config to determain the setup rules needed for a compiler's secondary PuppetDB instances. The provided server will be configured with the appropriate rules for Puppet Server access from compiler. The puppet.service will be stopped and the pe-postgresql.service will be reloaded. If required and agent will be installed and regenerated agent certificate to add required data with peadm::subplans::component_install. Puppet agent will run on the following components
+This command will retrieve the current PEADM configuration to determine the setup rules needed for a compiler's secondary PuppetDB instances. The plan will configure the primary with appropriate rules for allowing access from the new compiler. On the primary, the `puppet` service is stopped and the `pe-postgresql` service is reloaded. If required, a puppet agent is be installed. The compiler agent's certificate is be regenerated to include required data with `peadm::subplans::component_install`. Puppet agent will run on the following components
 * _\<compiler-host\>_
 * _\<primary_postgresql_host\>_
 * _\<replica host\>_
