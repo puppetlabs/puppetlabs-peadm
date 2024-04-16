@@ -5,8 +5,8 @@
   - [Using `recovery` backup and restore](#using-recovery-backup-and-restore)
   - [Using `custom` backup and restore](#using-custom-backup-and-restore)
   - [What exactly is backed up and restored?](#what-exactly-is-backed-up-and-restored)
-  - [Recovering a broken primary server](#recovering-a-broken-primary-server)
-  - [Recovering a broken database server in an extra-large installation](#recovering-a-broken-database-server-in-an-extra-large-installation)
+  - [Recovering a primary server when some or all services are not operational](#recovering-a-primary-server-when-some-or-all-services-are-not-operational)
+  - [Recovering a non-operational database server in an extra-large installation](#recovering-a-non-operational-database-server-in-an-extra-large-installation)
 
 ## Introduction to PEADM backup and restore
 
@@ -124,20 +124,20 @@ The following table shows the items you can specify and indicates what is includ
 | `classifier`    | Classifier database. Restore merges user-defined node groups rather than overwriting system node groups. |                    |
 | `code`          | Code directory                                                                                           | ✅                  |
 | `config`        | Configuration files and databases (databases are restored literally)                                     | ✅                  |
-| `orchestrator ` | Orchestrator database and secrets                                                                                    |                    |
+| `orchestrator ` | Orchestrator database and secrets                                                                        |                    |
 | `puppetdb`      | PuppetDB database (including support for XL where puppetdb is running on an external db server)          | ✅                  |
-| `rbac`          | RBAC database and secrets                                                                                            |                    |
+| `rbac`          | RBAC database and secrets                                                                                |                    |
 
 **Note**: The PEADM backup and restore plans utilize the `puppet-backup` tool for backing up and restoring `ca`, `code` and `config`. For `config`, the data backed up includes the `activity`, `classifier`, `orchestrator`, and `rbac` databases.
 
 **Note:** The output for the `peadm::backup` plan differs from the output that is returned when you manually run the [`puppet-backup create` command](https://puppet.com/docs/pe/latest/backing_up_and_restoring_pe.html#back_up_pe_infrastructure).
 
-## Recovering a broken primary server
+## Recovering a primary server when some or all services are not operational
 
 **Important**: To complete the recovery process outlined here, you must have a recovery backup of your primary server.
 
 If you cannot run the `recovery` restore plan directly because your primary server is not operational, you can use the following process to restore PE:
-1. On the node hosting the broken primary server, uninstall and reinstall PE, ensuring that you re-install the same PE version. Optionally, you can use the `peadm::reinstall_pe` task as follows:
+1. On the node hosting the affected primary server, uninstall and reinstall PE, ensuring that you re-install the same PE version. Optionally, you can use the `peadm::reinstall_pe` task as follows:
     ```
     bolt task run peadm::reinstall_pe --targets my.primary.vm uninstall=true version=2023.5.0
     ```
@@ -146,13 +146,13 @@ If you cannot run the `recovery` restore plan directly because your primary serv
     bolt plan run peadm::restore --targets my.primary.vm input_file="/tmp/my_backup.tar.gz" restore_type=recovery
     ```
 
-## Recovering a broken database server in an extra-large installation
+## Recovering a non-operational database server in an extra-large installation
 
 **Important**: To complete the recovery process outlined here, you must have a recovery backup of your primary server.
 
-When your primary database server is broken, you might not be able to use the `recovery` restore directly because the puppetdb database will not be operational. In this case, follow the steps below to restore your primary database:
+When your primary database server is not operational, you might not be able to use the `recovery` restore directly because the puppetdb database service will not be operational. In this case, follow the steps below to restore your primary database:
 
-1. Reinstall Puppet Enterprise on the broken database server and reconfigure and re-sign its certificate. Make sure you are installing the same PE version as your current primary server was running.
+1. Reinstall Puppet Enterprise on the affected database server and reconfigure and re-sign its certificate. Make sure you are installing the same PE version as your current primary server was running.
 To do this, use the plan `peadm::util::init_db_server` as follows:
     ```
     bolt plan run peadm::util::init_db_server db_host=my.primary_db.vm pe_version=2023.5.0 install_pe=true
