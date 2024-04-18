@@ -65,7 +65,7 @@ To customize the items you back up, first create a JSON file in which you define
   }
 }
 ```
-When you have created the JSON file specifying your custom backup, run the `peadm::backup` plan, including the `--params` option and specifing the relevant filename (and file path if necessary). For example:  
+When you have created the JSON file specifying your custom backup, run the `peadm::backup` plan, including the `--params` option and specifying the relevant filename (and file path if necessary). For example:  
 ```
 bolt plan run peadm::backup --targets my.primary.vm --params @params.json
 ```
