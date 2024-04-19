@@ -88,7 +88,7 @@ To customize the items you restore, create a JSON file in which you define the `
 }
 ```
 
-When you have created the JSON file specifying your custom restore options, run the `peadm::restore` plan, including the `--params` option and specifing the relevant filename (and file path if necessary). For example:
+When you have created the JSON file specifying your custom restore options, run the `peadm::restore` plan, including the `--params` option and specifying the relevant filename (and file path if necessary). For example:
 ```
 bolt plan run peadm::restore --targets my.primary.vm --params @params.json
 ```
