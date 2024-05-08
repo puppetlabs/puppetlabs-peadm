@@ -40,7 +40,7 @@ describe 'peadm::subplans::install' do
   it 'minimum variables to run' do
     params = {
       'primary_host'     => 'primary',
-      'console_password' => 'puppetlabs',
+      'console_password' => 'puppetLabs123!',
       'version'          => '2019.8.12',
     }
 
@@ -50,7 +50,7 @@ describe 'peadm::subplans::install' do
   it 'installs 2023.4 without r10k_known_hosts' do
     params = {
       'primary_host'             => 'primary',
-      'console_password'         => 'puppetlabs',
+      'console_password'         => 'puppetLabs123!',
       'version'                  => '2023.4.0',
       'r10k_remote'              => 'git@github.com:puppetlabs/nothing',
       'r10k_private_key_content' => '-----BEGINfoo',
@@ -62,7 +62,7 @@ describe 'peadm::subplans::install' do
   it 'installs 2023.4+ with r10k_private_key and r10k_known_hosts' do
     params = {
       'primary_host'             => 'primary',
-      'console_password'         => 'puppetlabs',
+      'console_password'         => 'puppetLabs123!',
       'version'                  => '2023.4.0',
       'r10k_remote'              => 'git@github.com:puppetlabs/nothing',
       'r10k_private_key_content' => '-----BEGINfoo',
