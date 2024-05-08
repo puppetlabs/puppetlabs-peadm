@@ -25,7 +25,7 @@ plan peadm_spec::install_test_cluster (
   }
 
   $common_params = {
-    console_password       => 'puppetlabs',
+    console_password       => 'puppetLabs123!',
     download_mode          => $download_mode,
     code_manager_auto_configure => $code_manager_auto_configure,
     version                => $version,
@@ -35,28 +35,28 @@ plan peadm_spec::install_test_cluster (
 
   $arch_params =
     case $architecture {
-    'standard': { {
+    'standard': {{
         primary_host => $t.filter |$n| { $n.vars['role'] == 'primary' },
     } }
-    'standard-with-dr': { {
+    'standard-with-dr': {{
         primary_host   => $t.filter |$n| { $n.vars['role'] == 'primary' },
         replica_host   => $t.filter |$n| { $n.vars['role'] == 'replica' },
     } }
-    'large': { {
+    'large': {{
         primary_host   => $t.filter |$n| { $n.vars['role'] == 'primary' },
         compiler_hosts => $t.filter |$n| { $n.vars['role'] == 'compiler' },
     } }
-    'large-with-dr': { {
+    'large-with-dr': {{
         primary_host   => $t.filter |$n| { $n.vars['role'] == 'primary' },
         replica_host   => $t.filter |$n| { $n.vars['role'] == 'replica' },
         compiler_hosts => $t.filter |$n| { $n.vars['role'] == 'compiler' },
     } }
-    'extra-large': { {
+    'extra-large': {{
         primary_host            => $t.filter |$n| { $n.vars['role'] == 'primary' },
         primary_postgresql_host => $t.filter |$n| { $n.vars['role'] == 'primary-pdb-postgresql' },
         compiler_hosts          => $t.filter |$n| { $n.vars['role'] == 'compiler' },
     } }
-    'extra-large-with-dr': { {
+    'extra-large-with-dr': {{
         primary_host             => $t.filter |$n| { $n.vars['role'] == 'primary' },
         primary_postgresql_host  => $t.filter |$n| { $n.vars['role'] == 'primary-pdb-postgresql' },
         replica_host             => $t.filter |$n| { $n.vars['role'] == 'replica' },
