@@ -22,6 +22,7 @@
   },
   "input_method": "environment",
   "implementations": [
-    {"name": "download.sh"}
+    {"name": "download.sh", "requirements": ["shell"]},
+    {"name": "download.ps1", "requirements": ["powershell"]}
   ]
 }
