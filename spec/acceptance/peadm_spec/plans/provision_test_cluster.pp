@@ -23,6 +23,9 @@ plan peadm_spec::provision_test_cluster (
       'extra-large-with-dr': {
         ['primary', 'primary-pdb-postgresql', 'compiler', 'replica', 'replica-pdb-postgresql', 'compiler']
       }
+      'standard-with-extra-compiler': {
+        ['primary', 'unconfigured-compiler']
+      }
       'large-with-extra-compiler': {
         ['primary', 'compiler', 'unconfigured-compiler']
       }
