@@ -25,6 +25,8 @@ If no type is specified, the default is `recovery`.
 (When running the restore plan, you can use the `recovery-db` restore type to recover a failed database server (see [Recovering a broken database server in an extra-large installation](#recovering-a-broken-database-server-in-an-extra-large-installation)).)
 
 When backing up or restoring PE, you must use the `--targets` option to specify the hostname (FQDN) of your primary server.
+**Note**: the hostname of your primary server you are restoring to _must be equal_ to the hostname of the primary server you created the backup from.
+In other words, you can't change the hostname of your primary server during the recovery process.
  
 The backup file created is named `pe-backup-YYYY-MM-DDTHHMMSSZ.tar.gz` and placed by default in `/tmp`. To specify a different location for the backup file, you can define the `output_directory` parameter.
 
