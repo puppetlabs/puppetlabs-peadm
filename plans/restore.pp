@@ -196,7 +196,7 @@ plan peadm::restore (
   run_command(@("CMD"/L), $primary_target)
     test -f ${shellquote($recovery_directory)}/rbac/keys.json \
       && cp -rp ${shellquote($recovery_directory)}/keys.json /etc/puppetlabs/console-services/conf.d/secrets/ \
-      || echo secret ldap key doesn't exist
+      || echo secret ldap key doesnt exist
     | CMD
 # lint:ignore:140chars
   # IF restoring orchestrator restore the secrets to /etc/puppetlabs/orchestration-services/conf.d/secrets/

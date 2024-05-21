@@ -104,7 +104,7 @@ To specify custom restore options:
     "config"       : true,
     "orchestrator" : false,
     "puppetdb"     : true,
-    "rbac"         : false,
+    "rbac"         : false
   },
   "input_file" : "/tmp/my_backup.tar.gz"
 }
@@ -157,7 +157,7 @@ When your primary database server is not operational, you might not be able to u
 1. Reinstall Puppet Enterprise on the affected database server and reconfigure and re-sign its certificate. Make sure you are installing the same PE version as your current primary server was running.
 To do this, use the plan `peadm::util::init_db_server` as follows:
     ```
-    bolt plan run peadm::util::init_db_server db_host=my.primary_db.vm pe_version=2023.5.0 install_pe=true
+    bolt plan run peadm::util::init_db_server db_host=my.primary_db.vm pe_version=2023.5.0 install_pe=true pe_platform=el-8-x86_64
     ```
 
     This plan will perform the following:
