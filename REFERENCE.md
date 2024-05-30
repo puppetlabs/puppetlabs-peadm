@@ -31,9 +31,11 @@
 * [`peadm::generate_pe_conf`](#peadm--generate_pe_conf): Generate a pe.conf file in JSON format
 * [`peadm::get_pe_conf`](#peadm--get_pe_conf)
 * [`peadm::get_targets`](#peadm--get_targets): Accept undef or a SingleTargetSpec, and return an Array[Target, 1, 0]. This differs from get_target() in that:   - It returns an Array[Target
+* [`peadm::migration_opts_default`](#peadm--migration_opts_default)
 * [`peadm::node_manager_yaml_location`](#peadm--node_manager_yaml_location)
 * [`peadm::oid`](#peadm--oid)
 * [`peadm::plan_step`](#peadm--plan_step)
+* [`peadm::recovery_opts_all`](#peadm--recovery_opts_all)
 * [`peadm::recovery_opts_default`](#peadm--recovery_opts_default)
 * [`peadm::update_pe_conf`](#peadm--update_pe_conf): Update the pe.conf file on a target with the provided hash
 * [`peadm::wait_until_service_ready`](#peadm--wait_until_service_ready): A convenience function to help remember port numbers for services and handle running the wait_until_service_ready task
@@ -73,6 +75,7 @@
 * [`puppet_runonce`](#puppet_runonce): Run the Puppet agent one time
 * [`rbac_token`](#rbac_token): Get and save an rbac token for the root user, admin rbac user
 * [`read_file`](#read_file): Read the contents of a file
+* [`reinstall_pe`](#reinstall_pe): Reinstall PE, only to be used to restore PE
 * [`restore_classification`](#restore_classification): A short description of this task
 * [`sign_csr`](#sign_csr): Submit a certificate signing request
 * [`ssl_clean`](#ssl_clean): Clean an agent's certificate
@@ -85,13 +88,16 @@
 #### Public Plans
 
 * [`peadm::add_database`](#peadm--add_database)
+* [`peadm::backup`](#peadm--backup): Backup puppet primary configuration
 * [`peadm::backup_ca`](#peadm--backup_ca)
 * [`peadm::convert`](#peadm--convert): Convert an existing PE cluster to a PEAdm-managed cluster
 * [`peadm::install`](#peadm--install): Install a new PE cluster
 * [`peadm::modify_certificate`](#peadm--modify_certificate): Modify the certificate of one or more targets
+* [`peadm::restore`](#peadm--restore): Restore puppet primary configuration
 * [`peadm::restore_ca`](#peadm--restore_ca)
 * [`peadm::status`](#peadm--status): Return status information from one or more PE clusters in a table format
 * [`peadm::upgrade`](#peadm--upgrade): Upgrade a PEAdm-managed cluster
+* [`peadm::util::init_db_server`](#peadm--util--init_db_server)
 
 #### Private Plans
 
@@ -99,10 +105,8 @@
 * `peadm::add_replica`: Replace a replica host for a Standard or Large architecture.
 Supported use cases:
 1: The existing replica is broken, we have a fresh new VM we want to provision the replica to.
-* `peadm::backup`: Backup the core user settings for puppet infrastructure
 * `peadm::misc::divert_code_manager`: This plan exists to account for a scenario where a PE XL
 * `peadm::modify_cert_extensions`
-* `peadm::restore`: Restore the core user settings for puppet infrastructure from backup
 * `peadm::subplans::component_install`: Install a new PEADM component
 * `peadm::subplans::configure`: Configure first-time classification and DR setup
 * `peadm::subplans::db_populate`: Destructively (re)populates a new or existing database with the contents or a known good source
@@ -758,6 +762,18 @@ Data type: `Optional[Integer[1,1]]`
 
 
 
+### <a name="peadm--migration_opts_default"></a>`peadm::migration_opts_default`
+
+Type: Puppet Language
+
+The peadm::migration_opts_default function.
+
+#### `peadm::migration_opts_default()`
+
+The peadm::migration_opts_default function.
+
+Returns: `Any`
+
 ### <a name="peadm--node_manager_yaml_location"></a>`peadm::node_manager_yaml_location`
 
 Type: Ruby 4.x API
@@ -811,6 +827,18 @@ Data type: `String`
 Data type: `Callable`
 
 
+
+### <a name="peadm--recovery_opts_all"></a>`peadm::recovery_opts_all`
+
+Type: Puppet Language
+
+The peadm::recovery_opts_all function.
+
+#### `peadm::recovery_opts_all()`
+
+The peadm::recovery_opts_all function.
+
+Returns: `Any`
 
 ### <a name="peadm--recovery_opts_default"></a>`peadm::recovery_opts_default`
 
@@ -947,12 +975,14 @@ Alias of
 
 ```puppet
 Struct[{
-    'orchestrator' => Optional[Boolean],
-    'puppetdb'     => Optional[Boolean],
-    'rbac'         => Optional[Boolean],
     'activity'     => Optional[Boolean],
     'ca'           => Optional[Boolean],
     'classifier'   => Optional[Boolean],
+    'code'         => Optional[Boolean],
+    'config'       => Optional[Boolean],
+    'orchestrator' => Optional[Boolean],
+    'puppetdb'     => Optional[Boolean],
+    'rbac'         => Optional[Boolean],
 }]
 ```
 
@@ -1394,6 +1424,32 @@ Data type: `String`
 
 Path to the file to read
 
+### <a name="reinstall_pe"></a>`reinstall_pe`
+
+Reinstall PE, only to be used to restore PE
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `version`
+
+Data type: `String[1]`
+
+The PE version to install
+
+##### `arch`
+
+Data type: `String[1]`
+
+The PE installation platform
+
+##### `uninstall`
+
+Data type: `Boolean`
+
+Whether we want to uninstall PE before installing
+
 ### <a name="restore_classification"></a>`restore_classification`
 
 A short description of this task
@@ -1542,6 +1598,57 @@ Optional[Enum[
 
 
 Default value: `undef`
+
+### <a name="peadm--backup"></a>`peadm::backup`
+
+Backup puppet primary configuration
+
+#### Examples
+
+##### 
+
+```puppet
+bolt plan run peadm::backup -t primary1.example.com
+```
+
+#### Parameters
+
+The following parameters are available in the `peadm::backup` plan:
+
+* [`targets`](#-peadm--backup--targets)
+* [`backup_type`](#-peadm--backup--backup_type)
+* [`backup`](#-peadm--backup--backup)
+* [`output_directory`](#-peadm--backup--output_directory)
+
+##### <a name="-peadm--backup--targets"></a>`targets`
+
+Data type: `Peadm::SingleTargetSpec`
+
+This should be the primary puppetserver for the puppet cluster
+
+##### <a name="-peadm--backup--backup_type"></a>`backup_type`
+
+Data type: `Enum['recovery', 'custom']`
+
+Currently, the recovery and custom backup types are supported
+
+Default value: `'recovery'`
+
+##### <a name="-peadm--backup--backup"></a>`backup`
+
+Data type: `Peadm::Recovery_opts`
+
+A hash of custom backup options, see the peadm::recovery_opts_default() function for the default values
+
+Default value: `{}`
+
+##### <a name="-peadm--backup--output_directory"></a>`output_directory`
+
+Data type: `String`
+
+The directory to place the backup in
+
+Default value: `'/tmp'`
 
 ### <a name="peadm--backup_ca"></a>`peadm::backup_ca`
 
@@ -2006,6 +2113,55 @@ Data type: `Boolean`
 
 Default value: `false`
 
+### <a name="peadm--restore"></a>`peadm::restore`
+
+Restore puppet primary configuration
+
+#### Examples
+
+##### 
+
+```puppet
+bolt plan run peadm::restore -t primary1.example.com input_file=/tmp/peadm-backup.tar.gz
+```
+
+#### Parameters
+
+The following parameters are available in the `peadm::restore` plan:
+
+* [`targets`](#-peadm--restore--targets)
+* [`restore_type`](#-peadm--restore--restore_type)
+* [`restore`](#-peadm--restore--restore)
+* [`input_file`](#-peadm--restore--input_file)
+
+##### <a name="-peadm--restore--targets"></a>`targets`
+
+Data type: `Peadm::SingleTargetSpec`
+
+This should be the primary puppetserver for the puppet cluster
+
+##### <a name="-peadm--restore--restore_type"></a>`restore_type`
+
+Data type: `Enum['recovery', 'recovery-db', 'custom']`
+
+Choose from `recovery`, `recovery-db` and `custom`
+
+Default value: `'recovery'`
+
+##### <a name="-peadm--restore--restore"></a>`restore`
+
+Data type: `Peadm::Recovery_opts`
+
+A hash of custom backup options, see the peadm::recovery_opts_default() function for the default values
+
+Default value: `{}`
+
+##### <a name="-peadm--restore--input_file"></a>`input_file`
+
+Data type: `Pattern[/.*\.tar\.gz$/]`
+
+The file containing the backup to restore from
+
 ### <a name="peadm--restore_ca"></a>`peadm::restore_ca`
 
 The peadm::restore_ca class.
@@ -2290,4 +2446,47 @@ Optional[Enum[
 
 
 Default value: `undef`
+
+### <a name="peadm--util--init_db_server"></a>`peadm::util::init_db_server`
+
+The peadm::util::init_db_server class.
+
+#### Parameters
+
+The following parameters are available in the `peadm::util::init_db_server` plan:
+
+* [`db_host`](#-peadm--util--init_db_server--db_host)
+* [`install_pe`](#-peadm--util--init_db_server--install_pe)
+* [`pe_version`](#-peadm--util--init_db_server--pe_version)
+* [`pe_platform`](#-peadm--util--init_db_server--pe_platform)
+
+##### <a name="-peadm--util--init_db_server--db_host"></a>`db_host`
+
+Data type: `String[1]`
+
+
+
+##### <a name="-peadm--util--init_db_server--install_pe"></a>`install_pe`
+
+Data type: `Boolean`
+
+
+
+Default value: `false`
+
+##### <a name="-peadm--util--init_db_server--pe_version"></a>`pe_version`
+
+Data type: `String[1]`
+
+
+
+Default value: `'2023.5.0'`
+
+##### <a name="-peadm--util--init_db_server--pe_platform"></a>`pe_platform`
+
+Data type: `String[1]`
+
+
+
+Default value: `'el-8-x86_64'`
 

@@ -82,7 +82,7 @@ describe 'peadm::restore' do
     expect_out_message.with_params('# Restoring database pe-puppetdb')
     expect_out_message.with_params('# Restoring ca, certs, code and config for recovery')
 
-    expect(run_plan('peadm::restore', {'targets' => 'primary', 'input_file' => backup_tarball})).to be_ok
+    expect(run_plan('peadm::restore', { 'targets' => 'primary', 'input_file' => backup_tarball })).to be_ok
   end
 
   it 'runs with recovery-db params', valid_cluster: true do
