@@ -5,16 +5,18 @@ fixtures:
     service: "puppetlabs/service"
     package: "puppetlabs/package"
     reboot: "puppetlabs/reboot"
+    node_manager:
+      repo: "WhatsARanjit/node_manager"
+      ref: "0.7.5"
   repositories:
-    facts: 'https://github.com/puppetlabs/puppetlabs-facts.git'
-    puppet_agent: 'https://github.com/puppetlabs/puppetlabs-puppet_agent.git'
-    provision: 'https://github.com/puppetlabs/provision.git'
-    stdlib: 'https://github.com/puppetlabs/puppetlabs-stdlib.git'
-    node_manager: 'https://github.com/WhatsARanjit/puppet-node_manager'
-    apply_helpers: 'https://github.com/puppetlabs/puppetlabs-apply_helpers'
-    bolt_shim: 'https://github.com/puppetlabs/puppetlabs-bolt_shim'
-    format: 'https://github.com/voxpupuli/puppet-format'
-    container_inventory: 'https://gitlab.com/nwops/bolt-container_inventory'
+    facts: "https://github.com/puppetlabs/puppetlabs-facts.git"
+    puppet_agent: "https://github.com/puppetlabs/puppetlabs-puppet_agent.git"
+    provision: "https://github.com/puppetlabs/provision.git"
+    stdlib: "https://github.com/puppetlabs/puppetlabs-stdlib.git"
+    apply_helpers: "https://github.com/puppetlabs/puppetlabs-apply_helpers"
+    bolt_shim: "https://github.com/puppetlabs/puppetlabs-bolt_shim"
+    format: "https://github.com/voxpupuli/puppet-format"
+    container_inventory: "https://gitlab.com/nwops/bolt-container_inventory"
   symlinks:
     "peadm": "#{source_dir}"
     "peadm_spec": "#{source_dir}/spec/acceptance/peadm_spec"
