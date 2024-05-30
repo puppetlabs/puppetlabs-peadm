@@ -78,7 +78,7 @@ groups:
   - RHEL 7, 8 and 9
   - SLES 12
   - Ubuntu 18.04 and 20.04  
-**Note:** Refer to the PE documentation for the specific operating system platforms supported by the PE version you want to install.
+**Note:** You can use PEADM on a jumphost to install Puppet Enterprise (PE) onto any operating system platform that is supported by the specific PE version you want to install. For a list of the operating system platforms supported by specific PE versions, refer to the PE documentation.
 * To successfully convert your current PE installation to a PEADM-managed installation, ensure that the PE setting for editing classifier configuration data is enabled. This setting is enabled by default on new PE installations, but it could be disabled if the relevant configuration was removed from your global hiera.yaml file. See the [PE docs](https://www.puppet.com/docs/pe/latest/config_console.html#enable_console_configuration_data) for more information.
 
 ## Usage
