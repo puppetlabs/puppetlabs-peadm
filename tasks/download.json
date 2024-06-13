@@ -20,9 +20,8 @@
       "default": "hkp://keyserver.ubuntu.com:80"
     }
   },
-  "input_method": "environment",
   "implementations": [
-    {"name": "download.sh", "requirements": ["shell"]},
+    {"name": "download.sh", "requirements": ["shell"],  "input_method": "environment"},
     {"name": "download.ps1", "requirements": ["powershell"]}
   ]
 }

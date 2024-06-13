@@ -1,11 +1,11 @@
 # dowload.ps1
 Param( 
-    $source
+    $source,
     $path
 )
+
 try {
-    # Get the File and place in the path
-   Invoke-WebRequest $source -OutFile $path
+  [Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}; $webClient = New-Object System.Net.WebClient; $webClient.DownloadFile($source, $path);
 }catch {
   Write-Host "Installer failed with Exception: $_.Exception.Message"
   Exit 1
