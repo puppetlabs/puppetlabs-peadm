@@ -2,18 +2,25 @@
 Param( 
   $path 
 ) 
+if ([string]::IsNullOrEmpty($path)){
+    Write-Host "No path provided to filesize"
+    Exit 1
+}
 try {
+
     # Get the File
-    $File = Get-Item $path 
+    $File = Get-Item -Path $path 
     # Get the File Size
     $size = $File.Length
 
     # Output a JSON result for ease of Task usage in Puppet Task Plans
-    if (-eq $size "null") {
-        echo '{ "size": null }'
+    if ($size -eq $null) {
+        Write-Host "{'size': '$null'}"
     }else{
-        echo '{ "size": "'$size'" }'
+        Write-Host "{'size': '$size'}"
     }
+
+    return @{ size = $size }
 }catch {
   Write-Host "Installer failed with Exception: $_.Exception.Message"
   Exit 1
