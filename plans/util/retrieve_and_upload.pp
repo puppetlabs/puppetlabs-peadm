@@ -29,6 +29,21 @@ plan peadm::util::retrieve_and_upload(
     |-HEREDOC
     # lint:endignore
 
+$operating_system = run_task('peadm::os_identification', 'local://localhost')
+$os_string = $operating_system.first.value['osfamily']
+
+if os_string  == 'windows'{
+
+  $exists = run_command("[System.IO.File]::Exists('${local_path}')", 'local://localhost')
+
+  if $exists.first['stdout'].chomp == 'false'{
+    run_task('peadm::download', 'local://localhost',
+      source => $source,
+      path   => $local_path,
+    )
+  }
+
+} else {
   $exists = without_default_logging() || {
     run_command("test -e '${local_path}'", 'local://localhost',
       _catch_errors => true,
@@ -41,10 +56,18 @@ plan peadm::util::retrieve_and_upload(
       path   => $local_path,
     )
   }
+}
 
+if os_string  == 'windows'{
+  $result_size = run_task('peadm::filesize', 'local://localhost',
+    path => $local_path,
+  )
+ $local_size = $result_size['size']
+}else{
   $local_size = run_task('peadm::filesize', 'local://localhost',
     path => $local_path,
   ).first['size']
+}
 
   $targets_needing_file = run_task('peadm::filesize', $nodes,
     path => $upload_path,
