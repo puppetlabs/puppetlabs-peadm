@@ -3,7 +3,7 @@
   "compiler_hosts": [
     "pe-lg-compiler-0.puppet.vm"
   ],
-  "console_password": "puppetlabs",
+  "console_password": "puppetLabs123!",
   "dns_alt_names": [
     "puppet",
     "pe-lg.puppet.vm"

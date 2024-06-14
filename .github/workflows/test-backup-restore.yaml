@@ -1,8 +1,4 @@
 ---
-# TODO:
-# - [ ] test on XL, also break the puppetdb database
-# - [ ] test custom scenario for only restoring primary
-# - [ ] test custom scenario for only restoring puppetdb (on external server)
 name: "Backup and restore test"
 
 on:
@@ -191,8 +187,6 @@ jobs:
               --modulepath spec/fixtures/modules \
               --stream
 
-      # TODO: add docs to README about actions the customer needs to do to recover the primary db
-
       - name: Break external DB
         if: ${{ github.event.inputs.architecture || 'extra-large' }} == 'extra-large'
         run: |
@@ -244,7 +238,6 @@ jobs:
       - name: "Wait as long as the file ${HOME}/pause file is present"
         continue-on-error: true
         if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
-        # if: github.event.inputs.ssh-debugging == 'true'
         run: |
           while [ -f "${HOME}/pause" ] ; do
             echo "${HOME}/pause present, sleeping for 60 seconds..."

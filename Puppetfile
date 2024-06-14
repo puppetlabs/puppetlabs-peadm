@@ -4,8 +4,6 @@
 # The following directive installs modules to the managed moduledir.
 moduledir '.modules'
 
-mod 'node_manager',
-  git: 'https://github.com/WhatsARanjit/puppet-node_manager',
-  ref: '86cb48f27a4a0ea212b33f86775d84a374a189b7'
+mod 'WhatsARanjit/node_manager', '0.7.5'
 mod 'puppet/format', '1.1.1'
 mod 'puppetlabs/stdlib', '9.5.0'

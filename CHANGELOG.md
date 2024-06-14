@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.19.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.19.0) - 2024-05-08
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.18.1...v3.19.0)
+
+## [v3.18.1](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.18.1) - 2024-04-17
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.18.0...v3.18.1)
+
 ## [v3.18.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.18.0) - 2024-04-04
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.17.0...v3.18.0)
@@ -277,6 +285,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/2.5.0...v3.0.0)
 
 ### Changed
+
 - Global rename of primary/replica and postgresql parameters [#161](https://github.com/puppetlabs/puppetlabs-peadm/pull/161) ([timidri](https://github.com/timidri))
 - Language and terminology updates [#153](https://github.com/puppetlabs/puppetlabs-peadm/pull/153) ([davidsandilands](https://github.com/davidsandilands))
 
