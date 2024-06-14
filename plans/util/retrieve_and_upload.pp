@@ -32,7 +32,7 @@ plan peadm::util::retrieve_and_upload(
 $operating_system = run_task('peadm::os_identification', 'local://localhost')
 $os_string = $operating_system.first.value['osfamily']
 
-if os_string  == 'windows'{
+if os_string  == 'windows' {
 
   $exists = run_command("[System.IO.File]::Exists('${local_path}')", 'local://localhost')
 
@@ -58,12 +58,12 @@ if os_string  == 'windows'{
   }
 }
 
-if os_string  == 'windows'{
+if os_string  == 'windows' {
   $result_size = run_task('peadm::filesize', 'local://localhost',
     path => $local_path,
   )
- $local_size = $result_size['size']
-}else{
+  $local_size = $result_size['size']
+} else {
   $local_size = run_task('peadm::filesize', 'local://localhost',
     path => $local_path,
   ).first['size']
