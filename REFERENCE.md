@@ -66,6 +66,7 @@
 * [`infrastatus`](#infrastatus): Runs puppet infra status and returns the output
 * [`mkdir_p_file`](#mkdir_p_file): Create a file with the specified content at the specified location
 * [`mv`](#mv): Wrapper task for mv command
+* [`os_identification`](#os_identification): Get the operating system running on a target
 * [`pe_install`](#pe_install): Install Puppet Enterprise from a tarball
 * [`pe_ldap_config`](#pe_ldap_config): Set the ldap config in the PE console
 * [`pe_uninstall`](#pe_uninstall): Uninstall Puppet Enterprise
