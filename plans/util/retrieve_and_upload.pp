@@ -33,23 +33,19 @@ $operating_system = run_task('peadm::os_identification', 'local://localhost')
 $os_string = $operating_system.first.value['osfamily']
 
 if os_string  == 'windows' {
-
   $exists = run_command("[System.IO.File]::Exists('${local_path}')", 'local://localhost')
-
-  if $exists.first['stdout'].chomp == 'false'{
+  if $exists.first['stdout'].chomp == 'false' {
     run_task('peadm::download', 'local://localhost',
       source => $source,
       path   => $local_path,
     )
   }
-
 } else {
   $exists = without_default_logging() || {
     run_command("test -e '${local_path}'", 'local://localhost',
       _catch_errors => true,
     ).ok()
   }
-
   unless $exists {
     run_task('peadm::download', 'local://localhost',
       source => $source,
