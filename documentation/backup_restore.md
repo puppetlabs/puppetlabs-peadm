@@ -22,6 +22,9 @@ You can specify the type of backup or restore plan you want to use. There are tw
 
 If no type is specified, the default is `recovery`.
 
+**Important**: The hostname of the primary server you are restoring to _must be the same as_ the hostname of the primary server you created the backup from.
+You cannot successfully restore your installation if you change the hostname of your primary server during the recovery process.
+
 ## Using `recovery` backup and restore
 
 When you run a `recovery` backup plan, the primary server configuration is backed up in full. In the event of a primary server failure, this backup can be used to to restore your primary server and all services (including database services running on external servers) to the exact state they were in at the time of the backup.
