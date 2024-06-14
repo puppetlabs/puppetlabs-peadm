@@ -40,6 +40,11 @@ if os_string  == 'windows' {
       path   => $local_path,
     )
   }
+
+  $result_size = run_task('peadm::filesize', 'local://localhost',
+    path => $local_path,
+  )
+  $local_size = $result_size['size']
 } else {
   $exists = without_default_logging() || {
     run_command("test -e '${local_path}'", 'local://localhost',
@@ -52,14 +57,7 @@ if os_string  == 'windows' {
       path   => $local_path,
     )
   }
-}
 
-if os_string  == 'windows' {
-  $result_size = run_task('peadm::filesize', 'local://localhost',
-    path => $local_path,
-  )
-  $local_size = $result_size['size']
-} else {
   $local_size = run_task('peadm::filesize', 'local://localhost',
     path => $local_path,
   ).first['size']
