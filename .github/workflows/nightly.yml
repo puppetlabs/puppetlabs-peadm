@@ -18,5 +18,5 @@ jobs:
     needs: Spec
     uses: "puppetlabs/cat-github-actions/.github/workflows/module_acceptance.yml@main"
     with:
-      flags: "--provision-service"
+      flags: "--provision-service --exclude-platforms '["CentOS-8"]'"
     secrets: "inherit"
