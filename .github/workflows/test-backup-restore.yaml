@@ -2,7 +2,7 @@
 name: "Backup and restore test"
 
 on:
-  pull_request_target:
+  pull_request:
     types: [ready_for_review]
 
   workflow_dispatch:
