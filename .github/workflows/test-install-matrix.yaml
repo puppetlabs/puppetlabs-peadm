@@ -46,7 +46,6 @@ jobs:
           - 2021.7.8
           - 2023.7.0
         image:
-          - centos-7
           - almalinux-cloud/almalinux-8
     steps:
       - name: "Checkout Source"
