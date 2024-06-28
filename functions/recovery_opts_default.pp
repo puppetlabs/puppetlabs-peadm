@@ -1,10 +1,12 @@
 function peadm::recovery_opts_default () {
   {
-    'orchestrator' => true,
+    'activity'     => false,
+    'ca'           => true,
+    'classifier'   => false,
+    'code'         => true,
+    'config'       => true,
+    'orchestrator' => false,
     'puppetdb'     => true,
-    'rbac'         => true,
-    'activity'     => true,
-    'ca'           => false,
-    'classifier'   => true,
+    'rbac'         => false,
   }
 }

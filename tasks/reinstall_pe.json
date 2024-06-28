@@ -1,0 +1,19 @@
+{
+  "description": "Reinstall PE, only to be used to restore PE",
+  "parameters": {
+    "version": {
+      "type": "String[1]",
+      "description": "The PE version to install"
+    },
+    "arch": {
+      "type": "String[1]",
+      "description": "The PE installation platform",
+      "default": "el-8-x86_64"
+    },
+    "uninstall": {
+      "type": "Boolean",
+      "description": "Whether we want to uninstall PE before installing",
+      "default": false
+    }
+  }
+}
