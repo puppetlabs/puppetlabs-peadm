@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.20.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.20.0) - 2024-07-01
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.19.0...v3.20.0)
+
+### Added
+
+- Add backup/restore plans [#339](https://github.com/puppetlabs/puppetlabs-peadm/pull/339) ([timidri](https://github.com/timidri))
+
+### Other
+
+- [ITHELP-87329] Update test-backup-restore.yaml [#447](https://github.com/puppetlabs/puppetlabs-peadm/pull/447) ([binford2k](https://github.com/binford2k))
+- [ITHELP-87329] Update test-backup-restore.yaml [#446](https://github.com/puppetlabs/puppetlabs-peadm/pull/446) ([binford2k](https://github.com/binford2k))
+- (PE-37233) Adding add_compiler to test matrix [#434](https://github.com/puppetlabs/puppetlabs-peadm/pull/434) ([ragingra](https://github.com/ragingra))
+- Update backup_restore.md [#432](https://github.com/puppetlabs/puppetlabs-peadm/pull/432) ([J-Hunniford](https://github.com/J-Hunniford))
+
 ## [v3.19.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.19.0) - 2024-05-08
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.18.1...v3.19.0)
