@@ -55,7 +55,8 @@
     {
       "operatingsystem": "AlmaLinux",
       "operatingsystemrelease": [
-        "8"
+        "8",
+        "9"
       ]
     },
     {
@@ -63,6 +64,12 @@
       "operatingsystemrelease": [
         "7",
         "8",
+        "9"
+      ]
+    },
+    {
+      "operatingsystem": "CentOS",
+      "operatingsystemrelease": [
         "9"
       ]
     },
