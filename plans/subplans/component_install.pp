@@ -22,6 +22,10 @@ plan peadm::subplans::component_install(
       peadm::oid('pp_auth_role')             => 'pe_compiler',
       peadm::oid('peadm_availability_group') => $avail_group_letter,
     }
+  } elsif $role == 'pe_compiler_legacy' {
+    $certificate_extensions = {
+      peadm::oid('peadm_role')               => $role,
+    }
   } else {
     $certificate_extensions = {
       peadm::oid('peadm_role')               => $role,

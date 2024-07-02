@@ -167,9 +167,23 @@ plan peadm::upgrade (
     == $cert_extensions.dig($primary_target[0].peadm::certname, peadm::oid('peadm_availability_group')))
   }
 
+  $compiler_m1_nonlegacy_targets = $compiler_targets.filter |$target| {
+    ($cert_extensions.dig($target.peadm::certname, peadm::oid('peadm_availability_group'))
+    == $cert_extensions.dig($primary_target[0].peadm::certname, peadm::oid('peadm_availability_group'))) and
+    ($cert_extensions.dig($target.peadm::certname, peadm::oid('peadm_legacy_compiler'))
+    == 'false')
+  }
+
   $compiler_m2_targets = $compiler_targets.filter |$target| {
     ($cert_extensions.dig($target.peadm::certname, peadm::oid('peadm_availability_group'))
     == $cert_extensions.dig($replica_target[0].peadm::certname, peadm::oid('peadm_availability_group')))
+  }
+
+  $compiler_m2_nonlegacy_targets = $compiler_targets.filter |$target| {
+    ($cert_extensions.dig($target.peadm::certname, peadm::oid('peadm_availability_group'))
+    == $cert_extensions.dig($replica_target[0].peadm::certname, peadm::oid('peadm_availability_group'))) and
+    ($cert_extensions.dig($target.peadm::certname, peadm::oid('peadm_legacy_compiler'))
+    == 'false')
   }
 
   peadm::plan_step('preparation') || {
@@ -239,7 +253,7 @@ plan peadm::upgrade (
   peadm::plan_step('upgrade-primary') || {
     # Shut down PuppetDB on CMs that use the PM's PDB PG. Use run_command instead
     # of run_task(service, ...) so that upgrading from 2018.1 works over PCP.
-    run_command('systemctl stop pe-puppetdb', $compiler_m1_targets)
+    run_command('systemctl stop pe-puppetdb', $compiler_m1_nonlegacy_targets)
 
     run_task('peadm::pe_install', $primary_postgresql_target,
       tarball               => $upload_tarball_path,
@@ -263,6 +277,9 @@ plan peadm::upgrade (
           $primary_target,
           $primary_postgresql_target,
     ]))
+
+    # Running again to ensure that the primary is fully upgraded
+    run_task('peadm::puppet_runonce', $primary_target)
   }
 
   peadm::plan_step('upgrade-node-groups') || {
@@ -341,7 +358,7 @@ plan peadm::upgrade (
     # Shut down PuppetDB on CMs that use the replica's PDB PG. Use run_command
     # instead of run_task(service, ...) so that upgrading from 2018.1 works
     # over PCP.
-    run_command('systemctl stop pe-puppetdb', $compiler_m2_targets)
+    run_command('systemctl stop pe-puppetdb', $compiler_m2_nonlegacy_targets)
 
     run_task('peadm::pe_install', $replica_postgresql_target,
       tarball               => $upload_tarball_path,

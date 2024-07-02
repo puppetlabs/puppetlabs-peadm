@@ -278,6 +278,7 @@ plan peadm::subplans::install (
         extension_requests => {
           peadm::oid('pp_auth_role')             => 'pe_compiler',
           peadm::oid('peadm_availability_group') => 'A',
+          peadm::oid('peadm_legacy_compiler')    => 'false',
         }
       )
     },
@@ -286,6 +287,7 @@ plan peadm::subplans::install (
         extension_requests => {
           peadm::oid('pp_auth_role')             => 'pe_compiler',
           peadm::oid('peadm_availability_group') => 'B',
+          peadm::oid('peadm_legacy_compiler')    => 'false',
         }
       )
     },
