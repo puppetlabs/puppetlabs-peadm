@@ -14,5 +14,5 @@ else
         osfamily="unknown"
 fi
 
-  echo '{ "osfamily": "'$osfamily'" }'
+  echo  $osfamily
     
