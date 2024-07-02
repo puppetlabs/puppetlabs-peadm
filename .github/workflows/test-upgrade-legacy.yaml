@@ -131,6 +131,7 @@ jobs:
           compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .uri' spec/fixtures/litmus_inventory.yaml | head -n 1)
 
           bundle exec bolt plan run peadm::convert_compiler_to_legacy \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             --no-host-key-check \
             primary_host=$primary \
