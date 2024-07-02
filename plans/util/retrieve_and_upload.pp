@@ -30,9 +30,9 @@ plan peadm::util::retrieve_and_upload(
     # lint:endignore
 
 $operating_system = run_task('peadm::os_identification', 'local://localhost')
-$os_string = $operating_system.first.value['osfamily']
+$os_string =$operating_system.first.value['_output']
 
-if os_string  == 'windows' {
+if 'windows' in $os_string {
   $exists = run_command("[System.IO.File]::Exists('${local_path}')", 'local://localhost')
   if $exists.first['stdout'].chomp == 'false' {
     run_task('peadm::download', 'local://localhost',

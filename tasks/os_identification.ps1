@@ -11,7 +11,7 @@ try {
         $osfamily = "unknown"
     }
 
-    return @{ osfamily = $osfamily }
+    return $osfamily
 }catch {
   Write-Host "Installer failed with Exception: $_.Exception.Message"
   Exit 1
