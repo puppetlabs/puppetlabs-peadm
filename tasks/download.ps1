@@ -1,4 +1,4 @@
-# dowload.ps1
+# download.ps1
 Param( 
     $source,
     $path

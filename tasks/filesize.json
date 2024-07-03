@@ -8,6 +8,6 @@
   },
   "implementations": [
     {"name": "filesize.sh", "requirements": ["shell"],  "input_method": "environment"},
-    {"name": "filesize.ps1", "requirements": ["powershell"]}
+    {"name": "filesize.ps1", "requirements": ["powershell"], "input_method": "powershell"}
   ]
 }
