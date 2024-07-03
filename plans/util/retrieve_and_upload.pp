@@ -44,7 +44,7 @@ if 'windows' in $os_string {
   $result_size = run_task('peadm::filesize', 'local://localhost',
     path => $local_path,
   )
-  $local_size = $result_size['size']
+  $local_size = $result_size.first.value['_output']
 } else {
   $exists = without_default_logging() || {
     run_command("test -e '${local_path}'", 'local://localhost',

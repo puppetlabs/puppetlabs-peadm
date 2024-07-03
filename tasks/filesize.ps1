@@ -20,7 +20,8 @@ try {
         Write-Host "{'size': '$size'}"
     }
 
-    return @{ size = $size }
+    return $size
+    
 }catch {
   Write-Host "Installer failed with Exception: $_.Exception.Message"
   Exit 1
