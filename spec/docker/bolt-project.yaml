@@ -6,8 +6,8 @@ modules:
   - name: puppetlabs/stdlib
     version_requirement: ">= 6.5.0 < 8.0.0"
   - puppetlabs/ruby_task_helper
-  - name: WhatsARanjit/node_manager
-    version_requirement: "0.7.5"
+  - name: puppetlabs/node_manager
+    version_requirement: ">= 1.0.1"
   - puppetlabs/apply_helpers
   - puppetlabs/bolt_shim
   - puppet/format
