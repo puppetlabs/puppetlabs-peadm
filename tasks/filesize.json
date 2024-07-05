@@ -6,8 +6,8 @@
       "description": "Path to the file to return the size of"
     }
   },
-  "input_method": "environment",
   "implementations": [
-    {"name": "filesize.sh"}
+    {"name": "filesize.sh", "requirements": ["shell"],  "input_method": "environment"},
+    {"name": "filesize.ps1", "requirements": ["powershell"], "input_method": "powershell"}
   ]
 }
