@@ -5,13 +5,11 @@ plan peadm::update_compiler_extensions (
   Boolean                 $legacy = false,
 ) {
   $primary_target            = peadm::get_targets($primary_host, 1)
-  $host_targets             = peadm::get_targets($compiler_hosts)
+  $host_targets              = peadm::get_targets($compiler_hosts)
 
   run_plan('peadm::modify_certificate', $host_targets,
     primary_host   => $primary_target,
-    add_extensions => {
-      peadm::oid('peadm_legacy_compiler') => "${legacy}",
-    },
+    add_extensions => { peadm::oid('peadm_legacy_compiler') => String($legacy) },
   )
 
   run_task('peadm::puppet_runonce', $primary_target)
