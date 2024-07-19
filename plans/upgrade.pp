@@ -263,6 +263,9 @@ plan peadm::upgrade (
           $primary_target,
           $primary_postgresql_target,
     ]))
+
+    # Running again to ensure that the primary is fully upgraded
+    run_task('peadm::puppet_runonce', $primary_target)
   }
 
   peadm::plan_step('upgrade-node-groups') || {
