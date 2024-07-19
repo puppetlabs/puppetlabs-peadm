@@ -29,7 +29,7 @@ on:
 
 jobs:
   test-upgrade:
-    name: "PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}"
+    name: "PE ${{ matrix.version }} to ${{ matrix.version_to_upgrade }} ${{ matrix.architecture }} on ${{ matrix.image }}"
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true
@@ -43,12 +43,19 @@ jobs:
           - 'extra-large-with-dr'
         version:
           - '2019.8.12'
+          - '2021.7.8'
         version_to_upgrade:
           - '2021.7.8'
+          - '2023.7.0'
         image:
           - 'almalinux-cloud/almalinux-8'
         download_mode:
           - 'direct'
+        exclude:
+          - version: '2019.8.12'
+            version_to_upgrade: '2023.7.0'
+          - version: '2021.7.8'
+            version_to_upgrade: '2021.7.8' 
 
     steps:
       - name: 'Start SSH session'
