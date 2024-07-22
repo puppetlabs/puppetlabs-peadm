@@ -24,6 +24,26 @@ class peadm::setup::legacy_compiler_group (
     },
   }
 
+  node_group { 'PE Legacy Compiler Group A':
+    ensure => 'present',
+    parent => 'PE Legacy Compiler',
+    rule   => ['and',
+      ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'A'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_legacy_compiler')], 'true'],
+    ],
+  }
+
+  node_group { 'PE Legacy Compiler Group B':
+    ensure => 'present',
+    parent => 'PE Legacy Compiler',
+    rule   => ['and',
+      ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'B'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_legacy_compiler')], 'true'],
+    ],
+  }
+
   node_group { 'PE Compiler':
     rule   => ['and', ['=', ['trusted', 'extensions', peadm::oid('peadm_legacy_compiler')], 'false']],
   }
