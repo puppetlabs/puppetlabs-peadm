@@ -27,7 +27,7 @@ Usually users pin the nodes in the Pe Master Node Group and then manually removi
 If you have NON legacy compilers in your infrastructure, you have to add a certificate extension to them that recognizes them as NON legacy compilers. To do this, execute the following plan:
 
 ```shell
-bolt plan run peadm::update_compiler_extensions primary_host=primary.example.com compilers_hosts=compiler1.example.com,compiler2.example.com
+bolt plan run peadm::update_compiler_extensions primary_host=primary.example.com compiler_hosts=compiler1.example.com,compiler2.example.com
 ```
 
 ### 3. Use the convert legacy compiler plan
