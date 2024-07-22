@@ -55,7 +55,8 @@ class peadm::setup::node_manager (
   # We modify this group's rule such that all PE infrastructure nodes will be
   # members.
   node_group { 'PE Infrastructure Agent':
-    rule => ['or',
+    purge_behavior => rule,
+    rule           => ['or',
       ['~', ['trusted', 'extensions', peadm::oid('peadm_role')], '^puppet/'],
       ['~', ['fact', 'pe_server_version'], '.+']
     ],

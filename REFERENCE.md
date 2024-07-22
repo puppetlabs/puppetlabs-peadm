@@ -10,6 +10,7 @@
 
 * `peadm::setup::convert_node_manager`: Used during the peadm::convert plan
 * `peadm::setup::convert_pre20197`: Defines configuration needed for converting PE 2018
+* `peadm::setup::legacy_compiler_group`
 * `peadm::setup::node_manager`: Configures PEAdm's required node groups
 * `peadm::setup::node_manager_yaml`: Set up the node_manager.yaml file in the temporary Bolt confdir
 
@@ -66,6 +67,7 @@
 * [`infrastatus`](#infrastatus): Runs puppet infra status and returns the output
 * [`mkdir_p_file`](#mkdir_p_file): Create a file with the specified content at the specified location
 * [`mv`](#mv): Wrapper task for mv command
+* [`os_identification`](#os_identification): Return the operating system runnin gon the target as a string
 * [`pe_install`](#pe_install): Install Puppet Enterprise from a tarball
 * [`pe_ldap_config`](#pe_ldap_config): Set the ldap config in the PE console
 * [`pe_uninstall`](#pe_uninstall): Uninstall Puppet Enterprise
@@ -105,6 +107,7 @@
 * `peadm::add_replica`: Replace a replica host for a Standard or Large architecture.
 Supported use cases:
 1: The existing replica is broken, we have a fresh new VM we want to provision the replica to.
+* `peadm::convert_compiler_to_legacy`
 * `peadm::misc::divert_code_manager`: This plan exists to account for a scenario where a PE XL
 * `peadm::modify_cert_extensions`
 * `peadm::subplans::component_install`: Install a new PEADM component
@@ -114,6 +117,7 @@ Supported use cases:
 * `peadm::subplans::modify_certificate`
 * `peadm::subplans::prepare_agent`
 * `peadm::uninstall`: Single-entry-point plan for uninstalling Puppet Enterprise
+* `peadm::update_compiler_extensions`
 * `peadm::util::code_sync_status`
 * `peadm::util::copy_file`
 * `peadm::util::db_disable_pglogical`
@@ -1241,6 +1245,12 @@ Current path of file
 Data type: `String`
 
 New path of file
+
+### <a name="os_identification"></a>`os_identification`
+
+Return the operating system runnin gon the target as a string
+
+**Supports noop?** false
 
 ### <a name="pe_install"></a>`pe_install`
 
