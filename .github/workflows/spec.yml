@@ -35,7 +35,7 @@ jobs:
 
     steps:
       - name: Checkout Source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         if: ${{ github.repository_owner == 'puppetlabs' }}
 
       - name: Activate Ruby 2.7
@@ -86,7 +86,7 @@ jobs:
           echo "SANITIZED_PUPPET_VERSION=$(echo '${{ matrix.puppet_version }}' | sed 's/~> //g')" >> $GITHUB_ENV
 
       - name: Checkout Source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: "Activate Ruby ${{ matrix.ruby_version }}"
         uses: ruby/setup-ruby@v1
