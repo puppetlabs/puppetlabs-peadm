@@ -13,7 +13,7 @@ fixtures:
     apply_helpers: "https://github.com/puppetlabs/puppetlabs-apply_helpers"
     bolt_shim: "https://github.com/puppetlabs/puppetlabs-bolt_shim"
     format: "https://github.com/voxpupuli/puppet-format"
-    container_inventory: "https://gitlab.com/nwops/bolt-container_inventory"
+    container_inventory: "https://gitlab.com/nwops/bolt-container_inventory.git"
     node_manager: "https://github.com/puppetlabs/puppetlabs-node_manager.git"
   symlinks:
     "peadm": "#{source_dir}"
