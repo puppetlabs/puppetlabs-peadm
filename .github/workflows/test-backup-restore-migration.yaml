@@ -219,7 +219,7 @@ jobs:
             version=${{ inputs.version }}
 
       - name: Wait for backup to finish
-        uses: lewagon/wait-on-check-action@v1.3.1
+        uses: lewagon/wait-on-check-action@v1.3.4
         with:
           ref: ${{ github.ref }}
           check-name: "Backup: Cluster A: PE ${{ inputs.version }} ${{ inputs.architecture }} on ${{ inputs.image }}"
