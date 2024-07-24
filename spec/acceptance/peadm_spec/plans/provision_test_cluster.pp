@@ -20,6 +20,9 @@ plan peadm_spec::provision_test_cluster (
       'large': {
         ['primary', 'compiler']
       }
+      'large-with-two-compilers': {
+        ['primary', 'compiler', 'compiler']
+      }
       'large-with-dr': {
         ['primary', 'compiler', 'replica', 'compiler']
       }
