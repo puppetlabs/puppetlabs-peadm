@@ -34,6 +34,7 @@
 * [`peadm::migration_opts_default`](#peadm--migration_opts_default)
 * [`peadm::node_manager_yaml_location`](#peadm--node_manager_yaml_location)
 * [`peadm::oid`](#peadm--oid)
+* [`peadm::pe_installer_source`](#peadm--pe_installer_source): calculates the PE installer URL and archive name
 * [`peadm::plan_step`](#peadm--plan_step)
 * [`peadm::recovery_opts_all`](#peadm--recovery_opts_all)
 * [`peadm::recovery_opts_default`](#peadm--recovery_opts_default)
@@ -804,6 +805,40 @@ Returns: `Any`
 Data type: `String`
 
 
+
+### <a name="peadm--pe_installer_source"></a>`peadm::pe_installer_source`
+
+Type: Puppet Language
+
+calculates the PE installer URL and archive name
+
+#### `peadm::pe_installer_source(Optional[Stdlib::HTTPSUrl] $pe_installer_source = undef, Optional[Peadm::Pe_version] $version = undef, Optional[String[1]] $platform = undef)`
+
+The peadm::pe_installer_source function.
+
+Returns: `Hash[String[1],String[1]]`
+
+##### `pe_installer_source`
+
+Data type: `Optional[Stdlib::HTTPSUrl]`
+
+The URL to download the Puppet Enterprise installer media from. If not
+specified, PEAdm will attempt to download PE installation media from its
+standard public source. When specified, PEAdm will download directly from the
+URL given. Can be an URL, that ends with a /, to a web directory that
+contains the original archives or an absolute URL to the .tar.gz archive.
+
+##### `version`
+
+Data type: `Optional[Peadm::Pe_version]`
+
+The desired version for PE. This is optional for custom provided absolute URLs.
+
+##### `platform`
+
+Data type: `Optional[String[1]]`
+
+The platform we're on, for example el-9-x86_64 (osfamily short name - version - arch)
 
 ### <a name="peadm--plan_step"></a>`peadm::plan_step`
 
@@ -1912,7 +1947,8 @@ Data type: `Optional[Stdlib::HTTPSUrl]`
 The URL to download the Puppet Enterprise installer media from. If not
 specified, PEAdm will attempt to download PE installation media from its
 standard public source. When specified, PEAdm will download directly from the
-URL given.
+URL given. Can be an URL, that ends with a /, to a web directory that
+contains the original archives or an absolute URL to the .tar.gz archive.
 
 Default value: `undef`
 
@@ -2327,12 +2363,12 @@ The following parameters are available in the `peadm::upgrade` plan:
 * [`r10k_known_hosts`](#-peadm--upgrade--r10k_known_hosts)
 * [`stagingdir`](#-peadm--upgrade--stagingdir)
 * [`uploaddir`](#-peadm--upgrade--uploaddir)
+* [`version`](#-peadm--upgrade--version)
 * [`primary_host`](#-peadm--upgrade--primary_host)
 * [`replica_host`](#-peadm--upgrade--replica_host)
 * [`compiler_hosts`](#-peadm--upgrade--compiler_hosts)
 * [`primary_postgresql_host`](#-peadm--upgrade--primary_postgresql_host)
 * [`replica_postgresql_host`](#-peadm--upgrade--replica_postgresql_host)
-* [`version`](#-peadm--upgrade--version)
 * [`token_file`](#-peadm--upgrade--token_file)
 * [`download_mode`](#-peadm--upgrade--download_mode)
 * [`permit_unsafe_versions`](#-peadm--upgrade--permit_unsafe_versions)
@@ -2374,7 +2410,9 @@ Data type: `Optional[Stdlib::HTTPSUrl]`
 The URL to download the Puppet Enterprise installer media from. If not
 specified, PEAdm will attempt to download PE installation media from its
 standard public source. When specified, PEAdm will download directly from the
-URL given.
+URL given. Can be an URL, that ends with a /, to a web directory that
+contains the original archives or an absolute URL to the .tar.gz archive.
+If it's an URL ending with the archive name, you don't need to set $version.
 
 Default value: `undef`
 
@@ -2416,6 +2454,14 @@ for offline usage.
 
 Default value: `'/tmp'`
 
+##### <a name="-peadm--upgrade--version"></a>`version`
+
+Data type: `Optional[Peadm::Pe_version]`
+
+The desired version for PE. This is optional for custom provided absolute URLs.
+
+Default value: `undef`
+
 ##### <a name="-peadm--upgrade--primary_host"></a>`primary_host`
 
 Data type: `Peadm::SingleTargetSpec`
@@ -2449,14 +2495,6 @@ Default value: `undef`
 ##### <a name="-peadm--upgrade--replica_postgresql_host"></a>`replica_postgresql_host`
 
 Data type: `Optional[Peadm::SingleTargetSpec]`
-
-
-
-Default value: `undef`
-
-##### <a name="-peadm--upgrade--version"></a>`version`
-
-Data type: `Optional[Peadm::Pe_version]`
 
 
 

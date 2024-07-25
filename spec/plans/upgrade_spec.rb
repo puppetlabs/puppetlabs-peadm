@@ -28,7 +28,7 @@ describe 'peadm::upgrade' do
       .always_return({ 'content' => '2021.7.3' })
 
     expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary)
-
+    allow_task('peadm::precheck').return_for_targets('primary' => { 'hostname' => 'primary', 'platform' => 'el-7.11-x86_64' })
     expect(run_plan('peadm::upgrade',
                     'primary_host' => 'primary',
                     'version' => '2021.7.9')).to be_ok
@@ -43,6 +43,7 @@ describe 'peadm::upgrade' do
 
     expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary,
                                                        'compiler' => trusted_compiler)
+    allow_task('peadm::precheck').return_for_targets('primary' => { 'hostname' => 'primary', 'platform' => 'el-7.11-x86_64' })
 
     expect(run_plan('peadm::upgrade',
                     'primary_host' => 'primary',
@@ -92,6 +93,8 @@ describe 'peadm::upgrade' do
         .always_return({ 'content' => installed_version })
 
       expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary)
+
+      allow_task('peadm::precheck').return_for_targets('primary' => { 'hostname' => 'primary', 'platform' => 'el-7.11-x86_64' })
     end
 
     it 'updates pe.conf if r10k_known_hosts is set' do

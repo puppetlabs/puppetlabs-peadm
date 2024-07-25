@@ -32,7 +32,8 @@
 #   The URL to download the Puppet Enterprise installer media from. If not
 #   specified, PEAdm will attempt to download PE installation media from its
 #   standard public source. When specified, PEAdm will download directly from the
-#   URL given.
+#   URL given. Can be an URL, that ends with a /, to a web directory that
+#   contains the original archives or an absolute URL to the .tar.gz archive.
 #
 plan peadm::subplans::install (
   # Standard
@@ -228,27 +229,21 @@ plan peadm::subplans::install (
     )
   }
 
-  if $pe_installer_source {
-    $pe_tarball_name = $pe_installer_source.split('/')[-1]
-    $pe_tarball_source = $pe_installer_source
-  } else {
-    $pe_tarball_name   = "puppet-enterprise-${version}-${platform}.tar.gz"
-    $pe_tarball_source = "https://s3.amazonaws.com/pe-builds/released/${version}/${pe_tarball_name}"
-  }
+  $pe_installer = peadm::pe_installer_source($pe_installer_source, $version, $platform)
 
-  $upload_tarball_path = "${uploaddir}/${pe_tarball_name}"
+  $upload_tarball_path = "${uploaddir}/${pe_installer['filename']}"
 
   if $download_mode == 'bolthost' {
     # Download the PE tarball and send it to the nodes that need it
     run_plan('peadm::util::retrieve_and_upload', $pe_installer_targets,
-      source      => $pe_tarball_source,
-      local_path  => "${stagingdir}/${pe_tarball_name}",
+      source      => $pe_installer['url'],
+      local_path  => "${stagingdir}/${pe_installer['filename']}",
       upload_path => $upload_tarball_path,
     )
   } else {
     # Download PE tarballs directly to nodes that need it
     run_task('peadm::download', $pe_installer_targets,
-      source => $pe_tarball_source,
+      source => $pe_installer['url'],
       path   => $upload_tarball_path,
     )
   }
