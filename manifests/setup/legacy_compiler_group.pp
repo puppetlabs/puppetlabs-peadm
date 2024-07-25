@@ -7,41 +7,63 @@ class peadm::setup::legacy_compiler_group (
   }
 
   node_group { 'PE Legacy Compiler':
-    parent    => 'PE Master',
-    rule      => ['and',
+    parent  => 'PE Master',
+    rule    => ['and',
       ['=', ['trusted', 'extensions', peadm::oid('peadm_legacy_compiler')], 'true'],
       ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler'],
     ],
-    classes   => {
-      'pe_repo'                            => {},
-      'puppet_enterprise::profile::master' => { 'code_manager_auto_configure' => true, 'replication_mode' => 'none' },
-    },
-    data      => {
-      'pe_repo' => { 'compile_master_pool_address' => $primary_host },
-    },
-    variables => {
-      'pe_master' => true,
+    classes => {
+      'puppet_enterprise::profile::master'   => {
+        # lint:ignore:single_quote_string_with_variables
+        'puppetdb_host' => ['${trusted[\'certname\']}'],
+        # lint:endignore
+        'puppetdb_port' => [8081],
+      },
     },
   }
 
   node_group { 'PE Legacy Compiler Group A':
-    ensure => 'present',
-    parent => 'PE Legacy Compiler',
-    rule   => ['and',
+    ensure  => 'present',
+    parent  => 'PE Legacy Compiler',
+    rule    => ['and',
       ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler'],
       ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'A'],
       ['=', ['trusted', 'extensions', peadm::oid('peadm_legacy_compiler')], 'true'],
     ],
+    classes => {
+      'puppet_enterprise::profile::master'   => {
+        'puppetdb_host' => [$internal_compiler_b_pool_address].filter |$_| { $_ },
+        'puppetdb_port' => [8081],
+      },
+    },
+    data    => {
+      # Workaround for GH-118
+      'puppet_enterprise::profile::master::puppetdb' => {
+        'ha_enabled_replicas' => [],
+      },
+    },
   }
 
   node_group { 'PE Legacy Compiler Group B':
-    ensure => 'present',
-    parent => 'PE Legacy Compiler',
-    rule   => ['and',
+    ensure  => 'present',
+    parent  => 'PE Legacy Compiler',
+    rule    => ['and',
       ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler'],
       ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'B'],
       ['=', ['trusted', 'extensions', peadm::oid('peadm_legacy_compiler')], 'true'],
     ],
+    classes => {
+      'puppet_enterprise::profile::master'   => {
+        'puppetdb_host' => [$internal_compiler_b_pool_address].filter |$_| { $_ },
+        'puppetdb_port' => [8081],
+      },
+    },
+    data    => {
+      # Workaround for GH-118
+      'puppet_enterprise::profile::master::puppetdb' => {
+        'ha_enabled_replicas' => [],
+      },
+    },
   }
 
   node_group { 'PE Compiler':
