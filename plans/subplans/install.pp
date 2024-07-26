@@ -49,7 +49,7 @@ plan peadm::subplans::install (
   # Common Configuration
   String               $console_password,
   Peadm::Pe_version    $version,
-  Optional[String]     $pe_installer_source = undef,
+  Optional[Stdlib::HTTPSUrl] $pe_installer_source = undef,
   Array[String]        $dns_alt_names       = [],
   Hash                 $pe_conf_data        = {},
 
