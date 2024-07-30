@@ -1,6 +1,7 @@
 # @api private
 class peadm::setup::legacy_compiler_group (
-  String[1] $primary_host
+  String[1] $primary_host,
+  String $internal_compiler_b_pool_address
 ) {
   Node_group {
     purge_behavior => none,
@@ -32,7 +33,7 @@ class peadm::setup::legacy_compiler_group (
     ],
     classes => {
       'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => [$internal_compiler_b_pool_address].filter |$_| { $_ },
+        'puppetdb_host' => [$peadm::setup::legacy_compiler_group::internal_compiler_b_pool_address].filter |$_| { $_ }, # Fixed namespacing
         'puppetdb_port' => [8081],
       },
     },
@@ -54,7 +55,7 @@ class peadm::setup::legacy_compiler_group (
     ],
     classes => {
       'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => [$internal_compiler_b_pool_address].filter |$_| { $_ },
+        'puppetdb_host' => [$peadm::setup::legacy_compiler_group::internal_compiler_b_pool_address].filter |$_| { $_ }, # Fixed namespacing
         'puppetdb_port' => [8081],
       },
     },

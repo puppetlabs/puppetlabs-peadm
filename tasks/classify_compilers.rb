@@ -18,24 +18,20 @@ legacy_compilers = []
 non_legacy_compilers = []
 
 compiler_hosts.each do |compiler|
-  begin
-    cmd = "puppet infra status --host #{compiler} --format=json"
-    stdout, stderr, status = Open3.capture3(cmd)
+  cmd = "puppet infra status --host #{compiler} --format=json"
+  stdout, stderr, status = Open3.capture3(cmd)
 
-    if status.success?
-      services = JSON.parse(stdout)
-      classification = classify_compiler(services)
+  if status.success?
+    services = JSON.parse(stdout)
+    classification = classify_compiler(services)
 
-      if classification == :legacy
-        legacy_compilers << compiler
-      else
-        non_legacy_compilers << compiler
-      end
+    if classification == :legacy
+      legacy_compilers << compiler
     else
-      STDERR.puts "Error running command for #{compiler}: #{stderr}"
+      non_legacy_compilers << compiler
     end
-  rescue => e
-    STDERR.puts "Error processing #{compiler}: #{e.message}"
+  else
+    STDERR.puts "Error running command for #{compiler}: #{stderr}"
   end
 end
 
