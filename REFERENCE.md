@@ -56,6 +56,7 @@
 - [`backup_classification`](#backup_classification): A task to call the classification api and write to file
 - [`cert_data`](#cert_data): Return certificate data related to the Puppet agent
 - [`cert_valid_status`](#cert_valid_status): Check primary for valid state of a certificate
+- [`classify_compilers`](#classify_compilers): Classify compilers as legacy or non-legacy
 - [`code_manager`](#code_manager): Perform various code manager actions
 - [`code_sync_status`](#code_sync_status): A task to confirm code is in sync accross the cluster for clusters with code manager configured
 - [`divert_code_manager`](#divert_code_manager): Divert the code manager live-dir setting
@@ -1006,6 +1007,20 @@ Check primary for valid state of a certificate
 Data type: `String`
 
 The certifcate name to check validation of
+
+### <a name="classify_compilers"></a>`classify_compilers`
+
+Classify compilers as legacy or non-legacy
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `compiler_hosts`
+
+Data type: `Array[String]`
+
+List of FQDNs of compilers
 
 ### <a name="code_manager"></a>`code_manager`
 

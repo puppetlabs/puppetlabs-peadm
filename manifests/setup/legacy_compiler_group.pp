@@ -32,7 +32,7 @@ class peadm::setup::legacy_compiler_group (
     ],
     classes => {
       'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => [$internal_compiler_b_pool_address].filter |$_| { $_ },
+        'puppetdb_host' => [$peadm::setup::legacy_compiler_group::internal_compiler_b_pool_address].filter |$_| { $_ },
         'puppetdb_port' => [8081],
       },
     },
@@ -54,7 +54,7 @@ class peadm::setup::legacy_compiler_group (
     ],
     classes => {
       'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => [$internal_compiler_b_pool_address].filter |$_| { $_ },
+        'puppetdb_host' => [$peadm::setup::legacy_compiler_group::internal_compiler_a_pool_address].filter |$_| { $_ },
         'puppetdb_port' => [8081],
       },
     },
