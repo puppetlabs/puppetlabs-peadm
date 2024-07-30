@@ -253,7 +253,7 @@ class peadm::setup::node_manager (
     ],
     classes => {
       'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => [$internal_compiler_b_pool_address].filter |$_| { $_ },
+        'puppetdb_host' => [$internal_compiler_a_pool_address].filter |$_| { $_ },
         'puppetdb_port' => [8081],
       },
     },
