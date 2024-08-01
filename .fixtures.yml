@@ -1,10 +1,5 @@
 ---
 fixtures:
-  forge_modules:
-    ruby_task_helper: "puppetlabs/ruby_task_helper"
-    service: "puppetlabs/service"
-    package: "puppetlabs/package"
-    reboot: "puppetlabs/reboot"
   repositories:
     apply_helpers: "https://github.com/puppetlabs/puppetlabs-apply_helpers"
     bolt_shim: "https://github.com/puppetlabs/puppetlabs-bolt_shim"
@@ -12,8 +7,12 @@ fixtures:
     facts: "https://github.com/puppetlabs/puppetlabs-facts.git"
     format: "https://github.com/voxpupuli/puppet-format"
     node_manager: "https://github.com/puppetlabs/puppetlabs-node_manager.git"
+    package: "https://github.com/puppetlabs/puppetlabs-package"
     provision: "https://github.com/puppetlabs/provision.git"
     puppet_agent: "https://github.com/puppetlabs/puppetlabs-puppet_agent.git"
+    reboot: "https://github.com/puppetlabs/puppetlabs-reboot"
+    ruby_task_helper: "https://github.com/puppetlabs/puppetlabs-ruby_task_helper"
+    service: "https://github.com/puppetlabs/puppetlabs-service"
     stdlib: "https://github.com/puppetlabs/puppetlabs-stdlib.git"
   symlinks:
     "peadm": "#{source_dir}"
