@@ -1857,7 +1857,7 @@ Default value: `undef`
 
 ##### <a name="-peadm--install--pe_installer_source"></a>`pe_installer_source`
 
-Data type: `Optional[String]`
+Data type: `Optional[Stdlib::HTTPSUrl]`
 
 The URL to download the Puppet Enterprise installer media from. If not
 specified, PEAdm will attempt to download PE installation media from its
@@ -2319,7 +2319,7 @@ Default value: `undef`
 
 ##### <a name="-peadm--upgrade--pe_installer_source"></a>`pe_installer_source`
 
-Data type: `Optional[String]`
+Data type: `Optional[Stdlib::HTTPSUrl]`
 
 The URL to download the Puppet Enterprise installer media from. If not
 specified, PEAdm will attempt to download PE installation media from its

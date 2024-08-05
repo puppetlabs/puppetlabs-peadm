@@ -45,7 +45,7 @@ plan peadm::upgrade (
 
   # Common Configuration
   Optional[Peadm::Pe_version]  $version                          = undef,
-  Optional[String]             $pe_installer_source              = undef,
+  Optional[Stdlib::HTTPSUrl]   $pe_installer_source              = undef,
   Optional[String]             $compiler_pool_address            = undef,
   Optional[String]             $internal_compiler_a_pool_address = undef,
   Optional[String]             $internal_compiler_b_pool_address = undef,
