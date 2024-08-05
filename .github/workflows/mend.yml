@@ -10,7 +10,7 @@ on:
 
 jobs:
   mend:
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event.pull_request.merged == true && github.ref == 'refs/heads/main')
+    # if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event.pull_request.merged == true && github.ref == 'refs/heads/main')
     uses: "puppetlabs/cat-github-actions/.github/workflows/tooling_mend_ruby.yml@main"
     secrets: "inherit"
     with:
