@@ -2,8 +2,6 @@ name: "mend"
 
 on:
   pull_request:
-    types:
-      - closed
     branches:
       - "main"
   schedule:
@@ -13,37 +11,7 @@ on:
 jobs:
   mend:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event.pull_request.merged == true && github.ref == 'refs/heads/main')
-    runs-on: "ubuntu-latest"
-
-    steps:
-      - name: "checkout"
-        uses: "actions/checkout@v4"
-        with:
-          fetch-depth: 1
-          repository: "puppetlabs/puppetlabs-peadm"
-          ref: "main"
-
-      - name: "setup ruby"
-        uses: "ruby/setup-ruby@v1"
-        with:
-          ruby-version: 2.7
-
-      - name: "bundle lock"
-        run: bundle lock
-
-      - uses: "actions/setup-java@v4"
-        with:
-          distribution: "temurin"
-          java-version: "17"
-
-      - name: "download"
-        run: curl -o wss-unified-agent.jar https://unified-agent.s3.amazonaws.com/wss-unified-agent.jar
-
-      - name: "scan"
-        run: java -jar wss-unified-agent.jar
-        env:
-          WS_APIKEY: ${{ secrets.MEND_API_KEY }}
-          WS_WSS_URL: https://saas-eu.whitesourcesoftware.com/agent
-          WS_USERKEY: ${{ secrets.MEND_TOKEN }}
-          WS_PRODUCTNAME: InsTalleR
-          WS_PROJECTNAME: ${{  github.event.repository.name }}
+    uses: "puppetlabs/cat-github-actions/.github/workflows/tooling_mend_ruby.yml@main"
+    secrets: "inherit"
+    env:
+      PRODUCT_NAME: InsTalleR
