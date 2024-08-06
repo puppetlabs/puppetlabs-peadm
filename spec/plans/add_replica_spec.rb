@@ -67,5 +67,37 @@ describe 'peadm::add_replica' do
       expect_out_verbose.with_params('Updating classification to...')
       expect(run_plan('peadm::add_replica', params)).to be_ok
     end
+
+    it 'handles the replica_postgresql_host parameter correctly' do
+      allow_standard_non_returning_calls
+      params_with_postgresql = params.merge({ 'replica_postgresql_host' => 'replica_pg' })
+
+      expect_task('peadm::get_peadm_config').always_return(cfg)
+      expect_task('peadm::cert_data').always_return(certdata).be_called_times(4)
+      expect_task('peadm::cert_valid_status').always_return(certstatus)
+      expect_task('package').always_return({ 'status' => 'uninstalled' })
+
+      expect_task('peadm::get_psql_version')
+        .with_targets(['replica_pg'])
+        .always_return({ 'version' => '11' })
+
+      allow_apply
+
+      expect_command('systemctl reload pe-postgresql.service')
+        .with_targets(['replica_pg'])
+
+      expect_task('peadm::agent_install')
+        .with_params({ 'server'        => 'primary',
+                       'install_flags' => [
+                         'main:dns_alt_names=replica',
+                         '--puppet-service-ensure', 'stopped',
+                         'main:certname=replica'
+                       ] })
+      expect_plan('peadm::util::copy_file').be_called_times(5)
+
+      expect_out_verbose.with_params('Current config is...')
+      expect_out_verbose.with_params('Updating classification to...')
+      expect(run_plan('peadm::add_replica', params_with_postgresql)).to be_ok
+    end
   end
 end
