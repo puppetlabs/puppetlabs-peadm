@@ -7,7 +7,7 @@
 # @param primary_host _ The hostname and certname of the primary Puppet server
 # @param primary_postgresql_host _ The hostname and certname of the PE-PostgreSQL server with availability group $avail_group_letter
 plan peadm::add_compiler(
-  Optional[Enum['A', 'B']] $avail_group_letter = 'A' ,
+  Enum['A', 'B'] $avail_group_letter = 'A' ,
   Optional[String[1]] $dns_alt_names = undef,
   Peadm::SingleTargetSpec $compiler_host,
   Peadm::SingleTargetSpec $primary_host,
@@ -31,6 +31,10 @@ plan peadm::add_compiler(
     $postgresql_host = $external_postgresql_host ? {
       undef   => $peadm_config['role-letter']['server'][$avail_group_letter],
       default => $external_postgresql_host,
+    }
+
+    if $postgresql_host == undef {
+      fail_plan("No PostgreSQL host found for availability group ${avail_group_letter}")
     }
 
     $primary_postgresql_target = peadm::get_targets($postgresql_host, 1)
