@@ -1571,7 +1571,7 @@ The following parameters are available in the `peadm::add_compiler` plan:
 
 ##### <a name="-peadm--add_compiler--avail_group_letter"></a>`avail_group_letter`
 
-Data type: `Optional[Enum['A', 'B']]`
+Data type: `Enum['A', 'B']`
 
 _ Either A or B; whichever of the two letter designations the compiler is being assigned to
 
