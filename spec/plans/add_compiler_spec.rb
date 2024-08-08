@@ -18,22 +18,30 @@ describe 'peadm::add_compiler' do
       }
     end
 
+    let(:params_with_avail_group_b) do
+      params.merge({ 'avail_group_letter' => 'B' })
+    end
+
+    let(:params_with_primary_postgresql_host) do
+      params.merge({ 'primary_postgresql_host' => 'custom_postgresql' })
+    end
+
     let(:cfg) do
       {
-        "params" => {
-          "primary_host" => "primary",
-          "replica_host" => nil,
-          "primary_postgresql_host" => nil,
-          "replica_postgresql_host" => nil
+        'params' => {
+          'primary_host' => 'primary',
+          'replica_host' => nil,
+          'primary_postgresql_host' => nil,
+          'replica_postgresql_host' => nil
         },
-        "role-letter" => {
-          "server" => {
-            "A" => "server_a",
-            "B" => nil
+        'role-letter' => {
+          'server' => {
+            'A' => 'server_a',
+            'B' => nil
           },
-          "postgresql": {
-            "A" => nil,
-            "B" => nil
+          'postgresql': {
+            'A' => nil,
+            'B' => nil
           }
         }
       }
@@ -52,10 +60,6 @@ describe 'peadm::add_compiler' do
       expect(run_plan('peadm::add_compiler', params)).to be_ok
     end
 
-    let(:params_with_avail_group_b) do
-      params.merge({ 'avail_group_letter' => 'B' })
-    end
-
     it 'handles different avail_group_letter values' do
       allow_standard_non_returning_calls
       cfg['role-letter']['server']['B'] = 'server_b'
@@ -69,10 +73,6 @@ describe 'peadm::add_compiler' do
       expect_task('peadm::puppet_runonce').with_targets(['server_a'])
       expect_task('peadm::puppet_runonce').with_targets(['server_b'])
       expect(run_plan('peadm::add_compiler', params_with_avail_group_b)).to be_ok
-    end
-
-    let(:params_with_primary_postgresql_host) do
-      params.merge({ 'primary_postgresql_host' => 'custom_postgresql' })
     end
 
     it 'handles specified primary_postgresql_host' do
