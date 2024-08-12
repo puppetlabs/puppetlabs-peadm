@@ -1575,6 +1575,8 @@ Data type: `Enum['A', 'B']`
 
 _ Either A or B; whichever of the two letter designations the compiler is being assigned to
 
+Default value: `'A'`
+
 ##### <a name="-peadm--add_compiler--compiler_host"></a>`compiler_host`
 
 Data type: `Peadm::SingleTargetSpec`
@@ -1597,9 +1599,11 @@ _ The hostname and certname of the primary Puppet server
 
 ##### <a name="-peadm--add_compiler--primary_postgresql_host"></a>`primary_postgresql_host`
 
-Data type: `Peadm::SingleTargetSpec`
+Data type: `Optional[Peadm::SingleTargetSpec]`
 
 _ The hostname and certname of the PE-PostgreSQL server with availability group $avail_group_letter
+
+Default value: `undef`
 
 ### <a name="peadm--add_database"></a>`peadm::add_database`
 
