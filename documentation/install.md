@@ -35,7 +35,7 @@ Supplying a combination of host parameters that do not match one of the supporte
 
 ## Requirements
 
-Puppets must not be installed on any of the target PE cluster hosts prior to beginning installation.
+Puppet must not be installed on any of the target PE cluster hosts before beginning installation.
 
 ## Usage
 
