@@ -52,7 +52,7 @@ plan peadm::subplans::configure (
   $replica_target                   = peadm::get_targets($replica_host, 1)
   $replica_postgresql_target        = peadm::get_targets($replica_postgresql_host, 1)
   $compiler_targets                 = peadm::get_targets($compiler_hosts)
-  $legacy_targets                   = peadm::get_targets($legacy_compilers)
+  $legacy_compiler_targets                   = peadm::get_targets($legacy_compilers)
   $primary_postgresql_target        = peadm::get_targets($primary_postgresql_host, 1)
 
   # Ensure input valid for a supported architecture
@@ -77,7 +77,7 @@ plan peadm::subplans::configure (
   run_plan('peadm::util::copy_file', peadm::flatten_compact([
         $replica_target,
         $compiler_targets,
-        $legacy_targets,
+        $legacy_compiler_targets,
     ]),
     source_host   => $primary_target,
     path          => $common_content_source
@@ -143,7 +143,7 @@ plan peadm::subplans::configure (
         $primary_target,
         $primary_postgresql_target,
         $compiler_targets,
-        $legacy_targets,
+        $legacy_compiler_targets,
         $replica_target,
         $replica_postgresql_target,
   ]))
@@ -166,7 +166,7 @@ plan peadm::subplans::configure (
         $primary_postgresql_target,
         $replica_postgresql_target,
         $compiler_targets,
-        $legacy_targets,
+        $legacy_compiler_targets,
   ]))
 
   return("Configuration of Puppet Enterprise ${arch['architecture']} succeeded.")

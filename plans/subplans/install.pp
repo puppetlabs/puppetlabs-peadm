@@ -80,7 +80,7 @@ plan peadm::subplans::install (
   $primary_postgresql_target = peadm::get_targets($primary_postgresql_host, 1)
   $replica_postgresql_target = peadm::get_targets($replica_postgresql_host, 1)
   $compiler_targets          = peadm::get_targets($compiler_hosts)
-  $legacy_targets            = peadm::get_targets($legacy_compilers)
+  $legacy_compiler_targets            = peadm::get_targets($legacy_compilers)
 
   # Ensure input valid for a supported architecture
   $arch = peadm::assert_supported_architecture(
@@ -98,7 +98,7 @@ plan peadm::subplans::install (
       $replica_target,
       $replica_postgresql_target,
       $compiler_targets,
-      $legacy_targets,
+      $legacy_compiler_targets,
   ])
 
   $primary_targets = peadm::flatten_compact([
@@ -119,7 +119,7 @@ plan peadm::subplans::install (
 
   $agent_installer_targets = peadm::flatten_compact([
       $compiler_targets,
-      $legacy_targets,
+      $legacy_compiler_targets,
       $replica_target,
   ])
 
@@ -127,13 +127,13 @@ plan peadm::subplans::install (
   if $arch['disaster-recovery'] {
     $compiler_a_targets = $compiler_targets.filter |$index,$target| { $index % 2 == 0 }
     $compiler_b_targets = $compiler_targets.filter |$index,$target| { $index % 2 != 0 }
-    $legacy_a_targets   = $legacy_targets.filter |$index,$target| { $index % 2 == 0 }
-    $legacy_b_targets   = $legacy_targets.filter |$index,$target| { $index % 2 != 0 }
+    $legacy_a_targets   = $legacy_compiler_targets.filter |$index,$target| { $index % 2 == 0 }
+    $legacy_b_targets   = $legacy_compiler_targets.filter |$index,$target| { $index % 2 != 0 }
   }
   else {
     $compiler_a_targets = $compiler_targets
     $compiler_b_targets = []
-    $legacy_a_targets   = $legacy_targets
+    $legacy_a_targets   = $legacy_compiler_targets
     $legacy_b_targets   = []
   }
 
@@ -188,7 +188,7 @@ plan peadm::subplans::install (
   # puppet and are present in PuppetDB, it is not necessary anymore.
   $puppetdb_database_temp_config = {
     'puppet_enterprise::profile::database::puppetdb_hosts' => (
-      $compiler_targets + $legacy_targets + $primary_target + $replica_target
+      $compiler_targets + $legacy_compiler_targets + $primary_target + $replica_target
     ).map |$t| { $t.peadm::certname() },
   }
 
