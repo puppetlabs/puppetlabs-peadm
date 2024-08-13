@@ -7,8 +7,28 @@ function peadm::assert_supported_architecture (
   Variant[TargetSpec, Undef] $compiler_hosts = undef,
   Variant[TargetSpec, Undef] $legacy_compilers = undef,
 )  >> Hash {
-  # At least one of the compilers variables should be set
-  $has_compilers = $compiler_hosts + $legacy_compilers
+  # Normalize $legacy_compilers to an array
+  $legacy_compilers_array = $legacy_compilers ? {
+    undef   => [],
+    String  => [$legacy_compilers],
+    Array   => $legacy_compilers,
+    default => fail("Unexpected type for \$legacy_compilers: ${legacy_compilers}"),
+  }
+
+  # Normalize $compiler_hosts to an array
+  $compiler_hosts_array = $compiler_hosts ? {
+    undef   => [],
+    String  => [$compiler_hosts],
+    Array   => $compiler_hosts,
+    default => fail("Unexpected type for \$compiler_hosts: ${compiler_hosts}"),
+  }
+  $all_compilers = $legacy_compilers_array + $compiler_hosts_array
+
+  # Set $has_compilers to undef if $all_compilers is empty, otherwise set it to true
+  $has_compilers = empty($all_compilers) ? {
+    true    => undef,
+    default => true,
+  }
 
   $result = case [
     !!($primary_host),
@@ -17,13 +37,13 @@ function peadm::assert_supported_architecture (
     !!($replica_postgresql_host),
   ] {
     [true, false, false, false]: { # Standard or Large, no DR
-      ({ 'disaster-recovery' => false, 'architecture' => $has_compilers? {
+      ({ 'disaster-recovery' => false, 'architecture' => $has_compilers ? {
             undef   => 'standard',
             default => 'large',
       } })
     }
     [true, true, false, false]: { # Standard or Large, DR
-      ({ 'disaster-recovery' => true, 'architecture' => $has_compilers? {
+      ({ 'disaster-recovery' => true, 'architecture' => $has_compilers ? {
             undef   => 'standard',
             default => 'large',
       } })
@@ -48,7 +68,7 @@ function peadm::assert_supported_architecture (
         <% if $replica_postgresql_host { -%>
           - pdb-database-replica
         <% } -%>
-        <% if $has_compilers{ -%>
+        <% if $has_compilers { -%>
           - compilers
         <% } -%>
 
