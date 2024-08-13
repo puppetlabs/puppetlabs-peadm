@@ -1,49 +1,50 @@
 # frozen_string_literal: true
 
-require "spec_helper"
+require 'spec_helper'
 # TODO: test the error case, however due to an issue with boltspec
 # and functions we cannot do this right now.
 # https://github.com/puppetlabs/bolt/issues/1688
 
-describe "peadm::assert_supported_architecture" do
+describe 'peadm::assert_supported_architecture' do
   let(:pre_condition) do
-    "type TargetSpec = Variant[String[1], Target, Array[TargetSpec]]"
+    'type TargetSpec = Variant[String[1], Target, Array[TargetSpec]]'
   end
   let(:primary_host) do
-    "puppet-std.puppet.vm"
+    'puppet-std.puppet.vm'
   end
   let(:replica_host) do
-    "pup-replica.puppet.vm"
+    'pup-replica.puppet.vm'
   end
   let(:primary_postgresql_host) do
-    "pup-db.puppet.vm"
+    'pup-db.puppet.vm'
   end
   let(:replica_postgresql_host) do
-    "pup-db-replica.puppet.vm"
+    'pup-db-replica.puppet.vm'
   end
   let(:compiler_hosts) do
-    "pup-c1.puppet.vm"
+    'pup-c1.puppet.vm'
   end
   let(:legacy_compilers) do
-    "pup-c2.puppet.vm"
+    'pup-c2.puppet.vm'
   end
   let(:compiler_hosts_array) do
-    ["pup-c1.puppet.vm"]
+    ['pup-c1.puppet.vm']
   end
   let(:legacy_compilers_array) do
-    ["pup-c2.puppet.vm"]
+    ['pup-c2.puppet.vm']
   end
+
   it {
     is_expected.to run.with_params(primary_host)
-                      .and_return("supported" => true,
-                                  "disaster-recovery" => false,
-                                  "architecture" => "standard")
+                      .and_return('supported' => true,
+                                  'disaster-recovery' => false,
+                                  'architecture' => 'standard')
   }
   it {
     is_expected.to run.with_params(primary_host, replica_host)
-                      .and_return("supported" => true,
-                                  "disaster-recovery" => true,
-                                  "architecture" => "standard")
+                      .and_return('supported' => true,
+                                  'disaster-recovery' => true,
+                                  'architecture' => 'standard')
   }
 
   it do
@@ -52,9 +53,9 @@ describe "peadm::assert_supported_architecture" do
                                    nil,
                                    nil,
                                    compiler_hosts)
-                      .and_return("supported" => true,
-                                  "disaster-recovery" => true,
-                                  "architecture" => "large")
+                      .and_return('supported' => true,
+                                  'disaster-recovery' => true,
+                                  'architecture' => 'large')
   end
 
   it do
@@ -63,9 +64,9 @@ describe "peadm::assert_supported_architecture" do
                                    nil,
                                    nil,
                                    compiler_hosts)
-                      .and_return("supported" => true,
-                                  "disaster-recovery" => false,
-                                  "architecture" => "large")
+                      .and_return('supported' => true,
+                                  'disaster-recovery' => false,
+                                  'architecture' => 'large')
   end
   it do
     is_expected.to run.with_params(primary_host,
@@ -74,9 +75,9 @@ describe "peadm::assert_supported_architecture" do
                                    nil,
                                    compiler_hosts,
                                    legacy_compilers)
-                      .and_return("supported" => true,
-                                  "disaster-recovery" => false,
-                                  "architecture" => "large")
+                      .and_return('supported' => true,
+                                  'disaster-recovery' => false,
+                                  'architecture' => 'large')
   end
   it do
     is_expected.to run.with_params(primary_host,
@@ -85,9 +86,9 @@ describe "peadm::assert_supported_architecture" do
                                    nil,
                                    nil,
                                    legacy_compilers)
-                      .and_return("supported" => true,
-                                  "disaster-recovery" => false,
-                                  "architecture" => "large")
+                      .and_return('supported' => true,
+                                  'disaster-recovery' => false,
+                                  'architecture' => 'large')
   end
 
   it do
@@ -96,9 +97,9 @@ describe "peadm::assert_supported_architecture" do
                                    primary_postgresql_host,
                                    replica_postgresql_host,
                                    compiler_hosts)
-                      .and_return("supported" => true,
-                                  "disaster-recovery" => true,
-                                  "architecture" => "extra-large")
+                      .and_return('supported' => true,
+                                  'disaster-recovery' => true,
+                                  'architecture' => 'extra-large')
   end
 
   it do
@@ -107,9 +108,9 @@ describe "peadm::assert_supported_architecture" do
                                    primary_postgresql_host,
                                    nil,
                                    compiler_hosts)
-                      .and_return("supported" => true,
-                                  "disaster-recovery" => false,
-                                  "architecture" => "extra-large")
+                      .and_return('supported' => true,
+                                  'disaster-recovery' => false,
+                                  'architecture' => 'extra-large')
   end
   it do
     is_expected.to run.with_params(primary_host,
@@ -118,9 +119,9 @@ describe "peadm::assert_supported_architecture" do
                                    nil,
                                    compiler_hosts,
                                    legacy_compilers)
-                      .and_return("supported" => true,
-                                  "disaster-recovery" => false,
-                                  "architecture" => "extra-large")
+                      .and_return('supported' => true,
+                                  'disaster-recovery' => false,
+                                  'architecture' => 'extra-large')
   end
   it do
     is_expected.to run.with_params(primary_host,
@@ -129,8 +130,8 @@ describe "peadm::assert_supported_architecture" do
                                    nil,
                                    compiler_hosts_array,
                                    legacy_compilers_array)
-                      .and_return("supported" => true,
-                                  "disaster-recovery" => false,
-                                  "architecture" => "extra-large")
+                      .and_return('supported' => true,
+                                  'disaster-recovery' => false,
+                                  'architecture' => 'extra-large')
   end
 end
