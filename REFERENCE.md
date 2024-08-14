@@ -142,7 +142,7 @@ Type: Puppet Language
 
 Assert that the architecture given is a supported one
 
-#### `peadm::assert_supported_architecture(TargetSpec $primary_host, Variant[TargetSpec, Undef] $replica_host = undef, Variant[TargetSpec, Undef] $primary_postgresql_host = undef, Variant[TargetSpec, Undef] $replica_postgresql_host = undef, Variant[TargetSpec, Undef] $compiler_hosts = undef)`
+#### `peadm::assert_supported_architecture(TargetSpec $primary_host, Variant[TargetSpec, Undef] $replica_host = undef, Variant[TargetSpec, Undef] $primary_postgresql_host = undef, Variant[TargetSpec, Undef] $replica_postgresql_host = undef, Variant[TargetSpec, Undef] $compiler_hosts = undef, Variant[TargetSpec, Undef] $legacy_compilers = undef)`
 
 The peadm::assert_supported_architecture function.
 
@@ -168,6 +168,17 @@ Data type: `Variant[TargetSpec, Undef]`
 
 Data type: `Variant[TargetSpec, Undef]`
 
+<<<<<<< HEAD
+=======
+
+
+##### `legacy_compilers`
+
+Data type: `Variant[TargetSpec, Undef]`
+
+
+
+>>>>>>> d6467f9 ((PE-38770) Install Plan accepts legacy_compilers key (#474))
 ### <a name="peadm--assert_supported_bolt_version"></a>`peadm::assert_supported_bolt_version`
 
 Type: Puppet Language
@@ -1829,6 +1840,7 @@ Install a new PE cluster
 
 The following parameters are available in the `peadm::install` plan:
 
+<<<<<<< HEAD
 - [`compiler_pool_address`](#-peadm--install--compiler_pool_address)
 - [`internal_compiler_a_pool_address`](#-peadm--install--internal_compiler_a_pool_address)
 - [`internal_compiler_b_pool_address`](#-peadm--install--internal_compiler_b_pool_address)
@@ -1857,6 +1869,37 @@ The following parameters are available in the `peadm::install` plan:
 - [`download_mode`](#-peadm--install--download_mode)
 - [`permit_unsafe_versions`](#-peadm--install--permit_unsafe_versions)
 - [`token_lifetime`](#-peadm--install--token_lifetime)
+=======
+* [`compiler_pool_address`](#-peadm--install--compiler_pool_address)
+* [`internal_compiler_a_pool_address`](#-peadm--install--internal_compiler_a_pool_address)
+* [`internal_compiler_b_pool_address`](#-peadm--install--internal_compiler_b_pool_address)
+* [`pe_installer_source`](#-peadm--install--pe_installer_source)
+* [`ldap_config`](#-peadm--install--ldap_config)
+* [`final_agent_state`](#-peadm--install--final_agent_state)
+* [`stagingdir`](#-peadm--install--stagingdir)
+* [`uploaddir`](#-peadm--install--uploaddir)
+* [`primary_host`](#-peadm--install--primary_host)
+* [`replica_host`](#-peadm--install--replica_host)
+* [`compiler_hosts`](#-peadm--install--compiler_hosts)
+* [`legacy_compilers`](#-peadm--install--legacy_compilers)
+* [`primary_postgresql_host`](#-peadm--install--primary_postgresql_host)
+* [`replica_postgresql_host`](#-peadm--install--replica_postgresql_host)
+* [`console_password`](#-peadm--install--console_password)
+* [`version`](#-peadm--install--version)
+* [`dns_alt_names`](#-peadm--install--dns_alt_names)
+* [`pe_conf_data`](#-peadm--install--pe_conf_data)
+* [`code_manager_auto_configure`](#-peadm--install--code_manager_auto_configure)
+* [`r10k_remote`](#-peadm--install--r10k_remote)
+* [`r10k_private_key_file`](#-peadm--install--r10k_private_key_file)
+* [`r10k_private_key_content`](#-peadm--install--r10k_private_key_content)
+* [`r10k_known_hosts`](#-peadm--install--r10k_known_hosts)
+* [`deploy_environment`](#-peadm--install--deploy_environment)
+* [`license_key_file`](#-peadm--install--license_key_file)
+* [`license_key_content`](#-peadm--install--license_key_content)
+* [`download_mode`](#-peadm--install--download_mode)
+* [`permit_unsafe_versions`](#-peadm--install--permit_unsafe_versions)
+* [`token_lifetime`](#-peadm--install--token_lifetime)
+>>>>>>> d6467f9 ((PE-38770) Install Plan accepts legacy_compilers key (#474))
 
 ##### <a name="-peadm--install--compiler_pool_address"></a>`compiler_pool_address`
 
@@ -1949,6 +1992,14 @@ Default value: `undef`
 ##### <a name="-peadm--install--compiler_hosts"></a>`compiler_hosts`
 
 Data type: `Optional[TargetSpec]`
+
+Default value: `undef`
+
+##### <a name="-peadm--install--legacy_compilers"></a>`legacy_compilers`
+
+Data type: `Optional[TargetSpec]`
+
+
 
 Default value: `undef`
 

@@ -24,6 +24,15 @@ describe 'peadm::assert_supported_architecture' do
   let(:compiler_hosts) do
     'pup-c1.puppet.vm'
   end
+  let(:legacy_compilers) do
+    'pup-c2.puppet.vm'
+  end
+  let(:compiler_hosts_array) do
+    ['pup-c1.puppet.vm']
+  end
+  let(:legacy_compilers_array) do
+    ['pup-c2.puppet.vm']
+  end
 
   it {
     is_expected.to run.with_params(primary_host)
@@ -59,6 +68,28 @@ describe 'peadm::assert_supported_architecture' do
                                   'disaster-recovery' => false,
                                   'architecture' => 'large')
   end
+  it do
+    is_expected.to run.with_params(primary_host,
+                                   nil,
+                                   nil,
+                                   nil,
+                                   compiler_hosts,
+                                   legacy_compilers)
+                      .and_return('supported' => true,
+                                  'disaster-recovery' => false,
+                                  'architecture' => 'large')
+  end
+  it do
+    is_expected.to run.with_params(primary_host,
+                                   nil,
+                                   nil,
+                                   nil,
+                                   nil,
+                                   legacy_compilers)
+                      .and_return('supported' => true,
+                                  'disaster-recovery' => false,
+                                  'architecture' => 'large')
+  end
 
   it do
     is_expected.to run.with_params(primary_host,
@@ -77,6 +108,28 @@ describe 'peadm::assert_supported_architecture' do
                                    primary_postgresql_host,
                                    nil,
                                    compiler_hosts)
+                      .and_return('supported' => true,
+                                  'disaster-recovery' => false,
+                                  'architecture' => 'extra-large')
+  end
+  it do
+    is_expected.to run.with_params(primary_host,
+                                   nil,
+                                   primary_postgresql_host,
+                                   nil,
+                                   compiler_hosts,
+                                   legacy_compilers)
+                      .and_return('supported' => true,
+                                  'disaster-recovery' => false,
+                                  'architecture' => 'extra-large')
+  end
+  it do
+    is_expected.to run.with_params(primary_host,
+                                   nil,
+                                   primary_postgresql_host,
+                                   nil,
+                                   compiler_hosts_array,
+                                   legacy_compilers_array)
                       .and_return('supported' => true,
                                   'disaster-recovery' => false,
                                   'architecture' => 'extra-large')
