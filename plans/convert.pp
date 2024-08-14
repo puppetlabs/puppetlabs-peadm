@@ -10,6 +10,7 @@ plan peadm::convert (
 
   # Large
   Optional[TargetSpec]              $compiler_hosts = undef,
+  Optional[TargetSpec]              $legacy_compilers = undef,
 
   # Extra Large
   Optional[Peadm::SingleTargetSpec] $primary_postgresql_host         = undef,
@@ -36,6 +37,7 @@ plan peadm::convert (
   $replica_target                   = peadm::get_targets($replica_host, 1)
   $replica_postgresql_target        = peadm::get_targets($replica_postgresql_host, 1)
   $compiler_targets                 = peadm::get_targets($compiler_hosts)
+  $legacy_compiler_targets          = peadm::get_targets($legacy_compilers)
   $primary_postgresql_target        = peadm::get_targets($primary_postgresql_host, 1)
 
   $all_targets = peadm::flatten_compact([
@@ -43,6 +45,7 @@ plan peadm::convert (
       $replica_target,
       $replica_postgresql_target,
       $compiler_targets,
+      $legacy_compiler_targets,
       $primary_postgresql_target,
   ])
 
@@ -53,6 +56,7 @@ plan peadm::convert (
     $primary_postgresql_host,
     $replica_postgresql_host,
     $compiler_hosts,
+    $legacy_compilers,
   )
 
   out::message('# Gathering information')
@@ -115,10 +119,36 @@ plan peadm::convert (
         $index % 2 != 0
       }
     }
+    $legacy_compiler_a_targets = $legacy_compiler_targets.filter |$index,$target| {
+      $exts = $cert_extensions[$target.peadm::certname()]
+      if ($exts[peadm::oid('peadm_availability_group')] in ['A', 'B']) {
+        $exts[peadm::oid('peadm_availability_group')] == 'A'
+      }
+      elsif ($exts[peadm::oid('pp_cluster')] in ['A', 'B']) {
+        $exts[peadm::oid('pp_cluster')] == 'A'
+      }
+      else {
+        $index % 2 == 0
+      }
+    }
+    $legacy_compiler_b_targets = $legacy_compiler_targets.filter |$index,$target| {
+      $exts = $cert_extensions[$target.peadm::certname()]
+      if ($exts[peadm::oid('peadm_availability_group')] in ['A', 'B']) {
+        $exts[peadm::oid('peadm_availability_group')] == 'B'
+      }
+      elsif ($exts[peadm::oid('pp_cluster')] in ['A', 'B']) {
+        $exts[peadm::oid('pp_cluster')] == 'B'
+      }
+      else {
+        $index % 2 != 0
+      }
+    }
   }
   else {
     $compiler_a_targets = $compiler_targets
     $compiler_b_targets = []
+    $legacy_compiler_a_targets = $legacy_compiler_targets
+    $legacy_compiler_b_targets = []
   }
 
   # Modify csr_attributes.yaml and insert the peadm-specific OIDs to identify
@@ -185,6 +215,7 @@ plan peadm::convert (
           add_extensions => {
             peadm::oid('pp_auth_role')             => 'pe_compiler',
             peadm::oid('peadm_availability_group') => 'A',
+            peadm::oid('peadm_legacy_compiler')    => 'false',
           },
         )
       },
@@ -194,6 +225,27 @@ plan peadm::convert (
           add_extensions => {
             peadm::oid('pp_auth_role')             => 'pe_compiler',
             peadm::oid('peadm_availability_group') => 'B',
+            peadm::oid('peadm_legacy_compiler')    => 'false',
+          },
+        )
+      },
+      background('modify-compilers-a-certs') || {
+        run_plan('peadm::modify_certificate', $legacy_compiler_a_targets,
+          primary_host   => $primary_target,
+          add_extensions => {
+            peadm::oid('pp_auth_role')             => 'pe_compiler',
+            peadm::oid('peadm_availability_group') => 'A',
+            peadm::oid('peadm_legacy_compiler')    => 'true',
+          },
+        )
+      },
+      background('modify-compilers-b-certs') || {
+        run_plan('peadm::modify_certificate', $legacy_compiler_b_targets,
+          primary_host   => $primary_target,
+          add_extensions => {
+            peadm::oid('pp_auth_role')             => 'pe_compiler',
+            peadm::oid('peadm_availability_group') => 'B',
+            peadm::oid('peadm_legacy_compiler')    => 'true',
           },
         )
       },
