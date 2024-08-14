@@ -137,7 +137,7 @@ Type: Puppet Language
 
 Assert that the architecture given is a supported one
 
-#### `peadm::assert_supported_architecture(TargetSpec $primary_host, Variant[TargetSpec, Undef] $replica_host = undef, Variant[TargetSpec, Undef] $primary_postgresql_host = undef, Variant[TargetSpec, Undef] $replica_postgresql_host = undef, Variant[TargetSpec, Undef] $compiler_hosts = undef)`
+#### `peadm::assert_supported_architecture(TargetSpec $primary_host, Variant[TargetSpec, Undef] $replica_host = undef, Variant[TargetSpec, Undef] $primary_postgresql_host = undef, Variant[TargetSpec, Undef] $replica_postgresql_host = undef, Variant[TargetSpec, Undef] $compiler_hosts = undef, Variant[TargetSpec, Undef] $legacy_compilers = undef)`
 
 The peadm::assert_supported_architecture function.
 
@@ -168,6 +168,12 @@ Data type: `Variant[TargetSpec, Undef]`
 
 
 ##### `compiler_hosts`
+
+Data type: `Variant[TargetSpec, Undef]`
+
+
+
+##### `legacy_compilers`
 
 Data type: `Variant[TargetSpec, Undef]`
 
@@ -1826,6 +1832,7 @@ The following parameters are available in the `peadm::install` plan:
 * [`primary_host`](#-peadm--install--primary_host)
 * [`replica_host`](#-peadm--install--replica_host)
 * [`compiler_hosts`](#-peadm--install--compiler_hosts)
+* [`legacy_compilers`](#-peadm--install--legacy_compilers)
 * [`primary_postgresql_host`](#-peadm--install--primary_postgresql_host)
 * [`replica_postgresql_host`](#-peadm--install--replica_postgresql_host)
 * [`console_password`](#-peadm--install--console_password)
@@ -1937,6 +1944,14 @@ Data type: `Optional[Peadm::SingleTargetSpec]`
 Default value: `undef`
 
 ##### <a name="-peadm--install--compiler_hosts"></a>`compiler_hosts`
+
+Data type: `Optional[TargetSpec]`
+
+
+
+Default value: `undef`
+
+##### <a name="-peadm--install--legacy_compilers"></a>`legacy_compilers`
 
 Data type: `Optional[TargetSpec]`
 

@@ -5,7 +5,7 @@ plan peadm::convert_compiler_to_legacy (
   Boolean $remove_pdb = false,
 ) {
   $primary_target            = peadm::get_targets($primary_host, 1)
-  $legacy_targets             = peadm::get_targets($legacy_hosts)
+  $legacy_compiler_targets             = peadm::get_targets($legacy_hosts)
 
   $cluster = run_task('peadm::get_peadm_config', $primary_host).first.value
   $error = getvar('cluster.error')
@@ -22,8 +22,8 @@ plan peadm::convert_compiler_to_legacy (
   ])
 
   if $remove_pdb {
-    run_command('puppet resource service puppet ensure=stopped', $legacy_targets)
-    run_command('puppet resource service pe-puppetdb ensure=stopped enable=false', $legacy_targets)
+    run_command('puppet resource service puppet ensure=stopped', $legacy_compiler_targets)
+    run_command('puppet resource service pe-puppetdb ensure=stopped enable=false', $legacy_compiler_targets)
   }
 
   apply($primary_target) {
@@ -36,23 +36,23 @@ plan peadm::convert_compiler_to_legacy (
     }
   }
 
-  run_plan('peadm::update_compiler_extensions',  compiler_hosts => $legacy_targets, primary_host => $primary_target, legacy => true)
+  run_plan('peadm::update_compiler_extensions',  compiler_hosts => $legacy_compiler_targets, primary_host => $primary_target, legacy => true)
 
-  run_task('peadm::puppet_runonce', $legacy_targets)
+  run_task('peadm::puppet_runonce', $legacy_compiler_targets)
   run_task('peadm::puppet_runonce', $primary_target)
   run_task('peadm::puppet_runonce', $all_targets)
 
   if $remove_pdb {
-    run_command('puppet resource package pe-puppetdb ensure=purged', $legacy_targets)
-    run_command('puppet resource user pe-puppetdb ensure=absent', $legacy_targets)
+    run_command('puppet resource package pe-puppetdb ensure=purged', $legacy_compiler_targets)
+    run_command('puppet resource user pe-puppetdb ensure=absent', $legacy_compiler_targets)
 
-    run_command('rm -rf /etc/puppetlabs/puppetdb', $legacy_targets)
-    run_command('rm -rf /var/log/puppetlabs/puppetdb', $legacy_targets)
-    run_command('rm -rf /opt/puppetlabs/server/data/puppetdb', $legacy_targets)
+    run_command('rm -rf /etc/puppetlabs/puppetdb', $legacy_compiler_targets)
+    run_command('rm -rf /var/log/puppetlabs/puppetdb', $legacy_compiler_targets)
+    run_command('rm -rf /opt/puppetlabs/server/data/puppetdb', $legacy_compiler_targets)
   }
 
-  run_command('systemctl start pe-puppetserver.service', $legacy_targets)
-  run_command('puppet resource service puppet ensure=running', $legacy_targets)
+  run_command('systemctl start pe-puppetserver.service', $legacy_compiler_targets)
+  run_command('puppet resource service puppet ensure=running', $legacy_compiler_targets)
 
-  return("Converted host ${legacy_targets} to legacy compiler.")
+  return("Converted host ${legacy_compiler_targets} to legacy compiler.")
 }
