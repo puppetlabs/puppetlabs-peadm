@@ -304,6 +304,9 @@ plan peadm::convert (
     # completion
     run_command('systemctl restart pe-puppetserver.service pe-puppetdb.service',
     $all_targets - $primary_target - $primary_postgresql_target - $replica_postgresql_target)
+
+    # Run puppet on all targets again to ensure everything is fully up-to-date
+    run_task('peadm::puppet_runonce', $all_targets)
   }
 
   return("Conversion to peadm Puppet Enterprise ${arch['architecture']} completed.")
