@@ -84,16 +84,16 @@ plan peadm::add_compiler(
     path        => '/etc/puppetlabs/puppet/hiera.yaml'
   )
 
-  # On <compiler-host>, run the puppet agent
+  # On <compiler-host>, run puppet agent
   run_task('peadm::puppet_runonce', $compiler_target)
 
-  # On <primary_postgresql_host> run the puppet agent
+  # On <primary_postgresql_host>, run puppet agent
   run_task('peadm::puppet_runonce', $primary_postgresql_target)
 
-  # On replica host run the puppet agent
+  # On <replica_puppetdb_target>, run puppet agent
   run_task('peadm::puppet_runonce', $replica_puppetdb_target)
 
-  # On <primary_postgresql_host> start puppet.service
+  # On <primary_postgresql_host>, start puppet.service
   run_command('systemctl start puppet.service', peadm::flatten_compact([
         $primary_postgresql_target,
         $replica_puppetdb_target,

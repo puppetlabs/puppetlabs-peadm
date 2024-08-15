@@ -28,7 +28,7 @@ As seen in the example below, this is the minimal parameters required to add a c
 bolt plan run peadm::add_compiler --params @params.json 
 ```
 
-This command will retrieve the current PEADM configuration to determine the setup rules needed for a compiler's secondary PuppetDB instances. The plan will configure the primary with appropriate rules for allowing access from the new compiler. On the primary, the `puppet` service is stopped and the `pe-postgresql` service is reloaded. If required, a puppet agent will be installed on the new compiler host. The compiler agent's certificate is be regenerated to include data required by the  `peadm::subplans::component_install` plan. A subsequent Puppet agent run will happen on the following components
+This command will retrieve the current PEADM configuration to determine the setup rules needed for a compiler's secondary PuppetDB instances. The plan will configure the primary with appropriate rules for allowing access from the new compiler. On the primary, the `puppet` service is stopped and the `pe-postgresql` service is reloaded. If required, a puppet agent will be installed on the new compiler host. The compiler agent's certificate is regenerated to include data required by the  `peadm::subplans::component_install` plan. A subsequent Puppet agent run will happen on the following components.
 * _\<compiler-host\>_
 * _\<primary_postgresql_host\>_
 * _\<replica host\>_
@@ -39,7 +39,7 @@ This command will retrieve the current PEADM configuration to determine the setu
 
 ## Optional Parameters
 
-As well as `compiler_host` and `primary_host`, the `add_compiler` plan has a number of optional parameters. These can been seen used in the following params example.
+As well as `compiler_host` and `primary_host`, the `add_compiler` plan has a number of optional parameters. These can be viewed in the following params example.
 
 ```json
 {
@@ -51,14 +51,14 @@ As well as `compiler_host` and `primary_host`, the `add_compiler` plan has a num
 }
 ```
 
-Please note, the optional parameters and values of each are as follows.
+Please note, the optional parameters and values of the plan are as follows.
 
 <!-- table -->
-| Parameter                | Default Value | Description                                      |
+| Parameter                | Default value | Description                                      |
 |--------------------------|---------------|--------------------------------------------------|
-| `avail_group_letter`     | `A`           | By default each compiler will be added to the primary group, A.        |
+| `avail_group_letter`     | `A`           | By default, each compiler will be added to the primary group A.        |
 | `dns_alt_names`          | `undef`       |                                                  |
-| `primary_postgresql_host`| `undef`       | This will by default pre-populate to the required value depending if your architecture contains HA and or external databases.                                    |
+| `primary_postgresql_host`| `undef`       | By default, this will pre-populate to the required value depending if your architecture contains HA and or external databases.                                    |
 
 For more information around adding compilers to your infrastructure [Expanding Your Deployment](expanding.md#adding-compilers-with-peadmadd_compiler)
 
