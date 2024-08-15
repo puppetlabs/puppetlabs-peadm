@@ -1755,6 +1755,7 @@ management using PEAdm.
 
 The following parameters are available in the `peadm::convert` plan:
 
+<<<<<<< HEAD
 - [`primary_host`](#-peadm--convert--primary_host)
 - [`replica_host`](#-peadm--convert--replica_host)
 - [`compiler_hosts`](#-peadm--convert--compiler_hosts)
@@ -1765,6 +1766,19 @@ The following parameters are available in the `peadm::convert` plan:
 - [`internal_compiler_b_pool_address`](#-peadm--convert--internal_compiler_b_pool_address)
 - [`dns_alt_names`](#-peadm--convert--dns_alt_names)
 - [`begin_at_step`](#-peadm--convert--begin_at_step)
+=======
+* [`primary_host`](#-peadm--convert--primary_host)
+* [`replica_host`](#-peadm--convert--replica_host)
+* [`compiler_hosts`](#-peadm--convert--compiler_hosts)
+* [`legacy_compilers`](#-peadm--convert--legacy_compilers)
+* [`primary_postgresql_host`](#-peadm--convert--primary_postgresql_host)
+* [`replica_postgresql_host`](#-peadm--convert--replica_postgresql_host)
+* [`compiler_pool_address`](#-peadm--convert--compiler_pool_address)
+* [`internal_compiler_a_pool_address`](#-peadm--convert--internal_compiler_a_pool_address)
+* [`internal_compiler_b_pool_address`](#-peadm--convert--internal_compiler_b_pool_address)
+* [`dns_alt_names`](#-peadm--convert--dns_alt_names)
+* [`begin_at_step`](#-peadm--convert--begin_at_step)
+>>>>>>> 671839c ((PE-38771) Convert plan accepts legacy compilers key in params.json (#476))
 
 ##### <a name="-peadm--convert--primary_host"></a>`primary_host`
 
@@ -1779,6 +1793,14 @@ Default value: `undef`
 ##### <a name="-peadm--convert--compiler_hosts"></a>`compiler_hosts`
 
 Data type: `Optional[TargetSpec]`
+
+Default value: `undef`
+
+##### <a name="-peadm--convert--legacy_compilers"></a>`legacy_compilers`
+
+Data type: `Optional[TargetSpec]`
+
+
 
 Default value: `undef`
 
