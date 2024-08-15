@@ -1719,6 +1719,7 @@ The following parameters are available in the `peadm::convert` plan:
 * [`primary_host`](#-peadm--convert--primary_host)
 * [`replica_host`](#-peadm--convert--replica_host)
 * [`compiler_hosts`](#-peadm--convert--compiler_hosts)
+* [`legacy_compilers`](#-peadm--convert--legacy_compilers)
 * [`primary_postgresql_host`](#-peadm--convert--primary_postgresql_host)
 * [`replica_postgresql_host`](#-peadm--convert--replica_postgresql_host)
 * [`compiler_pool_address`](#-peadm--convert--compiler_pool_address)
@@ -1742,6 +1743,14 @@ Data type: `Optional[Peadm::SingleTargetSpec]`
 Default value: `undef`
 
 ##### <a name="-peadm--convert--compiler_hosts"></a>`compiler_hosts`
+
+Data type: `Optional[TargetSpec]`
+
+
+
+Default value: `undef`
+
+##### <a name="-peadm--convert--legacy_compilers"></a>`legacy_compilers`
 
 Data type: `Optional[TargetSpec]`
 
