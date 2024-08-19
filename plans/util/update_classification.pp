@@ -2,9 +2,12 @@
 #
 # @summary Configure classification
 #
+# @param node_group_environment environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
+#
 plan peadm::util::update_classification (
   # Standard
   Peadm::SingleTargetSpec           $targets,
+  String[1]                         $node_group_environment,
   Optional[Hash]                    $peadm_config = undef,
   Optional[Peadm::SingleTargetSpec] $server_a_host = undef,
   Optional[Peadm::SingleTargetSpec] $server_b_host = undef,
@@ -76,6 +79,7 @@ plan peadm::util::update_classification (
       compiler_pool_address            => $new['params']['compiler_pool_address'],
       internal_compiler_a_pool_address => $new['params']['internal_compiler_a_pool_address'],
       internal_compiler_b_pool_address => $new['params']['internal_compiler_b_pool_address'],
+      node_group_environment           => $node_group_environment,
       require                          => Class['peadm::setup::node_manager_yaml'],
     }
   }

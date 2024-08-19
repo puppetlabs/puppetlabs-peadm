@@ -23,6 +23,7 @@
 #   A load balancer address directing traffic to any of the "B" pool
 #   compilers. This is used for DR configuration in large and extra large
 #   architectures.
+# @param node_group_environment the environment that will be assigned to all the PE Infra node groups
 #
 class peadm::setup::node_manager (
   String[1] $primary_host,
@@ -36,6 +37,7 @@ class peadm::setup::node_manager (
   Optional[String[1]] $compiler_pool_address            = undef,
   Optional[String[1]] $internal_compiler_a_pool_address = $server_a_host,
   Optional[String[1]] $internal_compiler_b_pool_address = $server_b_host,
+  String[1]           $node_group_environment           = 'production',
 ) {
   # "Not-configured" placeholder string. This will be used in places where we
   # cannot set an explicit null, and need to supply some kind of value.
@@ -46,6 +48,7 @@ class peadm::setup::node_manager (
   # else.
   Node_group {
     purge_behavior => none,
+    environment    => $node_group_environment,
   }
 
   ##################################################
