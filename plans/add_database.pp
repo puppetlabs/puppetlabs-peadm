@@ -13,7 +13,7 @@ plan peadm::add_database(
       'cleanup-db',
   'finalize']] $begin_at_step = undef,
   Optional[Boolean] $is_migration = false,
-  String[1] $node_group_environment = 'production',
+  String[1] $node_group_environment = peadm::get_node_group_environment($primary_host),
 ) {
   $primary_target = peadm::get_targets($primary_host, 1)
   $postgresql_target = peadm::get_targets($targets, 1)

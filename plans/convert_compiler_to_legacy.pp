@@ -3,7 +3,7 @@ plan peadm::convert_compiler_to_legacy (
   Peadm::SingleTargetSpec $primary_host,
   TargetSpec              $legacy_hosts,
   Optional[Boolean]       $remove_pdb = true,
-  String[1] $node_group_environment = 'production',
+  String[1] $node_group_environment = peadm::get_node_group_environment($primary_host),
 ) {
   $primary_target            = peadm::get_targets($primary_host, 1)
   $convert_legacy_compiler_targets   = peadm::get_targets($legacy_hosts)

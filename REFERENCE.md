@@ -30,6 +30,7 @@
 * [`peadm::file_or_content`](#peadm--file_or_content)
 * [`peadm::flatten_compact`](#peadm--flatten_compact)
 * [`peadm::generate_pe_conf`](#peadm--generate_pe_conf): Generate a pe.conf file in JSON format
+* [`peadm::get_node_group_environment`](#peadm--get_node_group_environment): check if a custom PE environment is set in pe.conf
 * [`peadm::get_pe_conf`](#peadm--get_pe_conf)
 * [`peadm::get_targets`](#peadm--get_targets): Accept undef or a SingleTargetSpec, and return an Array[Target, 1, 0]. This differs from get_target() in that:   - It returns an Array[Target
 * [`peadm::log_plan_parameters`](#peadm--log_plan_parameters)
@@ -739,6 +740,24 @@ Data type: `Hash`
 
 A hash of settings to set in the config file. Any keys that are set to
 undef will not be included in the config file.
+
+### <a name="peadm--get_node_group_environment"></a>`peadm::get_node_group_environment`
+
+Type: Puppet Language
+
+check if a custom PE environment is set in pe.conf
+
+#### `peadm::get_node_group_environment(Peadm::SingleTargetSpec $primary)`
+
+The peadm::get_node_group_environment function.
+
+Returns: `String` the desired environment for PE specific node groups
+
+##### `primary`
+
+Data type: `Peadm::SingleTargetSpec`
+
+the FQDN for the primary, here we will read the pe.conf from
 
 ### <a name="peadm--get_pe_conf"></a>`peadm::get_pe_conf`
 
@@ -1845,7 +1864,7 @@ Data type: `String[1]`
 
 environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
 
-Default value: `'production'`
+Default value: `peadm::get_node_group_environment($primary_host)`
 
 ##### <a name="-peadm--add_database--targets"></a>`targets`
 
@@ -1945,7 +1964,7 @@ Data type: `String[1]`
 
 environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
 
-Default value: `'production'`
+Default value: `peadm::get_node_group_environment($primary_host)`
 
 ### <a name="peadm--backup"></a>`peadm::backup`
 
@@ -2853,7 +2872,7 @@ Data type: `String[1]`
 
 environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
 
-Default value: `'production'`
+Default value: `peadm::get_node_group_environment($primary_host)`
 
 ##### <a name="-peadm--upgrade--primary_host"></a>`primary_host`
 
