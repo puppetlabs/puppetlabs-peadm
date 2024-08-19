@@ -18,7 +18,7 @@ plan peadm::add_replica(
 
   # Common Configuration
   Optional[String] $token_file = undef,
-  String[1] $node_group_environment = 'production',
+  String[1] $node_group_environment = peadm::get_node_group_environment($primary_host),
 ) {
   $primary_target             = peadm::get_targets($primary_host, 1)
   $replica_target             = peadm::get_targets($replica_host, 1)

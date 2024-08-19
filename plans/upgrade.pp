@@ -63,7 +63,7 @@ plan peadm::upgrade (
   Boolean                    $permit_unsafe_versions = false,
 
   Optional[Peadm::UpgradeSteps] $begin_at_step = undef,
-  String[1] $node_group_environment = 'production',
+  String[1] $node_group_environment = peadm::get_node_group_environment($primary_host),
 ) {
   # Log parameters for debugging
   peadm::log_plan_parameters({
