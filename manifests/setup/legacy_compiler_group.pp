@@ -3,9 +3,11 @@ class peadm::setup::legacy_compiler_group (
   String[1] $primary_host,
   Optional[String] $internal_compiler_a_pool_address = undef,
   Optional[String] $internal_compiler_b_pool_address = undef,
+  String[1] $node_group_environment = 'production',
 ) {
   Node_group {
     purge_behavior => none,
+    environment    => $node_group_environment,
   }
 
   node_group { 'PE Legacy Compiler':

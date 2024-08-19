@@ -1832,11 +1832,20 @@ The peadm::add_database class.
 
 The following parameters are available in the `peadm::add_database` plan:
 
+* [`node_group_environment`](#-peadm--add_database--node_group_environment)
 * [`targets`](#-peadm--add_database--targets)
 * [`primary_host`](#-peadm--add_database--primary_host)
 * [`mode`](#-peadm--add_database--mode)
 * [`begin_at_step`](#-peadm--add_database--begin_at_step)
 * [`is_migration`](#-peadm--add_database--is_migration)
+
+##### <a name="-peadm--add_database--node_group_environment"></a>`node_group_environment`
+
+Data type: `String[1]`
+
+environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
+
+Default value: `'production'`
 
 ##### <a name="-peadm--add_database--targets"></a>`targets`
 
@@ -1899,6 +1908,7 @@ The following parameters are available in the `peadm::add_replica` plan:
 * [`replica_host`](#-peadm--add_replica--replica_host)
 * [`replica_postgresql_host`](#-peadm--add_replica--replica_postgresql_host)
 * [`token_file`](#-peadm--add_replica--token_file)
+* [`node_group_environment`](#-peadm--add_replica--node_group_environment)
 
 ##### <a name="-peadm--add_replica--primary_host"></a>`primary_host`
 
@@ -1928,6 +1938,14 @@ Data type: `Optional[String]`
 - (optional) the token file in a different location than the default.
 
 Default value: `undef`
+
+##### <a name="-peadm--add_replica--node_group_environment"></a>`node_group_environment`
+
+Data type: `String[1]`
+
+environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
+
+Default value: `'production'`
 
 ### <a name="peadm--backup"></a>`peadm::backup`
 
@@ -2016,6 +2034,7 @@ management using PEAdm.
 The following parameters are available in the `peadm::convert` plan:
 
 * [`begin_at_step`](#-peadm--convert--begin_at_step)
+* [`node_group_environment`](#-peadm--convert--node_group_environment)
 * [`primary_host`](#-peadm--convert--primary_host)
 * [`replica_host`](#-peadm--convert--replica_host)
 * [`compiler_hosts`](#-peadm--convert--compiler_hosts)
@@ -2034,6 +2053,14 @@ Data type: `Optional[Peadm::ConvertSteps]`
 The step where the plan should start. If not set, it will start at the beginning
 
 Default value: `undef`
+
+##### <a name="-peadm--convert--node_group_environment"></a>`node_group_environment`
+
+Data type: `String[1]`
+
+environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
+
+Default value: `peadm::get_node_group_environment($primary_host)`
 
 ##### <a name="-peadm--convert--primary_host"></a>`primary_host`
 
@@ -2723,6 +2750,7 @@ The following parameters are available in the `peadm::upgrade` plan:
 * [`stagingdir`](#-peadm--upgrade--stagingdir)
 * [`uploaddir`](#-peadm--upgrade--uploaddir)
 * [`begin_at_step`](#-peadm--upgrade--begin_at_step)
+* [`node_group_environment`](#-peadm--upgrade--node_group_environment)
 * [`primary_host`](#-peadm--upgrade--primary_host)
 * [`replica_host`](#-peadm--upgrade--replica_host)
 * [`compiler_hosts`](#-peadm--upgrade--compiler_hosts)
@@ -2818,6 +2846,14 @@ Data type: `Optional[Peadm::UpgradeSteps]`
 The step where the plan should start. If not set, it will start at the beginning
 
 Default value: `undef`
+
+##### <a name="-peadm--upgrade--node_group_environment"></a>`node_group_environment`
+
+Data type: `String[1]`
+
+environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
+
+Default value: `'production'`
 
 ##### <a name="-peadm--upgrade--primary_host"></a>`primary_host`
 

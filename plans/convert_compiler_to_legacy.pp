@@ -3,6 +3,7 @@ plan peadm::convert_compiler_to_legacy (
   Peadm::SingleTargetSpec $primary_host,
   TargetSpec              $legacy_hosts,
   Optional[Boolean]       $remove_pdb = true,
+  String[1] $node_group_environment = 'production',
 ) {
   $primary_target            = peadm::get_targets($primary_host, 1)
   $convert_legacy_compiler_targets   = peadm::get_targets($legacy_hosts)
@@ -34,6 +35,7 @@ plan peadm::convert_compiler_to_legacy (
       },
       internal_compiler_a_pool_address => getvar('cluster.params.internal_compiler_a_pool_address'),
       internal_compiler_b_pool_address => getvar('cluster.params.internal_compiler_b_pool_address'),
+      node_group_environment           => $node_group_environment,
       require                          => Class['peadm::setup::node_manager_yaml'],
     }
   }
