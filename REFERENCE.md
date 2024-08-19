@@ -89,6 +89,10 @@
 #### Public Plans
 
 * [`peadm::add_database`](#peadm--add_database)
+* [`peadm::add_replica`](#peadm--add_replica): Add or replace a replica host.
+Supported use cases:
+1: Adding a replica to an existing primary.
+2: The existing replica is broken, we have a fresh new VM we want to provision the replica to.
 * [`peadm::backup`](#peadm--backup): Backup puppet primary configuration
 * [`peadm::backup_ca`](#peadm--backup_ca)
 * [`peadm::convert`](#peadm--convert): Convert an existing PE cluster to a PEAdm-managed cluster
@@ -103,9 +107,6 @@
 #### Private Plans
 
 * `peadm::add_compiler`: Add a new compiler to a PE architecture or replace an existing one with new configuration.
-* `peadm::add_replica`: Replace a replica host for a Standard or Large architecture.
-Supported use cases:
-1: The existing replica is broken, we have a fresh new VM we want to provision the replica to.
 * `peadm::misc::divert_code_manager`: This plan exists to account for a scenario where a PE XL
 * `peadm::modify_cert_extensions`
 * `peadm::subplans::component_install`: Install a new PEADM component
@@ -1603,6 +1604,51 @@ Optional[Enum[
 ```
 
 
+
+Default value: `undef`
+
+### <a name="peadm--add_replica"></a>`peadm::add_replica`
+
+Add or replace a replica host.
+Supported use cases:
+1: Adding a replica to an existing primary.
+2: The existing replica is broken, we have a fresh new VM we want to provision the replica to.
+
+#### Parameters
+
+The following parameters are available in the `peadm::add_replica` plan:
+
+* [`primary_host`](#-peadm--add_replica--primary_host)
+* [`replica_host`](#-peadm--add_replica--replica_host)
+* [`replica_postgresql_host`](#-peadm--add_replica--replica_postgresql_host)
+* [`token_file`](#-peadm--add_replica--token_file)
+
+##### <a name="-peadm--add_replica--primary_host"></a>`primary_host`
+
+Data type: `Peadm::SingleTargetSpec`
+
+- The hostname and certname of the primary Puppet server
+
+##### <a name="-peadm--add_replica--replica_host"></a>`replica_host`
+
+Data type: `Peadm::SingleTargetSpec`
+
+- The hostname and certname of the replica VM
+
+##### <a name="-peadm--add_replica--replica_postgresql_host"></a>`replica_postgresql_host`
+
+Data type: `Optional[Peadm::SingleTargetSpec]`
+
+- The hostname and certname of the host with the replica PE-PosgreSQL database.
+Can be a separate host in an XL architecture, or undef in Standard or Large.
+
+Default value: `undef`
+
+##### <a name="-peadm--add_replica--token_file"></a>`token_file`
+
+Data type: `Optional[String]`
+
+- (optional) the token file in a different location than the default.
 
 Default value: `undef`
 
