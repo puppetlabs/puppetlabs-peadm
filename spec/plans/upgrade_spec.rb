@@ -27,6 +27,7 @@ describe 'peadm::upgrade' do
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
       .always_return({ 'content' => '2021.7.3' })
 
+    expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
     expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary)
 
     expect(run_plan('peadm::upgrade',
@@ -40,7 +41,7 @@ describe 'peadm::upgrade' do
     expect_task('peadm::read_file')
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
       .always_return({ 'content' => '2021.7.3' })
-
+    expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
     expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary,
                                                        'compiler' => trusted_compiler)
 
@@ -97,7 +98,7 @@ describe 'peadm::upgrade' do
     it 'updates pe.conf if r10k_known_hosts is set' do
       expect_task('peadm::read_file')
         .with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf')
-        .always_return({ 'content' => <<~PECONF })
+        .always_return({ 'content' => <<~PECONF }).be_called_times(2)
           # spec pe.conf
           "puppet_enterprise::puppet_master_host": "%{::trusted.certname}"
         PECONF
@@ -118,6 +119,8 @@ describe 'peadm::upgrade' do
       # This is fairly horrible, but expect_out_message doesn't take a regex.
       expect_out_message.with_params(r10k_warning)
 
+      expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
+
       expect(run_plan('peadm::upgrade',
                        'primary_host'     => 'primary',
                        'version'          => '2023.3.0',
@@ -129,6 +132,8 @@ describe 'peadm::upgrade' do
 
       it 'does not warn if r10k_known_hosts is not set' do
         expect_out_message.with_params(r10k_warning).not_be_called
+
+        expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
 
         expect(run_plan('peadm::upgrade',
                          'primary_host'     => 'primary',

@@ -19,7 +19,8 @@ describe 'peadm::convert' do
     allow_apply
 
     expect_task('peadm::cert_data').return_for_targets('primary' => trustedjson)
-    expect_task('peadm::read_file').always_return({ 'content' => '2021.7.8' })
+    expect_task('peadm::read_file').with_params('path' => '/opt/puppetlabs/server/pe_version').always_return({ 'content' => '2021.7.8' })
+    expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
 
     # For some reason, expect_plan() was not working??
     allow_plan('peadm::modify_certificate').always_return({})

@@ -20,6 +20,8 @@
 #   Configures the state the puppet agent should be in on infrastructure nodes
 #   after PE is configured successfully.
 #
+# @param node_group_environment environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
+#
 plan peadm::subplans::configure (
   # Standard
   Peadm::SingleTargetSpec           $primary_host,
@@ -42,7 +44,8 @@ plan peadm::subplans::configure (
 
   # Other
   String           $stagingdir                   = '/tmp',
-  Enum['running', 'stopped'] $final_agent_state  = 'running'
+  Enum['running', 'stopped'] $final_agent_state  = 'running',
+  String[1] $node_group_environment = peadm::get_node_group_environment($primary_host),
 ) {
   # TODO: get and validate PE version
 
@@ -102,6 +105,7 @@ plan peadm::subplans::configure (
       compiler_pool_address            => $compiler_pool_address,
       internal_compiler_a_pool_address => $internal_compiler_a_pool_address,
       internal_compiler_b_pool_address => $internal_compiler_b_pool_address,
+      node_group_environment           => $node_group_environment,
       require                          => Class['peadm::setup::node_manager_yaml'],
     }
   }

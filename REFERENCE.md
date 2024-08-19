@@ -29,6 +29,7 @@
 * [`peadm::file_or_content`](#peadm--file_or_content)
 * [`peadm::flatten_compact`](#peadm--flatten_compact)
 * [`peadm::generate_pe_conf`](#peadm--generate_pe_conf): Generate a pe.conf file in JSON format
+* [`peadm::get_node_group_environment`](#peadm--get_node_group_environment): check if a custom PE environment is set in pe.conf
 * [`peadm::get_pe_conf`](#peadm--get_pe_conf)
 * [`peadm::get_targets`](#peadm--get_targets): Accept undef or a SingleTargetSpec, and return an Array[Target, 1, 0]. This differs from get_target() in that:   - It returns an Array[Target
 * [`peadm::migration_opts_default`](#peadm--migration_opts_default)
@@ -714,6 +715,24 @@ Data type: `Hash`
 
 A hash of settings to set in the config file. Any keys that are set to
 undef will not be included in the config file.
+
+### <a name="peadm--get_node_group_environment"></a>`peadm::get_node_group_environment`
+
+Type: Puppet Language
+
+check if a custom PE environment is set in pe.conf
+
+#### `peadm::get_node_group_environment(Peadm::SingleTargetSpec $primary)`
+
+The peadm::get_node_group_environment function.
+
+Returns: `String` the desired environment for PE specific node groups
+
+##### `primary`
+
+Data type: `Peadm::SingleTargetSpec`
+
+the FQDN for the primary, here we will read the pe.conf from
 
 ### <a name="peadm--get_pe_conf"></a>`peadm::get_pe_conf`
 
@@ -1563,10 +1582,19 @@ The peadm::add_database class.
 
 The following parameters are available in the `peadm::add_database` plan:
 
+* [`node_group_environment`](#-peadm--add_database--node_group_environment)
 * [`targets`](#-peadm--add_database--targets)
 * [`primary_host`](#-peadm--add_database--primary_host)
 * [`mode`](#-peadm--add_database--mode)
 * [`begin_at_step`](#-peadm--add_database--begin_at_step)
+
+##### <a name="-peadm--add_database--node_group_environment"></a>`node_group_environment`
+
+Data type: `String[1]`
+
+environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
+
+Default value: `peadm::get_node_group_environment($primary_host)`
 
 ##### <a name="-peadm--add_database--targets"></a>`targets`
 
@@ -1692,6 +1720,7 @@ management using PEAdm.
 
 The following parameters are available in the `peadm::convert` plan:
 
+* [`node_group_environment`](#-peadm--convert--node_group_environment)
 * [`primary_host`](#-peadm--convert--primary_host)
 * [`replica_host`](#-peadm--convert--replica_host)
 * [`compiler_hosts`](#-peadm--convert--compiler_hosts)
@@ -1702,6 +1731,14 @@ The following parameters are available in the `peadm::convert` plan:
 * [`internal_compiler_b_pool_address`](#-peadm--convert--internal_compiler_b_pool_address)
 * [`dns_alt_names`](#-peadm--convert--dns_alt_names)
 * [`begin_at_step`](#-peadm--convert--begin_at_step)
+
+##### <a name="-peadm--convert--node_group_environment"></a>`node_group_environment`
+
+Data type: `String[1]`
+
+environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
+
+Default value: `peadm::get_node_group_environment($primary_host)`
 
 ##### <a name="-peadm--convert--primary_host"></a>`primary_host`
 
@@ -1805,6 +1842,7 @@ The following parameters are available in the `peadm::install` plan:
 * [`final_agent_state`](#-peadm--install--final_agent_state)
 * [`stagingdir`](#-peadm--install--stagingdir)
 * [`uploaddir`](#-peadm--install--uploaddir)
+* [`node_group_environment`](#-peadm--install--node_group_environment)
 * [`primary_host`](#-peadm--install--primary_host)
 * [`replica_host`](#-peadm--install--replica_host)
 * [`compiler_hosts`](#-peadm--install--compiler_hosts)
@@ -1903,6 +1941,14 @@ Directory the installer tarball will be uploaded to or expected to be in
 for offline usage.
 
 Default value: `undef`
+
+##### <a name="-peadm--install--node_group_environment"></a>`node_group_environment`
+
+Data type: `String[1]`
+
+environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
+
+Default value: `peadm::get_node_group_environment($primary_host)`
 
 ##### <a name="-peadm--install--primary_host"></a>`primary_host`
 
@@ -2277,6 +2323,7 @@ The following parameters are available in the `peadm::upgrade` plan:
 * [`r10k_known_hosts`](#-peadm--upgrade--r10k_known_hosts)
 * [`stagingdir`](#-peadm--upgrade--stagingdir)
 * [`uploaddir`](#-peadm--upgrade--uploaddir)
+* [`node_group_environment`](#-peadm--upgrade--node_group_environment)
 * [`primary_host`](#-peadm--upgrade--primary_host)
 * [`replica_host`](#-peadm--upgrade--replica_host)
 * [`compiler_hosts`](#-peadm--upgrade--compiler_hosts)
@@ -2365,6 +2412,14 @@ Directory the installer tarball will be uploaded to or expected to be in
 for offline usage.
 
 Default value: `'/tmp'`
+
+##### <a name="-peadm--upgrade--node_group_environment"></a>`node_group_environment`
+
+Data type: `String[1]`
+
+environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
+
+Default value: `peadm::get_node_group_environment($primary_host)`
 
 ##### <a name="-peadm--upgrade--primary_host"></a>`primary_host`
 
