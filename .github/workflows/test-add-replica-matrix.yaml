@@ -25,6 +25,7 @@ on:
       - ".fixtures.yml"
     branches: [main]
   workflow_dispatch: {}
+  push:
 
 jobs:
   test-add-replica:
