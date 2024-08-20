@@ -90,10 +90,10 @@ plan peadm::add_replica(
   }
 
   run_plan('peadm::util::update_classification', $primary_target,
-    server_a_host                    => $replica_avail_group_letter ? { 'A' => $replica_host, default => undef },
-    server_b_host                    => $replica_avail_group_letter ? { 'B' => $replica_host, default => undef },
-    internal_compiler_a_pool_address => $replica_avail_group_letter ? { 'A' => $replica_host, default => undef },
-    internal_compiler_b_pool_address => $replica_avail_group_letter ? { 'B' => $replica_host, default => undef },
+    server_a_host                    => $replica_avail_group_letter ? { 'A' => $replica_target.peadm::certname(), default => undef },
+    server_b_host                    => $replica_avail_group_letter ? { 'B' => $replica_target.peadm::certname(), default => undef },
+    internal_compiler_a_pool_address => $replica_avail_group_letter ? { 'A' => $replica_target.peadm::certname(), default => undef },
+    internal_compiler_b_pool_address => $replica_avail_group_letter ? { 'B' => $replica_target.peadm::certname(), default => undef },
     peadm_config                     => $peadm_config
   )
 
