@@ -3,6 +3,9 @@
 # This plan sets required certificate extensions on PE nodes, and configures
 # the required PE node groups to make an existing cluster compatible with
 # management using PEAdm.
+#
+# @param begin_at_step The step where the plan should start. If not set, it will start at the beginning
+#
 plan peadm::convert (
   # Standard
   Peadm::SingleTargetSpec           $primary_host,
@@ -21,11 +24,7 @@ plan peadm::convert (
   Optional[String]                  $internal_compiler_b_pool_address = undef,
   Array[String]                     $dns_alt_names                    = [],
 
-  Optional[Enum[
-      'modify-primary-certs',
-      'modify-infra-certs',
-      'convert-node-groups',
-  'finalize']] $begin_at_step = undef,
+  Optional[Peadm::ConvertSteps] $begin_at_step = undef,
 ) {
   peadm::assert_supported_bolt_version()
 

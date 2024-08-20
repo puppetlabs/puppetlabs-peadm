@@ -42,6 +42,7 @@
 
 ### Data types
 
+* [`Peadm::ConvertSteps`](#Peadm--ConvertSteps): type for the different steps where the peadm::convert plan can be started
 * [`Peadm::Known_hosts`](#Peadm--Known_hosts)
 * [`Peadm::Ldap_config`](#Peadm--Ldap_config)
 * [`Peadm::Pe_version`](#Peadm--Pe_version)
@@ -905,6 +906,12 @@ Data type: `TargetSpec`
 
 ## Data types
 
+### <a name="Peadm--ConvertSteps"></a>`Peadm::ConvertSteps`
+
+type for the different steps where the peadm::convert plan can be started
+
+Alias of `Enum['modify-primary-certs', 'modify-infra-certs', 'convert-node-groups', 'finalize']`
+
 ### <a name="Peadm--Known_hosts"></a>`Peadm::Known_hosts`
 
 The Peadm::Known_hosts data type.
@@ -1692,6 +1699,7 @@ management using PEAdm.
 
 The following parameters are available in the `peadm::convert` plan:
 
+* [`begin_at_step`](#-peadm--convert--begin_at_step)
 * [`primary_host`](#-peadm--convert--primary_host)
 * [`replica_host`](#-peadm--convert--replica_host)
 * [`compiler_hosts`](#-peadm--convert--compiler_hosts)
@@ -1701,7 +1709,14 @@ The following parameters are available in the `peadm::convert` plan:
 * [`internal_compiler_a_pool_address`](#-peadm--convert--internal_compiler_a_pool_address)
 * [`internal_compiler_b_pool_address`](#-peadm--convert--internal_compiler_b_pool_address)
 * [`dns_alt_names`](#-peadm--convert--dns_alt_names)
-* [`begin_at_step`](#-peadm--convert--begin_at_step)
+
+##### <a name="-peadm--convert--begin_at_step"></a>`begin_at_step`
+
+Data type: `Optional[Peadm::ConvertSteps]`
+
+The step where the plan should start. If not set, it will start at the beginning
+
+Default value: `undef`
 
 ##### <a name="-peadm--convert--primary_host"></a>`primary_host`
 
@@ -1772,22 +1787,6 @@ Data type: `Array[String]`
 
 
 Default value: `[]`
-
-##### <a name="-peadm--convert--begin_at_step"></a>`begin_at_step`
-
-Data type:
-
-```puppet
-Optional[Enum[
-      'modify-primary-certs',
-      'modify-infra-certs',
-      'convert-node-groups',
-  'finalize']]
-```
-
-
-
-Default value: `undef`
 
 ### <a name="peadm--install"></a>`peadm::install`
 
