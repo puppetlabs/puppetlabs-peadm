@@ -79,7 +79,7 @@ jobs:
               --modulepath spec/fixtures/modules \
               provider=provision_service \
               image=${{ matrix.image }} \
-              architecture=${{ matrix.architecture }}-with-dr
+              architecture=${{ matrix.architecture }}
           echo ::endgroup::
 
           echo ::group::info:request
