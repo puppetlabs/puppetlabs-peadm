@@ -106,8 +106,7 @@ jobs:
           bundle exec bolt plan run peadm_spec::add_replica -v \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
-            --stream \
-            replica_host=spare-replica
+            --stream
 
       - name: 'Wait as long as the file ${HOME}/pause file is present'
         if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
