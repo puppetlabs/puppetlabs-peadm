@@ -11,6 +11,9 @@ plan peadm_spec::provision_test_cluster (
       'standard-with-dr': {
         ['primary', 'replica']
       }
+      'standard-with-dr-and-spare-replica': {
+        ['primary', 'replica', 'spare-replica']
+      }
       'large': {
         ['primary', 'compiler']
       }
