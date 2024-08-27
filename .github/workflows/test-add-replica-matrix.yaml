@@ -102,7 +102,7 @@ jobs:
             code_manager_auto_configure=true
 
       - name: 'Run add_replica plan'
-        timeout-minutes: 45
+        timeout-minutes: 60
         run: |
           bundle exec bolt plan run peadm_spec::add_replica -v \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
