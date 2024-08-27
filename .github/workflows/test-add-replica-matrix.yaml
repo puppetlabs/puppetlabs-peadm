@@ -64,7 +64,7 @@ jobs:
             bundle env
           echo ::endgroup::
 
-      - name: 'Provision test cluster (specified architecture with added DR)'
+      - name: 'Provision test cluster (specified architecture with added DR and a spare replica)'
         timeout-minutes: 15
         run: |
           echo ::group::prepare
@@ -97,7 +97,7 @@ jobs:
           bundle exec bolt plan run peadm_spec::install_test_cluster \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
-            architecture=${{ matrix.architecture }} \
+            architecture=${{ matrix.architecture }}-with-dr \
             version=${{ matrix.version }} \
             code_manager_auto_configure=true
 
