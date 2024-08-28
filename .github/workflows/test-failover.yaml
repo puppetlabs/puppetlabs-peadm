@@ -100,7 +100,8 @@ jobs:
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             architecture=${{ matrix.architecture }} \
-            version=${{ matrix.version }}
+            version=${{ matrix.version }} \
+            console_password=${{ secrets.CONSOLE_PASSWORD }}
 
       - name: 'Perform failover'
         run: |

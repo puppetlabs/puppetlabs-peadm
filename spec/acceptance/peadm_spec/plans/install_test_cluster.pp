@@ -5,7 +5,9 @@ plan peadm_spec::install_test_cluster (
   Optional[String[1]]       $version                = undef,
   Optional[String[1]]       $pe_installer_source    = undef,
   Boolean                   $permit_unsafe_versions = false,
-  Enum['enable', 'disable'] $fips                   = 'disable'
+  Enum['enable', 'disable'] $fips                   = 'disable',
+  String[1]                 $console_password
+
 ) {
   $t = get_targets('*')
   wait_until_available($t)
@@ -25,7 +27,7 @@ plan peadm_spec::install_test_cluster (
   }
 
   $common_params = {
-    console_password       => 'puppetLabs123!',
+    console_password       => $console_password,
     download_mode          => $download_mode,
     code_manager_auto_configure => $code_manager_auto_configure,
     version                => $version,

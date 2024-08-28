@@ -102,7 +102,8 @@ jobs:
             --modulepath spec/fixtures/modules \
             architecture=${{ matrix.architecture }} \
             version=${{ matrix.version }} \
-            fips=${{ matrix.fips }}
+            fips=${{ matrix.fips }} \
+            console_password=${{ secrets.CONSOLE_PASSWORD }}
 
       - name: "Tear down test cluster"
         if: ${{ always() }}
