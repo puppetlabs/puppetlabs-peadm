@@ -11,6 +11,9 @@ plan peadm_spec::provision_test_cluster (
       'standard-with-dr': {
         ['primary', 'replica']
       }
+      'standard-and-spare-replica': {
+        ['primary', 'spare-replica']
+      }
       'standard-with-dr-and-spare-replica': {
         ['primary', 'replica', 'spare-replica']
       }
@@ -19,6 +22,9 @@ plan peadm_spec::provision_test_cluster (
       }
       'large-with-dr': {
         ['primary', 'compiler', 'replica', 'compiler']
+      }
+      'large-and-spare-replica': {
+        ['primary', 'compiler', 'compiler', 'spare-replica']
       }
       'large-with-dr-and-spare-replica': {
         ['primary', 'compiler', 'replica', 'compiler', 'spare-replica']
@@ -34,6 +40,9 @@ plan peadm_spec::provision_test_cluster (
       }
       'extra-large-with-extra-compiler': {
         ['primary', 'primary-pdb-postgresql', 'compiler', 'unconfigured-compiler']
+      }
+      'extra-large-and-spare-replica': {
+        ['primary', 'primary-pdb-postgresql', 'compiler', 'compiler', 'spare-replica']
       }
       'extra-large-with-dr-and-spare-replica': {
         ['primary', 'primary-pdb-postgresql', 'compiler',
