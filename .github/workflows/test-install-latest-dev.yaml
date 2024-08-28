@@ -111,7 +111,8 @@ jobs:
             permit_unsafe_versions=true \
             download_mode="bolthost" \
             architecture=${{ matrix.architecture }} \
-            pe_installer_source="https://artifactory.delivery.puppetlabs.net/artifactory/generic_enterprise__local/main/ci-ready/puppet-enterprise-${{ steps.latest.outputs.ver }}-el-8-x86_64.tar"
+            pe_installer_source="https://artifactory.delivery.puppetlabs.net/artifactory/generic_enterprise__local/main/ci-ready/puppet-enterprise-${{ steps.latest.outputs.ver }}-el-8-x86_64.tar" \
+            console_password=${{ secrets.CONSOLE_PASSWORD }}
 
       - name: "Wait as long as the file ${HOME}/pause file is present"
         if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
