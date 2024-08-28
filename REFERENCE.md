@@ -8,122 +8,124 @@
 
 #### Private Classes
 
-* `peadm::setup::convert_node_manager`: Used during the peadm::convert plan
-* `peadm::setup::convert_pre20197`: Defines configuration needed for converting PE 2018
-* `peadm::setup::node_manager`: Configures PEAdm's required node groups
-* `peadm::setup::node_manager_yaml`: Set up the node_manager.yaml file in the temporary Bolt confdir
+- `peadm::setup::convert_node_manager`: Used during the peadm::convert plan
+- `peadm::setup::convert_pre20197`: Defines configuration needed for converting PE 2018
+- `peadm::setup::node_manager`: Configures PEAdm's required node groups
+- `peadm::setup::node_manager_yaml`: Set up the node_manager.yaml file in the temporary Bolt confdir
 
 ### Functions
 
-* [`peadm::assert_supported_architecture`](#peadm--assert_supported_architecture): Assert that the architecture given is a supported one
-* [`peadm::assert_supported_bolt_version`](#peadm--assert_supported_bolt_version): Assert that the Bolt executable running PEAdm is a supported version
-* [`peadm::assert_supported_pe_version`](#peadm--assert_supported_pe_version): Assert that the PE version given is supported by PEAdm
-* [`peadm::bolt_version`](#peadm--bolt_version)
-* [`peadm::certname`](#peadm--certname): Return the certname of the given target-like input
-* [`peadm::check_version_and_known_hosts`](#peadm--check_version_and_known_hosts): Checks PE verison and warns about setting r10k_known_hosts
-* [`peadm::convert_hash`](#peadm--convert_hash): converts two arrays into hash
-* [`peadm::convert_status`](#peadm--convert_status): Transforms a value in a human readable status with or without colors
-* [`peadm::determine_status`](#peadm--determine_status): Produces a summarized hash of the given status data
-* [`peadm::fail_on_transport`](#peadm--fail_on_transport): Fails if any nodes have the chosen transport.  Useful for excluding PCP when it's not appopriate
-* [`peadm::file_content_upload`](#peadm--file_content_upload)
-* [`peadm::file_or_content`](#peadm--file_or_content)
-* [`peadm::flatten_compact`](#peadm--flatten_compact)
-* [`peadm::generate_pe_conf`](#peadm--generate_pe_conf): Generate a pe.conf file in JSON format
-* [`peadm::get_pe_conf`](#peadm--get_pe_conf)
-* [`peadm::get_targets`](#peadm--get_targets): Accept undef or a SingleTargetSpec, and return an Array[Target, 1, 0]. This differs from get_target() in that:   - It returns an Array[Target
-* [`peadm::migration_opts_default`](#peadm--migration_opts_default)
-* [`peadm::node_manager_yaml_location`](#peadm--node_manager_yaml_location)
-* [`peadm::oid`](#peadm--oid)
-* [`peadm::plan_step`](#peadm--plan_step)
-* [`peadm::recovery_opts_all`](#peadm--recovery_opts_all)
-* [`peadm::recovery_opts_default`](#peadm--recovery_opts_default)
-* [`peadm::update_pe_conf`](#peadm--update_pe_conf): Update the pe.conf file on a target with the provided hash
-* [`peadm::wait_until_service_ready`](#peadm--wait_until_service_ready): A convenience function to help remember port numbers for services and handle running the wait_until_service_ready task
+- [`peadm::assert_supported_architecture`](#peadm--assert_supported_architecture): Assert that the architecture given is a supported one
+- [`peadm::assert_supported_bolt_version`](#peadm--assert_supported_bolt_version): Assert that the Bolt executable running PEAdm is a supported version
+- [`peadm::assert_supported_pe_version`](#peadm--assert_supported_pe_version): Assert that the PE version given is supported by PEAdm
+- [`peadm::bolt_version`](#peadm--bolt_version)
+- [`peadm::certname`](#peadm--certname): Return the certname of the given target-like input
+- [`peadm::check_version_and_known_hosts`](#peadm--check_version_and_known_hosts): Checks PE verison and warns about setting r10k_known_hosts
+- [`peadm::convert_hash`](#peadm--convert_hash): converts two arrays into hash
+- [`peadm::convert_status`](#peadm--convert_status): Transforms a value in a human readable status with or without colors
+- [`peadm::determine_status`](#peadm--determine_status): Produces a summarized hash of the given status data
+- [`peadm::fail_on_transport`](#peadm--fail_on_transport): Fails if any nodes have the chosen transport. Useful for excluding PCP when it's not appopriate
+- [`peadm::file_content_upload`](#peadm--file_content_upload)
+- [`peadm::file_or_content`](#peadm--file_or_content)
+- [`peadm::flatten_compact`](#peadm--flatten_compact)
+- [`peadm::generate_pe_conf`](#peadm--generate_pe_conf): Generate a pe.conf file in JSON format
+- [`peadm::get_pe_conf`](#peadm--get_pe_conf)
+- [`peadm::get_targets`](#peadm--get_targets): Accept undef or a SingleTargetSpec, and return an Array[Target, 1, 0]. This differs from get_target() in that: - It returns an Array[Target
+- [`peadm::migration_opts_default`](#peadm--migration_opts_default)
+- [`peadm::node_manager_yaml_location`](#peadm--node_manager_yaml_location)
+- [`peadm::oid`](#peadm--oid)
+- [`peadm::plan_step`](#peadm--plan_step)
+- [`peadm::recovery_opts_all`](#peadm--recovery_opts_all)
+- [`peadm::recovery_opts_default`](#peadm--recovery_opts_default)
+- [`peadm::update_pe_conf`](#peadm--update_pe_conf): Update the pe.conf file on a target with the provided hash
+- [`peadm::wait_until_service_ready`](#peadm--wait_until_service_ready): A convenience function to help remember port numbers for services and handle running the wait_until_service_ready task
 
 ### Data types
 
-* [`Peadm::Known_hosts`](#Peadm--Known_hosts)
-* [`Peadm::Ldap_config`](#Peadm--Ldap_config)
-* [`Peadm::Pe_version`](#Peadm--Pe_version)
-* [`Peadm::Pem`](#Peadm--Pem)
-* [`Peadm::Recovery_opts`](#Peadm--Recovery_opts)
-* [`Peadm::SingleTargetSpec`](#Peadm--SingleTargetSpec): A SingleTargetSpec represents any String, Target or single-element array of one or the other that can be passed to get_targets() to return an
+- [`Peadm::Known_hosts`](#Peadm--Known_hosts)
+- [`Peadm::Ldap_config`](#Peadm--Ldap_config)
+- [`Peadm::Pe_version`](#Peadm--Pe_version)
+- [`Peadm::Pem`](#Peadm--Pem)
+- [`Peadm::Recovery_opts`](#Peadm--Recovery_opts)
+- [`Peadm::SingleTargetSpec`](#Peadm--SingleTargetSpec): A SingleTargetSpec represents any String, Target or single-element array of one or the other that can be passed to get_targets() to return an
 
 ### Tasks
 
-* [`agent_install`](#agent_install): Install the Puppet agent from a master
-* [`backup_classification`](#backup_classification): A task to call the classification api and write to file
-* [`cert_data`](#cert_data): Return certificate data related to the Puppet agent
-* [`cert_valid_status`](#cert_valid_status): Check primary for valid state of a certificate
-* [`code_manager`](#code_manager): Perform various code manager actions
-* [`code_sync_status`](#code_sync_status): A task to confirm code is in sync accross the cluster for clusters with code manager configured
-* [`divert_code_manager`](#divert_code_manager): Divert the code manager live-dir setting
-* [`download`](#download): Download a file using curl
-* [`enable_replica`](#enable_replica): Execute the enable replica puppet command
-* [`filesize`](#filesize): Return the size of a file in bytes
-* [`get_peadm_config`](#get_peadm_config): Run on a PE primary node to return the currently configured PEAdm parameters
-* [`get_psql_version`](#get_psql_version): Run on a PE PSQL node to return the major version of the PSQL server currently installed
-* [`infrastatus`](#infrastatus): Runs puppet infra status and returns the output
-* [`mkdir_p_file`](#mkdir_p_file): Create a file with the specified content at the specified location
-* [`mv`](#mv): Wrapper task for mv command
-* [`os_identification`](#os_identification): Return the operating system runnin gon the target as a string
-* [`pe_install`](#pe_install): Install Puppet Enterprise from a tarball
-* [`pe_ldap_config`](#pe_ldap_config): Set the ldap config in the PE console
-* [`pe_uninstall`](#pe_uninstall): Uninstall Puppet Enterprise
-* [`precheck`](#precheck): Return pre-check information about a system
-* [`provision_replica`](#provision_replica): Execute the replica provision puppet command
-* [`puppet_infra_upgrade`](#puppet_infra_upgrade): Execute the puppet infra upgrade command
-* [`puppet_runonce`](#puppet_runonce): Run the Puppet agent one time
-* [`rbac_token`](#rbac_token): Get and save an rbac token for the root user, admin rbac user
-* [`read_file`](#read_file): Read the contents of a file
-* [`reinstall_pe`](#reinstall_pe): Reinstall PE, only to be used to restore PE
-* [`restore_classification`](#restore_classification): A short description of this task
-* [`sign_csr`](#sign_csr): Submit a certificate signing request
-* [`ssl_clean`](#ssl_clean): Clean an agent's certificate
-* [`submit_csr`](#submit_csr): Submit a certificate signing request
-* [`transform_classification_groups`](#transform_classification_groups): Transform the user groups from a source backup to a list of groups on the target server
-* [`wait_until_service_ready`](#wait_until_service_ready): Return when the orchestrator service is healthy, or timeout after 15 seconds
+- [`agent_install`](#agent_install): Install the Puppet agent from a master
+- [`backup_classification`](#backup_classification): A task to call the classification api and write to file
+- [`cert_data`](#cert_data): Return certificate data related to the Puppet agent
+- [`cert_valid_status`](#cert_valid_status): Check primary for valid state of a certificate
+- [`code_manager`](#code_manager): Perform various code manager actions
+- [`code_sync_status`](#code_sync_status): A task to confirm code is in sync accross the cluster for clusters with code manager configured
+- [`divert_code_manager`](#divert_code_manager): Divert the code manager live-dir setting
+- [`download`](#download): Download a file using curl
+- [`enable_replica`](#enable_replica): Execute the enable replica puppet command
+- [`filesize`](#filesize): Return the size of a file in bytes
+- [`get_peadm_config`](#get_peadm_config): Run on a PE primary node to return the currently configured PEAdm parameters
+- [`get_psql_version`](#get_psql_version): Run on a PE PSQL node to return the major version of the PSQL server currently installed
+- [`infrastatus`](#infrastatus): Runs puppet infra status and returns the output
+- [`mkdir_p_file`](#mkdir_p_file): Create a file with the specified content at the specified location
+- [`mv`](#mv): Wrapper task for mv command
+- [`os_identification`](#os_identification): Return the operating system runnin gon the target as a string
+- [`pe_install`](#pe_install): Install Puppet Enterprise from a tarball
+- [`pe_ldap_config`](#pe_ldap_config): Set the ldap config in the PE console
+- [`pe_uninstall`](#pe_uninstall): Uninstall Puppet Enterprise
+- [`precheck`](#precheck): Return pre-check information about a system
+- [`provision_replica`](#provision_replica): Execute the replica provision puppet command
+- [`puppet_infra_upgrade`](#puppet_infra_upgrade): Execute the puppet infra upgrade command
+- [`puppet_runonce`](#puppet_runonce): Run the Puppet agent one time
+- [`rbac_token`](#rbac_token): Get and save an rbac token for the root user, admin rbac user
+- [`read_file`](#read_file): Read the contents of a file
+- [`reinstall_pe`](#reinstall_pe): Reinstall PE, only to be used to restore PE
+- [`restore_classification`](#restore_classification): A short description of this task
+- [`sign_csr`](#sign_csr): Submit a certificate signing request
+- [`ssl_clean`](#ssl_clean): Clean an agent's certificate
+- [`submit_csr`](#submit_csr): Submit a certificate signing request
+- [`transform_classification_groups`](#transform_classification_groups): Transform the user groups from a source backup to a list of groups on the target server
+- [`wait_until_service_ready`](#wait_until_service_ready): Return when the orchestrator service is healthy, or timeout after 15 seconds
 
 ### Plans
 
 #### Public Plans
 
-* [`peadm::add_compiler`](#peadm--add_compiler): Add a new compiler to a PE architecture or replace an existing one with new configuration.
-* [`peadm::add_database`](#peadm--add_database)
-* [`peadm::backup`](#peadm--backup): Backup puppet primary configuration
-* [`peadm::backup_ca`](#peadm--backup_ca)
-* [`peadm::convert`](#peadm--convert): Convert an existing PE cluster to a PEAdm-managed cluster
-* [`peadm::install`](#peadm--install): Install a new PE cluster
-* [`peadm::modify_certificate`](#peadm--modify_certificate): Modify the certificate of one or more targets
-* [`peadm::restore`](#peadm--restore): Restore puppet primary configuration
-* [`peadm::restore_ca`](#peadm--restore_ca)
-* [`peadm::status`](#peadm--status): Return status information from one or more PE clusters in a table format
-* [`peadm::upgrade`](#peadm--upgrade): Upgrade a PEAdm-managed cluster
-* [`peadm::util::init_db_server`](#peadm--util--init_db_server)
+- [`peadm::add_compiler`](#peadm--add_compiler): Add a new compiler to a PE architecture or replace an existing one with new configuration.
+- [`peadm::add_database`](#peadm--add_database)
+- [`peadm::add_replica`](#peadm--add_replica): Add or replace a replica host.
+  Supported use cases:
+  1: Adding a replica to an existing primary.
+  2: The existing replica is broken, we have a fresh new VM we want to provision the replica to.
+- [`peadm::backup`](#peadm--backup): Backup puppet primary configuration
+- [`peadm::backup_ca`](#peadm--backup_ca)
+- [`peadm::convert`](#peadm--convert): Convert an existing PE cluster to a PEAdm-managed cluster
+- [`peadm::install`](#peadm--install): Install a new PE cluster
+- [`peadm::modify_certificate`](#peadm--modify_certificate): Modify the certificate of one or more targets
+- [`peadm::restore`](#peadm--restore): Restore puppet primary configuration
+- [`peadm::restore_ca`](#peadm--restore_ca)
+- [`peadm::status`](#peadm--status): Return status information from one or more PE clusters in a table format
+- [`peadm::upgrade`](#peadm--upgrade): Upgrade a PEAdm-managed cluster
+- [`peadm::util::init_db_server`](#peadm--util--init_db_server)
 
 #### Private Plans
 
-* `peadm::add_replica`: Replace a replica host for a Standard or Large architecture.
-Supported use cases:
-1: The existing replica is broken, we have a fresh new VM we want to provision the replica to.
-* `peadm::misc::divert_code_manager`: This plan exists to account for a scenario where a PE XL
-* `peadm::modify_cert_extensions`
-* `peadm::subplans::component_install`: Install a new PEADM component
-* `peadm::subplans::configure`: Configure first-time classification and DR setup
-* `peadm::subplans::db_populate`: Destructively (re)populates a new or existing database with the contents or a known good source
-* `peadm::subplans::install`: Perform initial installation of Puppet Enterprise Extra Large
-* `peadm::subplans::modify_certificate`
-* `peadm::subplans::prepare_agent`
-* `peadm::uninstall`: Single-entry-point plan for uninstalling Puppet Enterprise
-* `peadm::util::code_sync_status`
-* `peadm::util::copy_file`
-* `peadm::util::db_disable_pglogical`
-* `peadm::util::db_purge`
-* `peadm::util::insert_csr_extension_requests`
-* `peadm::util::retrieve_and_upload`
-* `peadm::util::sanitize_pg_pe_conf`
-* `peadm::util::update_classification`: Configure classification
-* `peadm::util::update_db_setting`: Make updates to PuppetDB database settings
+- `peadm::add_compiler`: Add a new compiler to a PE architecture or replace an existing one with new configuration.
+- `peadm::misc::divert_code_manager`: This plan exists to account for a scenario where a PE XL
+- `peadm::modify_cert_extensions`
+- `peadm::subplans::component_install`: Install a new PEADM component
+- `peadm::subplans::configure`: Configure first-time classification and DR setup
+- `peadm::subplans::db_populate`: Destructively (re)populates a new or existing database with the contents or a known good source
+- `peadm::subplans::install`: Perform initial installation of Puppet Enterprise Extra Large
+- `peadm::subplans::modify_certificate`
+- `peadm::subplans::prepare_agent`
+- `peadm::uninstall`: Single-entry-point plan for uninstalling Puppet Enterprise
+- `peadm::util::code_sync_status`
+- `peadm::util::copy_file`
+- `peadm::util::db_disable_pglogical`
+- `peadm::util::db_purge`
+- `peadm::util::insert_csr_extension_requests`
+- `peadm::util::retrieve_and_upload`
+- `peadm::util::sanitize_pg_pe_conf`
+- `peadm::util::update_classification`: Configure classification
+- `peadm::util::update_db_setting`: Make updates to PuppetDB database settings
 
 ## Functions
 
@@ -143,31 +145,21 @@ Returns: `Hash`
 
 Data type: `TargetSpec`
 
-
-
 ##### `replica_host`
 
 Data type: `Variant[TargetSpec, Undef]`
-
-
 
 ##### `primary_postgresql_host`
 
 Data type: `Variant[TargetSpec, Undef]`
 
-
-
 ##### `replica_postgresql_host`
 
 Data type: `Variant[TargetSpec, Undef]`
 
-
-
 ##### `compiler_hosts`
 
 Data type: `Variant[TargetSpec, Undef]`
-
-
 
 ### <a name="peadm--assert_supported_bolt_version"></a>`peadm::assert_supported_bolt_version`
 
@@ -207,13 +199,9 @@ version number to check
 
 Data type: `String`
 
-
-
 ##### `permit_unsafe_versions`
 
 Data type: `Boolean`
-
-
 
 ### <a name="peadm--bolt_version"></a>`peadm::bolt_version`
 
@@ -240,12 +228,14 @@ is its certname. For strings, the certname is equal to the string. Undef
 input returns undef.
 
 #### `peadm::certname(Variant[Target,
+
     String,
     Undef,
     Array[Target,1,1],
     Array[String,1,1],
     Array[Undef,1,1],
-  Array[Any,0,0]] $target)`
+
+Array[Any,0,0]] $target)`
 
 This function accepts a variety of data types which could represent single
 targets, and returns the certname corresponding to the input.
@@ -270,8 +260,6 @@ Variant[Target,
     Array[Undef,1,1],
   Array[Any,0,0]]
 ```
-
-
 
 ### <a name="peadm--check_version_and_known_hosts"></a>`peadm::check_version_and_known_hosts`
 
@@ -309,19 +297,13 @@ The r10k_known_hosts parameter
 
 Data type: `String`
 
-
-
 ##### `target_version`
 
 Data type: `String`
 
-
-
 ##### `r10k_known_hosts`
 
 Data type: `Optional[Peadm::Known_hosts]`
-
-
 
 ### <a name="peadm--convert_hash"></a>`peadm::convert_hash`
 
@@ -604,19 +586,13 @@ Returns: `Any`
 
 Data type: `TargetSpec`
 
-
-
 ##### `transport`
 
 Data type: `String`
 
-
-
 ##### `message`
 
 Data type: `String`
-
-
 
 ### <a name="peadm--file_content_upload"></a>`peadm::file_content_upload`
 
@@ -634,19 +610,13 @@ Returns: `Any`
 
 Data type: `String[1]`
 
-
-
 ##### `destination`
 
 Data type: `String[1]`
 
-
-
 ##### `*targets`
 
 Data type: `TargetOrTargets`
-
-
 
 ### <a name="peadm--file_or_content"></a>`peadm::file_or_content`
 
@@ -664,19 +634,13 @@ Returns: `Any`
 
 Data type: `String`
 
-
-
 ##### `file`
 
 Data type: `Variant[String, Undef]`
 
-
-
 ##### `content`
 
 Data type: `Variant[String, Undef]`
-
-
 
 ### <a name="peadm--flatten_compact"></a>`peadm::flatten_compact`
 
@@ -693,8 +657,6 @@ Returns: `Any`
 ##### `input`
 
 Data type: `Array`
-
-
 
 ### <a name="peadm--generate_pe_conf"></a>`peadm::generate_pe_conf`
 
@@ -731,23 +693,23 @@ Returns: `Any`
 
 Data type: `Target`
 
-
-
 ### <a name="peadm--get_targets"></a>`peadm::get_targets`
 
 Type: Puppet Language
 
 Accept undef or a SingleTargetSpec, and return an Array[Target, 1, 0].
 This differs from get_target() in that:
-  - It returns an Array[Target, 1, 0], rather than a Target
-  - It will accept undef and return [ ].
+
+- It returns an Array[Target, 1, 0], rather than a Target
+- It will accept undef and return [ ].
 
 #### `peadm::get_targets(Variant[TargetSpec, Undef] $spec, Optional[Integer[1,1]] $count = undef)`
 
 Accept undef or a SingleTargetSpec, and return an Array[Target, 1, 0].
 This differs from get_target() in that:
-  - It returns an Array[Target, 1, 0], rather than a Target
-  - It will accept undef and return [ ].
+
+- It returns an Array[Target, 1, 0], rather than a Target
+- It will accept undef and return [ ].
 
 Returns: `Any`
 
@@ -755,13 +717,9 @@ Returns: `Any`
 
 Data type: `Variant[TargetSpec, Undef]`
 
-
-
 ##### `count`
 
 Data type: `Optional[Integer[1,1]]`
-
-
 
 ### <a name="peadm--migration_opts_default"></a>`peadm::migration_opts_default`
 
@@ -803,8 +761,6 @@ Returns: `Any`
 
 Data type: `String`
 
-
-
 ### <a name="peadm--plan_step"></a>`peadm::plan_step`
 
 Type: Ruby 4.x API
@@ -821,13 +777,9 @@ Returns: `Any`
 
 Data type: `String`
 
-
-
 ##### `&block`
 
 Data type: `Callable`
-
-
 
 ### <a name="peadm--recovery_opts_all"></a>`peadm::recovery_opts_all`
 
@@ -895,13 +847,9 @@ Returns: `Any`
 
 Data type: `String`
 
-
-
 ##### `target`
 
 Data type: `TargetSpec`
-
-
 
 ## Data types
 
@@ -990,9 +938,9 @@ Struct[{
 ### <a name="Peadm--SingleTargetSpec"></a>`Peadm::SingleTargetSpec`
 
 A SingleTargetSpec represents any String, Target or single-element array of
-one or the other that can be passed to get_targets() to return an
+one or the other that can be passed to get*targets() to return an
 Array[Target, 1, 1]. This is a constrained type variant of
-Boltlib::TargetSpec for use when a _single_ target is valid, but multiple
+Boltlib::TargetSpec for use when a \_single* target is valid, but multiple
 targets are not.
 
 Alias of `Variant[Pattern[/\A[^[:space:],]+\z/], Target, Array[Peadm::SingleTargetSpec, 1, 1]]`
@@ -1563,17 +1511,17 @@ Add a new compiler to a PE architecture or replace an existing one with new conf
 
 The following parameters are available in the `peadm::add_compiler` plan:
 
-* [`avail_group_letter`](#-peadm--add_compiler--avail_group_letter)
-* [`compiler_host`](#-peadm--add_compiler--compiler_host)
-* [`dns_alt_names`](#-peadm--add_compiler--dns_alt_names)
-* [`primary_host`](#-peadm--add_compiler--primary_host)
-* [`primary_postgresql_host`](#-peadm--add_compiler--primary_postgresql_host)
+- [`avail_group_letter`](#-peadm--add_compiler--avail_group_letter)
+- [`compiler_host`](#-peadm--add_compiler--compiler_host)
+- [`dns_alt_names`](#-peadm--add_compiler--dns_alt_names)
+- [`primary_host`](#-peadm--add_compiler--primary_host)
+- [`primary_postgresql_host`](#-peadm--add_compiler--primary_postgresql_host)
 
 ##### <a name="-peadm--add_compiler--avail_group_letter"></a>`avail_group_letter`
 
 Data type: `Enum['A', 'B']`
 
-_ Either A or B; whichever of the two letter designations the compiler is being assigned to
+\_ Either A or B; whichever of the two letter designations the compiler is being assigned to
 
 Default value: `'A'`
 
@@ -1581,13 +1529,13 @@ Default value: `'A'`
 
 Data type: `Peadm::SingleTargetSpec`
 
-_ The hostname and certname of the new compiler
+\_ The hostname and certname of the new compiler
 
 ##### <a name="-peadm--add_compiler--dns_alt_names"></a>`dns_alt_names`
 
 Data type: `Optional[String[1]]`
 
-_ A comma_separated list of DNS alt names for the compiler
+\_ A comma_separated list of DNS alt names for the compiler
 
 Default value: `undef`
 
@@ -1595,13 +1543,13 @@ Default value: `undef`
 
 Data type: `Peadm::SingleTargetSpec`
 
-_ The hostname and certname of the primary Puppet server
+\_ The hostname and certname of the primary Puppet server
 
 ##### <a name="-peadm--add_compiler--primary_postgresql_host"></a>`primary_postgresql_host`
 
 Data type: `Optional[Peadm::SingleTargetSpec]`
 
-_ The hostname and certname of the PE-PostgreSQL server with availability group $avail_group_letter
+\_ The hostname and certname of the PE-PostgreSQL server with availability group $avail_group_letter
 
 Default value: `undef`
 
@@ -1613,28 +1561,22 @@ The peadm::add_database class.
 
 The following parameters are available in the `peadm::add_database` plan:
 
-* [`targets`](#-peadm--add_database--targets)
-* [`primary_host`](#-peadm--add_database--primary_host)
-* [`mode`](#-peadm--add_database--mode)
-* [`begin_at_step`](#-peadm--add_database--begin_at_step)
+- [`targets`](#-peadm--add_database--targets)
+- [`primary_host`](#-peadm--add_database--primary_host)
+- [`mode`](#-peadm--add_database--mode)
+- [`begin_at_step`](#-peadm--add_database--begin_at_step)
 
 ##### <a name="-peadm--add_database--targets"></a>`targets`
 
 Data type: `Peadm::SingleTargetSpec`
 
-
-
 ##### <a name="-peadm--add_database--primary_host"></a>`primary_host`
 
 Data type: `Peadm::SingleTargetSpec`
 
-
-
 ##### <a name="-peadm--add_database--mode"></a>`mode`
 
 Data type: `Optional[Enum['init', 'pair']]`
-
-
 
 Default value: `undef`
 
@@ -1652,7 +1594,50 @@ Optional[Enum[
   'finalize']]
 ```
 
+Default value: `undef`
 
+### <a name="peadm--add_replica"></a>`peadm::add_replica`
+
+Add or replace a replica host.
+Supported use cases:
+1: Adding a replica to an existing primary.
+2: The existing replica is broken, we have a fresh new VM we want to provision the replica to.
+
+#### Parameters
+
+The following parameters are available in the `peadm::add_replica` plan:
+
+- [`primary_host`](#-peadm--add_replica--primary_host)
+- [`replica_host`](#-peadm--add_replica--replica_host)
+- [`replica_postgresql_host`](#-peadm--add_replica--replica_postgresql_host)
+- [`token_file`](#-peadm--add_replica--token_file)
+
+##### <a name="-peadm--add_replica--primary_host"></a>`primary_host`
+
+Data type: `Peadm::SingleTargetSpec`
+
+- The hostname and certname of the primary Puppet server
+
+##### <a name="-peadm--add_replica--replica_host"></a>`replica_host`
+
+Data type: `Peadm::SingleTargetSpec`
+
+- The hostname and certname of the replica VM
+
+##### <a name="-peadm--add_replica--replica_postgresql_host"></a>`replica_postgresql_host`
+
+Data type: `Optional[Peadm::SingleTargetSpec]`
+
+- The hostname and certname of the host with the replica PE-PosgreSQL database.
+  Can be a separate host in an XL architecture, or undef in Standard or Large.
+
+Default value: `undef`
+
+##### <a name="-peadm--add_replica--token_file"></a>`token_file`
+
+Data type: `Optional[String]`
+
+- (optional) the token file in a different location than the default.
 
 Default value: `undef`
 
@@ -1662,7 +1647,7 @@ Backup puppet primary configuration
 
 #### Examples
 
-##### 
+#####
 
 ```puppet
 bolt plan run peadm::backup -t primary1.example.com
@@ -1672,10 +1657,10 @@ bolt plan run peadm::backup -t primary1.example.com
 
 The following parameters are available in the `peadm::backup` plan:
 
-* [`targets`](#-peadm--backup--targets)
-* [`backup_type`](#-peadm--backup--backup_type)
-* [`backup`](#-peadm--backup--backup)
-* [`output_directory`](#-peadm--backup--output_directory)
+- [`targets`](#-peadm--backup--targets)
+- [`backup_type`](#-peadm--backup--backup_type)
+- [`backup`](#-peadm--backup--backup)
+- [`output_directory`](#-peadm--backup--output_directory)
 
 ##### <a name="-peadm--backup--targets"></a>`targets`
 
@@ -1715,20 +1700,16 @@ The peadm::backup_ca class.
 
 The following parameters are available in the `peadm::backup_ca` plan:
 
-* [`target`](#-peadm--backup_ca--target)
-* [`output_directory`](#-peadm--backup_ca--output_directory)
+- [`target`](#-peadm--backup_ca--target)
+- [`output_directory`](#-peadm--backup_ca--output_directory)
 
 ##### <a name="-peadm--backup_ca--target"></a>`target`
 
 Data type: `Peadm::SingleTargetSpec`
 
-
-
 ##### <a name="-peadm--backup_ca--output_directory"></a>`output_directory`
 
 Data type: `Optional[String]`
-
-
 
 Default value: `'/tmp'`
 
@@ -1742,28 +1723,24 @@ management using PEAdm.
 
 The following parameters are available in the `peadm::convert` plan:
 
-* [`primary_host`](#-peadm--convert--primary_host)
-* [`replica_host`](#-peadm--convert--replica_host)
-* [`compiler_hosts`](#-peadm--convert--compiler_hosts)
-* [`primary_postgresql_host`](#-peadm--convert--primary_postgresql_host)
-* [`replica_postgresql_host`](#-peadm--convert--replica_postgresql_host)
-* [`compiler_pool_address`](#-peadm--convert--compiler_pool_address)
-* [`internal_compiler_a_pool_address`](#-peadm--convert--internal_compiler_a_pool_address)
-* [`internal_compiler_b_pool_address`](#-peadm--convert--internal_compiler_b_pool_address)
-* [`dns_alt_names`](#-peadm--convert--dns_alt_names)
-* [`begin_at_step`](#-peadm--convert--begin_at_step)
+- [`primary_host`](#-peadm--convert--primary_host)
+- [`replica_host`](#-peadm--convert--replica_host)
+- [`compiler_hosts`](#-peadm--convert--compiler_hosts)
+- [`primary_postgresql_host`](#-peadm--convert--primary_postgresql_host)
+- [`replica_postgresql_host`](#-peadm--convert--replica_postgresql_host)
+- [`compiler_pool_address`](#-peadm--convert--compiler_pool_address)
+- [`internal_compiler_a_pool_address`](#-peadm--convert--internal_compiler_a_pool_address)
+- [`internal_compiler_b_pool_address`](#-peadm--convert--internal_compiler_b_pool_address)
+- [`dns_alt_names`](#-peadm--convert--dns_alt_names)
+- [`begin_at_step`](#-peadm--convert--begin_at_step)
 
 ##### <a name="-peadm--convert--primary_host"></a>`primary_host`
 
 Data type: `Peadm::SingleTargetSpec`
 
-
-
 ##### <a name="-peadm--convert--replica_host"></a>`replica_host`
 
 Data type: `Optional[Peadm::SingleTargetSpec]`
-
-
 
 Default value: `undef`
 
@@ -1771,15 +1748,11 @@ Default value: `undef`
 
 Data type: `Optional[TargetSpec]`
 
-
-
 Default value: `undef`
 
 ##### <a name="-peadm--convert--primary_postgresql_host"></a>`primary_postgresql_host`
 
 Data type: `Optional[Peadm::SingleTargetSpec]`
-
-
 
 Default value: `undef`
 
@@ -1787,15 +1760,11 @@ Default value: `undef`
 
 Data type: `Optional[Peadm::SingleTargetSpec]`
 
-
-
 Default value: `undef`
 
 ##### <a name="-peadm--convert--compiler_pool_address"></a>`compiler_pool_address`
 
 Data type: `String`
-
-
 
 Default value: `$primary_host`
 
@@ -1803,23 +1772,17 @@ Default value: `$primary_host`
 
 Data type: `Optional[String]`
 
-
-
 Default value: `undef`
 
 ##### <a name="-peadm--convert--internal_compiler_b_pool_address"></a>`internal_compiler_b_pool_address`
 
 Data type: `Optional[String]`
 
-
-
 Default value: `undef`
 
 ##### <a name="-peadm--convert--dns_alt_names"></a>`dns_alt_names`
 
 Data type: `Array[String]`
-
-
 
 Default value: `[]`
 
@@ -1835,8 +1798,6 @@ Optional[Enum[
   'finalize']]
 ```
 
-
-
 Default value: `undef`
 
 ### <a name="peadm--install"></a>`peadm::install`
@@ -1847,34 +1808,34 @@ Install a new PE cluster
 
 The following parameters are available in the `peadm::install` plan:
 
-* [`compiler_pool_address`](#-peadm--install--compiler_pool_address)
-* [`internal_compiler_a_pool_address`](#-peadm--install--internal_compiler_a_pool_address)
-* [`internal_compiler_b_pool_address`](#-peadm--install--internal_compiler_b_pool_address)
-* [`pe_installer_source`](#-peadm--install--pe_installer_source)
-* [`ldap_config`](#-peadm--install--ldap_config)
-* [`final_agent_state`](#-peadm--install--final_agent_state)
-* [`stagingdir`](#-peadm--install--stagingdir)
-* [`uploaddir`](#-peadm--install--uploaddir)
-* [`primary_host`](#-peadm--install--primary_host)
-* [`replica_host`](#-peadm--install--replica_host)
-* [`compiler_hosts`](#-peadm--install--compiler_hosts)
-* [`primary_postgresql_host`](#-peadm--install--primary_postgresql_host)
-* [`replica_postgresql_host`](#-peadm--install--replica_postgresql_host)
-* [`console_password`](#-peadm--install--console_password)
-* [`version`](#-peadm--install--version)
-* [`dns_alt_names`](#-peadm--install--dns_alt_names)
-* [`pe_conf_data`](#-peadm--install--pe_conf_data)
-* [`code_manager_auto_configure`](#-peadm--install--code_manager_auto_configure)
-* [`r10k_remote`](#-peadm--install--r10k_remote)
-* [`r10k_private_key_file`](#-peadm--install--r10k_private_key_file)
-* [`r10k_private_key_content`](#-peadm--install--r10k_private_key_content)
-* [`r10k_known_hosts`](#-peadm--install--r10k_known_hosts)
-* [`deploy_environment`](#-peadm--install--deploy_environment)
-* [`license_key_file`](#-peadm--install--license_key_file)
-* [`license_key_content`](#-peadm--install--license_key_content)
-* [`download_mode`](#-peadm--install--download_mode)
-* [`permit_unsafe_versions`](#-peadm--install--permit_unsafe_versions)
-* [`token_lifetime`](#-peadm--install--token_lifetime)
+- [`compiler_pool_address`](#-peadm--install--compiler_pool_address)
+- [`internal_compiler_a_pool_address`](#-peadm--install--internal_compiler_a_pool_address)
+- [`internal_compiler_b_pool_address`](#-peadm--install--internal_compiler_b_pool_address)
+- [`pe_installer_source`](#-peadm--install--pe_installer_source)
+- [`ldap_config`](#-peadm--install--ldap_config)
+- [`final_agent_state`](#-peadm--install--final_agent_state)
+- [`stagingdir`](#-peadm--install--stagingdir)
+- [`uploaddir`](#-peadm--install--uploaddir)
+- [`primary_host`](#-peadm--install--primary_host)
+- [`replica_host`](#-peadm--install--replica_host)
+- [`compiler_hosts`](#-peadm--install--compiler_hosts)
+- [`primary_postgresql_host`](#-peadm--install--primary_postgresql_host)
+- [`replica_postgresql_host`](#-peadm--install--replica_postgresql_host)
+- [`console_password`](#-peadm--install--console_password)
+- [`version`](#-peadm--install--version)
+- [`dns_alt_names`](#-peadm--install--dns_alt_names)
+- [`pe_conf_data`](#-peadm--install--pe_conf_data)
+- [`code_manager_auto_configure`](#-peadm--install--code_manager_auto_configure)
+- [`r10k_remote`](#-peadm--install--r10k_remote)
+- [`r10k_private_key_file`](#-peadm--install--r10k_private_key_file)
+- [`r10k_private_key_content`](#-peadm--install--r10k_private_key_content)
+- [`r10k_known_hosts`](#-peadm--install--r10k_known_hosts)
+- [`deploy_environment`](#-peadm--install--deploy_environment)
+- [`license_key_file`](#-peadm--install--license_key_file)
+- [`license_key_content`](#-peadm--install--license_key_content)
+- [`download_mode`](#-peadm--install--download_mode)
+- [`permit_unsafe_versions`](#-peadm--install--permit_unsafe_versions)
+- [`token_lifetime`](#-peadm--install--token_lifetime)
 
 ##### <a name="-peadm--install--compiler_pool_address"></a>`compiler_pool_address`
 
@@ -1958,13 +1919,9 @@ Default value: `undef`
 
 Data type: `Peadm::SingleTargetSpec`
 
-
-
 ##### <a name="-peadm--install--replica_host"></a>`replica_host`
 
 Data type: `Optional[Peadm::SingleTargetSpec]`
-
-
 
 Default value: `undef`
 
@@ -1972,15 +1929,11 @@ Default value: `undef`
 
 Data type: `Optional[TargetSpec]`
 
-
-
 Default value: `undef`
 
 ##### <a name="-peadm--install--primary_postgresql_host"></a>`primary_postgresql_host`
 
 Data type: `Optional[Peadm::SingleTargetSpec]`
-
-
 
 Default value: `undef`
 
@@ -1988,21 +1941,15 @@ Default value: `undef`
 
 Data type: `Optional[Peadm::SingleTargetSpec]`
 
-
-
 Default value: `undef`
 
 ##### <a name="-peadm--install--console_password"></a>`console_password`
 
 Data type: `String`
 
-
-
 ##### <a name="-peadm--install--version"></a>`version`
 
 Data type: `Peadm::Pe_version`
-
-
 
 Default value: `'2021.7.9'`
 
@@ -2010,15 +1957,11 @@ Default value: `'2021.7.9'`
 
 Data type: `Optional[Array[String]]`
 
-
-
 Default value: `undef`
 
 ##### <a name="-peadm--install--pe_conf_data"></a>`pe_conf_data`
 
 Data type: `Optional[Hash]`
-
-
 
 Default value: `{}`
 
@@ -2026,15 +1969,11 @@ Default value: `{}`
 
 Data type: `Optional[Boolean]`
 
-
-
 Default value: `undef`
 
 ##### <a name="-peadm--install--r10k_remote"></a>`r10k_remote`
 
 Data type: `Optional[String]`
-
-
 
 Default value: `undef`
 
@@ -2042,15 +1981,11 @@ Default value: `undef`
 
 Data type: `Optional[String]`
 
-
-
 Default value: `undef`
 
 ##### <a name="-peadm--install--r10k_private_key_content"></a>`r10k_private_key_content`
 
 Data type: `Optional[Peadm::Pem]`
-
-
 
 Default value: `undef`
 
@@ -2058,15 +1993,11 @@ Default value: `undef`
 
 Data type: `Optional[Peadm::Known_hosts]`
 
-
-
 Default value: `undef`
 
 ##### <a name="-peadm--install--deploy_environment"></a>`deploy_environment`
 
 Data type: `Optional[String]`
-
-
 
 Default value: `undef`
 
@@ -2074,15 +2005,11 @@ Default value: `undef`
 
 Data type: `Optional[String]`
 
-
-
 Default value: `undef`
 
 ##### <a name="-peadm--install--license_key_content"></a>`license_key_content`
 
 Data type: `Optional[String]`
-
-
 
 Default value: `undef`
 
@@ -2090,23 +2017,17 @@ Default value: `undef`
 
 Data type: `Enum['direct', 'bolthost']`
 
-
-
 Default value: `'bolthost'`
 
 ##### <a name="-peadm--install--permit_unsafe_versions"></a>`permit_unsafe_versions`
 
 Data type: `Boolean`
 
-
-
 Default value: `false`
 
 ##### <a name="-peadm--install--token_lifetime"></a>`token_lifetime`
 
 Data type: `String`
-
-
 
 Default value: `'1y'`
 
@@ -2119,30 +2040,24 @@ setting DNS alternative names.
 
 The following parameters are available in the `peadm::modify_certificate` plan:
 
-* [`targets`](#-peadm--modify_certificate--targets)
-* [`primary_host`](#-peadm--modify_certificate--primary_host)
-* [`add_extensions`](#-peadm--modify_certificate--add_extensions)
-* [`remove_extensions`](#-peadm--modify_certificate--remove_extensions)
-* [`dns_alt_names`](#-peadm--modify_certificate--dns_alt_names)
-* [`force_regenerate`](#-peadm--modify_certificate--force_regenerate)
+- [`targets`](#-peadm--modify_certificate--targets)
+- [`primary_host`](#-peadm--modify_certificate--primary_host)
+- [`add_extensions`](#-peadm--modify_certificate--add_extensions)
+- [`remove_extensions`](#-peadm--modify_certificate--remove_extensions)
+- [`dns_alt_names`](#-peadm--modify_certificate--dns_alt_names)
+- [`force_regenerate`](#-peadm--modify_certificate--force_regenerate)
 
 ##### <a name="-peadm--modify_certificate--targets"></a>`targets`
 
 Data type: `TargetSpec`
 
-
-
 ##### <a name="-peadm--modify_certificate--primary_host"></a>`primary_host`
 
 Data type: `Peadm::SingleTargetSpec`
 
-
-
 ##### <a name="-peadm--modify_certificate--add_extensions"></a>`add_extensions`
 
 Data type: `Hash`
-
-
 
 Default value: `{}`
 
@@ -2150,23 +2065,17 @@ Default value: `{}`
 
 Data type: `Array`
 
-
-
 Default value: `[]`
 
 ##### <a name="-peadm--modify_certificate--dns_alt_names"></a>`dns_alt_names`
 
 Data type: `Optional[Array]`
 
-
-
 Default value: `undef`
 
 ##### <a name="-peadm--modify_certificate--force_regenerate"></a>`force_regenerate`
 
 Data type: `Boolean`
-
-
 
 Default value: `false`
 
@@ -2176,7 +2085,7 @@ Restore puppet primary configuration
 
 #### Examples
 
-##### 
+#####
 
 ```puppet
 bolt plan run peadm::restore -t primary1.example.com input_file=/tmp/peadm-backup.tar.gz
@@ -2186,10 +2095,10 @@ bolt plan run peadm::restore -t primary1.example.com input_file=/tmp/peadm-backu
 
 The following parameters are available in the `peadm::restore` plan:
 
-* [`targets`](#-peadm--restore--targets)
-* [`restore_type`](#-peadm--restore--restore_type)
-* [`restore`](#-peadm--restore--restore)
-* [`input_file`](#-peadm--restore--input_file)
+- [`targets`](#-peadm--restore--targets)
+- [`restore_type`](#-peadm--restore--restore_type)
+- [`restore`](#-peadm--restore--restore)
+- [`input_file`](#-peadm--restore--input_file)
 
 ##### <a name="-peadm--restore--targets"></a>`targets`
 
@@ -2227,27 +2136,21 @@ The peadm::restore_ca class.
 
 The following parameters are available in the `peadm::restore_ca` plan:
 
-* [`target`](#-peadm--restore_ca--target)
-* [`file_path`](#-peadm--restore_ca--file_path)
-* [`recovery_directory`](#-peadm--restore_ca--recovery_directory)
+- [`target`](#-peadm--restore_ca--target)
+- [`file_path`](#-peadm--restore_ca--file_path)
+- [`recovery_directory`](#-peadm--restore_ca--recovery_directory)
 
 ##### <a name="-peadm--restore_ca--target"></a>`target`
 
 Data type: `Peadm::SingleTargetSpec`
 
-
-
 ##### <a name="-peadm--restore_ca--file_path"></a>`file_path`
 
 Data type: `String`
 
-
-
 ##### <a name="-peadm--restore_ca--recovery_directory"></a>`recovery_directory`
 
 Data type: `Optional[String]`
-
-
 
 Default value: `'/tmp/peadm_recovery'`
 
@@ -2267,11 +2170,11 @@ peadm::status($targets, 'table', true, true)
 
 The following parameters are available in the `peadm::status` plan:
 
-* [`targets`](#-peadm--status--targets)
-* [`format`](#-peadm--status--format)
-* [`summarize`](#-peadm--status--summarize)
-* [`verbose`](#-peadm--status--verbose)
-* [`colors`](#-peadm--status--colors)
+- [`targets`](#-peadm--status--targets)
+- [`format`](#-peadm--status--format)
+- [`summarize`](#-peadm--status--summarize)
+- [`verbose`](#-peadm--status--verbose)
+- [`colors`](#-peadm--status--colors)
 
 ##### <a name="-peadm--status--targets"></a>`targets`
 
@@ -2319,24 +2222,24 @@ Upgrade a PEAdm-managed cluster
 
 The following parameters are available in the `peadm::upgrade` plan:
 
-* [`compiler_pool_address`](#-peadm--upgrade--compiler_pool_address)
-* [`internal_compiler_a_pool_address`](#-peadm--upgrade--internal_compiler_a_pool_address)
-* [`internal_compiler_b_pool_address`](#-peadm--upgrade--internal_compiler_b_pool_address)
-* [`pe_installer_source`](#-peadm--upgrade--pe_installer_source)
-* [`final_agent_state`](#-peadm--upgrade--final_agent_state)
-* [`r10k_known_hosts`](#-peadm--upgrade--r10k_known_hosts)
-* [`stagingdir`](#-peadm--upgrade--stagingdir)
-* [`uploaddir`](#-peadm--upgrade--uploaddir)
-* [`primary_host`](#-peadm--upgrade--primary_host)
-* [`replica_host`](#-peadm--upgrade--replica_host)
-* [`compiler_hosts`](#-peadm--upgrade--compiler_hosts)
-* [`primary_postgresql_host`](#-peadm--upgrade--primary_postgresql_host)
-* [`replica_postgresql_host`](#-peadm--upgrade--replica_postgresql_host)
-* [`version`](#-peadm--upgrade--version)
-* [`token_file`](#-peadm--upgrade--token_file)
-* [`download_mode`](#-peadm--upgrade--download_mode)
-* [`permit_unsafe_versions`](#-peadm--upgrade--permit_unsafe_versions)
-* [`begin_at_step`](#-peadm--upgrade--begin_at_step)
+- [`compiler_pool_address`](#-peadm--upgrade--compiler_pool_address)
+- [`internal_compiler_a_pool_address`](#-peadm--upgrade--internal_compiler_a_pool_address)
+- [`internal_compiler_b_pool_address`](#-peadm--upgrade--internal_compiler_b_pool_address)
+- [`pe_installer_source`](#-peadm--upgrade--pe_installer_source)
+- [`final_agent_state`](#-peadm--upgrade--final_agent_state)
+- [`r10k_known_hosts`](#-peadm--upgrade--r10k_known_hosts)
+- [`stagingdir`](#-peadm--upgrade--stagingdir)
+- [`uploaddir`](#-peadm--upgrade--uploaddir)
+- [`primary_host`](#-peadm--upgrade--primary_host)
+- [`replica_host`](#-peadm--upgrade--replica_host)
+- [`compiler_hosts`](#-peadm--upgrade--compiler_hosts)
+- [`primary_postgresql_host`](#-peadm--upgrade--primary_postgresql_host)
+- [`replica_postgresql_host`](#-peadm--upgrade--replica_postgresql_host)
+- [`version`](#-peadm--upgrade--version)
+- [`token_file`](#-peadm--upgrade--token_file)
+- [`download_mode`](#-peadm--upgrade--download_mode)
+- [`permit_unsafe_versions`](#-peadm--upgrade--permit_unsafe_versions)
+- [`begin_at_step`](#-peadm--upgrade--begin_at_step)
 
 ##### <a name="-peadm--upgrade--compiler_pool_address"></a>`compiler_pool_address`
 
@@ -2420,13 +2323,9 @@ Default value: `'/tmp'`
 
 Data type: `Peadm::SingleTargetSpec`
 
-
-
 ##### <a name="-peadm--upgrade--replica_host"></a>`replica_host`
 
 Data type: `Optional[Peadm::SingleTargetSpec]`
-
-
 
 Default value: `undef`
 
@@ -2434,15 +2333,11 @@ Default value: `undef`
 
 Data type: `Optional[TargetSpec]`
 
-
-
 Default value: `undef`
 
 ##### <a name="-peadm--upgrade--primary_postgresql_host"></a>`primary_postgresql_host`
 
 Data type: `Optional[Peadm::SingleTargetSpec]`
-
-
 
 Default value: `undef`
 
@@ -2450,15 +2345,11 @@ Default value: `undef`
 
 Data type: `Optional[Peadm::SingleTargetSpec]`
 
-
-
 Default value: `undef`
 
 ##### <a name="-peadm--upgrade--version"></a>`version`
 
 Data type: `Optional[Peadm::Pe_version]`
-
-
 
 Default value: `undef`
 
@@ -2466,23 +2357,17 @@ Default value: `undef`
 
 Data type: `Optional[String]`
 
-
-
 Default value: `undef`
 
 ##### <a name="-peadm--upgrade--download_mode"></a>`download_mode`
 
 Data type: `Enum[direct,bolthost]`
 
-
-
 Default value: `'bolthost'`
 
 ##### <a name="-peadm--upgrade--permit_unsafe_versions"></a>`permit_unsafe_versions`
 
 Data type: `Boolean`
-
-
 
 Default value: `false`
 
@@ -2500,8 +2385,6 @@ Optional[Enum[
   'finalize']]
 ```
 
-
-
 Default value: `undef`
 
 ### <a name="peadm--util--init_db_server"></a>`peadm::util::init_db_server`
@@ -2512,22 +2395,18 @@ The peadm::util::init_db_server class.
 
 The following parameters are available in the `peadm::util::init_db_server` plan:
 
-* [`db_host`](#-peadm--util--init_db_server--db_host)
-* [`install_pe`](#-peadm--util--init_db_server--install_pe)
-* [`pe_version`](#-peadm--util--init_db_server--pe_version)
-* [`pe_platform`](#-peadm--util--init_db_server--pe_platform)
+- [`db_host`](#-peadm--util--init_db_server--db_host)
+- [`install_pe`](#-peadm--util--init_db_server--install_pe)
+- [`pe_version`](#-peadm--util--init_db_server--pe_version)
+- [`pe_platform`](#-peadm--util--init_db_server--pe_platform)
 
 ##### <a name="-peadm--util--init_db_server--db_host"></a>`db_host`
 
 Data type: `String[1]`
 
-
-
 ##### <a name="-peadm--util--init_db_server--install_pe"></a>`install_pe`
 
 Data type: `Boolean`
-
-
 
 Default value: `false`
 
@@ -2535,15 +2414,10 @@ Default value: `false`
 
 Data type: `String[1]`
 
-
-
 Default value: `'2023.5.0'`
 
 ##### <a name="-peadm--util--init_db_server--pe_platform"></a>`pe_platform`
 
 Data type: `String[1]`
 
-
-
 Default value: `'el-8-x86_64'`
-
