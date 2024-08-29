@@ -7,8 +7,6 @@
 #
 # @see https://www.puppet.com/docs/pe/latest/upgrade_pe#update_environment
 #
-# @author Tim Meusel <tim@bastelfreak.de>
-#
 function peadm::get_node_group_environment(Peadm::SingleTargetSpec $primary) {
   $peconf = peadm::get_pe_conf(get_target($primary))
   # if both are set, they need to be set to the same value
