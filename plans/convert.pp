@@ -309,5 +309,16 @@ plan peadm::convert (
     run_task('peadm::puppet_runonce', $all_targets)
   }
 
+  if $legacy_compilers {
+# lint:ignore:strict_indent
+    $warning_msg = run_task('peadm::check_legacy_compilers', $primary_host, legacy_compilers => $legacy_compilers.join(',') ).first.message
+        if $warning_msg.length > 0 {
+      out::message(@("WARN"/L))
+      WARNING: ${warning_msg}
+      | WARN
+    }
+# lint:endignore
+  }
+
   return("Conversion to peadm Puppet Enterprise ${arch['architecture']} completed.")
 }
