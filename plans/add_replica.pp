@@ -9,7 +9,8 @@
 # @param replica_host - The hostname and certname of the replica VM
 # @param replica_postgresql_host - The hostname and certname of the host with the replica PE-PosgreSQL database.
 # @param token_file - (optional) the token file in a different location than the default.
-# 
+# @param node_group_environment environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
+#
 #   Can be a separate host in an XL architecture, or undef in Standard or Large.
 plan peadm::add_replica(
   # Standard or Large
@@ -21,6 +22,7 @@ plan peadm::add_replica(
 
   # Common Configuration
   Optional[String] $token_file = undef,
+  String[1] $node_group_environment = peadm::get_node_group_environment($primary_host),
 ) {
   $primary_target             = peadm::get_targets($primary_host, 1)
   $replica_target             = peadm::get_targets($replica_host, 1)
@@ -94,7 +96,8 @@ plan peadm::add_replica(
     server_b_host                    => $replica_avail_group_letter ? { 'B' => $replica_host, default => undef },
     internal_compiler_a_pool_address => $replica_avail_group_letter ? { 'A' => $replica_host, default => undef },
     internal_compiler_b_pool_address => $replica_avail_group_letter ? { 'B' => $replica_host, default => undef },
-    peadm_config                     => $peadm_config
+    peadm_config                     => $peadm_config,
+    node_group_environment           => $node_group_environment,
   )
 
   # Source list of files on Primary and synchronize to new Replica

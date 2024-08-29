@@ -31,6 +31,8 @@
 #   Directory the installer tarball will be uploaded to or expected to be in
 #   for offline usage.
 #
+# @param node_group_environment environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
+#
 plan peadm::upgrade (
   # Standard
   Peadm::SingleTargetSpec           $primary_host,
@@ -66,6 +68,7 @@ plan peadm::upgrade (
       'upgrade-replica',
       'upgrade-replica-compilers',
   'finalize']] $begin_at_step = undef,
+  String[1] $node_group_environment = peadm::get_node_group_environment($primary_host),
 ) {
   # Ensure input valid for a supported architecture
   $arch = peadm::assert_supported_architecture(
@@ -326,6 +329,7 @@ plan peadm::upgrade (
         compiler_pool_address            => $compiler_pool_address,
         internal_compiler_a_pool_address => $internal_compiler_a_pool_address,
         internal_compiler_b_pool_address => $internal_compiler_b_pool_address,
+        node_group_environment           => $node_group_environment,
         require                          => Class['peadm::setup::node_manager_yaml'],
       }
     }

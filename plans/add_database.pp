@@ -1,3 +1,6 @@
+#
+# @param node_group_environment environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
+#
 plan peadm::add_database(
   Peadm::SingleTargetSpec $targets,
   Peadm::SingleTargetSpec $primary_host,
@@ -9,6 +12,7 @@ plan peadm::add_database(
       'update-db-settings',
       'cleanup-db',
   'finalize']] $begin_at_step = undef,
+  String[1] $node_group_environment = peadm::get_node_group_environment($primary_host),
 ) {
   $primary_target = peadm::get_targets($primary_host, 1)
   $postgresql_target = peadm::get_targets($targets, 1)
@@ -91,7 +95,7 @@ plan peadm::add_database(
     run_plan('peadm::subplans::component_install', $postgresql_target,
       primary_host       => $primary_target,
       avail_group_letter => $avail_group_letter,
-      role               => 'puppet/puppetdb-database'
+      role               => 'puppet/puppetdb-database',
     )
   }
 
@@ -128,15 +132,17 @@ plan peadm::add_database(
       $host = pick($a_host, $b_host)
       out::verbose("In transitive state, setting classification to ${host}")
       run_plan('peadm::util::update_classification', $primary_target,
-        postgresql_a_host => $host,
-        postgresql_b_host => $host,
-        peadm_config      => $peadm_config
+        postgresql_a_host      => $host,
+        postgresql_b_host      => $host,
+        peadm_config           => $peadm_config,
+        node_group_environment => $node_group_environment,
       )
     } else {
       run_plan('peadm::util::update_classification', $primary_target,
-        postgresql_a_host => $avail_group_letter ? { 'A' => $postgresql_host, default => undef },
-        postgresql_b_host => $avail_group_letter ? { 'B' => $postgresql_host, default => undef },
-        peadm_config      => $peadm_config
+        postgresql_a_host      => $avail_group_letter ? { 'A' => $postgresql_host, default => undef },
+        postgresql_b_host      => $avail_group_letter ? { 'B' => $postgresql_host, default => undef },
+        peadm_config           => $peadm_config,
+        node_group_environment => $node_group_environment,
       )
     }
   }
