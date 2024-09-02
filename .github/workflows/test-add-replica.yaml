@@ -53,7 +53,7 @@ jobs:
           echo ::group::info:bundler
             bundle env
           echo ::endgroup::
-      - name: Provision test cluster (specified architecture with added DR)
+      - name: Provision test cluster (specified architecture with spare replica)
         timeout-minutes: 15
         run: |
           echo ::group::prepare
@@ -86,11 +86,12 @@ jobs:
             version=${{ matrix.version }} \
             console_password=${{ secrets.CONSOLE_PASSWORD }}
       - name: Run add_replica plan
-        timeout-minutes: 30
+        timeout-minutes: 60
         run: |
           bundle exec bolt plan run peadm_spec::add_replica -v \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
-            --modulepath spec/fixtures/modules
+            --modulepath spec/fixtures/modules \
+            --stream
       - name: Wait as long as the file ${HOME}/pause file is present
         if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
         run: |
