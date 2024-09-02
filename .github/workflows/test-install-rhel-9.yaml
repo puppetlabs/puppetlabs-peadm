@@ -42,8 +42,8 @@ jobs:
           - large
           - extra-large-with-dr
         version:
-          - 2021.7.8
-          - 2023.7.0
+          - 2021.7.9
+          - 2023.8.0
         image:
           - rhel-9
     steps:

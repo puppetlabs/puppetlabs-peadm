@@ -43,8 +43,8 @@ jobs:
           - extra-large-with-dr
         version:
           - 2019.8.12
-          - 2021.7.8
-          - 2023.7.0
+          - 2021.7.9
+          - 2023.8.0
         image:
           - almalinux-cloud/almalinux-8
     steps:
