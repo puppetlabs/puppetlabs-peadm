@@ -83,6 +83,7 @@ jobs:
             --modulepath spec/fixtures/modules \
             architecture=${{ matrix.architecture }} \
             version=${{ matrix.version }} \
+            console_password=${{ secrets.CONSOLE_PASSWORD }} \
             code_manager_auto_configure=true
       - name: Run add_replica plan
         timeout-minutes: 60
