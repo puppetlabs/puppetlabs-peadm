@@ -53,7 +53,7 @@ jobs:
           echo ::group::info:bundler
             bundle env
           echo ::endgroup::
-      - name: Provision test cluster (specified architecture with added DR)
+      - name: Provision test cluster (specified architecture with added compiler)
         timeout-minutes: 15
         run: |
           echo ::group::prepare
@@ -83,8 +83,7 @@ jobs:
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             architecture=${{ matrix.architecture }} \
-            version=${{ matrix.version }} \
-            console_password=${{ secrets.CONSOLE_PASSWORD }}
+            version=${{ matrix.version }}
       - name: Run add_compiler plan
         timeout-minutes: 50
         run: |
