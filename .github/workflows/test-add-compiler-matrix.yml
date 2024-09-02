@@ -82,6 +82,7 @@ jobs:
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             architecture=${{ matrix.architecture }} \
+            console_password=${{ secrets.CONSOLE_PASSWORD }} \
             version=${{ matrix.version }}
       - name: Run add_compiler plan
         timeout-minutes: 50
