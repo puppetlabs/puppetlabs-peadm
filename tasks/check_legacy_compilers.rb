@@ -34,7 +34,7 @@ class CheckLegacyCompilers
     return unless !pinned_nodes.empty?
     puts 'The following legacy compilers are classified as Puppet primary nodes:'
     puts pinned_nodes.join(', ')
-    puts 'You will not be able to upgrade until these compilers are no longer classified as Puppet primary nodes.'
+    puts 'To continue with the upgrade, ensure that these compilers are no longer recognized as Puppet primary nodes.'
   end
 
   def https(port)
