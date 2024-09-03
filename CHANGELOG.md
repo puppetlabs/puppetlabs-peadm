@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.22.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.22.0) - 2024-09-03
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.21.0...v3.22.0)
+
+### Fixed
+
+- pe_installer_source: Use Stdlib::HTTPSUrl datatype [#466](https://github.com/puppetlabs/puppetlabs-peadm/pull/466) ([bastelfreak](https://github.com/bastelfreak))
+
 ## [v3.21.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.21.0) - 2024-07-15
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.20.0...v3.21.0)
@@ -88,7 +96,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 ### Added
 
 - support configurable installer target upload path [#376](https://github.com/puppetlabs/puppetlabs-peadm/pull/376) ([h0tw1r3](https://github.com/h0tw1r3))
-- agent_install: Enable Agent upgrades [#343](https://github.com/puppetlabs/puppetlabs-peadm/pull/343) ([bastelfreak](https://github.com/bastelfreak))
 
 ## [v3.14.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.14.0) - 2023-09-15
 
