@@ -37,7 +37,7 @@ jobs:
       matrix:
         architecture: [standard, large, extra-large]
         version: [2021.7.7, 2023.6.0]
-        image: [centos-7, almalinux-cloud/almalinux-8]
+        image: [almalinux-cloud/almalinux-8]
     steps:
       - name: Checkout Source
         uses: actions/checkout@v2
