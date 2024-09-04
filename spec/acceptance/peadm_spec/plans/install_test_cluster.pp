@@ -6,8 +6,7 @@ plan peadm_spec::install_test_cluster (
   Optional[String[1]]       $pe_installer_source    = undef,
   Boolean                   $permit_unsafe_versions = false,
   Enum['enable', 'disable'] $fips                   = 'disable',
-  String[1]                 $console_password
-
+  String                    $console_password
 ) {
   $t = get_targets('*')
   wait_until_available($t)
@@ -26,8 +25,17 @@ plan peadm_spec::install_test_cluster (
     }
   }
 
+  # CI jobs triggered from forks don't have access to secrets, so use randomized input instead
+  if $console_password == '' {
+    $cp = run_command(
+      'LC_ALL=C tr -dc \'A-Za-z0-9!"#$%&\'\\\'\'()*+,-./:;<=>?@[\]^_`{|}~\' </dev/urandom | head -c 30; echo', localhost
+    ).first['stdout'].chomp
+  } else {
+    $cp = $console_password
+  }
+
   $common_params = {
-    console_password       => $console_password,
+    console_password       => $cp,
     download_mode          => $download_mode,
     code_manager_auto_configure => $code_manager_auto_configure,
     version                => $version,
