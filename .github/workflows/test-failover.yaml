@@ -1,72 +1,63 @@
 ---
-name: "Failover test"
-
+name: Failover test
 on:
   workflow_dispatch:
     inputs:
       image:
-        description: 'GCP image for test cluster'
+        description: GCP image for test cluster
         required: true
-        default: 'almalinux-cloud/almalinux-8'
+        default: almalinux-cloud/almalinux-8
       version:
-        description: 'PE version to install'
+        description: PE version to install
         required: true
-        default: '2019.8.12'
+        default: 2019.8.12
       version_to_upgrade:
-        description: 'PE version to upgrade to'
+        description: PE version to upgrade to
         required: false
-        default: '2021.7.9'
+        default: 2021.7.9
       ssh-debugging:
-        description: 'Boolean; whether or not to pause for ssh debugging'
+        description: Boolean; whether or not to pause for ssh debugging
         required: true
         default: 'false'
       log_level:
-        description: 'Bolt log level'
+        description: Bolt log level
         required: false
-        default: 'debug'
-
+        default: debug
 jobs:
   test-failover:
-    name: "PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}"
+    name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
-      LANG: 'en_US.UTF-8'
+      LANG: en_US.UTF-8
     strategy:
       fail-fast: false
       matrix:
-        version:
-          - "${{ github.event.inputs.version }}"
-        image:
-          - "${{ github.event.inputs.image }}"
-        architecture:
-          - "extra-large-with-dr"
+        version: ['${{ github.event.inputs.version }}']
+        image: ['${{ github.event.inputs.image }}']
+        architecture: [extra-large-with-dr]
     steps:
-      - name: 'Start SSH session'
+      - name: Start SSH session
         if: ${{ github.event.inputs.ssh-debugging == 'true' }}
         uses: luchihoratiu/debug-via-ssh@main
         with:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
           SSH_PASS: ${{ secrets.SSH_PASS }}
-
-      - name: "Checkout Source"
+      - name: Checkout Source
         uses: actions/checkout@v4
-
-      - name: "Activate Ruby 2.7"
+      - name: Activate Ruby 2.7
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "2.7"
+          ruby-version: '2.7'
           bundler-cache: true
-
-      - name: "Print bundle environment"
+      - name: Print bundle environment
         if: ${{ github.repository_owner == 'puppetlabs' }}
         run: |
           echo ::group::info:bundler
             bundle env
           echo ::endgroup::
-
-      - name: 'Provision test cluster (XL with spare replica)'
+      - name: Provision test cluster (XL with spare replica)
         timeout-minutes: 15
         run: |
           echo ::group::prepare
@@ -76,7 +67,6 @@ jobs:
             echo '    ServerAliveCountMax 2'   >> $HOME/.ssh/config
             bundle exec rake spec_prep
           echo ::endgroup::
-
           echo ::group::provision
             bundle exec bolt plan run peadm_spec::provision_test_cluster \
               --modulepath spec/fixtures/modules \
@@ -84,16 +74,13 @@ jobs:
               image=${{ matrix.image }} \
               architecture=${{ matrix.architecture }}-and-spare-replica
           echo ::endgroup::
-
           echo ::group::info:request
             cat request.json || true; echo
           echo ::endgroup::
-
           echo ::group::info:inventory
             sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
           echo ::endgroup::
-
-      - name: 'Install PE on test cluster'
+      - name: Install PE on test cluster
         timeout-minutes: 120
         run: |
           bundle exec bolt plan run peadm_spec::install_test_cluster --log_level ${{ github.event.inputs.log_level }} \
@@ -102,14 +89,12 @@ jobs:
             architecture=${{ matrix.architecture }} \
             version=${{ matrix.version }} \
             console_password=${{ secrets.CONSOLE_PASSWORD }}
-
-      - name: 'Perform failover'
+      - name: Perform failover
         run: |
           bundle exec bolt plan run peadm_spec::perform_failover --log_level ${{ github.event.inputs.log_level }} \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules
-
-      - name: 'Wait as long as the file ${HOME}/pause file is present'
+      - name: Wait as long as the file ${HOME}/pause file is present
         if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
         run: |
           while [ -f "${HOME}/pause" ] ; do
@@ -117,13 +102,11 @@ jobs:
             sleep 60
           done 
           echo "${HOME}/pause absent, continuing workflow."
-
       - name: Set up yq
         uses: frenck/action-setup-yq@v1
         with:
           version: v4.30.5
-
-      - name: 'Update inventory'
+      - name: Update inventory
         run: |
           # Remove failed primary
           yq -i 'del(.groups[].targets[] | select(.vars.role == "primary"))' spec/fixtures/litmus_inventory.yaml
@@ -133,8 +116,7 @@ jobs:
           echo ::group::info:inventory
             sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
           echo ::endgroup::
-
-      - name: 'Upgrade PE on test cluster'
+      - name: Upgrade PE on test cluster
         if: ${{ success() && github.event.inputs.version_to_upgrade != '' }}
         timeout-minutes: 120
         run: |
@@ -144,16 +126,14 @@ jobs:
             architecture=${{ matrix.architecture }} \
             download_mode='direct' \
             version=${{ github.event.inputs.version_to_upgrade }}
-
-      - name: 'Tear down test cluster'
+      - name: Tear down test cluster
         if: ${{ always() }}
         continue-on-error: true
-        run: |
+        run: |-
           if [ -f spec/fixtures/litmus_inventory.yaml ]; then
             echo ::group::tear_down
               bundle exec rake 'litmus:tear_down'
             echo ::endgroup::
-
             echo ::group::info:request
               cat request.json || true; echo
             echo ::endgroup::
