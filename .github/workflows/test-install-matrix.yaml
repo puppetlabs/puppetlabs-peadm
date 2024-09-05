@@ -1,70 +1,58 @@
 ---
-name: "Install test matrix"
-
+name: Install test matrix
 on:
   pull_request:
     paths:
-      - ".github/workflows/**/*"
-      - "spec/**/*"
-      - "lib/**/*"
-      - "tasks/**/*"
-      - "functions/**/*"
-      - "types/**/*"
-      - "plans/**/*"
-      - "hiera/**/*"
-      - "manifests/**/*"
-      - "templates/**/*"
-      - "files/**/*"
-      - "metadata.json"
-      - "Rakefile"
-      - "Gemfile"
-      - "provision.yaml"
-      - ".rspec"
-      - ".rubocop.yml"
-      - ".puppet-lint.rc"
-      - ".fixtures.yml"
+      - .github/workflows/**/*
+      - spec/**/*
+      - lib/**/*
+      - tasks/**/*
+      - functions/**/*
+      - types/**/*
+      - plans/**/*
+      - hiera/**/*
+      - manifests/**/*
+      - templates/**/*
+      - files/**/*
+      - metadata.json
+      - Rakefile
+      - Gemfile
+      - provision.yaml
+      - .rspec
+      - .rubocop.yml
+      - .puppet-lint.rc
+      - .fixtures.yml
     branches: [main]
   workflow_dispatch: {}
-
 jobs:
   test-install:
-    name: "PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}"
+    name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
-      LANG: "en_US.UTF-8"
+      LANG: en_US.UTF-8
     strategy:
       fail-fast: false
       matrix:
-        architecture:
-          - standard-with-dr
-          - large
-          - extra-large-with-dr
-        version:
-          - 2019.8.12
-          - 2021.7.9
-          - 2023.8.0
-        image:
-          - almalinux-cloud/almalinux-8
+        architecture: [standard-with-dr, large, extra-large-with-dr]
+        version: [2019.8.12, 2021.7.9, 2023.8.0]
+        image: [almalinux-cloud/almalinux-8]
     steps:
-      - name: "Checkout Source"
+      - name: Checkout Source
         uses: actions/checkout@v4
-
-      - name: "Activate Ruby 2.7"
+      - name: Activate Ruby 2.7
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "2.7"
+          ruby-version: '2.7'
           bundler-cache: true
-
-      - name: "Print bundle environment"
+      - name: Print bundle environment
         if: ${{ github.repository_owner == 'puppetlabs' }}
         run: |
           echo ::group::info:bundler
             bundle env
           echo ::endgroup::
-
-      - name: "Provision test cluster"
+      - name: Provision test cluster
         timeout-minutes: 15
         run: |
           echo ::group::prepare
@@ -74,7 +62,6 @@ jobs:
             echo '    ServerAliveCountMax 2'   >> $HOME/.ssh/config
             bundle exec rake spec_prep
           echo ::endgroup::
-
           echo ::group::provision
             bundle exec bolt plan run peadm_spec::provision_test_cluster \
               --modulepath spec/fixtures/modules \
@@ -83,16 +70,13 @@ jobs:
               architecture=${{ matrix.architecture }} \
               --log-level trace
           echo ::endgroup::
-
           echo ::group::info:request
             cat request.json || true; echo
           echo ::endgroup::
-
           echo ::group::info:inventory
             sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
           echo ::endgroup::
-
-      - name: "Install PE on test cluster"
+      - name: Install PE on test cluster
         timeout-minutes: 120
         run: |
           bundle exec bolt plan run peadm_spec::install_test_cluster \
@@ -101,16 +85,14 @@ jobs:
             architecture=${{ matrix.architecture }} \
             version=${{ matrix.version }} \
             console_password=${{ secrets.CONSOLE_PASSWORD }}
-
-      - name: "Tear down test cluster"
+      - name: Tear down test cluster
         if: ${{ always() }}
         continue-on-error: true
-        run: |
+        run: |-
           if [ -f spec/fixtures/litmus_inventory.yaml ]; then
             echo ::group::tear_down
               bundle exec rake 'litmus:tear_down'
             echo ::endgroup::
-
             echo ::group::info:request
               cat request.json || true; echo
             echo ::endgroup::
