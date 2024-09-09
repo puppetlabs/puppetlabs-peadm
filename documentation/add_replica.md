@@ -2,23 +2,23 @@
 
 - [Add Replica](#Add-replica)
   - [Introduction](#Introduction)
-  - [Adding Replica to Standard or Large infrastructure](#Adding-Replica-to-Standard-or-Large-infrastructure)
-  - [Adding Replica to Extra Large infrastructure](#Adding-Replica-to-Extra-Large-infrastructure)
+  - [Adding a replica to standard and large infrastructures](#Adding-a-replica-to-standard-and-large-infrastructures)
+  - [Adding a Replica to extra large infrastructure](#Adding-a-Replica-to-extra-large-infrastructure)
   - [Running the `add_replica` plan](#running-the-add_replica-plan)
   - [Parameters](#parameters)
 
 ## Introduction
 
-The `peadm::add_replica` plan is designed to setup disaster recovery of a Primary Puppet Enterprise server. This is acheived through adding a primary replica to your system. Although this plan doesn't change your PE architcture, adding DR does depend on the structure of your current architecture.
+The `peadm::add_replica` plan is designed to setup disaster recovery (DR) of a Puppet Enterprise primary server. This is achieved by adding a primary replica to your system. Although this plan doesn't change your PE architecture, adding DR depends on the structure of your current architecture.
 
-In the case of Standard and Large installations, DR can be acheiveived by simply utilising this plan and adding the primary replica. In the case of an Extra Large infrastructure which includes an external DB, a replica DB is also required. This can be done with the `peadm::add_database` plan. For more detail see [Adding External Databases with peadm::add_database](expanding.md#adding-external-databases-with-peadmadd_database).
+In the case of standard and large installations, DR can be achieved by simply utilising this plan and adding the primary replica. In the case of an extra large infrastructure which includes an external DB, a replica DB is also required. This can be done with the `peadm::add_database` plan. For more detail see [Adding External Databases with peadm::add_database](expanding.md#adding-external-databases-with-peadmadd_database).
 
-Please note, to setup a replica you must have code manager configured. To learn more about code manager, please see [Puppet Docs](help.puppet.com).
+Please note, to setup a replica you must have Code Manager configured. To learn more about code manager, please see [Puppet Docs](help.puppet.com).
 
 ...
 
-## Adding Replica to Standard or Large infrastructure
-As seen below, this is an example of the required paramaters to add a primary replica. These paramaters can be passed in-line or as a params file.
+## Adding a replica to standard and large infrastructures
+Below is an example of the required parameters to add a primary replica. These parameters can be passed in-line or as a params file.
 
 ```json
 {
@@ -27,8 +27,8 @@ As seen below, this is an example of the required paramaters to add a primary re
 }
 ```
 
-## Adding Replica to Extra Large infrastructure
-In the below example, we have already have an external DB and a replica of it. This means that we should pass in the additional parameter of the replicas hostname.
+## Adding a Replica to extra large infrastructure
+In the below example, we already have an external DB and a replica of it. This means that we should pass in the additional parameter of the replica's hostname.
 
 ```json
 {
@@ -46,9 +46,9 @@ bolt plan run peadm::add_replica --params @params.json
 
 The plan performs the following steps:
 
-1. Installs Puppet Agent on the new replica host.
+1. Installs the Puppet agent on the new replica host.
 2. Updates classifications with new replica configuration.
-3. Provisons the infrastructre replica with PE.
+3. Provisions the infrastructure with PE.
 
 ## Parameters
 
@@ -56,7 +56,7 @@ The plan performs the following steps:
 
 - **Type:** `Peadm::SingleTargetSpec`
 - **Description:**  
-  The hostname and certname of the primary Puppet server .
+  The hostname and certname of the PE primary server.
 
 ### `replica_host`
 
@@ -74,7 +74,7 @@ The plan performs the following steps:
 
 - **Type:** `Optional[String]`
 - **Description:**  
-  Path to token file, only required if located in a non-default location.
+  The Path to token file, only required if located in a non-default location.
 
 
 
