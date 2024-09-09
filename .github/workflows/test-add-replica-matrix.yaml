@@ -24,6 +24,7 @@ on:
       - .fixtures.yml
     branches: [main]
   workflow_dispatch: {}
+  push:
 jobs:
   test-add-replica:
     name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
@@ -92,6 +93,12 @@ jobs:
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             --stream
+      - name: Verify that replica was added
+        timeout-minutes: 10
+        run: |
+          bundle exec bolt plan run peadm_spec::verify_replica -v \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules
       - name: Tear down test cluster
         if: ${{ always() }}
         continue-on-error: true
