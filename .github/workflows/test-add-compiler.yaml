@@ -91,7 +91,8 @@ jobs:
           bundle exec bolt plan run peadm_spec::add_compiler -v \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
-            architecture=${{ matrix.architecture }}
+            architecture=${{ matrix.architecture }} \
+            --stream
       - name: Wait as long as the file ${HOME}/pause file is present
         if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
         run: |
