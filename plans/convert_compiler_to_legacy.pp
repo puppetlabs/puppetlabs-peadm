@@ -21,6 +21,11 @@ plan peadm::convert_compiler_to_legacy (
       getvar('cluster.params.compiler_hosts'),
   ])
 
+  if $remove_pdb {
+    run_command('puppet resource service puppet ensure=stopped', $legacy_compiler_targets)
+    run_command('puppet resource service pe-puppetdb ensure=stopped enable=false', $legacy_compiler_targets)
+  }
+
   apply($primary_target) {
     class { 'peadm::setup::node_manager_yaml':
       primary_host => $primary_target.peadm::certname(),
