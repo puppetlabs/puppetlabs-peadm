@@ -84,7 +84,8 @@ jobs:
             --modulepath spec/fixtures/modules \
             architecture=${{ matrix.architecture }} \
             version=${{ matrix.version }} \
-            console_password=${{ secrets.CONSOLE_PASSWORD }}
+            console_password=${{ secrets.CONSOLE_PASSWORD }} \
+            code_manager_auto_configure=true
       - name: Run add_replica plan
         timeout-minutes: 60
         run: |
@@ -92,6 +93,12 @@ jobs:
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             --stream
+      - name: Verify that replica was added
+        timeout-minutes: 10
+        run: |
+          bundle exec bolt plan run peadm_spec::verify_replica -v \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules
       - name: Wait as long as the file ${HOME}/pause file is present
         if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
         run: |
