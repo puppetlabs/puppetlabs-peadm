@@ -35,6 +35,7 @@ plan peadm::convert_compiler_to_legacy (
       primary_host                     => $primary_target.peadm::certname(),
       internal_compiler_a_pool_address => $cluster['params']['internal_compiler_a_pool_address'],
       internal_compiler_b_pool_address => $cluster['params']['internal_compiler_b_pool_address'],
+      require                          => Class['peadm::setup::node_manager_yaml'],
     }
   }
 
