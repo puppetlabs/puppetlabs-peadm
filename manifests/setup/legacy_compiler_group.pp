@@ -1,6 +1,8 @@
 # @api private
 class peadm::setup::legacy_compiler_group (
-  String[1] $primary_host
+  String[1] $primary_host,
+  String[1] $internal_compiler_a_pool_address,
+  String[1] $internal_compiler_b_pool_address,
 ) {
   Node_group {
     purge_behavior => none,
@@ -32,7 +34,9 @@ class peadm::setup::legacy_compiler_group (
     ],
     classes => {
       'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => [$internal_compiler_b_pool_address].filter |$_| { $_ },
+        # lint:ignore:single_quote_string_with_variables
+        'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_b_pool_address].filter |$_| { $_ },
+        # lint:endignore
         'puppetdb_port' => [8081],
       },
     },
@@ -54,7 +58,9 @@ class peadm::setup::legacy_compiler_group (
     ],
     classes => {
       'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => [$internal_compiler_a_pool_address].filter |$_| { $_ },
+        # lint:ignore:single_quote_string_with_variables
+        'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_a_pool_address].filter |$_| { $_ },
+        # lint:endignore
         'puppetdb_port' => [8081],
       },
     },
@@ -70,4 +76,3 @@ class peadm::setup::legacy_compiler_group (
     rule   => ['and', ['=', ['trusted', 'extensions', peadm::oid('peadm_legacy_compiler')], 'false']],
   }
 }
-
