@@ -1,8 +1,8 @@
 # @api private
 class peadm::setup::legacy_compiler_group (
   String[1] $primary_host,
-  String[1] $internal_compiler_a_pool_address,
-  String[1] $internal_compiler_b_pool_address,
+  Optional[String]                  $internal_compiler_a_pool_address = undef,
+  Optional[String]                  $internal_compiler_b_pool_address = undef,
 ) {
   Node_group {
     purge_behavior => none,
