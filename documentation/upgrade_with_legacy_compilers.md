@@ -40,6 +40,8 @@ bolt plan run peadm::convert_compiler_to_legacy legacy_hosts=compiler1.example.c
 
 The above will create the needed Node group and Classifier rules to make the compilers legacy. Also will add certificate extensions to those nodes.
 
+If you want to keep puppetDB service on the converted compilers, you can do so by passing the `remove_pdb` parameter as `false`.
+
 ### 4. Upgrade Puppet Enterprise
 
 After you have completed the above steps, you can proceed with the upgrade of Puppet Enterprise as usual using the puppetlabs-peadm module. There is no need to do the above ever again.
