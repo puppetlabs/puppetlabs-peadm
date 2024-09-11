@@ -24,10 +24,11 @@ on:
       - .fixtures.yml
     branches: [main]
   workflow_dispatch:
-    ssh-debugging:
-      description: Boolean; whether or not to pause for ssh debugging
-      required: true
-      default: 'false'
+    inputs:
+      ssh-debugging:
+        description: Boolean; whether or not to pause for ssh debugging
+        required: true
+        default: 'false'
 jobs:
   test-install:
     name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
