@@ -21,6 +21,78 @@ plan peadm::convert_compiler_to_legacy (
       getvar('cluster.params.compiler_hosts'),
   ])
 
+  # Ensure input valid for a supported architecture
+  $arch = peadm::assert_supported_architecture(
+    getvar('cluster.params.primary_host'),
+    getvar('cluster.params.replica_host'),
+    getvar('cluster.params.primary_postgresql_host'),
+    getvar('cluster.params.replica_postgresql_host'),
+    getvar('cluster.params.compiler_hosts'),
+  )
+
+  if $arch['disaster-recovery'] {
+    $legacy_compiler_a_targets = $legacy_compiler_targets.filter |$index,$target| {
+      $exts = $cert_extensions[$target.peadm::certname()]
+      if ($exts[peadm::oid('peadm_availability_group')] in ['A', 'B']) {
+        $exts[peadm::oid('peadm_availability_group')] == 'A'
+      }
+      elsif ($exts[peadm::oid('pp_cluster')] in ['A', 'B']) {
+        $exts[peadm::oid('pp_cluster')] == 'A'
+      }
+      else {
+        $index % 2 == 0
+      }
+    }
+    $legacy_compiler_b_targets = $legacy_compiler_targets.filter |$index,$target| {
+      $exts = $cert_extensions[$target.peadm::certname()]
+      if ($exts[peadm::oid('peadm_availability_group')] in ['A', 'B']) {
+        $exts[peadm::oid('peadm_availability_group')] == 'B'
+      }
+      elsif ($exts[peadm::oid('pp_cluster')] in ['A', 'B']) {
+        $exts[peadm::oid('pp_cluster')] == 'B'
+      }
+      else {
+        $index % 2 != 0
+      }
+    }
+  } else {
+    $legacy_compiler_a_targets = $legacy_compiler_targets
+    $legacy_compiler_b_targets = []
+  }
+
+  $compiler_targets = peadm::flatten_compact([getvar('cluster.params.compiler_hosts')])
+
+  wait([
+      background('modify-compilers-certs') || {
+        run_plan('peadm::modify_certificate', $compiler_targets,
+          primary_host   => $primary_target,
+          add_extensions => {
+            peadm::oid('peadm_legacy_compiler')    => 'false',
+          },
+        )
+      },
+      background('modify-compilers-a-certs') || {
+        run_plan('peadm::modify_certificate', $legacy_compiler_a_targets,
+          primary_host   => $primary_target,
+          add_extensions => {
+            peadm::oid('pp_auth_role')             => 'pe_compiler',
+            peadm::oid('peadm_availability_group') => 'A',
+            peadm::oid('peadm_legacy_compiler')    => 'true',
+          },
+        )
+      },
+      background('modify-compilers-b-certs') || {
+        run_plan('peadm::modify_certificate', $legacy_compiler_b_targets,
+          primary_host   => $primary_target,
+          add_extensions => {
+            peadm::oid('pp_auth_role')             => 'pe_compiler',
+            peadm::oid('peadm_availability_group') => 'B',
+            peadm::oid('peadm_legacy_compiler')    => 'true',
+          },
+        )
+      },
+  ])
+
   if $remove_pdb {
     run_command('puppet resource service puppet ensure=stopped', $legacy_compiler_targets)
     run_command('puppet resource service pe-puppetdb ensure=stopped enable=false', $legacy_compiler_targets)
@@ -29,26 +101,18 @@ plan peadm::convert_compiler_to_legacy (
   apply($primary_target) {
     class { 'peadm::setup::node_manager_yaml':
       primary_host => $primary_target.peadm::certname(),
-    }
-  }
+    },
 
-  run_task('peadm::puppet_runonce', $primary_target)
-
-  apply($primary_target) {
     class { 'peadm::setup::legacy_compiler_group':
       primary_host                     => $primary_target.peadm::certname(),
       internal_compiler_a_pool_address => $cluster['params']['internal_compiler_a_pool_address'],
       internal_compiler_b_pool_address => $cluster['params']['internal_compiler_b_pool_address'],
+      require                          => Class['peadm::setup::node_manager_yaml'],
     }
   }
 
-  run_plan('peadm::update_compiler_extensions',
-    compiler_hosts => $legacy_compiler_targets,
-    primary_host => $primary_target,
-    legacy => true
-  )
-
   run_task('peadm::puppet_runonce', $legacy_compiler_targets)
+  run_task('peadm::puppet_runonce', $compiler_targets)
   run_task('peadm::puppet_runonce', $primary_target)
   run_task('peadm::puppet_runonce', $all_targets)
 
