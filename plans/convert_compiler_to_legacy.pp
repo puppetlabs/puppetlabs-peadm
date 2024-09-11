@@ -30,7 +30,11 @@ plan peadm::convert_compiler_to_legacy (
     class { 'peadm::setup::node_manager_yaml':
       primary_host => $primary_target.peadm::certname(),
     }
+  }
 
+  run_task('peadm::puppet_runonce', $primary_target)
+
+  apply($primary_target) {
     class { 'peadm::setup::legacy_compiler_group':
       primary_host                     => $primary_target.peadm::certname(),
       internal_compiler_a_pool_address => $cluster['params']['internal_compiler_a_pool_address'],
