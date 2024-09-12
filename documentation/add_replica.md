@@ -82,3 +82,8 @@ The plan performs the following steps:
 
 Please see the notes on these scenarios in [automated Recovery](automated_recovery.md#recover-from-failed-primary-puppet-server)
 
+## Known Issue on Puppet Enterprise Version 2021.x
+
+When running the add_replica plan to replace an existing replica in your infrastructure, the old replica will not be removed as expected. Instead, both the old and new primary replicas will be present.
+
+This is a known issue and will be fixed in a future release.
