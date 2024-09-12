@@ -101,21 +101,21 @@ The Standard deployment architecture is the only deployment architecture of the 
 
 ### Adding Compilers to Standard and Large without disaster recovery
 
-The command invocation is identical when adding Compilers to a Standard or Large deployment architecture if disaster recovery (DR) is not enabled and a Replica Puppet server has not been provisioned. Take note of the values for `avail_group_letter` and `primary_postgresql_host`, in this **no DR**  scenario, the value of these parameters will always be set to **A** and the FQDN of the Primary Puppet server.
+The command invocation is identical when adding Compilers to a Standard or Large deployment architecture if disaster recovery (DR) is not enabled and a replica Puppet server has not been provisioned. Take note that `avail_group_letter` is not required in this **no DR**  scenario. By default, the value of this parameter is set to **A**.
 
-    bolt plan run peadm::add_compiler primary_host=<primary-server-fqdn> compiler_host=<new-compiler-fqdn> avail_group_letter=A primary_postgresql_host=<primary-server-fqdn>
+    bolt plan run peadm::add_compiler primary_host=<primary-server-fqdn> compiler_host=<new-compiler-fqdn>
 
 ### Adding Compilers to Extra Large without disaster recovery
 
-When adding a Compiler to a deployment which has adopted the Extra Large deployment architecture in a **no DR** scenario, the only difference is that the `primary_postgresql_host` changes to be the value of the Primary PE-PostgreSQL server as opposed to the Primary Puppet server.
+When adding a compiler to a deployment which has adopted the Extra Large deployment architecture in a **no DR** scenario, the only difference is that the `primary_postgresql_host` changes to the value of the primary PE-PostgreSQL server as opposed to the Primary Puppet server.
 
-    bolt plan run peadm::add_compiler primary_host=<primary-server-fqdn> compiler_host=<new-compiler-fqdn> avail_group_letter=A primary_postgresql_host=<primary-postgresql-server-fqdn>
+    bolt plan run peadm::add_compiler primary_host=<primary-server-fqdn> compiler_host=<new-compiler-fqdn>
 
 ### Adding Compilers to Standard and Large when disaster recovery has been enabled
 
-As was described in the section documenting [peadm::add_replica](#enable-disaster-recovery-and-add-a-replica-with-peadmadd_replica), when disaster recovery (DR) is enabled and a Replica provisioned, PEADM creates a second availability group, **B**. You must take this second availability group into consideration when adding new compilers and ensure you are assigning appropriate values for the group the Compiler is targeted for. It is a good idea to keep these two availability groups populated with an equal quantity of Compilers. Besides the value of `avail_group_letter` being dependent on which group the new Compiler is targeted towards, the value of `primary_postgresql_host` will also vary.
+As was described in the section documenting [peadm::add_replica](#enable-disaster-recovery-and-add-a-replica-with-peadmadd_replica), when disaster recovery (DR) is enabled and a Replica provisioned, PEADM creates a second availability group, **B**. You must take this second availability group into consideration when adding new compilers and ensure you are assigning appropriate values for the group the compiler is targeted for. It is a good idea to keep these two availability groups populated with an equal quantity of compilers. Besides the value of `avail_group_letter` being dependent on which group the new compiler is targeted towards, the value of `primary_postgresql_host` will also vary.
 
-The name of the `primary_postgresql_host` parameter can be confusing, it is **NOT** always equal to the Primary Puppet server or Primary PE-PostgreSQL server, it can also be equal to the Replica Puppet server or Replica PE-PostgreSQL server. It should be set to the server which is a member of the Compiler's target availability group. The easiest way to determine this value is to first run the `peadm::get_peadm_config` task and source the value from its output. In the **Example** section the value to use when targeting the **B** group is `pe-server-59ab63-1.us-west1-b.c.slice-cody.internal`. You'll find the value at `role-letter.server.B`.
+The name of the `primary_postgresql_host` parameter can be confusing, it is **NOT** always equal to the Primary Puppet server or Primary PE-PostgreSQL server, it can also be equal to the replica Puppet server or replica PE-PostgreSQL server. It should be set to the server which is a member of the compiler's target availability group. In most cases this will be handled behind the scenes and not be required to be worked out by the user. The easiest way to determine this value is to first run the `peadm::get_peadm_config` task and source the value from its output. In the **Example** section the value to use when targeting the **B** group is `pe-server-59ab63-1.us-west1-b.c.slice-cody.internal`. You'll find the value at `role-letter.server.B`.
 
     bolt plan run peadm::get_peadm_config --targets <primary-server-fqdn> 
     bolt plan run peadm::add_compiler primary_host=<primary-server-fqdn> compiler_host=<new-compiler-fqdn> avail_group_letter=<new-compiler-target-group> primary_postgresql_host=<target-group-server-fqdn>
@@ -161,7 +161,7 @@ The name of the `primary_postgresql_host` parameter can be confusing, it is **NO
     Successful on 1 target: pe-server-59ab63-0.us-west1-a.c.slice-cody.internal
     Ran on 1 target in 2.46 sec
 
-### Adding compilers to Extra Large when disaster recovery has been enabled
+### Adding Compilers to Extra Large when disaster recovery has been enabled
 
 Adding a Compiler to a deployment which has adopted the Extra Large deployment architecture with disaster recovery (DR) enabled is similar to Standard and Large but the value of `primary_postgresql_host` will no longer correspond to the Primary or Replica Puppet server since PuppetDB databases are now hosted externally. In the **Example** section, the value to use when targeting the **A** group is `pe-psql-65e03f-0.us-west1-a.c.slice-cody.internal`. You'll find the value at `role-letter.postgresql.A`.
 
