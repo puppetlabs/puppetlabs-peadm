@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.23.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.23.0) - 2024-09-12
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.22.0...v3.23.0)
+
+### Added
+
+- (PE-37233-35) Official support of Add compiler plan [#485](https://github.com/puppetlabs/puppetlabs-peadm/pull/485) ([CoMfUcIoS](https://github.com/CoMfUcIoS))
+- (PE-38815-18) Official support of Add replica plan [#484](https://github.com/puppetlabs/puppetlabs-peadm/pull/484) ([CoMfUcIoS](https://github.com/CoMfUcIoS))
+
+### Other
+
+- PE-39228 add_replica smoke test [#497](https://github.com/puppetlabs/puppetlabs-peadm/pull/497) ([AaronShannon](https://github.com/AaronShannon))
+- (PE-38817) Text fixes for add_replica docs [#496](https://github.com/puppetlabs/puppetlabs-peadm/pull/496) ([ragingra](https://github.com/ragingra))
+- (PE-39224) Adding random console password for forked pr workflow [#491](https://github.com/puppetlabs/puppetlabs-peadm/pull/491) ([ragingra](https://github.com/ragingra))
+
 ## [v3.22.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.22.0) - 2024-09-03
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.21.0...v3.22.0)
@@ -12,6 +27,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 ### Fixed
 
 - pe_installer_source: Use Stdlib::HTTPSUrl datatype [#466](https://github.com/puppetlabs/puppetlabs-peadm/pull/466) ([bastelfreak](https://github.com/bastelfreak))
+
+### Other
+
+- PE-38815 add_replica plan updated, test matrix added [#480](https://github.com/puppetlabs/puppetlabs-peadm/pull/480) ([AaronShannon](https://github.com/AaronShannon))
+- (PE-38818) Removing experimental and private from add_replica [#478](https://github.com/puppetlabs/puppetlabs-peadm/pull/478) ([ragingra](https://github.com/ragingra))
+(PE-38814) add_compiler - Making primary_postgresql_host and avail_group_letter optional [#468](https://github.com/puppetlabs/puppetlabs-peadm/pull/468) ([ragingra](https://github.com/ragingra))
+- (PE-37235) Verify and update documentation on add_compiler [#429](https://github.com/puppetlabs/puppetlabs-peadm/pull/429) ([cathal41](https://github.com/cathal41))
 
 ## [v3.21.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.21.0) - 2024-07-15
 
