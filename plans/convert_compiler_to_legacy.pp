@@ -1,11 +1,11 @@
 # @api private
 plan peadm::convert_compiler_to_legacy (
   Peadm::SingleTargetSpec $primary_host,
-  TargetSpec $legacy_hosts,
-  Boolean $remove_pdb = true,
+  TargetSpec              $legacy_hosts,
+  Optional[Boolean]       $remove_pdb = true,
 ) {
   $primary_target            = peadm::get_targets($primary_host, 1)
-  $legacy_compiler_targets             = peadm::get_targets($legacy_hosts)
+  $legacy_compiler_targets   = peadm::get_targets($legacy_hosts)
 
   $cluster = run_task('peadm::get_peadm_config', $primary_host).first.value
   $error = getvar('cluster.error')
@@ -60,7 +60,7 @@ plan peadm::convert_compiler_to_legacy (
     $legacy_compiler_b_targets = []
   }
 
-  $compiler_targets = peadm::flatten_compact([getvar('cluster.params.compiler_hosts')])
+  $compiler_targets = peadm::get_targets(getvar('cluster.params.compiler_hosts'))
 
   wait([
       background('modify-compilers-certs') || {
@@ -101,7 +101,7 @@ plan peadm::convert_compiler_to_legacy (
   apply($primary_target) {
     class { 'peadm::setup::node_manager_yaml':
       primary_host => $primary_target.peadm::certname(),
-    },
+    }
 
     class { 'peadm::setup::legacy_compiler_group':
       primary_host                     => $primary_target.peadm::certname(),
