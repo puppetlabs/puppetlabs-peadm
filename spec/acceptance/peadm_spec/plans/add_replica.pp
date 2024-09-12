@@ -9,7 +9,7 @@ plan peadm_spec::add_replica(
   }
 
   $primary_host = $t.filter |$n| { $n.vars['role'] == 'primary' }
-  $replica_host = $t.filter |$n| { $n.vars['role'] == 'replica' }
+  $replica_host = $t.filter |$n| { $n.vars['role'] == 'spare-replica' }
   $replica_postgresql_host = $t.filter |$n| { $n.vars['role'] == 'replica-pdb-postgresql' }
 
   if $replica_host == [] {
