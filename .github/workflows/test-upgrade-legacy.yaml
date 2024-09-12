@@ -40,9 +40,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture: [large-with-two-compilers]
+        architecture: [large-with-dr]
         image: [almalinux-cloud/almalinux-8]
-        version: [2021.7.9]
+        version: [2023.7.0]
         to_version: [2023.8.0]
     steps:
       - name: Start SSH session
