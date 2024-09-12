@@ -32,7 +32,7 @@ An external PE-PostgreSQL server is the component which separates the Extra Larg
 
 ### Add an external PE-PostgreSQL server in all scenarios
 
-    bolt plan run peadm::add_database -t <new-postgres-server-fqdn> primary_host=<primary-server-fqdn>:w
+    bolt plan run peadm::add_database -t <new-postgres-server-fqdn> primary_host=<primary-server-fqdn>
 
 ## Enable Disaster Recovery and Add a Replica with peadm::add_replica
 
