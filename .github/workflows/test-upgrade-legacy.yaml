@@ -97,7 +97,7 @@ jobs:
           bundle exec bolt plan run peadm_spec::install_test_cluster \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
-            architecture="large" \
+            architecture=${{ matrix.architecture }} \
             console_password=${{ secrets.CONSOLE_PASSWORD }} \
             version=${{ matrix.version }}
       - name: Wait as long as the file ${HOME}/pause file is present
@@ -135,7 +135,7 @@ jobs:
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             --no-host-key-check \
-            architecture="large" \
+            architecture=${{ matrix.architecture }} \
             version=${{ matrix.to_version }}
       - name: Tear down test cluster
         if: ${{ always() }}
