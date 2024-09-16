@@ -12,8 +12,10 @@ class GetPEAdmConfig
 
   def execute!
     code_manager_enabled = groups.dig('PE Master', 'classes', 'puppet_enterprise::profile::master', 'code_manager_auto_configure')
-    
-    puts({"code_manager_enabled" => code_manager_enabled}.to_json)
+
+    code_manager_enabled_value = code_manager_enabled == true
+
+    puts({ 'code_manager_enabled' => code_manager_enabled_value }.to_json)
   end
 
   # Returns a GetPEAdmConfig::NodeGroups object created from the /groups object
