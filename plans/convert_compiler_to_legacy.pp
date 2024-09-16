@@ -31,6 +31,10 @@ plan peadm::convert_compiler_to_legacy (
   )
 
   if $arch['disaster-recovery'] {
+    # Gather certificate extension information from all systems
+    $cert_extensions = run_task('peadm::cert_data', $all_targets).reduce({}) |$memo,$result| {
+      $memo + { $result.target.peadm::certname => $result['extensions'] }
+    }
     $legacy_compiler_a_targets = $legacy_compiler_targets.filter |$index,$target| {
       $exts = $cert_extensions[$target.peadm::certname()]
       if ($exts[peadm::oid('peadm_availability_group')] in ['A', 'B']) {
