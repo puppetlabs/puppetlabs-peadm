@@ -79,5 +79,8 @@ plan peadm_spec::install_test_cluster (
   $install_result =
     run_plan('peadm::install', $arch_params + $common_params)
 
+  # Run puppet agent on all nodes
+  run_task('peadm::puppet_runonce', $t)
+
   return($install_result)
 }
