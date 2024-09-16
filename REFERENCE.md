@@ -56,6 +56,7 @@
 * [`cert_data`](#cert_data): Return certificate data related to the Puppet agent
 * [`cert_valid_status`](#cert_valid_status): Check primary for valid state of a certificate
 * [`code_manager`](#code_manager): Perform various code manager actions
+* [`code_manager_enabled`](#code_manager_enabled): Run on a PE primary node to check if Code Manager is enabled.
 * [`code_sync_status`](#code_sync_status): A task to confirm code is in sync accross the cluster for clusters with code manager configured
 * [`divert_code_manager`](#divert_code_manager): Divert the code manager live-dir setting
 * [`download`](#download): Download a file using curl
@@ -1067,6 +1068,12 @@ Perform various code manager actions
 Data type: `String`
 
 What code manager action to perform. For example: 'deploy production'; 'flush-environment-cache'; 'file-sync commit'
+
+### <a name="code_manager_enabled"></a>`code_manager_enabled`
+
+Run on a PE primary node to check if Code Manager is enabled.
+
+**Supports noop?** false
 
 ### <a name="code_sync_status"></a>`code_sync_status`
 
