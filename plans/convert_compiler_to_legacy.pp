@@ -20,6 +20,16 @@ plan peadm::convert_compiler_to_legacy (
         default => $primary_target.peadm::certname(),
       },
     }
+
+    class { 'peadm::setup::legacy_compiler_group':
+      primary_host                     => $primary_target.peadm::certname() ? {
+        undef   => $primary_target,
+        default => $primary_target.peadm::certname(),
+      },
+      internal_compiler_a_pool_address => $cluster['params']['internal_compiler_a_pool_address'],
+      internal_compiler_b_pool_address => $cluster['params']['internal_compiler_b_pool_address'],
+      require                          => Class['peadm::setup::node_manager_yaml'],
+    }
   }
 
   $replica_host = getvar('cluster.params.replica_host')
@@ -121,25 +131,6 @@ plan peadm::convert_compiler_to_legacy (
   if $remove_pdb {
     run_command('puppet resource service puppet ensure=stopped', $convert_legacy_compiler_targets)
     run_command('puppet resource service pe-puppetdb ensure=stopped enable=false', $convert_legacy_compiler_targets)
-  }
-
-  apply($primary_target) {
-    class { 'peadm::setup::node_manager_yaml':
-      primary_host => $primary_target.peadm::certname() ? {
-        undef   => $primary_target,
-        default => $primary_target.peadm::certname(),
-      },
-    }
-
-    class { 'peadm::setup::legacy_compiler_group':
-      primary_host                     => $primary_target.peadm::certname() ? {
-        undef   => $primary_target,
-        default => $primary_target.peadm::certname(),
-      },
-      internal_compiler_a_pool_address => $cluster['params']['internal_compiler_a_pool_address'],
-      internal_compiler_b_pool_address => $cluster['params']['internal_compiler_b_pool_address'],
-      require                          => Class['peadm::setup::node_manager_yaml'],
-    }
   }
 
   run_task('peadm::puppet_runonce', $convert_legacy_compiler_targets)
