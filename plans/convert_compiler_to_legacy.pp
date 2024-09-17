@@ -22,7 +22,7 @@ plan peadm::convert_compiler_to_legacy (
   $replica_target = peadm::get_targets($replica_host, 1)
   $primary_postgresql_target = peadm::get_targets($primary_postgresql_host, 1)
   $replica_postgresql_target = peadm::get_targets($replica_postgresql_host, 1)
-  $compiler_targets = peadm::get_targets($compiler_hosts)
+  $compiler_targets = peadm::get_targets($compiler_hosts) - $convert_legacy_compiler_targets
   $legacy_targets = peadm::get_targets($legacy_compilers) + $convert_legacy_compiler_targets
 
   $all_targets = peadm::flatten_compact([
@@ -46,7 +46,7 @@ plan peadm::convert_compiler_to_legacy (
 
   if $arch['disaster-recovery'] {
     # Gather certificate extension information from all systems
-    $cert_extensions = run_task('peadm::cert_data', $all_targets).reduce({}) |$memo,$result| {
+    $cert_extensions = run_task('peadm::cert_data', $legacy_targets).reduce({}) |$memo,$result| {
       $memo + { $result.target.peadm::certname => $result['extensions'] }
     }
     $legacy_compiler_a_targets = $convert_legacy_compiler_targets.filter |$index,$target| {
