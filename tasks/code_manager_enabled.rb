@@ -8,7 +8,9 @@ require 'puppet'
 
 # GetPEAdmConfig task class
 class GetPEAdmConfig
-  def initialize(params); end
+  def initialize(params)
+    @host = params['host']
+  end
 
   def execute!
     code_manager_enabled = groups.dig('PE Master', 'classes', 'puppet_enterprise::profile::master', 'code_manager_auto_configure')
@@ -22,26 +24,20 @@ class GetPEAdmConfig
   # returned by the classifier
   def groups
     @groups ||= begin
-      net = https(4433)
+      net = https(@host, 4433)
       res = net.get('/classifier-api/v1/groups')
       NodeGroup.new(JSON.parse(res.body))
     end
   end
 
-  def https(port)
-    https = Net::HTTP.new('localhost', port)
+  def https(host, port)
+    https = Net::HTTP.new(host, port)
     https.use_ssl = true
     https.cert = @cert ||= OpenSSL::X509::Certificate.new(File.read(Puppet.settings[:hostcert]))
     https.key = @key ||= OpenSSL::PKey::RSA.new(File.read(Puppet.settings[:hostprivkey]))
-    https.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    https.verify_mode = OpenSSL::SSL::VERIFY_PEER
+    https.ca_file = Puppet.settings[:localcacert]
     https
-  end
-
-  def pdb_query(query)
-    pdb = https(8081)
-    pdb_request = Net::HTTP::Get.new('/pdb/query/v4')
-    pdb_request.set_form_data({ 'query' => query })
-    JSON.parse(pdb.request(pdb_request).body)
   end
 
   # Utility class to aid in retrieving useful information from the node group

@@ -1075,6 +1075,14 @@ Run on a PE primary node to check if Code Manager is enabled.
 
 **Supports noop?** false
 
+#### Parameters
+
+##### `host`
+
+Data type: `String[1]`
+
+Hostname of the PE primary node
+
 ### <a name="code_sync_status"></a>`code_sync_status`
 
 A task to confirm code is in sync accross the cluster for clusters with code manager configured
