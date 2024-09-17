@@ -13,6 +13,15 @@ plan peadm::convert_compiler_to_legacy (
     fail_plan($error)
   }
 
+  apply($primary_target) {
+    class { 'peadm::setup::node_manager_yaml':
+      primary_host => $primary_target.peadm::certname() ? {
+        undef   => $primary_target,
+        default => $primary_target.peadm::certname(),
+      },
+    }
+  }
+
   $replica_host = getvar('cluster.params.replica_host')
   $primary_postgresql_host = getvar('cluster.params.primary_postgresql_host')
   $replica_postgresql_host = getvar('cluster.params.replica_postgresql_host')
