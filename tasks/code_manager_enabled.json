@@ -1,0 +1,10 @@
+{
+  "description": "Run on a PE primary node to check if Code Manager is enabled.",
+  "parameters": {
+    "host": {
+      "type": "String[1]",
+      "description": "Hostname of the PE primary node"
+    }
+   },
+  "input_method": "stdin"
+}
