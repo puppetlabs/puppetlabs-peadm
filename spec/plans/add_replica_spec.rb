@@ -11,6 +11,7 @@ describe 'peadm::add_replica' do
   end
 
   describe 'basic functionality' do
+    let(:code_manager_enabled) { { 'code_manager_enabled' => true } }
     let(:params) { { 'primary_host' => 'primary', 'replica_host' => 'replica' } }
     let(:cfg) { { 'params' => { 'primary_host' => 'primary' } } }
     let(:certdata) do
@@ -30,6 +31,7 @@ describe 'peadm::add_replica' do
 
     it 'runs successfully when the primary does not have alt-names' do
       allow_standard_non_returning_calls
+      expect_task('peadm::code_manager_enabled').always_return(code_manager_enabled)
       expect_task('peadm::get_peadm_config').always_return(cfg)
       expect_task('peadm::cert_data').always_return(certdata).be_called_times(4)
       expect_task('peadm::cert_valid_status').always_return(certstatus)
@@ -50,6 +52,7 @@ describe 'peadm::add_replica' do
 
     it 'runs successfully when the primary has alt-names' do
       allow_standard_non_returning_calls
+      expect_task('peadm::code_manager_enabled').always_return(code_manager_enabled)
       expect_task('peadm::get_peadm_config').always_return(cfg)
       expect_task('peadm::cert_data').always_return(certdata.merge({ 'dns-alt-names' => ['primary', 'alt'] })).be_called_times(4)
       expect_task('peadm::cert_valid_status').always_return(certstatus)
@@ -66,6 +69,15 @@ describe 'peadm::add_replica' do
       expect_out_verbose.with_params('Current config is...')
       expect_out_verbose.with_params('Updating classification to...')
       expect(run_plan('peadm::add_replica', params)).to be_ok
+    end
+
+    it 'fails when code manager not enabled' do
+      allow_standard_non_returning_calls
+      expect_task('peadm::code_manager_enabled').always_return({ 'code_manager_enabled' => false })
+
+      result = run_plan('peadm::add_replica', params)
+      expect(result).not_to be_ok
+      expect(result.value.msg).to match(%r{Code Manager must be enabled})
     end
   end
 end
