@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.24.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.24.0) - 2024-09-20
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.23.0...v3.24.0)
+
+### Added
+
+- (PE-39118) Adding code manager check to add_replica [#501](https://github.com/puppetlabs/puppetlabs-peadm/pull/501) ([ragingra](https://github.com/ragingra))
+
 ## [v3.23.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.23.0) - 2024-09-12
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.22.0...v3.23.0)
@@ -26,13 +34,14 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 ### Fixed
 
+- (#469) Assign correct environment to node groups [#479](https://github.com/puppetlabs/puppetlabs-peadm/pull/479) ([bastelfreak](https://github.com/bastelfreak))
 - pe_installer_source: Use Stdlib::HTTPSUrl datatype [#466](https://github.com/puppetlabs/puppetlabs-peadm/pull/466) ([bastelfreak](https://github.com/bastelfreak))
 
 ### Other
 
 - PE-38815 add_replica plan updated, test matrix added [#480](https://github.com/puppetlabs/puppetlabs-peadm/pull/480) ([AaronShannon](https://github.com/AaronShannon))
 - (PE-38818) Removing experimental and private from add_replica [#478](https://github.com/puppetlabs/puppetlabs-peadm/pull/478) ([ragingra](https://github.com/ragingra))
-(PE-38814) add_compiler - Making primary_postgresql_host and avail_group_letter optional [#468](https://github.com/puppetlabs/puppetlabs-peadm/pull/468) ([ragingra](https://github.com/ragingra))
+- (PE-38814) add_compiler - Making primary_postgresql_host and avail_group_letter optional [#468](https://github.com/puppetlabs/puppetlabs-peadm/pull/468) ([ragingra](https://github.com/ragingra))
 - (PE-37235) Verify and update documentation on add_compiler [#429](https://github.com/puppetlabs/puppetlabs-peadm/pull/429) ([cathal41](https://github.com/cathal41))
 
 ## [v3.21.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.21.0) - 2024-07-15
