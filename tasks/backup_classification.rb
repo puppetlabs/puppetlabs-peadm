@@ -20,7 +20,7 @@ class BackupClassification
   private
 
   def https_client
-    client = Net::HTTP.new('localhost', '4433')
+    client = Net::HTTP.new(Puppet.settings[:certname], 4433)
     client.use_ssl = true
     client.cert = @cert ||= OpenSSL::X509::Certificate.new(File.read(Puppet.settings[:hostcert]))
     client.key = @key ||= OpenSSL::PKey::RSA.new(File.read(Puppet.settings[:hostprivkey]))

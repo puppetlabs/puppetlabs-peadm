@@ -40,17 +40,13 @@ class PuppetInfraUpgrade
     end
   end
 
-  def inventory_uri
-    @inventory_uri ||= URI.parse('https://localhost:8143/orchestrator/v1/inventory')
-  end
-
   def request_object(nodes:, token_file:)
     token = File.read(token_file)
     body = {
       'nodes' => nodes,
     }.to_json
 
-    request = Net::HTTP::Post.new(inventory_uri.request_uri)
+    request = Net::HTTP::Post.new('/orchestrator/v1/inventory')
     request['Content-Type'] = 'application/json'
     request['X-Authentication'] = token.chomp
     request.body = body
@@ -59,7 +55,7 @@ class PuppetInfraUpgrade
   end
 
   def https_object
-    https = Net::HTTP.new(inventory_uri.host, inventory_uri.port)
+    https = Net::HTTP.new(Puppet.settings[:certname], 8143)
     https.use_ssl = true
     https.cert = OpenSSL::X509::Certificate.new(File.read(Puppet.settings[:hostcert]))
     https.key = OpenSSL::PKey::RSA.new(File.read(Puppet.settings[:hostprivkey]))
@@ -96,6 +92,7 @@ end
 # environment flag is used to disable auto-execution and enable Ruby unit
 # testing of this task.
 unless ENV['RSPEC_UNIT_TEST_MODE']
+  Puppet.initialize_settings
   upgrade = PuppetInfraUpgrade.new(JSON.parse(STDIN.read))
   upgrade.execute!
 end
