@@ -22,9 +22,7 @@ plan peadm::add_replica(
   $replica_target             = peadm::get_targets($replica_host, 1)
   $replica_postgresql_target  = peadm::get_targets($replica_postgresql_host, 1)
 
-  $code_manager_enabled = run_task(
-    'peadm::code_manager_enabled', $primary_target, host => $primary_target.peadm::certname()
-  ).first.value['code_manager_enabled']
+  $code_manager_enabled = run_task('peadm::code_manager_enabled', $primary_target).first.value['code_manager_enabled']
 
   if $code_manager_enabled == false {
     fail('Code Manager must be enabled to add a replica. Please refer to the docs for more information on enabling Code Manager.')

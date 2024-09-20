@@ -32,17 +32,17 @@ def main
   end
 
   uri = URI("https://#{pe_main}:4433/rbac-api/v1/ds")
-  http = Net::HTTP.new(uri.host, uri.port)
-  http.use_ssl = true
-  http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-  http.ca_file = cafout.strip
-  http.cert = OpenSSL::X509::Certificate.new(File.read(certout.strip))
-  http.key = OpenSSL::PKey::RSA.new(File.read(keyout.strip))
+  https = Net::HTTP.new(uri.host, uri.port)
+  https.use_ssl = true
+  https.verify_mode = OpenSSL::SSL::VERIFY_PEER
+  https.ca_file = cafout.strip
+  https.cert = OpenSSL::X509::Certificate.new(File.read(certout.strip))
+  https.key = OpenSSL::PKey::RSA.new(File.read(keyout.strip))
 
   req = Net::HTTP::Put.new(uri, 'Content-type' => 'application/json')
   req.body = data.to_json
 
-  resp = http.request(req)
+  resp = https.request(req)
 
   puts resp.body
   raise "API response code #{resp.code}" unless resp.code == '200'

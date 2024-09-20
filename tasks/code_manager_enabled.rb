@@ -6,12 +6,8 @@ require 'uri'
 require 'net/http'
 require 'puppet'
 
-# GetPEAdmConfig task class
-class GetPEAdmConfig
-  def initialize(params)
-    @host = params['host']
-  end
-
+# CodeManagerEnabled task class
+class CodeManagerEnabled
   def execute!
     code_manager_enabled = groups.dig('PE Master', 'classes', 'puppet_enterprise::profile::master', 'code_manager_auto_configure')
 
@@ -20,18 +16,16 @@ class GetPEAdmConfig
     puts({ 'code_manager_enabled' => code_manager_enabled_value }.to_json)
   end
 
-  # Returns a GetPEAdmConfig::NodeGroups object created from the /groups object
-  # returned by the classifier
   def groups
     @groups ||= begin
-      net = https(@host, 4433)
+      net = https
       res = net.get('/classifier-api/v1/groups')
       NodeGroup.new(JSON.parse(res.body))
     end
   end
 
-  def https(host, port)
-    https = Net::HTTP.new(host, port)
+  def https
+    https = Net::HTTP.new(Puppet.settings[:certname], 4433)
     https.use_ssl = true
     https.cert = @cert ||= OpenSSL::X509::Certificate.new(File.read(Puppet.settings[:hostcert]))
     https.key = @key ||= OpenSSL::PKey::RSA.new(File.read(Puppet.settings[:hostprivkey]))
@@ -68,6 +62,6 @@ end
 # testing of this task.
 unless ENV['RSPEC_UNIT_TEST_MODE']
   Puppet.initialize_settings
-  task = GetPEAdmConfig.new(JSON.parse(STDIN.read))
+  task = CodeManagerEnabled.new
   task.execute!
 end
