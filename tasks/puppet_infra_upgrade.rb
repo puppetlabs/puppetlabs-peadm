@@ -7,6 +7,7 @@ require 'json'
 require 'open3'
 require 'timeout'
 require 'etc'
+require 'puppet'
 
 # Class to run and execute the `puppet infra upgrade` command as a task.
 class PuppetInfraUpgrade
@@ -57,21 +58,24 @@ class PuppetInfraUpgrade
     request
   end
 
-  def http_object
-    http = Net::HTTP.new(inventory_uri.host, inventory_uri.port)
-    http.use_ssl = true
-    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+  def https_object
+    https = Net::HTTP.new(inventory_uri.host, inventory_uri.port)
+    https.use_ssl = true
+    https.cert = OpenSSL::X509::Certificate.new(File.read(Puppet.settings[:hostcert]))
+    https.key = OpenSSL::PKey::RSA.new(File.read(Puppet.settings[:hostprivkey]))
+    https.verify_mode = OpenSSL::SSL::VERIFY_PEER
+    https.ca_file = Puppet.settings[:localcacert]
 
-    http
+    https
   end
 
   def wait_until_connected(nodes:, token_file:, timeout: 120)
-    http = http_object
+    https = https_object
     request = request_object(nodes: nodes, token_file: token_file)
     inventory = {}
     Timeout.timeout(timeout) do
       loop do
-        response = http.request(request)
+        response = https.request(request)
         unless response.is_a? Net::HTTPSuccess
           raise "Unexpected result from orchestrator: #{response.class}\n#{response}"
         end

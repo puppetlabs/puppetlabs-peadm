@@ -24,7 +24,8 @@ class RestoreClassification
     client.use_ssl = true
     client.cert = @cert ||= OpenSSL::X509::Certificate.new(File.read(Puppet.settings[:hostcert]))
     client.key = @key ||= OpenSSL::PKey::RSA.new(File.read(Puppet.settings[:hostprivkey]))
-    client.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    client.verify_mode = OpenSSL::SSL::VERIFY_PEER
+    client.ca_file = Puppet.settings[:localcacert]
     client
   end
 
