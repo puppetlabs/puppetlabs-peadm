@@ -28,7 +28,7 @@ https.cert = OpenSSL::X509::Certificate.new(File.read(Puppet.settings[:hostcert]
 https.key = OpenSSL::PKey::RSA.new(File.read(Puppet.settings[:hostprivkey]))
 https.verify_mode = OpenSSL::SSL::VERIFY_PEER
 https.ca_file = Puppet.settings[:localcacert]
-request = Net::https:Post.new('/rbac-api/v1/auth/token')
+request = Net::HTTP::Post.new('/rbac-api/v1/auth/token')
 request['Content-Type'] = 'application/json'
 request.body = body
 
