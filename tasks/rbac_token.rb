@@ -22,13 +22,13 @@ body = {
   'label'    => 'provision-time token',
 }.to_json
 
-https. = Net::HTTP.new(Puppet.settings[:certname], 4433)
-https..use_ssl = true
-https..cert = OpenSSL::X509::Certificate.new(File.read(Puppet.settings[:hostcert]))
-https..key = OpenSSL::PKey::RSA.new(File.read(Puppet.settings[:hostprivkey]))
-https..verify_mode = OpenSSL::SSL::VERIFY_PEER
-https..ca_file = Puppet.settings[:localcacert]
-request = Net::https.:Post.new('/rbac-api/v1/auth/token')
+https = Net::HTTP.new(Puppet.settings[:certname], 4433)
+https.use_ssl = true
+https.cert = OpenSSL::X509::Certificate.new(File.read(Puppet.settings[:hostcert]))
+https.key = OpenSSL::PKey::RSA.new(File.read(Puppet.settings[:hostprivkey]))
+https.verify_mode = OpenSSL::SSL::VERIFY_PEER
+https.ca_file = Puppet.settings[:localcacert]
+request = Net::https:Post.new('/rbac-api/v1/auth/token')
 request['Content-Type'] = 'application/json'
 request.body = body
 
