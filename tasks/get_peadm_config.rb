@@ -101,7 +101,7 @@ class GetPEAdmConfig
   end
 
   def https(port)
-    https = Net::HTTP.new('localhost', port)
+    https = Net::HTTP.new(Puppet.settings[:certname], port)
     https.use_ssl = true
     https.cert = @cert ||= OpenSSL::X509::Certificate.new(File.read(Puppet.settings[:hostcert]))
     https.key = @key ||= OpenSSL::PKey::RSA.new(File.read(Puppet.settings[:hostprivkey]))
