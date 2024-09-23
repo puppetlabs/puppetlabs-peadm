@@ -33,7 +33,7 @@ request['Content-Type'] = 'application/json'
 request.body = body
 
 response = https.request(request)
-raise "Error requesting token, #{response.body}" unless response.is_a? Net::https.success
+raise "Error requesting token, #{response.body}" unless response.is_a? Net::HTTPSuccess
 token = JSON.parse(response.body)['token']
 
 FileUtils.mkdir_p('/root/.puppetlabs')
