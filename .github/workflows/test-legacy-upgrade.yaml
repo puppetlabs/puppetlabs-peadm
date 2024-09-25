@@ -31,8 +31,8 @@ on:
         required: true
         default: 'false'
 jobs:
-  convert_compiler:
-    name: Convert compilers to legacy
+  upgrade_with_legacy_compilers:
+    name: Upgrade PE with legacy compilers
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true
@@ -96,14 +96,14 @@ jobs:
         run: |
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .name' spec/fixtures/litmus_inventory.yaml)
           compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | head -n 1)
-          legacy_compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | head -n 2)
+          legacy_compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | sed -n 2p)
           replica=$(yq '.groups[].targets[] | select(.vars.role == "replica") | .name' spec/fixtures/litmus_inventory.yaml)
-          echo -n '{ "primary_host": "'$primary'", "replica_host": "'$replica'", "legacy_compilers": ["'$legacy_compiler'"], "compiler_hosts": ["'$compiler'"], "version": "2023.7.0", "console_password": "'${{ secrets.CONSOLE_PASSWORD }}'" }' > params.json
+          echo -n '{ "download_mode": "direct", "primary_host": "'$primary'", "replica_host": "'$replica'", "legacy_compilers": ["'$legacy_compiler'"], "compiler_hosts": ["'$compiler'"], "version": "2023.7.0", "console_password": "'${{ secrets.CONSOLE_PASSWORD }}'" }' > params.json
       - name: Install PE with legacy compilers
         timeout-minutes: 120
         run: |
           echo ::group::params.json
-          sed -e 's/console_password: .*/console_password: "[redacted]"/' < params.json || true
+          jq '.console_password = "[redacted]"' params.json || true
           echo ::endgroup::
           echo ::group::install
           bundle exec bolt plan run peadm::install \
@@ -129,7 +129,7 @@ jobs:
           echo ::group::get_peadm_config
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .name' spec/fixtures/litmus_inventory.yaml)
           compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | head -n 1)
-          legacy_compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | head -n 2)
+          legacy_compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | sed -n 2p)
           bundle exec bolt task run peadm::get_peadm_config \
             --targets $primary \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
@@ -150,13 +150,13 @@ jobs:
         run: |
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .name' spec/fixtures/litmus_inventory.yaml)
           compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | head -n 1)
-          legacy_compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | head -n 2)
+          legacy_compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | sed -n 2p)
           replica=$(yq '.groups[].targets[] | select(.vars.role == "replica") | .name' spec/fixtures/litmus_inventory.yaml)
           echo -n '{ "primary_host": "'$primary'", "replica_host": "'$replica'", "compiler_hosts": ["'$compiler'", "'$legacy_compiler'"], "version": "2023.8.0"}' > upgrade_params.json
       - name: Upgrade PE with legacy compilers
         run: |
           echo ::group::upgrade_params.json
-          echo upgrade_params.json
+          cat upgrade_params.json
           echo ::endgroup::
           echo ::group::upgrade
           bundle exec bolt plan run peadm::upgrade \
@@ -174,7 +174,7 @@ jobs:
           echo ::group::get_peadm_config
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .name' spec/fixtures/litmus_inventory.yaml)
           compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | head -n 1)
-          legacy_compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | head -n 2)
+          legacy_compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | sed -n 2p)
           bundle exec bolt task run peadm::get_peadm_config \
             --targets $primary \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
