@@ -1,5 +1,5 @@
 ---
-name: Convert compiler to legacy
+name: Upgrade PE with legacy compilers
 on:
   pull_request:
     paths:
@@ -92,15 +92,26 @@ jobs:
         uses: frenck/action-setup-yq@v1
         with:
           version: v4.30.5
-      - name: Install PE on test cluster
+      - name: Create the params.json file
+        run: |
+          primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .name' spec/fixtures/litmus_inventory.yaml)
+          compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | head -n 1)
+          legacy_compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | head -n 2)
+          replica=$(yq '.groups[].targets[] | select(.vars.role == "replica") | .name' spec/fixtures/litmus_inventory.yaml)
+          echo -n '{ "primary_host": "'$primary'", "replica_host": "'$replica'", "legacy_compilers": ["'$legacy_compiler'"], "compiler_hosts": ["'$compiler'"], "version": "2023.7.0", "console_password": "'${{ secrets.CONSOLE_PASSWORD }}'" }' > params.json
+      - name: Install PE with legacy compilers
         timeout-minutes: 120
         run: |
-          bundle exec bolt plan run peadm_spec::install_test_cluster \
+          echo ::group::params.json
+          sed -e 's/console_password: .*/console_password: "[redacted]"/' < params.json || true
+          echo ::endgroup::
+          echo ::group::install
+          bundle exec bolt plan run peadm::install \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
-            architecture=large-with-dr \
-            console_password=${{ secrets.CONSOLE_PASSWORD }} \
-            version=2023.7.0
+            --no-host-key-check \
+            --params @params.json
+          echo ::endgroup::
       - name: Wait as long as the file ${HOME}/pause file is present
         if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
         run: |
@@ -109,22 +120,7 @@ jobs:
             sleep 60
           done 
           echo "${HOME}/pause absent, continuing workflow."
-      - name: Convert one compiler to legacy
-        timeout-minutes: 120
-        run: |
-          primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .name' spec/fixtures/litmus_inventory.yaml)
-          compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | head -n 1)
-          echo "primary: $primary"
-          echo "compiler: $compiler"
-          echo ::group::convert_compiler_to_legacy
-          bundle exec bolt plan run peadm::convert_compiler_to_legacy \
-            --inventoryfile spec/fixtures/litmus_inventory.yaml \
-            --modulepath spec/fixtures/modules \
-            --no-host-key-check \
-            primary_host=$primary \
-            legacy_hosts=$compiler
-          echo ::endgroup::
-      - name: Check if compiler is converted
+      - name: Check if compilers are configured
         timeout-minutes: 120
         run: |
           echo ::group::inventory
@@ -133,6 +129,7 @@ jobs:
           echo ::group::get_peadm_config
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .name' spec/fixtures/litmus_inventory.yaml)
           compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | head -n 1)
+          legacy_compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | head -n 2)
           bundle exec bolt task run peadm::get_peadm_config \
             --targets $primary \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
@@ -142,10 +139,55 @@ jobs:
           cat peadm_config.json
           echo ::endgroup::
           echo ::group::smoke_test
-          legacy_compiler=$(yq '.items[0].value.params.legacy_compilers[0]' peadm_config.json)
-          if [ "$compiler" != "$legacy_compiler" ]
-          then
-            echo "Compiler conversion failed, expected $compiler, got $legacy_compiler"
+          configured_legacy_compiler=$(yq '.items[0].value.params.legacy_compilers[0]' peadm_config.json)
+          configured_compiler=$(yq '.items[0].value.params.compiler_hosts[0]' peadm_config.json)
+          if [ "$configured_legacy_compiler" != "$legacy_compiler" AND "$configured_compiler" != "$compiler" ]
+            echo "Compilers are not configured, expected $legacy_compiler and $compiler, got $configured_legacy_compiler and $configured_compiler"
+            exit 1
+          fi
+          echo ::endgroup::
+      - name: Create the upgrade params.json file
+        run: |
+          primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .name' spec/fixtures/litmus_inventory.yaml)
+          compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | head -n 1)
+          legacy_compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | head -n 2)
+          replica=$(yq '.groups[].targets[] | select(.vars.role == "replica") | .name' spec/fixtures/litmus_inventory.yaml)
+          echo -n '{ "primary_host": "'$primary'", "replica_host": "'$replica'", "compiler_hosts": ["'$compiler'", "'$legacy_compiler'"], "version": "2023.8.0"}' > upgrade_params.json
+      - name: Upgrade PE with legacy compilers
+        run: |
+          echo ::group::upgrade_params.json
+          echo upgrade_params.json
+          echo ::endgroup::
+          echo ::group::upgrade
+          bundle exec bolt plan run peadm::upgrade \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules \
+            --no-host-key-check \
+            --params @upgrade_params.json
+          echo ::endgroup::
+      - name: Check if we still have legacy compilers configured
+        timeout-minutes: 120
+        run: |
+          echo ::group::inventory
+            sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
+          echo ::endgroup::
+          echo ::group::get_peadm_config
+          primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .name' spec/fixtures/litmus_inventory.yaml)
+          compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | head -n 1)
+          legacy_compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | head -n 2)
+          bundle exec bolt task run peadm::get_peadm_config \
+            --targets $primary \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules \
+            --no-host-key-check \
+            --format json > peadm_config.json
+          cat peadm_config.json
+          echo ::endgroup::
+          echo ::group::smoke_test
+          configured_legacy_compiler=$(yq '.items[0].value.params.legacy_compilers[0]' peadm_config.json)
+          configured_compiler=$(yq '.items[0].value.params.compiler_hosts[0]' peadm_config.json)
+          if [ "$configured_legacy_compiler" != "$legacy_compiler" AND "$configured_compiler" != "$compiler" ]
+            echo "Compilers are not configured, expected $legacy_compiler and $compiler, got $configured_legacy_compiler and $configured_compiler"
             exit 1
           fi
           echo ::endgroup::
