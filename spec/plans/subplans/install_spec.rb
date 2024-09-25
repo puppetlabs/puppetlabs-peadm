@@ -12,7 +12,15 @@ describe 'peadm::subplans::install' do
     allow_task('peadm::precheck').return_for_targets(
       'primary' => {
         'hostname' => 'primary',
-        'platform' => 'el-7.11-x86_64'
+        'platform' => 'el-7.11-x86_64',
+      },
+      'compiler1' => {
+        'hostname' => 'compiler1',
+        'platform' => 'el-7.11-x86_64',
+      },
+      'compiler2' => {
+        'hostname' => 'compiler2',
+        'platform' => 'el-7.11-x86_64',
       },
     )
 
@@ -39,9 +47,9 @@ describe 'peadm::subplans::install' do
 
   it 'minimum variables to run' do
     params = {
-      'primary_host'     => 'primary',
+      'primary_host' => 'primary',
       'console_password' => 'puppetLabs123!',
-      'version'          => '2019.8.12',
+      'version' => '2019.8.12',
     }
 
     expect(run_plan('peadm::subplans::install', params)).to be_ok
@@ -49,10 +57,10 @@ describe 'peadm::subplans::install' do
 
   it 'installs 2023.4 without r10k_known_hosts' do
     params = {
-      'primary_host'             => 'primary',
-      'console_password'         => 'puppetLabs123!',
-      'version'                  => '2023.4.0',
-      'r10k_remote'              => 'git@github.com:puppetlabs/nothing',
+      'primary_host' => 'primary',
+      'console_password' => 'puppetLabs123!',
+      'version' => '2023.4.0',
+      'r10k_remote' => 'git@github.com:puppetlabs/nothing',
       'r10k_private_key_content' => '-----BEGINfoo',
     }
 
@@ -61,21 +69,31 @@ describe 'peadm::subplans::install' do
 
   it 'installs 2023.4+ with r10k_private_key and r10k_known_hosts' do
     params = {
-      'primary_host'             => 'primary',
-      'console_password'         => 'puppetLabs123!',
-      'version'                  => '2023.4.0',
-      'r10k_remote'              => 'git@github.com:puppetlabs/nothing',
+      'primary_host' => 'primary',
+      'console_password' => 'puppetLabs123!',
+      'version' => '2023.4.0',
+      'r10k_remote' => 'git@github.com:puppetlabs/nothing',
       'r10k_private_key_content' => '-----BEGINfoo',
-      'r10k_known_hosts'         => [
+      'r10k_known_hosts' => [
         {
           'name' => 'test',
           'type' => 'key-type',
-          'key'  => 'abcdef',
+          'key' => 'abcdef',
         },
       ],
       'permit_unsafe_versions' => true,
     }
 
+    expect(run_plan('peadm::subplans::install', params)).to be_ok
+  end
+
+  it 'installs 2021.7.9 with legacy compilers' do
+    params = {
+      'primary_host' => 'primary',
+      'console_password' => 'puppetLabs123!',
+      'version' => '2021.7.9',
+      'legacy_compilers' => ['compiler1', 'compiler2'],
+    }
     expect(run_plan('peadm::subplans::install', params)).to be_ok
   end
 end

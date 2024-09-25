@@ -47,6 +47,7 @@ class GetPEAdmConfig
         'primary_postgresql_host' => postgresql[primary_letter],
         'replica_postgresql_host' => postgresql[replica_letter],
         'compilers' => compilers.map { |c| c['certname'] },
+        'legacy_compilers' => legacy_compilers.map { |c| c['certname'] },
         'compiler_pool_address' => groups.dig('PE Master', 'config_data', 'pe_repo', 'compile_master_pool_address'),
         'internal_compiler_a_pool_address' => groups.dig('PE Compiler Group B', 'classes', 'puppet_enterprise::profile::master', 'puppetdb_host', 1),
         'internal_compiler_b_pool_address' => groups.dig('PE Compiler Group A', 'classes', 'puppet_enterprise::profile::master', 'puppetdb_host', 1),
@@ -63,7 +64,11 @@ class GetPEAdmConfig
         'compilers' => {
           'A' => compilers.select { |c| c['letter'] == 'A' }.map { |c| c['certname'] },
           'B' => compilers.select { |c| c['letter'] == 'B' }.map { |c| c['certname'] },
-        }
+        },
+        'legacy_compilers' => {
+          'A' => legacy_compilers.select { |c| c['letter'] == 'A' }.map { |c| c['certname'] },
+          'B' => legacy_compilers.select { |c| c['letter'] == 'B' }.map { |c| c['certname'] },
+        },
       },
     }
   end
@@ -81,7 +86,24 @@ class GetPEAdmConfig
   # Returns a list of compiler certnames and letters, based on a PuppetDB query
   def compilers
     @compilers ||=
-      pdb_query('inventory[certname,trusted.extensions] { trusted.extensions.pp_auth_role = "pe_compiler" }').map do |c|
+      pdb_query('inventory[certname,trusted.extensions] {
+            trusted.extensions.pp_auth_role = "pe_compiler" and
+            trusted.extensions."1.3.6.1.4.1.34380.1.1.9814" = "false"
+          }').map do |c|
+        {
+          'certname' => c['certname'],
+          'letter'   => c.dig('trusted.extensions', '1.3.6.1.4.1.34380.1.1.9813'),
+        }
+      end
+  end
+
+  # Returns a list of legacy compiler certnames and letters, based on a PuppetDB query
+  def legacy_compilers
+    @legacy_compilers ||=
+      pdb_query('inventory[certname,trusted.extensions] {
+          trusted.extensions.pp_auth_role = "pe_compiler" and
+          trusted.extensions."1.3.6.1.4.1.34380.1.1.9814" = "true"
+        }').map do |c|
         {
           'certname' => c['certname'],
           'letter'   => c.dig('trusted.extensions', '1.3.6.1.4.1.34380.1.1.9813'),

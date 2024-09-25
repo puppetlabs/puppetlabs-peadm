@@ -38,6 +38,7 @@ plan peadm::install (
 
   # Large
   Optional[TargetSpec]              $compiler_hosts = undef,
+  Optional[TargetSpec]              $legacy_compilers = undef,
 
   # Extra Large
   Optional[Peadm::SingleTargetSpec] $primary_postgresql_host = undef,
@@ -85,6 +86,7 @@ plan peadm::install (
 
     # Large
     compiler_hosts                 => $compiler_hosts,
+    legacy_compilers               => $legacy_compilers,
 
     # Extra Large
     primary_postgresql_host        => $primary_postgresql_host,
@@ -123,6 +125,7 @@ plan peadm::install (
 
     # Large
     compiler_hosts                   => $compiler_hosts,
+    legacy_compilers                 => $legacy_compilers,
 
     # Extra Large
     primary_postgresql_host          => $primary_postgresql_host,

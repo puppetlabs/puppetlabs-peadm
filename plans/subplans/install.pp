@@ -41,6 +41,7 @@ plan peadm::subplans::install (
 
   # Large
   Optional[TargetSpec]              $compiler_hosts           = undef,
+  Optional[TargetSpec]              $legacy_compilers         = undef,
 
   # Extra Large
   Optional[Peadm::SingleTargetSpec] $primary_postgresql_host  = undef,
@@ -79,6 +80,7 @@ plan peadm::subplans::install (
   $primary_postgresql_target = peadm::get_targets($primary_postgresql_host, 1)
   $replica_postgresql_target = peadm::get_targets($replica_postgresql_host, 1)
   $compiler_targets          = peadm::get_targets($compiler_hosts)
+  $legacy_compiler_targets            = peadm::get_targets($legacy_compilers)
 
   # Ensure input valid for a supported architecture
   $arch = peadm::assert_supported_architecture(
@@ -87,6 +89,7 @@ plan peadm::subplans::install (
     $primary_postgresql_host,
     $replica_postgresql_host,
     $compiler_hosts,
+    $legacy_compilers,
   )
 
   $all_targets = peadm::flatten_compact([
@@ -95,6 +98,7 @@ plan peadm::subplans::install (
       $replica_target,
       $replica_postgresql_target,
       $compiler_targets,
+      $legacy_compiler_targets,
   ])
 
   $primary_targets = peadm::flatten_compact([
@@ -115,6 +119,7 @@ plan peadm::subplans::install (
 
   $agent_installer_targets = peadm::flatten_compact([
       $compiler_targets,
+      $legacy_compiler_targets,
       $replica_target,
   ])
 
@@ -122,10 +127,14 @@ plan peadm::subplans::install (
   if $arch['disaster-recovery'] {
     $compiler_a_targets = $compiler_targets.filter |$index,$target| { $index % 2 == 0 }
     $compiler_b_targets = $compiler_targets.filter |$index,$target| { $index % 2 != 0 }
+    $legacy_a_targets   = $legacy_compiler_targets.filter |$index,$target| { $index % 2 == 0 }
+    $legacy_b_targets   = $legacy_compiler_targets.filter |$index,$target| { $index % 2 != 0 }
   }
   else {
     $compiler_a_targets = $compiler_targets
     $compiler_b_targets = []
+    $legacy_a_targets   = $legacy_compiler_targets
+    $legacy_b_targets   = []
   }
 
   $dns_alt_names_csv = $dns_alt_names.reduce |$csv,$x| { "${csv},${x}" }
@@ -143,7 +152,7 @@ plan peadm::subplans::install (
     true
   } elsif $replica_host {
     true
-  } elsif $compiler_hosts {
+  } elsif $compiler_hosts or $legacy_compilers {
     true
   } else {
     $code_manager_auto_configure
@@ -179,7 +188,7 @@ plan peadm::subplans::install (
   # puppet and are present in PuppetDB, it is not necessary anymore.
   $puppetdb_database_temp_config = {
     'puppet_enterprise::profile::database::puppetdb_hosts' => (
-      $compiler_targets + $primary_target + $replica_target
+      $compiler_targets + $legacy_compiler_targets + $primary_target + $replica_target
     ).map |$t| { $t.peadm::certname() },
   }
 
@@ -278,6 +287,7 @@ plan peadm::subplans::install (
         extension_requests => {
           peadm::oid('pp_auth_role')             => 'pe_compiler',
           peadm::oid('peadm_availability_group') => 'A',
+          peadm::oid('peadm_legacy_compiler')    => 'false',
         }
       )
     },
@@ -286,6 +296,25 @@ plan peadm::subplans::install (
         extension_requests => {
           peadm::oid('pp_auth_role')             => 'pe_compiler',
           peadm::oid('peadm_availability_group') => 'B',
+          peadm::oid('peadm_legacy_compiler')    => 'false',
+        }
+      )
+    },
+    background('compiler-a-csr.yaml') || {
+      run_plan('peadm::util::insert_csr_extension_requests', $legacy_a_targets,
+        extension_requests => {
+          peadm::oid('pp_auth_role')             => 'pe_compiler',
+          peadm::oid('peadm_availability_group') => 'A',
+          peadm::oid('peadm_legacy_compiler')    => 'true',
+        }
+      )
+    },
+    background('compiler-b-csr.yaml') || {
+      run_plan('peadm::util::insert_csr_extension_requests', $legacy_b_targets,
+        extension_requests => {
+          peadm::oid('pp_auth_role')             => 'pe_compiler',
+          peadm::oid('peadm_availability_group') => 'B',
+          peadm::oid('peadm_legacy_compiler')    => 'true',
         }
       )
     },
