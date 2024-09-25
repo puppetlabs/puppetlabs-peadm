@@ -10,6 +10,7 @@
 
 * `peadm::setup::convert_node_manager`: Used during the peadm::convert plan
 * `peadm::setup::convert_pre20197`: Defines configuration needed for converting PE 2018
+* `peadm::setup::legacy_compiler_group`
 * `peadm::setup::node_manager`: Configures PEAdm's required node groups
 * `peadm::setup::node_manager_yaml`: Set up the node_manager.yaml file in the temporary Bolt confdir
 
@@ -55,6 +56,7 @@
 * [`backup_classification`](#backup_classification): A task to call the classification api and write to file
 * [`cert_data`](#cert_data): Return certificate data related to the Puppet agent
 * [`cert_valid_status`](#cert_valid_status): Check primary for valid state of a certificate
+* [`classify_compilers`](#classify_compilers): Classify compilers as legacy or non-legacy
 * [`code_manager`](#code_manager): Perform various code manager actions
 * [`code_manager_enabled`](#code_manager_enabled): Run on a PE primary node to check if Code Manager is enabled.
 * [`code_sync_status`](#code_sync_status): A task to confirm code is in sync accross the cluster for clusters with code manager configured
@@ -108,6 +110,7 @@ Supported use cases:
 
 #### Private Plans
 
+* `peadm::convert_compiler_to_legacy`
 * `peadm::misc::divert_code_manager`: This plan exists to account for a scenario where a PE XL
 * `peadm::modify_cert_extensions`
 * `peadm::subplans::component_install`: Install a new PEADM component
@@ -117,6 +120,7 @@ Supported use cases:
 * `peadm::subplans::modify_certificate`
 * `peadm::subplans::prepare_agent`
 * `peadm::uninstall`: Single-entry-point plan for uninstalling Puppet Enterprise
+* `peadm::update_compiler_extensions`
 * `peadm::util::code_sync_status`
 * `peadm::util::copy_file`
 * `peadm::util::db_disable_pglogical`
@@ -135,7 +139,7 @@ Type: Puppet Language
 
 Assert that the architecture given is a supported one
 
-#### `peadm::assert_supported_architecture(TargetSpec $primary_host, Variant[TargetSpec, Undef] $replica_host = undef, Variant[TargetSpec, Undef] $primary_postgresql_host = undef, Variant[TargetSpec, Undef] $replica_postgresql_host = undef, Variant[TargetSpec, Undef] $compiler_hosts = undef)`
+#### `peadm::assert_supported_architecture(TargetSpec $primary_host, Variant[TargetSpec, Undef] $replica_host = undef, Variant[TargetSpec, Undef] $primary_postgresql_host = undef, Variant[TargetSpec, Undef] $replica_postgresql_host = undef, Variant[TargetSpec, Undef] $compiler_hosts = undef, Variant[TargetSpec, Undef] $legacy_compilers = undef)`
 
 The peadm::assert_supported_architecture function.
 
@@ -166,6 +170,12 @@ Data type: `Variant[TargetSpec, Undef]`
 
 
 ##### `compiler_hosts`
+
+Data type: `Variant[TargetSpec, Undef]`
+
+
+
+##### `legacy_compilers`
 
 Data type: `Variant[TargetSpec, Undef]`
 
@@ -1055,6 +1065,20 @@ Data type: `String`
 
 The certifcate name to check validation of
 
+### <a name="classify_compilers"></a>`classify_compilers`
+
+Classify compilers as legacy or non-legacy
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `compiler_hosts`
+
+Data type: `Array[String]`
+
+List of FQDNs of compilers
+
 ### <a name="code_manager"></a>`code_manager`
 
 Perform various code manager actions
@@ -1798,6 +1822,7 @@ The following parameters are available in the `peadm::convert` plan:
 * [`primary_host`](#-peadm--convert--primary_host)
 * [`replica_host`](#-peadm--convert--replica_host)
 * [`compiler_hosts`](#-peadm--convert--compiler_hosts)
+* [`legacy_compilers`](#-peadm--convert--legacy_compilers)
 * [`primary_postgresql_host`](#-peadm--convert--primary_postgresql_host)
 * [`replica_postgresql_host`](#-peadm--convert--replica_postgresql_host)
 * [`compiler_pool_address`](#-peadm--convert--compiler_pool_address)
@@ -1821,6 +1846,14 @@ Data type: `Optional[Peadm::SingleTargetSpec]`
 Default value: `undef`
 
 ##### <a name="-peadm--convert--compiler_hosts"></a>`compiler_hosts`
+
+Data type: `Optional[TargetSpec]`
+
+
+
+Default value: `undef`
+
+##### <a name="-peadm--convert--legacy_compilers"></a>`legacy_compilers`
 
 Data type: `Optional[TargetSpec]`
 
@@ -1911,6 +1944,7 @@ The following parameters are available in the `peadm::install` plan:
 * [`primary_host`](#-peadm--install--primary_host)
 * [`replica_host`](#-peadm--install--replica_host)
 * [`compiler_hosts`](#-peadm--install--compiler_hosts)
+* [`legacy_compilers`](#-peadm--install--legacy_compilers)
 * [`primary_postgresql_host`](#-peadm--install--primary_postgresql_host)
 * [`replica_postgresql_host`](#-peadm--install--replica_postgresql_host)
 * [`console_password`](#-peadm--install--console_password)
@@ -2022,6 +2056,14 @@ Data type: `Optional[Peadm::SingleTargetSpec]`
 Default value: `undef`
 
 ##### <a name="-peadm--install--compiler_hosts"></a>`compiler_hosts`
+
+Data type: `Optional[TargetSpec]`
+
+
+
+Default value: `undef`
+
+##### <a name="-peadm--install--legacy_compilers"></a>`legacy_compilers`
 
 Data type: `Optional[TargetSpec]`
 

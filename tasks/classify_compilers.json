@@ -1,0 +1,15 @@
+{
+  "description": "Classify compilers as legacy or non-legacy",
+  "parameters": {
+    "compiler_hosts": {
+      "type": "Array[String]",
+      "description": "List of FQDNs of compilers"
+    }
+  },
+  "implementations": [
+    {
+      "name": "classify_compilers.rb",
+      "requirements": ["shell"]
+    }
+  ]
+}

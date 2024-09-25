@@ -79,6 +79,12 @@ class peadm::setup::node_manager (
     variables => { 'pe_master' => true },
   }
 
+  # PE Compiler group comes from default PE and already has the pe compiler role
+  node_group { 'PE Compiler':
+    parent => 'PE Master',
+    rule   => ['and', ['=', ['trusted', 'extensions', peadm::oid('peadm_legacy_compiler')], 'false']],
+  }
+
   # This group should pin the primary, and also map to any pe-postgresql nodes
   # which are part of the architecture.
   node_group { 'PE Database':
@@ -115,6 +121,7 @@ class peadm::setup::node_manager (
     rule    => ['and',
       ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler'],
       ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'A'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_legacy_compiler')], 'false'],
     ],
     classes => {
       'puppet_enterprise::profile::puppetdb' => {
@@ -173,6 +180,7 @@ class peadm::setup::node_manager (
     rule    => ['and',
       ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler'],
       ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'B'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_legacy_compiler')], 'false'],
     ],
     classes => {
       'puppet_enterprise::profile::puppetdb' => {
@@ -182,6 +190,68 @@ class peadm::setup::node_manager (
         # lint:ignore:single_quote_string_with_variables
         'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_a_pool_address].filter |$_| { $_ },
         # lint:endignore
+        'puppetdb_port' => [8081],
+      },
+    },
+    data    => {
+      # Workaround for GH-118
+      'puppet_enterprise::profile::master::puppetdb' => {
+        'ha_enabled_replicas' => [],
+      },
+    },
+  }
+
+  node_group { 'PE Legacy Compiler':
+    parent  => 'PE Master',
+    rule    => ['and',
+      ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_legacy_compiler')], 'true'],
+    ],
+    classes => {
+      'puppet_enterprise::profile::master'   => {
+        'puppetdb_host' => [$internal_compiler_a_pool_address, $internal_compiler_b_pool_address].filter |$_| { $_ },
+        'puppetdb_port' => [8081],
+      },
+    },
+  }
+
+  # Configure the A pool for legacy compilers. There are up to two pools for DR, each
+  # having an affinity for one "availability zone" or the other.
+  node_group { 'PE Legacy Compiler Group A':
+    ensure  => 'present',
+    parent  => 'PE Legacy Compiler',
+    rule    => ['and',
+      ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'A'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_legacy_compiler')], 'true'],
+    ],
+    classes => {
+      'puppet_enterprise::profile::master'   => {
+        'puppetdb_host' => [$internal_compiler_b_pool_address, $internal_compiler_a_pool_address].filter |$_| { $_ },
+        'puppetdb_port' => [8081],
+      },
+    },
+    data    => {
+      # Workaround for GH-118
+      'puppet_enterprise::profile::master::puppetdb' => {
+        'ha_enabled_replicas' => [],
+      },
+    },
+  }
+
+  # Configure the B pool for legacy compilers. There are up to two pools for DR, each
+  # having an affinity for one "availability zone" or the other.
+  node_group { 'PE Legacy Compiler Group B':
+    ensure  => 'present',
+    parent  => 'PE Legacy Compiler',
+    rule    => ['and',
+      ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'B'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_legacy_compiler')], 'true'],
+    ],
+    classes => {
+      'puppet_enterprise::profile::master'   => {
+        'puppetdb_host' => [$internal_compiler_a_pool_address, $internal_compiler_a_pool_address].filter |$_| { $_ },
         'puppetdb_port' => [8081],
       },
     },
