@@ -23,7 +23,6 @@ on:
       - .puppet-lint.rc
       - .fixtures.yml
     branches: [main]
-  push:
   workflow_dispatch:
     inputs:
       ssh-debugging:
@@ -143,8 +142,7 @@ jobs:
           echo ::endgroup::
           echo ::group::smoke_test
           legacy_compiler=$(yq '.items[0].value.params.legacy_compilers[0]' peadm_config.json)
-          if [ "$compiler" != "$legacy_compiler" ]
-          then
+          if [ "$compiler" != "$legacy_compiler" ]; then
             echo "Compiler conversion failed, expected $compiler, got $legacy_compiler"
             exit 1
           fi

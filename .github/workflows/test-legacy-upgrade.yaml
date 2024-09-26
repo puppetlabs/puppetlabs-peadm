@@ -23,7 +23,6 @@ on:
       - .puppet-lint.rc
       - .fixtures.yml
     branches: [main]
-  push:
   workflow_dispatch:
     inputs:
       ssh-debugging:
@@ -141,7 +140,7 @@ jobs:
           echo ::group::smoke_test
           configured_legacy_compiler=$(yq '.items[0].value.params.legacy_compilers[0]' peadm_config.json)
           configured_compiler=$(yq '.items[0].value.params.compiler_hosts[0]' peadm_config.json)
-          if [ "$configured_legacy_compiler" != "$legacy_compiler" AND "$configured_compiler" != "$compiler" ]
+          if [ "$configured_legacy_compiler" != "$legacy_compiler" ] && [ "$configured_compiler" != "$compiler" ]; then
             echo "Compilers are not configured, expected $legacy_compiler and $compiler, got $configured_legacy_compiler and $configured_compiler"
             exit 1
           fi
@@ -186,7 +185,7 @@ jobs:
           echo ::group::smoke_test
           configured_legacy_compiler=$(yq '.items[0].value.params.legacy_compilers[0]' peadm_config.json)
           configured_compiler=$(yq '.items[0].value.params.compiler_hosts[0]' peadm_config.json)
-          if [ "$configured_legacy_compiler" != "$legacy_compiler" AND "$configured_compiler" != "$compiler" ]
+          if [ "$configured_legacy_compiler" != "$legacy_compiler" ] && [ "$configured_compiler" != "$compiler" ]; then
             echo "Compilers are not configured, expected $legacy_compiler and $compiler, got $configured_legacy_compiler and $configured_compiler"
             exit 1
           fi
