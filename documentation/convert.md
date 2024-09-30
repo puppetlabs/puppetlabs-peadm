@@ -36,7 +36,7 @@ The `begin_at_step` parameter can be used to facilitate re-running this plan aft
 
 ## Convert compilers to legacy
 
-### Puppet Enterprise installed with puppetlabs-peadm version 3.21 or later
+### Puppet Enterprise installed with puppetlabs-peadm version 3.25 or later
 
 To convert compilers to legacy compilers use the `peadm::convert_compiler_to_legacy` plan. This plan will create the needed Node group and Classifier rules to make compilers legacy. Also will add certificate extensions to those nodes.
 
@@ -44,6 +44,6 @@ To convert compilers to legacy compilers use the `peadm::convert_compiler_to_leg
 bolt plan run peadm::convert_compiler_to_legacy legacy_hosts=compiler1.example.com,compiler2.example.com primary_host=primary.example.com
 ```
 
-### Puppet Enterprise installed with puppetlabs-peadm version prior to 3.21
+### Puppet Enterprise installed with puppetlabs-peadm version prior to 3.25
 
 Follow Steps 1 to 3 in the [Upgrade Puppet Enterprise with legacy compilers](upgrade_with_legacy_compilers.md) documentation.
