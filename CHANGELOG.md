@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.25.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.25.0) - 2024-09-30
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.24.0...v3.25.0)
+
+### Added
+
+- Adding support for legacy compilers (#448) [#495](https://github.com/puppetlabs/puppetlabs-peadm/pull/495) ([CoMfUcIoS](https://github.com/CoMfUcIoS))
+
 ## [v3.24.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.24.0) - 2024-09-20
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.23.0...v3.24.0)
@@ -39,9 +47,16 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 ### Other
 
+- (PE-38769) Task/Plan to identify conflicting classifications on legacy compilers and warn the user [#483](https://github.com/puppetlabs/puppetlabs-peadm/pull/483) ([CoMfUcIoS](https://github.com/CoMfUcIoS))
 - PE-38815 add_replica plan updated, test matrix added [#480](https://github.com/puppetlabs/puppetlabs-peadm/pull/480) ([AaronShannon](https://github.com/AaronShannon))
 - (PE-38818) Removing experimental and private from add_replica [#478](https://github.com/puppetlabs/puppetlabs-peadm/pull/478) ([ragingra](https://github.com/ragingra))
+- (PE-38771) Convert plan accepts legacy compilers key in params.json [#476](https://github.com/puppetlabs/puppetlabs-peadm/pull/476) ([CoMfUcIoS](https://github.com/CoMfUcIoS))
+- (PE-38770) Install Plan accepts legacy_compilers key [#474](https://github.com/puppetlabs/puppetlabs-peadm/pull/474) ([CoMfUcIoS](https://github.com/CoMfUcIoS))
 - (PE-38814) add_compiler - Making primary_postgresql_host and avail_group_letter optional [#468](https://github.com/puppetlabs/puppetlabs-peadm/pull/468) ([ragingra](https://github.com/ragingra))
+- PE-38768 classify compilers task added [#467](https://github.com/puppetlabs/puppetlabs-peadm/pull/467) ([AaronShannon](https://github.com/AaronShannon))
+- (PE-38767) Adding legacy compilers to get_peadm_config [#456](https://github.com/puppetlabs/puppetlabs-peadm/pull/456) ([ragingra](https://github.com/ragingra))
+- PE-38772 Node groups added for legacy compilers [#455](https://github.com/puppetlabs/puppetlabs-peadm/pull/455) ([AaronShannon](https://github.com/AaronShannon))
+- Adding support for legacy compilers [#448](https://github.com/puppetlabs/puppetlabs-peadm/pull/448) ([ragingra](https://github.com/ragingra))
 - (PE-37235) Verify and update documentation on add_compiler [#429](https://github.com/puppetlabs/puppetlabs-peadm/pull/429) ([cathal41](https://github.com/cathal41))
 
 ## [v3.21.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.21.0) - 2024-07-15
