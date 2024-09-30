@@ -8,6 +8,8 @@ The `peadm::upgrade` plan requires as input the version of PE to upgrade to, and
 
 Please note that when upgrading from before 2023.4 to 2023.4 or above and you are using code manager, it is nessesary to provide known hosts for r10k. r10k_known_hosts is an optional parameter and is only required one time when upgrading to 2023.4 or beyond. But if you currently use the SSH protocol to allow r10k to access your remote Git repository, your Code manager or r10k code management tool cannot function until you define the r10k_known_hosts parameter. Subsequent upgrades will already have this and it won't be required again. Please refer to the Puppet Enterprise 2023.4 Upgrade cautions for more details.
 
+>To understand what classifications PEADM adds to your infrastructure, please see [here](classification.md).
+
 The following is an example parameters file for upgrading an Extra Large architecture deployment of PE 2023.2.0 to PE 2023.8.0.
 
 ```json
