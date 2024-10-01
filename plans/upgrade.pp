@@ -326,6 +326,8 @@ plan peadm::upgrade (
       default                                      => $primary_postgresql_target.peadm::certname(),
     }
 
+    run_task('peadm::get_group_rules', $primary_target)
+
     apply($primary_target) {
       class { 'peadm::setup::node_manager_yaml':
         primary_host => $primary_target.peadm::certname(),

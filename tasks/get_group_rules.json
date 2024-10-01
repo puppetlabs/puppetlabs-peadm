@@ -1,0 +1,5 @@
+{
+  "description": "Run on a PE primary node to return the rules currently applied to the PE Infrastructure Agent group, along with a warning that they will be overwritten",
+  "parameters": { },
+  "input_method": "stdin"
+}
