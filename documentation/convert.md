@@ -2,6 +2,8 @@
 
 The peadm::convert plan can be used to adopt manually deployed infrastructure for use with PEADM or to adopt infrastructure deployed with an older version of peadm.
 
+>To understand what classifications PEADM adds to your infrastructure, please see [here](classification.md).
+
 ## Convert an Existing Deployment
 
 Prepare to run the plan against all servers in the PE infrastructure, using a params.json file such as this one:
