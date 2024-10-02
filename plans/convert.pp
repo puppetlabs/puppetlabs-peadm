@@ -261,6 +261,7 @@ plan peadm::convert (
     # the existing groups are correct enough to function until the upgrade is
     # performed.
     if (versioncmp($pe_version, '2019.7.0') >= 0) {
+      out::message('WARNING: The following existing rules on the PE Infrastructure Agent group will be overwritten with default values:')
       run_task('peadm::get_group_rules', $primary_target)
 
       apply($primary_target) {

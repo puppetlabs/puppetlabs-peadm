@@ -64,7 +64,7 @@
 * [`download`](#download): Download a file using curl
 * [`enable_replica`](#enable_replica): Execute the enable replica puppet command
 * [`filesize`](#filesize): Return the size of a file in bytes
-* [`get_group_rules`](#get_group_rules): Run on a PE primary node to return the rules currently applied to the PE Infrastructure Agent group, along with a warning that they will be o
+* [`get_group_rules`](#get_group_rules): Run on a PE primary node to return the rules currently applied to the PE Infrastructure Agent group
 * [`get_peadm_config`](#get_peadm_config): Run on a PE primary node to return the currently configured PEAdm parameters
 * [`get_psql_version`](#get_psql_version): Run on a PE PSQL node to return the major version of the PSQL server currently installed
 * [`infrastatus`](#infrastatus): Runs puppet infra status and returns the output
@@ -1188,7 +1188,7 @@ Path to the file to return the size of
 
 ### <a name="get_group_rules"></a>`get_group_rules`
 
-Run on a PE primary node to return the rules currently applied to the PE Infrastructure Agent group, along with a warning that they will be overwritten
+Run on a PE primary node to return the rules currently applied to the PE Infrastructure Agent group
 
 **Supports noop?** false
 

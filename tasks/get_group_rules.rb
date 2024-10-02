@@ -10,7 +10,6 @@ class GetInfrastructureAgentGroupRules
   def execute!
     infrastructure_agent_group = groups.find { |obj| obj['name'] == 'PE Infrastructure Agent' }
     if infrastructure_agent_group
-      puts 'WARNING: The following existing rules on the PE Infrastructure Agent group will be overwritten with default values:'
       puts JSON.pretty_generate(infrastructure_agent_group['rule'])
     else
       puts JSON.pretty_generate({ 'error' => 'PE Infrastructure Agent group does not exist' })
