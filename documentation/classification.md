@@ -4,7 +4,7 @@
 
 This reference implementation uses four non-default node classification groups to implement the Extra Large DR architecture. Intentionally, classification of default, out-of-box node groups is not modified. This allows normal commands such as `puppet infrastructure enable replica` to behave more or less exactly as they would in Standard or Large architecture clusters.
 
->Please note, as of PEADM 3.21 the node group **PE Infrastructure Agent** now has it's assosiated rules enforced. This means that custom rules added to the group will be purged during actions such as `peadm::convert` and `peadm::upgrade`.  
+>Note: As of PEADM version 3.21, the node group **PE Infrastructure Agent** now has its associated rules enforced. This means that custom rules added to the group will be purged during actions such as `peadm::convert` and `peadm::upgrade`. 
 
 This image shows a fully expanded view of the PE Infrastructure node group, highlighting the new additions made to support the Extra Large architecture.
 
@@ -22,7 +22,7 @@ The new groups are:
 * PE Legacy Compiler Group A
 * PE Legacy Compiler Group B
 
-The configuration applied in each group looks as follows:
+The configuration applied in each group appears as follows:
 
 ### PE Primary A
 
@@ -85,7 +85,7 @@ Notes on PE Legacy Compiler:
 
 * Introduced in PEADM 3.25 along with the legacy compiler functionality
 * Similar to the native PE Compiler group, and used to contain legacy compilers
-* For more info on legacy compilers, please see [here](upgrade_with_legacy_compilers.md)
+* For more information on legacy compilers, please see [here](upgrade_with_legacy_compilers.md)
 
 ### PE Legacy Compiler Group A
 
