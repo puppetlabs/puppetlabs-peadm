@@ -22,6 +22,7 @@ describe 'peadm::upgrade' do
 
   it 'minimum variables to run' do
     allow_standard_non_returning_calls
+    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
 
     expect_task('peadm::read_file')
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
@@ -36,6 +37,7 @@ describe 'peadm::upgrade' do
 
   it 'runs with a primary, compilers, but no replica' do
     allow_standard_non_returning_calls
+    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
 
     expect_task('peadm::read_file')
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
@@ -92,6 +94,7 @@ describe 'peadm::upgrade' do
         .always_return({ 'content' => installed_version })
 
       expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary)
+      expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
     end
 
     it 'updates pe.conf if r10k_known_hosts is set' do
