@@ -326,6 +326,10 @@ plan peadm::upgrade (
       default                                      => $primary_postgresql_target.peadm::certname(),
     }
 
+    $rules = run_task('peadm::get_group_rules', $primary_target).first.value['_output']
+    $rules_formatted = stdlib::to_json_pretty(parsejson($rules))
+    out::message("WARNING: The following existing rules on the PE Infrastructure Agent group will be overwritten with default values:\n ${rules_formatted}")
+
     apply($primary_target) {
       class { 'peadm::setup::node_manager_yaml':
         primary_host => $primary_target.peadm::certname(),

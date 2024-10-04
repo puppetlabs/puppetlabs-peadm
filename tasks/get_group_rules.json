@@ -1,0 +1,5 @@
+{
+  "description": "Run on a PE primary node to return the rules currently applied to the PE Infrastructure Agent group",
+  "parameters": { },
+  "input_method": "stdin"
+}
