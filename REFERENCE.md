@@ -92,6 +92,7 @@
 
 #### Public Plans
 
+* [`peadm::add_compiler`](#peadm--add_compiler): Proxy plan for peadm::add_compilers.
 * [`peadm::add_compilers`](#peadm--add_compilers): Add new compilers to a PE architecture or replace an existing with new configuration.
 * [`peadm::add_database`](#peadm--add_database)
 * [`peadm::add_replica`](#peadm--add_replica): Add or replace a replica host.
@@ -1593,6 +1594,56 @@ Data type: `Enum['8140', '8143']`
 Which port to query the status API on
 
 ## Plans
+
+### <a name="peadm--add_compiler"></a>`peadm::add_compiler`
+
+Proxy plan for peadm::add_compilers.
+
+#### Parameters
+
+The following parameters are available in the `peadm::add_compiler` plan:
+
+* [`avail_group_letter`](#-peadm--add_compiler--avail_group_letter)
+* [`compiler_host`](#-peadm--add_compiler--compiler_host)
+* [`dns_alt_names`](#-peadm--add_compiler--dns_alt_names)
+* [`primary_host`](#-peadm--add_compiler--primary_host)
+* [`primary_postgresql_host`](#-peadm--add_compiler--primary_postgresql_host)
+
+##### <a name="-peadm--add_compiler--avail_group_letter"></a>`avail_group_letter`
+
+Data type: `Enum['A', 'B']`
+
+_ Either A or B; whichever of the two letter designations the compiler are being assigned to
+
+Default value: `'A'`
+
+##### <a name="-peadm--add_compiler--compiler_host"></a>`compiler_host`
+
+Data type: `Peadm::SingleTargetSpec`
+
+_ The hostname and certname of the new compiler
+
+##### <a name="-peadm--add_compiler--dns_alt_names"></a>`dns_alt_names`
+
+Data type: `Optional[String[1]]`
+
+_ A comma-separated list of DNS alt names for the compiler.
+
+Default value: `undef`
+
+##### <a name="-peadm--add_compiler--primary_host"></a>`primary_host`
+
+Data type: `Peadm::SingleTargetSpec`
+
+_ The hostname and certname of the primary Puppet server
+
+##### <a name="-peadm--add_compiler--primary_postgresql_host"></a>`primary_postgresql_host`
+
+Data type: `Optional[Peadm::SingleTargetSpec]`
+
+_ The hostname and certname of the PE-PostgreSQL server with availability group $avail_group_letter
+
+Default value: `undef`
 
 ### <a name="peadm--add_compilers"></a>`peadm::add_compilers`
 
