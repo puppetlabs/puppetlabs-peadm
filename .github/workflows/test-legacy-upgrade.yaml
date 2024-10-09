@@ -1,6 +1,7 @@
 ---
 name: Upgrade PE with legacy compilers
 on:
+  push:
   pull_request:
     paths:
       - .github/workflows/**/*
@@ -97,7 +98,9 @@ jobs:
           compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | head -n 1)
           legacy_compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | sed -n 2p)
           replica=$(yq '.groups[].targets[] | select(.vars.role == "replica") | .name' spec/fixtures/litmus_inventory.yaml)
-          echo -n '{ "download_mode": "direct", "primary_host": "'$primary'", "replica_host": "'$replica'", "legacy_compilers": ["'$legacy_compiler'"], "compiler_hosts": ["'$compiler'"], "version": "2023.7.0", "console_password": "'${{ secrets.CONSOLE_PASSWORD }}'" }' > params.json
+          hash_random=$(LC_ALL=C tr -dc \'A-Za-z0-9!"#$%&\'\\\'\'()*+,-./:;<=>?@[\]^_`{|}~\' </dev/urandom | head -c 30; echo)
+          echo $hash_random
+          echo -n '{ "download_mode": "direct", "primary_host": "'$primary'", "replica_host": "'$replica'", "legacy_compilers": ["'$legacy_compiler'"], "compiler_hosts": ["'$compiler'"], "version": "2023.7.0", "console_password": "'$hash_random'" }' > params.json
       - name: Install PE with legacy compilers
         timeout-minutes: 120
         run: |
