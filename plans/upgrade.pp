@@ -62,6 +62,8 @@ plan peadm::upgrade (
 
   Optional[Peadm::UpgradeSteps] $begin_at_step = undef,
 ) {
+  out::message('# Validating inputs')
+
   # Ensure input valid for a supported architecture
   $arch = peadm::assert_supported_architecture(
     $primary_host,
@@ -91,6 +93,11 @@ plan peadm::upgrade (
       $primary_postgresql_target,
       $replica_postgresql_target,
   ])
+
+  # Validate the RBAC token used to upgrade compilers if compilers are present
+  if $compiler_targets and $compiler_targets.size > 0 {
+    run_task('peadm::validate_rbac_token', $primary_target, token_file => $token_file)
+  }
 
   out::message('# Gathering information')
 

@@ -73,7 +73,8 @@ class PuppetInfraUpgrade
       loop do
         response = https.request(request)
         unless response.is_a? Net::HTTPSuccess
-          raise "Unexpected result from orchestrator: #{response.class}\n#{response}"
+          body = JSON.parse(response.body)
+          raise "Unexpected result from orchestrator: #{response.code}#{body.kind}\n#{body.msg}"
         end
         inventory = JSON.parse(response.body)
         break if inventory['items'].all? { |item| item['connected'] }
