@@ -94,7 +94,8 @@
 
 #### Public Plans
 
-* [`peadm::add_compiler`](#peadm--add_compiler): Add a new compiler to a PE architecture or replace an existing one with new configuration.
+* [`peadm::add_compiler`](#peadm--add_compiler): Proxy plan for peadm::add_compilers.
+* [`peadm::add_compilers`](#peadm--add_compilers): Add new compilers to a PE architecture or replace an existing with new configuration.
 * [`peadm::add_database`](#peadm--add_database)
 * [`peadm::add_replica`](#peadm--add_replica): Add or replace a replica host.
 Supported use cases:
@@ -1610,7 +1611,7 @@ Which port to query the status API on
 
 ### <a name="peadm--add_compiler"></a>`peadm::add_compiler`
 
-Add a new compiler to a PE architecture or replace an existing one with new configuration.
+Proxy plan for peadm::add_compilers.
 
 #### Parameters
 
@@ -1626,7 +1627,7 @@ The following parameters are available in the `peadm::add_compiler` plan:
 
 Data type: `Enum['A', 'B']`
 
-_ Either A or B; whichever of the two letter designations the compiler is being assigned to
+_ Either A or B; whichever of the two letter designations the compiler are being assigned to
 
 Default value: `'A'`
 
@@ -1640,7 +1641,7 @@ _ The hostname and certname of the new compiler
 
 Data type: `Optional[String[1]]`
 
-_ A comma_separated list of DNS alt names for the compiler
+_ A comma-separated list of DNS alt names for the compiler.
 
 Default value: `undef`
 
@@ -1651,6 +1652,56 @@ Data type: `Peadm::SingleTargetSpec`
 _ The hostname and certname of the primary Puppet server
 
 ##### <a name="-peadm--add_compiler--primary_postgresql_host"></a>`primary_postgresql_host`
+
+Data type: `Optional[Peadm::SingleTargetSpec]`
+
+_ The hostname and certname of the PE-PostgreSQL server with availability group $avail_group_letter
+
+Default value: `undef`
+
+### <a name="peadm--add_compilers"></a>`peadm::add_compilers`
+
+Add new compilers to a PE architecture or replace an existing with new configuration.
+
+#### Parameters
+
+The following parameters are available in the `peadm::add_compilers` plan:
+
+* [`avail_group_letter`](#-peadm--add_compilers--avail_group_letter)
+* [`compiler_hosts`](#-peadm--add_compilers--compiler_hosts)
+* [`dns_alt_names`](#-peadm--add_compilers--dns_alt_names)
+* [`primary_host`](#-peadm--add_compilers--primary_host)
+* [`primary_postgresql_host`](#-peadm--add_compilers--primary_postgresql_host)
+
+##### <a name="-peadm--add_compilers--avail_group_letter"></a>`avail_group_letter`
+
+Data type: `Enum['A', 'B']`
+
+_ Either A or B; whichever of the two letter designations the compilers are being assigned to
+
+Default value: `'A'`
+
+##### <a name="-peadm--add_compilers--compiler_hosts"></a>`compiler_hosts`
+
+Data type: `TargetSpec`
+
+_ The hostnames and certnames of the new compilers
+
+##### <a name="-peadm--add_compilers--dns_alt_names"></a>`dns_alt_names`
+
+Data type: `Optional[Array[String[1]]]`
+
+_ An array of strings, where each string is a comma-separated list of DNS alt names for the compilers. Order matters; if a compiler doesn't need dns_alt_names, use "undef" as string.
+
+Default value: `undef`
+
+##### <a name="-peadm--add_compilers--primary_host"></a>`primary_host`
+
+Data type: `Peadm::SingleTargetSpec`
+
+_ The hostname and certname of the primary Puppet server
+
+##### <a name="-peadm--add_compilers--primary_postgresql_host"></a>`primary_postgresql_host`
 
 Data type: `Optional[Peadm::SingleTargetSpec]`
 

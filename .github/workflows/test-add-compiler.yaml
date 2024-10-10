@@ -85,10 +85,10 @@ jobs:
             architecture=${{ matrix.architecture }} \
             version=${{ matrix.version }} \
             console_password=${{ secrets.CONSOLE_PASSWORD }
-      - name: Run add_compiler plan
+      - name: Run add_compilers plan
         timeout-minutes: 50
         run: |
-          bundle exec bolt plan run peadm_spec::add_compiler -v \
+          bundle exec bolt plan run peadm_spec::add_compilers -v \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             architecture=${{ matrix.architecture }} \

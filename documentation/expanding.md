@@ -2,29 +2,29 @@
 
 Documentation which provides instructions for expanding existing PEADM based deployments of Puppet Enterprise with compilers, disaster recovery replicas, and external databases.
 
-* [Adding External Databases with peadm::add_database](#adding-external-databases-with-peadmadd_database)
-* [Enable Disaster Recovery and Add a Replica with peadm::add_replica](#enable-disaster-recovery-and-add-a-replica-with-peadmadd_replica)
-* [Adding Compilers with peadm::add_compiler](#adding-compilers-with-peadmadd_compiler)
+- [Adding External Databases with peadm::add_database](#adding-external-databases-with-peadmadd_database)
+- [Enable Disaster Recovery and Add a Replica with peadm::add_replica](#enable-disaster-recovery-and-add-a-replica-with-peadmadd_replica)
+- [Adding Compilers with peadm::add_compilers](#adding-compilers-with-peadmadd_compilers)
 
 ### Notes
 
-* CLI options for `add_replica`, `add_compiler`, and `add_database` are unfortunately inconsistent
-  * This is the result of a history of organic development
-* There is an inconsistency in the output of the task `peadm::get_peadm_config` and the naming of related parameters
-  * The documentation and CLI refer to availability groups but the output from the task will refer to associated data as role letters
-* The term host and server are interchangeable throughout the documentation
-  * When ever possible documentation will prefer the term server but plan parameters and `peadm::get_peadm_config` often uses the term host 
+- CLI options for `add_replica`, `add_compilers`, and `add_database` are unfortunately inconsistent
+  - This is the result of a history of organic development
+- There is an inconsistency in the output of the task `peadm::get_peadm_config` and the naming of related parameters
+  - The documentation and CLI refer to availability groups but the output from the task will refer to associated data as role letters
+- The term host and server are interchangeable throughout the documentation
+  - When ever possible documentation will prefer the term server but plan parameters and `peadm::get_peadm_config` often uses the term host
 
 ### Key
 
-* _\<primary-server-fqdn\>_ - The FQDN and certname of the Primary Puppet server
-* _\<new-postgres-server-fqdn\>_ - The FQDN and certname of the new PE-PostgreSQL server to initialize
-* _\<new-replica-server-fqdn\>_ - The FQDN and certname of the new Replica Puppet server to initialize
-* _\<replica-postgres-server-fqdn\>_ - The FQDN and certname of the Replica PE-PostgreSQL server
-* _\<new-compiler-fqdn\>_ - The FQDN and certname of the new Compiler to initialize
-* _\<new-compiler-target-group\>_ - The target availability group letter to assign to the new Compiler
-* _\<target-group-server-fqdn\>_ - The FQDN and certname of the Primary Puppet server that is assigned to the new Compiler's target availability group letter
-* _\<target-group-postgresql-fqdn\>_ - The FQDN and certname of the PE-PostgreSQL server that is assigned to the new Compiler's target availability group letter
+- _\<primary-server-fqdn\>_ - The FQDN and certname of the Primary Puppet server
+- _\<new-postgres-server-fqdn\>_ - The FQDN and certname of the new PE-PostgreSQL server to initialize
+- _\<new-replica-server-fqdn\>_ - The FQDN and certname of the new Replica Puppet server to initialize
+- _\<replica-postgres-server-fqdn\>_ - The FQDN and certname of the Replica PE-PostgreSQL server
+- _\<new-compiler-fqdn\>_ - The FQDN and certname of the new Compiler to initialize
+- _\<new-compiler-target-group\>_ - The target availability group letter to assign to the new Compiler
+- _\<target-group-server-fqdn\>_ - The FQDN and certname of the Primary Puppet server that is assigned to the new Compiler's target availability group letter
+- _\<target-group-postgresql-fqdn\>_ - The FQDN and certname of the PE-PostgreSQL server that is assigned to the new Compiler's target availability group letter
 
 ## Adding External Databases with peadm::add_database
 
@@ -50,7 +50,7 @@ The initial Primary will be assigned availability group **A** and the initial Re
 
 In deployments which adopted the Extra Large deployment architecture you must provide the `replica_postgresql_host` parameter set to the PE-PostgreSQL server which will be collocated within the same availability group as the new Replica Puppet server. The `peadm::get_peadm_config` task will help you determine the most appropriate value. In the **Example** section below, the task has figured out which PE-PostgreSQL server is the Replica PE-PostgreSQL database server. You'll find the value at `params.replica_postgresql_host`, which is equal to `pe-psql-6251cd-1.us-west1-b.c.slice-cody.internal`. Reminder, the Replica PE-PostgreSQL server **MUST** be provisioned and deployed prior to initializing a Replica Puppet server.
 
-    bolt task run peadm::get_peadm_config --targets <primary-server-fqdn> 
+    bolt task run peadm::get_peadm_config --targets <primary-server-fqdn>
     bolt plan run peadm::add_replica primary_host=<primary-server-fqdn> replica_host=<new-replica-server-fqdn> replica_postgresql_host=<replica-postgres-server-fqdn>
 
 **Example**
@@ -87,7 +87,7 @@ In deployments which adopted the Extra Large deployment architecture you must pr
               "pe-compiler-6251cd-1.us-west1-b.c.slice-cody.internal"
             ],
             "B": [
-    
+
             ]
           }
         }
@@ -95,21 +95,21 @@ In deployments which adopted the Extra Large deployment architecture you must pr
     Successful on 1 target: pe-server-6251cd-0.us-west1-a.c.slice-cody.internal
     Ran on 1 target in 2.56 sec
 
-## Adding Compilers with peadm::add_compiler
+## Adding Compilers with peadm::add_compilers
 
-The Standard deployment architecture is the only deployment architecture of the three which does not include Compilers, the lack of them is what differentiates the Standard from Large deployment architecture. Deployment architecture has no effect on the process for adding Compilers to a deployment. The [peadm::add_compiler](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/plans/add_compiler.pp) plan functions identical in all three deployment architectures, whether you are adding the 1st or the 100th but some options do change slightly depending.
+The Standard deployment architecture is the only deployment architecture of the three which does not include Compilers, the lack of them is what differentiates the Standard from Large deployment architecture. Deployment architecture has no effect on the process for adding Compilers to a deployment. The [peadm::add_compilers](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/plans/add_compilers.pp) plan functions identical in all three deployment architectures, whether you are adding the 1st or the 100th but some options do change slightly depending.
 
 ### Adding Compilers to Standard and Large without disaster recovery
 
-The command invocation is identical when adding Compilers to a Standard or Large deployment architecture if disaster recovery (DR) is not enabled and a replica Puppet server has not been provisioned. Take note that `avail_group_letter` is not required in this **no DR**  scenario. By default, the value of this parameter is set to **A**.
+The command invocation is identical when adding Compilers to a Standard or Large deployment architecture if disaster recovery (DR) is not enabled and a replica Puppet server has not been provisioned. Take note that `avail_group_letter` is not required in this **no DR** scenario. By default, the value of this parameter is set to **A**.
 
-    bolt plan run peadm::add_compiler primary_host=<primary-server-fqdn> compiler_host=<new-compiler-fqdn>
+    bolt plan run peadm::add_compilers primary_host=<primary-server-fqdn> compiler_hosts=<new-compiler-fqdn>
 
 ### Adding Compilers to Extra Large without disaster recovery
 
 When adding a compiler to a deployment which has adopted the Extra Large deployment architecture in a **no DR** scenario, the only difference is that the `primary_postgresql_host` changes to the value of the primary PE-PostgreSQL server as opposed to the Primary Puppet server.
 
-    bolt plan run peadm::add_compiler primary_host=<primary-server-fqdn> compiler_host=<new-compiler-fqdn>
+    bolt plan run peadm::add_compilers primary_host=<primary-server-fqdn> compiler_hosts=<new-compiler-fqdn>
 
 ### Adding Compilers to Standard and Large when disaster recovery has been enabled
 
@@ -117,12 +117,12 @@ As was described in the section documenting [peadm::add_replica](#enable-disaste
 
 The name of the `primary_postgresql_host` parameter can be confusing, it is **NOT** always equal to the Primary Puppet server or Primary PE-PostgreSQL server, it can also be equal to the replica Puppet server or replica PE-PostgreSQL server. It should be set to the server which is a member of the compiler's target availability group. In most cases this will be handled behind the scenes and not be required to be worked out by the user. The easiest way to determine this value is to first run the `peadm::get_peadm_config` task and source the value from its output. In the **Example** section the value to use when targeting the **B** group is `pe-server-59ab63-1.us-west1-b.c.slice-cody.internal`. You'll find the value at `role-letter.server.B`.
 
-    bolt plan run peadm::get_peadm_config --targets <primary-server-fqdn> 
-    bolt plan run peadm::add_compiler primary_host=<primary-server-fqdn> compiler_host=<new-compiler-fqdn> avail_group_letter=<new-compiler-target-group> primary_postgresql_host=<target-group-server-fqdn>
+    bolt plan run peadm::get_peadm_config --targets <primary-server-fqdn>
+    bolt plan run peadm::add_compilers primary_host=<primary-server-fqdn> compiler_hosts=<new-compiler-fqdn> avail_group_letter=<new-compiler-target-group> primary_postgresql_host=<target-group-server-fqdn>
 
 **Example**
 
-    % bolt task run peadm::get_peadm_config --targets pe-server-59ab63-0.us-west1-a.c.slice-cody.internal 
+    % bolt task run peadm::get_peadm_config --targets pe-server-59ab63-0.us-west1-a.c.slice-cody.internal
     Started on pe-server-59ab63-0.us-west1-a.c.slice-cody.internal...
     Finished on pe-server-59ab63-0.us-west1-a.c.slice-cody.internal:
       {
@@ -165,8 +165,8 @@ The name of the `primary_postgresql_host` parameter can be confusing, it is **NO
 
 Adding a Compiler to a deployment which has adopted the Extra Large deployment architecture with disaster recovery (DR) enabled is similar to Standard and Large but the value of `primary_postgresql_host` will no longer correspond to the Primary or Replica Puppet server since PuppetDB databases are now hosted externally. In the **Example** section, the value to use when targeting the **A** group is `pe-psql-65e03f-0.us-west1-a.c.slice-cody.internal`. You'll find the value at `role-letter.postgresql.A`.
 
-    bolt plan run peadm::get_peadm_config --targets <primary-server-fqdn> 
-    bolt plan run peadm::add_compiler primary_host=<primary-server-fqdn> compiler_host=<new-compiler-fqdn> avail_group_letter=<new-compiler-target-availability-group> primary_postgresql_host=<target-availability-group-postgresql-fqdn>
+    bolt plan run peadm::get_peadm_config --targets <primary-server-fqdn>
+    bolt plan run peadm::add_compilers primary_host=<primary-server-fqdn> compiler_hosts=<new-compiler-fqdn> avail_group_letter=<new-compiler-target-availability-group> primary_postgresql_host=<target-availability-group-postgresql-fqdn>
 
 **Example**
 

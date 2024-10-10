@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe 'peadm::add_compiler' do
+describe 'peadm::add_compilers' do
   include BoltSpec::Plans
 
   def allow_standard_non_returning_calls
@@ -14,7 +14,7 @@ describe 'peadm::add_compiler' do
     let(:params) do
       {
         'primary_host' => 'primary',
-        'compiler_host' => 'compiler',
+        'compiler_hosts' => 'compiler',
       }
     end
 
@@ -57,7 +57,7 @@ describe 'peadm::add_compiler' do
       expect_plan('peadm::util::copy_file').be_called_times(1)
       expect_task('peadm::puppet_runonce').with_targets(['compiler'])
       expect_task('peadm::puppet_runonce').with_targets(['server_a'])
-      expect(run_plan('peadm::add_compiler', params)).to be_ok
+      expect(run_plan('peadm::add_compilers', params)).to be_ok
     end
 
     it 'handles different avail_group_letter values' do
@@ -72,7 +72,7 @@ describe 'peadm::add_compiler' do
       expect_task('peadm::puppet_runonce').with_targets(['compiler'])
       expect_task('peadm::puppet_runonce').with_targets(['server_a'])
       expect_task('peadm::puppet_runonce').with_targets(['server_b'])
-      expect(run_plan('peadm::add_compiler', params_with_avail_group_b)).to be_ok
+      expect(run_plan('peadm::add_compilers', params_with_avail_group_b)).to be_ok
     end
 
     it 'handles specified primary_postgresql_host' do
@@ -85,7 +85,7 @@ describe 'peadm::add_compiler' do
       expect_plan('peadm::util::copy_file').be_called_times(1)
       expect_task('peadm::puppet_runonce').with_targets(['compiler'])
       expect_task('peadm::puppet_runonce').with_targets(['custom_postgresql'])
-      expect(run_plan('peadm::add_compiler', params_with_primary_postgresql_host)).to be_ok
+      expect(run_plan('peadm::add_compilers', params_with_primary_postgresql_host)).to be_ok
     end
 
     it 'handles external postgresql host group A' do
@@ -100,7 +100,7 @@ describe 'peadm::add_compiler' do
       expect_plan('peadm::util::copy_file').be_called_times(1)
       expect_task('peadm::puppet_runonce').with_targets(['compiler'])
       expect_task('peadm::puppet_runonce').with_targets(['external_postgresql'])
-      expect(run_plan('peadm::add_compiler', params)).to be_ok
+      expect(run_plan('peadm::add_compilers', params)).to be_ok
     end
 
     it 'handles external postgresql host group A with replica' do
@@ -116,7 +116,7 @@ describe 'peadm::add_compiler' do
       expect_task('peadm::puppet_runonce').with_targets(['compiler'])
       expect_task('peadm::puppet_runonce').with_targets(['external_postgresql'])
       expect_task('peadm::puppet_runonce').with_targets(['replica'])
-      expect(run_plan('peadm::add_compiler', params)).to be_ok
+      expect(run_plan('peadm::add_compilers', params)).to be_ok
     end
 
     it 'handles external postgresql host group B' do
@@ -131,7 +131,7 @@ describe 'peadm::add_compiler' do
       expect_task('peadm::puppet_runonce').with_targets(['compiler'])
       expect_task('peadm::puppet_runonce').with_targets(['replica_external_postgresql'])
       expect_task('peadm::puppet_runonce').with_targets(['server_a'])
-      expect(run_plan('peadm::add_compiler', params_with_avail_group_b)).to be_ok
+      expect(run_plan('peadm::add_compilers', params_with_avail_group_b)).to be_ok
     end
   end
 end
