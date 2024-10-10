@@ -305,8 +305,12 @@ plan peadm::convert (
     # Restart cluster compiler services that are likely not restarted by our
     # final Puppet run to increase chance everything is functional upon plan
     # completion
-    run_command('systemctl restart pe-puppetserver.service pe-puppetdb.service',
+    run_command('systemctl restart pe-puppetserver.service',
     $all_targets - $primary_target - $primary_postgresql_target - $replica_postgresql_target)
+
+    # PuppetDB is only found on modern compilers, not legacy ones
+    run_command('systemctl restart pe-puppetdb.service',
+    $all_targets - $primary_target - $primary_postgresql_target - $replica_postgresql_target - $legacy_compiler_targets)
 
     # Run puppet on all targets again to ensure everything is fully up-to-date
     run_task('peadm::puppet_runonce', $all_targets)
