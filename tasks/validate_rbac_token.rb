@@ -29,9 +29,9 @@ class ValidateRbacToken
       body = JSON.parse(resp.body)
       case resp.code
       when '401', '403'
-        puts "#{resp.code} #{body['kind']}: \nCheck your API token at #{token_file}. " +
-              "An alternate token file can be specified using the token_file param. \n\n" +
-              "See https://www.puppet.com/docs/pe/latest/rbac_token_auth_intro for more details. \n"
+        puts "#{resp.code} #{body['kind']}: \nCheck your API token at #{token_file}. \
+              An alternate token file can be specified using the token_file param. \n\n\
+              See https://www.puppet.com/docs/pe/latest/rbac_token_auth_intro for more details. \n"
       else
         puts "Error validating token: #{resp.code} #{body['kind']}"
         puts body['msg']
@@ -65,7 +65,6 @@ class ValidateRbacToken
 
     https
   end
-
 end
 
 # Run the task unless an environment flag has been set, signaling not to. The
