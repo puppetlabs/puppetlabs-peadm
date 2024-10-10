@@ -30,6 +30,7 @@
 # @param uploaddir
 #   Directory the installer tarball will be uploaded to or expected to be in
 #   for offline usage.
+# @param begin_at_step The step where the plan should start. If not set, it will start at the beginning
 #
 plan peadm::upgrade (
   # Standard
@@ -59,13 +60,7 @@ plan peadm::upgrade (
   Enum[direct,bolthost]      $download_mode          = 'bolthost',
   Boolean                    $permit_unsafe_versions = false,
 
-  Optional[Enum[
-      'upgrade-primary',
-      'upgrade-node-groups',
-      'upgrade-primary-compilers',
-      'upgrade-replica',
-      'upgrade-replica-compilers',
-  'finalize']] $begin_at_step = undef,
+  Optional[Peadm::UpgradeSteps] $begin_at_step = undef,
 ) {
   # Ensure input valid for a supported architecture
   $arch = peadm::assert_supported_architecture(
