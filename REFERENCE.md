@@ -43,12 +43,14 @@
 
 ### Data types
 
+* [`Peadm::ConvertSteps`](#Peadm--ConvertSteps): type for the different steps where the peadm::convert plan can be started
 * [`Peadm::Known_hosts`](#Peadm--Known_hosts)
 * [`Peadm::Ldap_config`](#Peadm--Ldap_config)
 * [`Peadm::Pe_version`](#Peadm--Pe_version)
 * [`Peadm::Pem`](#Peadm--Pem)
 * [`Peadm::Recovery_opts`](#Peadm--Recovery_opts)
 * [`Peadm::SingleTargetSpec`](#Peadm--SingleTargetSpec): A SingleTargetSpec represents any String, Target or single-element array of one or the other that can be passed to get_targets() to return an
+* [`Peadm::UpgradeSteps`](#Peadm--UpgradeSteps): type for the different steps where the peadm::upgrade plan can be started
 
 ### Tasks
 
@@ -918,6 +920,12 @@ Data type: `TargetSpec`
 
 ## Data types
 
+### <a name="Peadm--ConvertSteps"></a>`Peadm::ConvertSteps`
+
+type for the different steps where the peadm::convert plan can be started
+
+Alias of `Enum['modify-primary-certs', 'modify-infra-certs', 'convert-node-groups', 'finalize']`
+
 ### <a name="Peadm--Known_hosts"></a>`Peadm::Known_hosts`
 
 The Peadm::Known_hosts data type.
@@ -1009,6 +1017,12 @@ Boltlib::TargetSpec for use when a _single_ target is valid, but multiple
 targets are not.
 
 Alias of `Variant[Pattern[/\A[^[:space:],]+\z/], Target, Array[Peadm::SingleTargetSpec, 1, 1]]`
+
+### <a name="Peadm--UpgradeSteps"></a>`Peadm::UpgradeSteps`
+
+type for the different steps where the peadm::upgrade plan can be started
+
+Alias of `Enum['upgrade-primary', 'upgrade-node-groups', 'upgrade-primary-compilers', 'upgrade-replica', 'upgrade-replica-compilers', 'finalize']`
 
 ## Tasks
 
@@ -1826,6 +1840,7 @@ management using PEAdm.
 
 The following parameters are available in the `peadm::convert` plan:
 
+* [`begin_at_step`](#-peadm--convert--begin_at_step)
 * [`primary_host`](#-peadm--convert--primary_host)
 * [`replica_host`](#-peadm--convert--replica_host)
 * [`compiler_hosts`](#-peadm--convert--compiler_hosts)
@@ -1836,7 +1851,14 @@ The following parameters are available in the `peadm::convert` plan:
 * [`internal_compiler_a_pool_address`](#-peadm--convert--internal_compiler_a_pool_address)
 * [`internal_compiler_b_pool_address`](#-peadm--convert--internal_compiler_b_pool_address)
 * [`dns_alt_names`](#-peadm--convert--dns_alt_names)
-* [`begin_at_step`](#-peadm--convert--begin_at_step)
+
+##### <a name="-peadm--convert--begin_at_step"></a>`begin_at_step`
+
+Data type: `Optional[Peadm::ConvertSteps]`
+
+The step where the plan should start. If not set, it will start at the beginning
+
+Default value: `undef`
 
 ##### <a name="-peadm--convert--primary_host"></a>`primary_host`
 
@@ -1915,22 +1937,6 @@ Data type: `Array[String]`
 
 
 Default value: `[]`
-
-##### <a name="-peadm--convert--begin_at_step"></a>`begin_at_step`
-
-Data type:
-
-```puppet
-Optional[Enum[
-      'modify-primary-certs',
-      'modify-infra-certs',
-      'convert-node-groups',
-  'finalize']]
-```
-
-
-
-Default value: `undef`
 
 ### <a name="peadm--install"></a>`peadm::install`
 
@@ -2429,6 +2435,7 @@ The following parameters are available in the `peadm::upgrade` plan:
 * [`r10k_known_hosts`](#-peadm--upgrade--r10k_known_hosts)
 * [`stagingdir`](#-peadm--upgrade--stagingdir)
 * [`uploaddir`](#-peadm--upgrade--uploaddir)
+* [`begin_at_step`](#-peadm--upgrade--begin_at_step)
 * [`primary_host`](#-peadm--upgrade--primary_host)
 * [`replica_host`](#-peadm--upgrade--replica_host)
 * [`compiler_hosts`](#-peadm--upgrade--compiler_hosts)
@@ -2438,7 +2445,6 @@ The following parameters are available in the `peadm::upgrade` plan:
 * [`token_file`](#-peadm--upgrade--token_file)
 * [`download_mode`](#-peadm--upgrade--download_mode)
 * [`permit_unsafe_versions`](#-peadm--upgrade--permit_unsafe_versions)
-* [`begin_at_step`](#-peadm--upgrade--begin_at_step)
 
 ##### <a name="-peadm--upgrade--compiler_pool_address"></a>`compiler_pool_address`
 
@@ -2518,6 +2524,14 @@ for offline usage.
 
 Default value: `'/tmp'`
 
+##### <a name="-peadm--upgrade--begin_at_step"></a>`begin_at_step`
+
+Data type: `Optional[Peadm::UpgradeSteps]`
+
+The step where the plan should start. If not set, it will start at the beginning
+
+Default value: `undef`
+
 ##### <a name="-peadm--upgrade--primary_host"></a>`primary_host`
 
 Data type: `Peadm::SingleTargetSpec`
@@ -2587,24 +2601,6 @@ Data type: `Boolean`
 
 
 Default value: `false`
-
-##### <a name="-peadm--upgrade--begin_at_step"></a>`begin_at_step`
-
-Data type:
-
-```puppet
-Optional[Enum[
-      'upgrade-primary',
-      'upgrade-node-groups',
-      'upgrade-primary-compilers',
-      'upgrade-replica',
-      'upgrade-replica-compilers',
-  'finalize']]
-```
-
-
-
-Default value: `undef`
 
 ### <a name="peadm--util--init_db_server"></a>`peadm::util::init_db_server`
 
