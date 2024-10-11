@@ -1,5 +1,5 @@
 {
-  "description": "Get and save an rbac token for the root user, admin rbac user",
+  "description": "Check an RBAC token stored in a file is valid",
   "parameters": {
     "token_file": {
       "type": "Optional[String]",

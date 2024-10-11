@@ -86,6 +86,7 @@
 * [`ssl_clean`](#ssl_clean): Clean an agent's certificate
 * [`submit_csr`](#submit_csr): Submit a certificate signing request
 * [`transform_classification_groups`](#transform_classification_groups): Transform the user groups from a source backup to a list of groups on the target server
+* [`validate_rbac_token`](#validate_rbac_token): Check an RBAC token stored in a file is valid
 * [`wait_until_service_ready`](#wait_until_service_ready): Return when the orchestrator service is healthy, or timeout after 15 seconds
 
 ### Plans
@@ -1571,6 +1572,20 @@ Location of Source node group yaml file
 Data type: `String`
 
 Location of target node group yaml file and where to create the transformed file
+
+### <a name="validate_rbac_token"></a>`validate_rbac_token`
+
+Check an RBAC token stored in a file is valid
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `token_file`
+
+Data type: `Optional[String]`
+
+The path to the token file to use
 
 ### <a name="wait_until_service_ready"></a>`wait_until_service_ready`
 
