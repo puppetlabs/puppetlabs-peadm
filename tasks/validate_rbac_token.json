@@ -1,0 +1,13 @@
+{
+  "description": "Check an RBAC token stored in a file is valid",
+  "parameters": {
+    "token_file": {
+      "type": "Optional[String]",
+      "description": "The path to the token file to use"
+    }
+  },
+  "input_method": "stdin",
+  "implementations": [
+    {"name": "validate_rbac_token.rb"}
+  ]
+}
