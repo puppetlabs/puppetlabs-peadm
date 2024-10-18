@@ -70,6 +70,7 @@
 * [`get_peadm_config`](#get_peadm_config): Run on a PE primary node to return the currently configured PEAdm parameters
 * [`get_psql_version`](#get_psql_version): Run on a PE PSQL node to return the major version of the PSQL server currently installed
 * [`infrastatus`](#infrastatus): Runs puppet infra status and returns the output
+* [`ldapsettings`](#ldapsettings)
 * [`mkdir_p_file`](#mkdir_p_file): Create a file with the specified content at the specified location
 * [`mv`](#mv): Wrapper task for mv command
 * [`os_identification`](#os_identification): Return the operating system runnin gon the target as a string
@@ -1234,6 +1235,12 @@ Data type: `Enum[json,text]`
 
 The type of output to return
 
+### <a name="ldapsettings"></a>`ldapsettings`
+
+The ldapsettings task.
+
+**Supports noop?** false
+
 ### <a name="mkdir_p_file"></a>`mkdir_p_file`
 
 Create a file with the specified content at the specified location
@@ -1355,6 +1362,12 @@ The hash of options for ldap.
 Data type: `String`
 
 The PE Main server
+
+##### `pe_version`
+
+Data type: `String`
+
+The PE version
 
 ### <a name="pe_uninstall"></a>`pe_uninstall`
 
