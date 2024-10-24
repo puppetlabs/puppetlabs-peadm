@@ -17,14 +17,6 @@
       "version_requirement": ">= 1.0.1 < 2.0.0"
     },
     {
-      "name": "puppetlabs/bolt_shim",
-      "version_requirement": ">= 0.3.0 < 2.0.0"
-    },
-    {
-      "name": "puppetlabs/apply_helpers",
-      "version_requirement": ">= 0.1.0 < 2.0.0"
-    },
-    {
       "name": "puppet/format",
       "version_requirement": ">= 0.1.0 < 2.0.0"
     },
