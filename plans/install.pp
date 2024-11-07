@@ -71,7 +71,7 @@ plan peadm::install (
   Optional[String]           $stagingdir             = undef,
   Optional[String]           $uploaddir              = undef,
   Enum['running', 'stopped'] $final_agent_state      = 'running',
-  Enum['direct', 'bolthost'] $download_mode          = 'bolthost',
+  Peadm::Download_mode       $download_mode          = 'bolthost',
   Boolean                    $permit_unsafe_versions = false,
   String                     $token_lifetime         = '1y',
 ) {
