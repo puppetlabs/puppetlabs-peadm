@@ -14,14 +14,22 @@ The new system needs to be provisioned with the same certificate name as the sys
 This procedure uses the following placeholder references.
 
 * _\<primary-server-fqdn\>_ - The FQDN and certname of the primary Puppet server
-* _\<replacement-replica-fqdn\>_ - The FQDN and certname of the replacement replica Puppet server
-* _\<replacement-avail-group-letter\>_ - Either A or B; whichever of the two letter designations is appropriate for the server being replaced. It will be the opposite of the primary server.
+* _\<old-replica-fqdn\>_ - The FQDN and certname of the old replica Puppet server that has failed or is missing
+* _\<replacement-replica-fqdn\>_ - The FQDN and certname of the new replica Puppet server
+* _\<failed-primary-server-fqdn\>_ - The FQDN and certname of the original primary server that the old replica had replaced
+* _\<replacement-avail-group-letter\>_ - Either A or B; whichever of the two letter designations is appropriate for the replacement server. It will be the opposite of the server that it is replacing. 
 
-1. Ensure the old replica server is forgotten.
+1. If applicable, purge the failed primary server. (You may need to do this, for example, if the original primary failed and the promoted replica that replaced it has also failed.)
 
-        puppet infrastructure forget <replacement-replica-fqdn>
+        puppet node purge <failed-primary-server-fqdn>
 
-2. Install the Puppet agent on the replacement replica
+2. Ensure the old replica server is forgotten.
+
+        puppet infrastructure forget <old-replica-fqdn>
+
+3. Install the Puppet agent on the replacement replica.
+
+**Note**: When designating the availability group of the replacement, use the opposite group (A or B) of the server being replaced. This means that, if the old replica server replaced the original primary server, the new replica is assigned the same availability group as the original primary.
 
         curl -k https://<primary-server-fqdn>:8140/packages/current/install.bash \
           | bash -s -- \
@@ -29,21 +37,39 @@ This procedure uses the following placeholder references.
               extension_requests:1.3.6.1.4.1.34380.1.1.9812=puppet/server \
               extension_requests:1.3.6.1.4.1.34380.1.1.9813=<replacement-avail-group-letter>
 
+        source /ect/profile.d/puppet-agent.sh
+
         puppet agent -t
 
-3. On the PE-PostgreSQL server in the _\<replacement-avail-group-letter\>_ group
+4. Sign the certificate on the new primary server.
+
+5. On the PE-PostgreSQL server in the _\<replacement-avail-group-letter\>_ group
     1. Stop puppet.service
-    2. Add the following two lines to /opt/puppetlabs/server/data/postgresql/11/data/pg\_ident.conf
+
+           puppet resource service puppet ensure=stopped
+                   
+    3. Add the following two lines to /opt/puppetlabs/server/data/postgresql/14/data/pg\_ident.conf
 
             pe-puppetdb-pe-puppetdb-map <replacement-replica-fqdn> pe-puppetdb
             pe-puppetdb-pe-puppetdb-migrator-map <replacement-replica-fqdn> pe-puppetdb-migrator
 
-    3. Restart pe-postgresql.service
-3. Provision the new system as a replica
+    5. Restart pe-postgresql.service
+
+            puppet resource service pe-postgresql ensure=stopped
+            puppet resource service pe-postgresql ensure=running
+
+    5. Run Puppet
+              
+            puppet agent -t
+
+6. Provision the new system as a replica
 
         puppet infrastructure provision replica <replacement-replica-fqdn> --topology mono-with-compile --skip-agent-config --enable
 
-4. On the PE-PostgreSQL server in the _\<replacement-avail-group-letter\>_ group, start puppet.service
+7. On the PE-PostgreSQL server in the _\<replacement-avail-group-letter\>_ group, start puppet.service
+
+        puppet resource service puppet ensure=running
+
 
 ## Replace failed PE-PostgreSQL server (A or B side)
 
@@ -102,11 +128,11 @@ On _\<working-postgres-server-fqdn\>_:
 
         systemctl stop puppet
 
-2. Add this line to /opt/puppetlabs/server/data/postgresql/11/data/pg\_ident.conf
+2. Add this line to /opt/puppetlabs/server/data/postgresql/14/data/pg\_ident.conf
 
         replication-pe-ha-replication-map <replacement-postgres-server-fqdn> pe-ha-replication
 
-3. Add these lines to /opt/puppetlabs/server/data/postgresql/11/data/pg\_hba.conf
+3. Add these lines to /opt/puppetlabs/server/data/postgresql/14/data/pg\_hba.conf
 
         # REPLICATION RESTORE PERMISSIONS
         hostssl replication    pe-ha-replication 0.0.0.0/0  cert  map=replication-pe-ha-replication-map  clientcert=1
@@ -123,13 +149,13 @@ Run the following commands.
 ```
 systemctl stop puppet.service pe-postgresql.service
 
-mv /opt/puppetlabs/server/data/postgresql/11/data/certs /opt/puppetlabs/server/data/pg_certs
+mv /opt/puppetlabs/server/data/postgresql/14/data/certs /opt/puppetlabs/server/data/pg_certs
 
 rm -rf /opt/puppetlabs/server/data/postgresql/*
 
 runuser -u pe-postgres -- \
   /opt/puppetlabs/server/bin/pg_basebackup \
-    -D /opt/puppetlabs/server/data/postgresql/11/data \
+    -D /opt/puppetlabs/server/data/postgresql/14/data \
     -d "host=<working-postgres-server-fqdn>
         user=pe-ha-replication
         sslmode=verify-full
