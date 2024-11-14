@@ -7,7 +7,12 @@ The new system needs to be provisioned with the same certificate name as the sys
 ## Recover from failed primary Puppet server
 
 1. Promote the replica ([official docs](https://puppet.com/docs/pe/2019.8/dr_configure.html#dr-promote-replica))
-2. Replace missing replica server (same as [Replace missing or failed replica Puppet server](#replace-missing-or-failed-replica-puppet-server) below)
+2. Purge the failed primary server
+
+        puppet node purge <failed-primary-server-fqdn>
+
+
+3. Replace missing replica server (same as [Replace missing or failed replica Puppet server](#replace-missing-or-failed-replica-puppet-server) below)
 
 ## Replace missing or failed replica Puppet server
 
@@ -16,20 +21,13 @@ This procedure uses the following placeholder references.
 * _\<primary-server-fqdn\>_ - The FQDN and certname of the primary Puppet server
 * _\<old-replica-fqdn\>_ - The FQDN and certname of the old replica Puppet server that has failed or is missing
 * _\<replacement-replica-fqdn\>_ - The FQDN and certname of the new replica Puppet server
-* _\<failed-primary-server-fqdn\>_ - The FQDN and certname of the original primary server that the old replica had replaced
-* _\<replacement-avail-group-letter\>_ - Either A or B; whichever of the two letter designations is appropriate for the replacement server. It will be the opposite of the server that it is replacing. 
+* _\<replacement-avail-group-letter\>_ - Either A or B; whichever of the two letter designations is appropriate for the replacement server. It will be the opposite of the primary server. 
 
-1. If applicable, purge the failed primary server. (You may need to do this, for example, if the original primary failed and the promoted replica that replaced it has also failed.)
-
-        puppet node purge <failed-primary-server-fqdn>
-
-2. Ensure the old replica server is forgotten.
+1. Ensure the old replica server is forgotten.
 
         puppet infrastructure forget <old-replica-fqdn>
 
-3. Install the Puppet agent on the replacement replica.
-
-**Note**: When designating the availability group of the replacement, use the opposite group (A or B) of the server being replaced. This means that, if the old replica server replaced the original primary server, the new replica is assigned the same availability group as the original primary.
+2. Install the Puppet agent on the replacement replica.
 
         curl -k https://<primary-server-fqdn>:8140/packages/current/install.bash \
           | bash -s -- \
@@ -41,17 +39,22 @@ This procedure uses the following placeholder references.
 
         puppet agent -t
 
-4. Sign the certificate on the new primary server.
+3. Sign the certificate on the primary server.
 
-5. On the PE-PostgreSQL server in the _\<replacement-avail-group-letter\>_ group
+        puppetserver ca sign --certname
+
+4. On the PE-PostgreSQL server in the _\<replacement-avail-group-letter\>_ group
     1. Stop puppet.service
 
            puppet resource service puppet ensure=stopped
                    
-    3. Add the following two lines to /opt/puppetlabs/server/data/postgresql/14/data/pg\_ident.conf
+    3. Add the following two lines to /opt/puppetlabs/server/data/postgresql/_<postgres_version>_/data/pg_ident.conf
+
+        where _<postgres_version>_ is the appropriate major version of PostgreSQL as detailed in [Component versions in recent PE releases](https://www.puppet.com/docs/pe/2023.8/component_versions_in_recent_pe_releases.html#pe-agent-server-components). For PE release 2023.8.0 the PostgreSQL version is 14.
 
             pe-puppetdb-pe-puppetdb-map <replacement-replica-fqdn> pe-puppetdb
             pe-puppetdb-pe-puppetdb-migrator-map <replacement-replica-fqdn> pe-puppetdb-migrator
+
 
     5. Restart pe-postgresql.service
 
@@ -62,11 +65,11 @@ This procedure uses the following placeholder references.
               
             puppet agent -t
 
-6. Provision the new system as a replica
+5. Provision the new system as a replica
 
         puppet infrastructure provision replica <replacement-replica-fqdn> --topology mono-with-compile --skip-agent-config --enable
 
-7. On the PE-PostgreSQL server in the _\<replacement-avail-group-letter\>_ group, start puppet.service
+6. On the PE-PostgreSQL server in the _\<replacement-avail-group-letter\>_ group, start puppet.service
 
         puppet resource service puppet ensure=running
 
@@ -128,11 +131,13 @@ On _\<working-postgres-server-fqdn\>_:
 
         systemctl stop puppet
 
-2. Add this line to /opt/puppetlabs/server/data/postgresql/14/data/pg\_ident.conf
+2. Add this line to /opt/puppetlabs/server/data/postgresql/_<postgres_version>_/data/pg_ident.conf
+
+where _<postgres_version>_ is the appropriate major version of PostgreSQL as detailed in [Component versions in recent PE releases](https://www.puppet.com/docs/pe/2023.8/component_versions_in_recent_pe_releases.html#pe-agent-server-components). For PE release 2023.8.0 the PostgreSQL version is 14.
 
         replication-pe-ha-replication-map <replacement-postgres-server-fqdn> pe-ha-replication
 
-3. Add these lines to /opt/puppetlabs/server/data/postgresql/14/data/pg\_hba.conf
+3. Add these lines to /opt/puppetlabs/server/data/postgresql/_<postgres_version>_/data/pg\_hba.conf
 
         # REPLICATION RESTORE PERMISSIONS
         hostssl replication    pe-ha-replication 0.0.0.0/0  cert  map=replication-pe-ha-replication-map  clientcert=1
@@ -144,7 +149,7 @@ On _\<working-postgres-server-fqdn\>_:
 
 On _\<replacement-postgres-server-fqdn\>_:
 
-Run the following commands.
+Run the following commands (using the appropriate PostgreSQL version number)
 
 ```
 systemctl stop puppet.service pe-postgresql.service
