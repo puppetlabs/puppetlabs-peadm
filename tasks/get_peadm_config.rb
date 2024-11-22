@@ -41,6 +41,7 @@ class GetPEAdmConfig
 
     # Build and return the task output
     {
+      'pe_version' => pe_version,
       'params' => {
         'primary_host' => primary,
         'replica_host' => replica,
@@ -71,6 +72,12 @@ class GetPEAdmConfig
         },
       },
     }
+  end
+
+  # @return [String] Local PE version string.
+  def pe_version
+    pe_build_file = '/opt/puppetlabs/server/pe_build'
+    File.read(pe_build_file).strip if File.exist?(pe_build_file)
   end
 
   # Returns a GetPEAdmConfig::NodeGroups object created from the /groups object
