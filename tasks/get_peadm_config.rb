@@ -11,9 +11,9 @@ class GetPEAdmConfig
   def initialize(params); end
 
   def execute!
-    # if there is no 'PE HA Replica' node group, it's not a peadm-configured cluster.
-    replica_group = groups.data.find { |obj| obj['name'] == 'PE HA Replica' }
-    if replica_group
+    # if there is no 'PE Primary A' node group, it's not a peadm-configured cluster.
+    peadm_primary_a_group = groups.data.find { |obj| obj['name'] == 'PE Primary A' }
+    if peadm_primary_a_group
       puts config.to_json
     else
       puts({ 'error' => 'This is not a peadm-compatible cluster. Use peadm::convert first.' }).to_json
