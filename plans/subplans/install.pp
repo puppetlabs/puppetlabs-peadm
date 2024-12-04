@@ -68,7 +68,7 @@ plan peadm::subplans::install (
   # Other
   String                $stagingdir             = '/tmp',
   String                $uploaddir              = '/tmp',
-  Enum[direct,bolthost] $download_mode          = 'bolthost',
+  Peadm::Download_mode  $download_mode          = 'bolthost',
   Boolean               $permit_unsafe_versions = false,
   String                $token_lifetime         = '1y',
 ) {

@@ -57,7 +57,7 @@ plan peadm::upgrade (
   String                     $stagingdir             = '/tmp',
   String                     $uploaddir              = '/tmp',
   Enum['running', 'stopped'] $final_agent_state      = 'running',
-  Enum[direct,bolthost]      $download_mode          = 'bolthost',
+  Peadm::Download_mode       $download_mode          = 'bolthost',
   Boolean                    $permit_unsafe_versions = false,
 
   Optional[Peadm::UpgradeSteps] $begin_at_step = undef,

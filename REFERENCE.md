@@ -44,6 +44,7 @@
 ### Data types
 
 * [`Peadm::ConvertSteps`](#Peadm--ConvertSteps): type for the different steps where the peadm::convert plan can be started
+* [`Peadm::Download_mode`](#Peadm--Download_mode): download the installer to the bolt node and upload to targets, or let the targets download it directly
 * [`Peadm::Known_hosts`](#Peadm--Known_hosts)
 * [`Peadm::Ldap_config`](#Peadm--Ldap_config)
 * [`Peadm::Pe_version`](#Peadm--Pe_version)
@@ -927,6 +928,12 @@ Data type: `TargetSpec`
 type for the different steps where the peadm::convert plan can be started
 
 Alias of `Enum['modify-primary-certs', 'modify-infra-certs', 'convert-node-groups', 'finalize']`
+
+### <a name="Peadm--Download_mode"></a>`Peadm::Download_mode`
+
+download the installer to the bolt node and upload to targets, or let the targets download it directly
+
+Alias of `Enum['direct', 'bolthost']`
 
 ### <a name="Peadm--Known_hosts"></a>`Peadm::Known_hosts`
 
@@ -2262,7 +2269,7 @@ Default value: `undef`
 
 ##### <a name="-peadm--install--download_mode"></a>`download_mode`
 
-Data type: `Enum['direct', 'bolthost']`
+Data type: `Peadm::Download_mode`
 
 
 
@@ -2654,7 +2661,7 @@ Default value: `undef`
 
 ##### <a name="-peadm--upgrade--download_mode"></a>`download_mode`
 
-Data type: `Enum[direct,bolthost]`
+Data type: `Peadm::Download_mode`
 
 
 
