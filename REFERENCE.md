@@ -1389,6 +1389,12 @@ Data type: `String`
 
 The name of the replica to provision
 
+##### `topology`
+
+Data type: `String`
+
+The topology of PE installation
+
 ##### `token_file`
 
 Data type: `Optional[String]`
