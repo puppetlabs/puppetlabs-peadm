@@ -11,9 +11,9 @@ class GetPEAdmConfig
   def initialize(params); end
 
   def execute!
-    # if there is no 'PE HA Replica' node group, it's not a peadm-configured cluster.
-    replica_group = groups.data.find { |obj| obj['name'] == 'PE HA Replica' }
-    if replica_group
+    # if there is no 'PE Primary A' node group, it's not a peadm-configured cluster.
+    peadm_primary_a_group = groups.data.find { |obj| obj['name'] == 'PE Primary A' }
+    if peadm_primary_a_group
       puts config.to_json
     else
       puts({ 'error' => 'This is not a peadm-compatible cluster. Use peadm::convert first.' }).to_json
@@ -41,6 +41,7 @@ class GetPEAdmConfig
 
     # Build and return the task output
     {
+      'pe_version' => pe_version,
       'params' => {
         'primary_host' => primary,
         'replica_host' => replica,
@@ -71,6 +72,12 @@ class GetPEAdmConfig
         },
       },
     }
+  end
+
+  # @return [String] Local PE version string.
+  def pe_version
+    pe_build_file = '/opt/puppetlabs/server/pe_build'
+    File.read(pe_build_file).strip if File.exist?(pe_build_file)
   end
 
   # Returns a GetPEAdmConfig::NodeGroups object created from the /groups object
