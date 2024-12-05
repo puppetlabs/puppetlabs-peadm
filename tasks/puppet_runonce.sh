@@ -39,7 +39,7 @@ echo
   --detailed-exitcodes \
   --color false \
   $ENV_FLAG \
-  $NOOP_FLAG
+  $NOOP_FLAG 2>&1
 
 # Only exit non-zero if an error occurred. Changes (detailed exit code 2) are
 # not errors.
