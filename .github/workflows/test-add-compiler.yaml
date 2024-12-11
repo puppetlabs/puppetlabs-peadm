@@ -84,7 +84,7 @@ jobs:
             --modulepath spec/fixtures/modules \
             architecture=${{ matrix.architecture }} \
             version=${{ matrix.version }} \
-            console_password=${{ secrets.CONSOLE_PASSWORD }
+            console_password=${{ secrets.CONSOLE_PASSWORD }}
       - name: Run add_compilers plan
         timeout-minutes: 50
         run: |
