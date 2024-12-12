@@ -13,7 +13,8 @@ function peadm::validated_pe_version_for_backup_restore(
     default: {
       $msg = @("WARN")
         WARNING: Retrieved a missing or unparseable PE version of '${pe_version}'.
-        The host_action_collector database will be skipped from defaults.
+        Newer service databases released in 2023.7+ will be skipped from defaults.
+        (host-action-collector, patching)
         |-WARN
       out::message($msg)
       '0.0.0'

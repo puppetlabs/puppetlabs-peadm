@@ -31,4 +31,21 @@ describe 'peadm::migration_opts_default' do
       },
     )
   end
+
+  it 'returns 2025.0+ defaults with hac and patching' do
+    is_expected.to run.with_params('2025.0.0').and_return(
+      {
+        'activity'     => true,
+        'ca'           => true,
+        'classifier'   => true,
+        'code'         => false,
+        'config'       => false,
+        'orchestrator' => true,
+        'puppetdb'     => true,
+        'rbac'         => true,
+        'hac'          => true,
+        'patching'     => true,
+      },
+    )
+  end
 end

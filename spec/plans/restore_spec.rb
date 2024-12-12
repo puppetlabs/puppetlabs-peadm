@@ -45,6 +45,8 @@ describe 'peadm::restore' do
         'orchestrator' => false,
         'puppetdb'     => false,
         'rbac'         => false,
+        'hac'          => false,
+        'patching'     => false,
       }
     }
   end
@@ -175,7 +177,22 @@ describe 'peadm::restore' do
     end
   end
 
-  context '>= 2023.7.0' do
+  context '>= 2025.0.0' do
+    let(:pe_version) { '2025.0.0' }
+
+    include_context('all 2023.6.0 backups')
+
+    it 'runs with backup type custom, all params set to true', valid_cluster: true do
+      expect_restore_for_db('hac', 'primary')
+      expect_restore_for_db('patching', 'primary')
+
+      expect(run_plan('peadm::restore', all_recovery_options)).to be_ok
+    end
+  end
+
+  context '>= 2023.7.0 < 2025.0' do
+    let(:pe_version) { '2023.7.0' }
+
     include_context('all 2023.6.0 backups')
 
     it 'runs with backup type custom, all params set to true', valid_cluster: true do
@@ -211,7 +228,8 @@ describe 'peadm::restore' do
     it 'warns that hac is ignored', valid_cluster: false do
       expect_out_message.with_params(<<~MSG.strip)
         WARNING: Retrieved a missing or unparseable PE version of ''.
-        The host_action_collector database will be skipped from defaults.
+        Newer service databases released in 2023.7+ will be skipped from defaults.
+        (host-action-collector, patching)
       MSG
 
       expect_peadm_config_fallback(backup_dir, 'peadm_config.no_pe_version.json')

@@ -21,6 +21,7 @@ describe 'peadm::backup' do
         'puppetdb'     => false,
         'rbac'         => false,
         'hac'          => false,
+        'patching'     => false,
       }
     }
   end
@@ -119,7 +120,25 @@ describe 'peadm::backup' do
     end
   end
 
-  context '>= 2023.7.0' do
+  context '>= 2025.0.0' do
+    let(:pe_version) { '2025.0.0' }
+
+    include_context('all 2023.6.0 backups')
+
+    it 'runs with backup type custom, all backup params set to true' do
+      expect_out_message.with_params('# Backing up database pe-hac')
+      expect_out_message.with_params('# Backing up database pe-patching')
+
+      expect_command('/opt/puppetlabs/server/bin/pg_dump -Fd -Z3 -j4   -f /tmp/pe-backup-1970-01-01T000000Z/hac/pe-hac.dump.d   "sslmode=verify-ca    host=primary    user=pe-hac    sslcert=/etc/puppetlabs/puppetdb/ssl/primary.cert.pem    sslkey=/etc/puppetlabs/puppetdb/ssl/primary.private_key.pem    sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem    dbname=pe-hac"' + "\n")
+      expect_command('/opt/puppetlabs/server/bin/pg_dump -Fd -Z3 -j4   -f /tmp/pe-backup-1970-01-01T000000Z/patching/pe-patching.dump.d   "sslmode=verify-ca    host=primary    user=pe-patching    sslcert=/etc/puppetlabs/puppetdb/ssl/primary.cert.pem    sslkey=/etc/puppetlabs/puppetdb/ssl/primary.private_key.pem    sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem    dbname=pe-patching"' + "\n")
+
+      expect(run_plan('peadm::backup', all_backup_options)).to be_ok
+    end
+  end
+
+  context '>= 2023.7.0 < 2025.0' do
+    let(:pe_version) { '2023.7.0' }
+
     include_context('all 2023.6.0 backups')
 
     it 'runs with backup type custom, all backup params set to true' do
@@ -149,7 +168,8 @@ describe 'peadm::backup' do
     it 'warns that hac is ignored' do
       expect_out_message.with_params(<<~MSG.strip)
         WARNING: Retrieved a missing or unparseable PE version of ''.
-        The host_action_collector database will be skipped from defaults.
+        Newer service databases released in 2023.7+ will be skipped from defaults.
+        (host-action-collector, patching)
       MSG
 
       expect(run_plan('peadm::backup', all_backup_options)).to be_ok

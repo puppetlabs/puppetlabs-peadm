@@ -4,9 +4,16 @@ function peadm::amend_recovery_defaults_by_pe_version (
   Boolean           $opt_value,
 ) {
   # work around puppet-lint check_unquoted_string_in_case
-  $semverrange = SemVerRange('>= 2023.7')
+  $pe_2025_0 = SemVerRange('>= 2025.0')
+  $pe_2023_7 = SemVerRange('>= 2023.7')
   case $pe_version {
-    $semverrange: {
+    $pe_2025_0: {
+      $base_opts + {
+        'hac'      => $opt_value,
+        'patching' => $opt_value,
+      }
+    }
+    $pe_2023_7: {
       $base_opts + {
         'hac' => $opt_value,
       }

@@ -8,4 +8,5 @@ type Peadm::Recovery_opts = Struct[{
     'puppetdb'     => Optional[Boolean],
     'rbac'         => Optional[Boolean],
     'hac'          => Optional[Boolean],
+    'patching'     => Optional[Boolean],
 }]

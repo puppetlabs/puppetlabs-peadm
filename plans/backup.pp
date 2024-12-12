@@ -59,6 +59,8 @@ plan peadm::backup (
     'puppetdb'     => $puppetdb_postgresql_target,
     # (host-action-collector db will be filtered for pe version by recovery_opts)
     'hac'          => $primary_target,
+    # (patching db will be filtered for pe version by recovery_opts)
+    'patching'     => $primary_target,
   }.filter |$key,$_| {
     $recovery_opts[$key] == true
   }
