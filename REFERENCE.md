@@ -35,6 +35,7 @@
 * [`peadm::migration_opts_default`](#peadm--migration_opts_default)
 * [`peadm::node_manager_yaml_location`](#peadm--node_manager_yaml_location)
 * [`peadm::oid`](#peadm--oid)
+* [`peadm::pe_db_names`](#peadm--pe_db_names)
 * [`peadm::plan_step`](#peadm--plan_step)
 * [`peadm::recovery_opts_all`](#peadm--recovery_opts_all)
 * [`peadm::recovery_opts_default`](#peadm--recovery_opts_default)
@@ -818,6 +819,24 @@ The peadm::oid function.
 Returns: `Any`
 
 ##### `short_name`
+
+Data type: `String`
+
+
+
+### <a name="peadm--pe_db_names"></a>`peadm::pe_db_names`
+
+Type: Puppet Language
+
+The peadm::pe_db_names function.
+
+#### `peadm::pe_db_names(String $pe_ver)`
+
+The peadm::pe_db_names function.
+
+Returns: `Array`
+
+##### `pe_ver`
 
 Data type: `String`
 
