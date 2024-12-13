@@ -8,9 +8,13 @@ function peadm::pe_db_names (
     'pe-orchestrator',
     'pe-rbac',
   ]
+
+  $pe_2025_or_later = SemVerRange('>= 2025.0.0')
+  $pe_2023_8_or_later = SemVerRange('>= 2023.8.0')
+
   case $pe_ver {
     # The patching service was added in 2025.0.0
-    SemVerRange('>= 2025.0.0'): {
+    $pe_2025_or_later: {
       $original_db_names + [
         'pe-hac',
         'pe-patching',
@@ -18,8 +22,8 @@ function peadm::pe_db_names (
     }
 
     # The host-action-collector (hac) was added in 2023.8
-    SemVerRange('>= 2023.8.0'): {
-      $original_db_names + [ 'pe-hac' ]
+    $pe_2023_8_or_later: {
+      $original_db_names + ['pe-hac']
     }
 
     default: {
