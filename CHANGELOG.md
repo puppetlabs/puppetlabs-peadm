@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.26.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.26.0) - 2024-12-16
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.25.1...v3.26.0)
+
+### Added
+
+- (PE-39891) Add support for PE 2025 [#533](https://github.com/puppetlabs/puppetlabs-peadm/pull/533) ([jhbuchanan45](https://github.com/jhbuchanan45))
+- Add support for bolt 4.x [#529](https://github.com/puppetlabs/puppetlabs-peadm/pull/529) ([bastelfreak](https://github.com/bastelfreak))
+- (PE-39352) Add version to get peadm config [#527](https://github.com/puppetlabs/puppetlabs-peadm/pull/527) ([jpartlow](https://github.com/jpartlow))
+
+### Fixed
+
+- puppet_runonce: redirect stderr to stdout [#523](https://github.com/puppetlabs/puppetlabs-peadm/pull/523) ([bastelfreak](https://github.com/bastelfreak))
+- Check for curl failure [#521](https://github.com/puppetlabs/puppetlabs-peadm/pull/521) ([seanmil](https://github.com/seanmil))
+
+### Other
+
+- (PE-38076) Remove unused bolt_shim and apply_helpers modules [#518](https://github.com/puppetlabs/puppetlabs-peadm/pull/518) ([jhbuchanan45](https://github.com/jhbuchanan45))
+
 ## [v3.25.1](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.25.1) - 2024-10-24
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.25.0...v3.25.1)
@@ -19,10 +38,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 - fix: echo environment variable containing special char [#516](https://github.com/puppetlabs/puppetlabs-peadm/pull/516) ([LordKa0S](https://github.com/LordKa0S))
 - (PE-39429) Only restart puppetdb on non-legacy compilers [#511](https://github.com/puppetlabs/puppetlabs-peadm/pull/511) ([jhbuchanan45](https://github.com/jhbuchanan45))
-
-### Other
-
-- feat(workflow): add random hash generation for console password in test-legacy-upgrade [#513](https://github.com/puppetlabs/puppetlabs-peadm/pull/513) ([CoMfUcIoS](https://github.com/CoMfUcIoS))
 
 ## [v3.25.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.25.0) - 2024-09-30
 
