@@ -120,7 +120,7 @@ Example params.json Bolt parameters file (shown: Standard):
   "primary_host": "pe-xl-core-0.lab1.puppet.vm",
   "console_password": "puppetlabs",
   "dns_alt_names": ["puppet", "puppet.lab1.puppet.vm"],
-  "version": "2021.7.9"
+  "version": "2023.8.0"
 }
 ```
 

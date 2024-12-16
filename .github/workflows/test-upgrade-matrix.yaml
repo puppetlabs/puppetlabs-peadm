@@ -37,14 +37,24 @@ jobs:
       fail-fast: false
       matrix:
         architecture: [standard, extra-large-with-dr]
-        version: [2019.8.12, 2021.7.9]
-        version_to_upgrade: [2021.7.9, 2023.8.0]
+        version: [2019.8.12, 2021.7.9, 2023.8.0]
+        version_to_upgrade: [2021.7.9, 2023.8.0, 2025.0.0]
         image: [almalinux-cloud/almalinux-8]
         download_mode: [direct]
         exclude:
           - version: 2019.8.12
             version_to_upgrade: 2023.8.0
+          - version: 2019.8.12
+            version_to_upgrade: 2025.0.0
           - version: 2021.7.9
+            version_to_upgrade: 2021.7.9
+          - version: 2021.7.9
+            version_to_upgrade: 2025.0.0
+          - version: 2023.8.0
+            version_to_upgrade: 2023.8.0
+          - version: 2023.8.0
+            version_to_upgrade: 2025.0.0
+          - version: 2023.8.0
             version_to_upgrade: 2021.7.9
     steps:
       - name: Start SSH session
