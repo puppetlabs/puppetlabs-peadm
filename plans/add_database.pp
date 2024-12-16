@@ -18,6 +18,7 @@ plan peadm::add_database(
   # Get current peadm config before making modifications and shutting down
   # PuppetDB
   $peadm_config = run_task('peadm::get_peadm_config', $primary_target).first.value
+  $pe_ver = $peadm_config['pe_version']
 
   $compilers = $peadm_config['params']['compilers']
 
@@ -41,7 +42,7 @@ plan peadm::add_database(
     $operating_mode = $mode
     out::message("Operating mode overridden by parameter mode set to ${mode}")
   } else {
-    # If array is empty then no external databases were previously configured 
+    # If array is empty then no external databases were previously configured
     $no_external_db = peadm::flatten_compact([
         $postgresql_a_host,
         $postgresql_b_host,
@@ -87,7 +88,7 @@ plan peadm::add_database(
 
   peadm::plan_step('init-db-node') || {
     # Install PSQL on new node to be used as external PuppetDB backend by using
-    # puppet in lieu of installer 
+    # puppet in lieu of installer
     run_plan('peadm::subplans::component_install', $postgresql_target,
       primary_host       => $primary_target,
       avail_group_letter => $avail_group_letter,
@@ -162,16 +163,10 @@ plan peadm::add_database(
     if $operating_mode == 'init' {
       # Clean up old puppetdb database on primary and those which were copied to
       # new host.
-      $target_db_purge = [
-        'pe-activity',
-        'pe-classifier',
-        'pe-inventory',
-        'pe-orchestrator',
-        'pe-rbac',
-      ]
+      $target_db_purge = peadm::pe_db_names($pe_ver)
 
       # If a primary replica exists then pglogical is enabled and will prevent
-      # the clean up of databases on our target because it opens a connection. 
+      # the clean up of databases on our target because it opens a connection.
       if $replica_host {
         run_plan('peadm::util::db_disable_pglogical', $postgresql_target, databases => $target_db_purge)
       }
