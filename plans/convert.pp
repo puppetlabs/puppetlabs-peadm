@@ -60,6 +60,48 @@ plan peadm::convert (
 
   out::message('# Gathering information')
 
+  $cert_extensions_temp = run_task('peadm::cert_data', $all_targets).reduce({}) |$memo,$result| {
+    $memo + { $result.target.peadm::certname() => $result['extensions'] }
+  }
+
+  # Add legacy compiler role to compilers that are missing it
+  $compilers_with_legacy_compiler_flag = $cert_extensions_temp.filter |$name, $exts| {
+    ($name in $compiler_targets.map |$t| { $t.name } or $name in $legacy_compiler_targets.map |$t| { $t.name }) and
+    $exts and $exts[peadm::oid('peadm_legacy_compiler')] != undef
+  }
+
+  if $compilers_with_legacy_compiler_flag.size > 0 {
+    $legacy_compilers_with_flag = $compilers_with_legacy_compiler_flag.filter |$name,$exts| {
+      $exts[peadm::oid('peadm_legacy_compiler')] == 'true'
+    }.keys
+
+    $modern_compilers_with_flag = $compilers_with_legacy_compiler_flag.filter |$name,$exts| {
+      $exts[peadm::oid('peadm_legacy_compiler')] == 'false'
+    }.keys
+
+    if $modern_compilers_with_flag.size > 0 {
+      run_plan('peadm::modify_certificate', $modern_compilers_with_flag,
+        primary_host   => $primary_target,
+        remove_extensions => [peadm::oid('peadm_legacy_compiler')],
+      )
+    }
+
+    if $legacy_compilers_with_flag.size > 0 {
+      run_plan('peadm::modify_certificate', $legacy_compilers_with_flag,
+        primary_host   => $primary_target,
+        add_extensions => {
+          'pp_auth_role' => 'pe_compiler_legacy',
+        },
+        remove_extensions => [peadm::oid('peadm_legacy_compiler'), peadm::oid('pp_auth_role')],
+      )
+    }
+
+    run_task('peadm::puppet_runonce', peadm::flatten_compact([
+          $compiler_targets,
+          $legacy_compiler_targets,
+    ]))
+  }
+
   # Get trusted fact information for all compilers. Use peadm::certname() as
   # the hash key because the apply block below will break trying to parse the
   # $compiler_extensions variable if it has Target-type hash keys.
@@ -214,7 +256,6 @@ plan peadm::convert (
           add_extensions => {
             peadm::oid('pp_auth_role')             => 'pe_compiler',
             peadm::oid('peadm_availability_group') => 'A',
-            peadm::oid('peadm_legacy_compiler')    => 'false',
           },
         )
       },
@@ -224,7 +265,6 @@ plan peadm::convert (
           add_extensions => {
             peadm::oid('pp_auth_role')             => 'pe_compiler',
             peadm::oid('peadm_availability_group') => 'B',
-            peadm::oid('peadm_legacy_compiler')    => 'false',
           },
         )
       },
@@ -232,9 +272,8 @@ plan peadm::convert (
         run_plan('peadm::modify_certificate', $legacy_compiler_a_targets,
           primary_host   => $primary_target,
           add_extensions => {
-            peadm::oid('pp_auth_role')             => 'pe_compiler',
+            peadm::oid('pp_auth_role')             => 'pe_compiler_legacy',
             peadm::oid('peadm_availability_group') => 'A',
-            peadm::oid('peadm_legacy_compiler')    => 'true',
           },
         )
       },
@@ -242,9 +281,8 @@ plan peadm::convert (
         run_plan('peadm::modify_certificate', $legacy_compiler_b_targets,
           primary_host   => $primary_target,
           add_extensions => {
-            peadm::oid('pp_auth_role')             => 'pe_compiler',
+            peadm::oid('pp_auth_role')             => 'pe_compiler_legacy',
             peadm::oid('peadm_availability_group') => 'B',
-            peadm::oid('peadm_legacy_compiler')    => 'true',
           },
         )
       },
@@ -283,6 +321,14 @@ plan peadm::convert (
 
         include peadm::setup::convert_node_manager
       }
+
+      # Unpin legacy compilers from PE Master group
+      if $legacy_compiler_targets {
+        run_task('peadm::node_group_unpin', $primary_target,
+          node_certnames => $legacy_compiler_targets.map |$target| { $target.peadm::certname() },
+          group_name    => 'PE Master',
+        )
+      }
     }
     else {
 # lint:ignore:strict_indent
@@ -313,6 +359,9 @@ plan peadm::convert (
     if $compiler_targets {
       run_command('systemctl restart pe-puppetserver.service pe-puppetdb.service', $compiler_targets)
     }
+
+    # Update PE Master rules to support legacy compilers
+    run_task('peadm::update_pe_master_rules', $primary_target)
 
     # Run puppet on all targets again to ensure everything is fully up-to-date
     run_task('peadm::puppet_runonce', $all_targets)

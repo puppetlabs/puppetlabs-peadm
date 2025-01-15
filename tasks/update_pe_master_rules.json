@@ -1,0 +1,8 @@
+{
+  "description": "Updates the PE Master group rules to support 'pe_compiler_legacy' as a pp_auth_role",
+  "input_method": "stdin",
+  "private": true,
+  "implementations": [
+    {"name": "update_pe_master_rules.rb"}
+  ]
+} 

@@ -20,6 +20,13 @@ describe 'peadm::upgrade' do
     JSON.parse File.read(File.expand_path(File.join(fixtures, 'plans', 'trusted-compiler.json')))
   end
 
+  let(:pe_rule_check) do
+    {
+      'updated' => 'true',
+    'message' => 'a message'
+    }
+  end
+
   it 'minimum variables to run' do
     allow_standard_non_returning_calls
     expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
@@ -28,7 +35,8 @@ describe 'peadm::upgrade' do
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
       .always_return({ 'content' => '2021.7.3' })
 
-    expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(2)
+    expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(1)
+    expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
 
     expect(run_plan('peadm::upgrade',
                     'primary_host' => 'primary',
@@ -44,7 +52,8 @@ describe 'peadm::upgrade' do
       .always_return({ 'content' => '2021.7.3' })
 
     expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary,
-                                                       'compiler' => trusted_compiler).be_called_times(2)
+                                                       'compiler' => trusted_compiler).be_called_times(1)
+    expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check).be_called_times(1)
 
     expect(run_plan('peadm::upgrade',
                     'primary_host' => 'primary',
@@ -93,7 +102,7 @@ describe 'peadm::upgrade' do
         .with_params('path' => '/opt/puppetlabs/server/pe_build')
         .always_return({ 'content' => installed_version })
 
-      expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(2)
+      expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(1)
       expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
     end
 
@@ -109,6 +118,7 @@ describe 'peadm::upgrade' do
       # uploading runs afoul of the fact that write_file creates a source tempfile,
       # and we can't expect_upload() because we don't have the tempfile name.
       allow_any_upload
+      expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
 
       expect(run_plan('peadm::upgrade',
                        'primary_host'     => 'primary',
@@ -120,6 +130,7 @@ describe 'peadm::upgrade' do
     it 'warns if upgrading to 2023.3+ from 2023.0- without r10k_known_hosts set' do
       # This is fairly horrible, but expect_out_message doesn't take a regex.
       expect_out_message.with_params(r10k_warning)
+      expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
 
       expect(run_plan('peadm::upgrade',
                        'primary_host'     => 'primary',
@@ -132,6 +143,7 @@ describe 'peadm::upgrade' do
 
       it 'does not warn if r10k_known_hosts is not set' do
         expect_out_message.with_params(r10k_warning).not_be_called
+        expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
 
         expect(run_plan('peadm::upgrade',
                          'primary_host'     => 'primary',

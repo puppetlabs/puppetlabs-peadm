@@ -7,6 +7,12 @@ plan peadm::convert_compiler_to_legacy (
   $primary_target            = peadm::get_targets($primary_host, 1)
   $convert_legacy_compiler_targets   = peadm::get_targets($legacy_hosts)
 
+  # Check if PE Master rules have been updated to support pe_compiler_legacy
+  $rules_check = run_task('peadm::check_pe_master_rules', $primary_target).first.value
+  unless $rules_check['updated'] {
+    fail_plan('Please run the Convert plan to convert your Puppet infrastructure to be managed by this version of PEADM.')
+  }
+
   $cluster = run_task('peadm::get_peadm_config', $primary_host).first.value
   $error = getvar('cluster.error')
   if $error {
@@ -102,7 +108,7 @@ plan peadm::convert_compiler_to_legacy (
         run_plan('peadm::modify_certificate', $compiler_targets,
           primary_host   => $primary_target,
           add_extensions => {
-            peadm::oid('peadm_legacy_compiler')    => 'false',
+            peadm::oid('pp_auth_role')    => 'pe_compiler_legacy',
           },
         )
       },
@@ -110,9 +116,8 @@ plan peadm::convert_compiler_to_legacy (
         run_plan('peadm::modify_certificate', $legacy_compiler_a_targets,
           primary_host   => $primary_target,
           add_extensions => {
-            peadm::oid('pp_auth_role')             => 'pe_compiler',
+            peadm::oid('pp_auth_role')             => 'pe_compiler_legacy',
             peadm::oid('peadm_availability_group') => 'A',
-            peadm::oid('peadm_legacy_compiler')    => 'true',
           },
         )
       },
@@ -120,9 +125,8 @@ plan peadm::convert_compiler_to_legacy (
         run_plan('peadm::modify_certificate', $legacy_compiler_b_targets,
           primary_host   => $primary_target,
           add_extensions => {
-            peadm::oid('pp_auth_role')             => 'pe_compiler',
+            peadm::oid('pp_auth_role')             => 'pe_compiler_legacy',
             peadm::oid('peadm_availability_group') => 'B',
-            peadm::oid('peadm_legacy_compiler')    => 'true',
           },
         )
       },
