@@ -47,7 +47,8 @@ plan peadm::replace_failed_postgresql(
   )
 
   # Restart pe-puppetdb.service on Puppet server primary and replica
-  run_task('service', $pe_hosts, 'action' => 'restart', 'name' => 'pe-puppetdb.service')
+  # run_task('service', $pe_hosts, 'action' => 'restart', 'name' => 'pe-puppetdb.service')
+  run_task('service', $pe_hosts, { action => 'restart', name => 'pe-puppetdb.service' })
 
   # Purge failed PE-PostgreSQL node from PuppetDB
   run_command("/opt/puppetlabs/bin/puppet node purge ${$failed_postgresql_host}", $primary_host)
