@@ -97,8 +97,7 @@ jobs:
               cat request.json || true; echo
             echo ::endgroup::
           fi
-
-  test-backup: # to replace failed VM
+  test-backup:  # to replace failed VM
     test-install:
     name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
     runs-on: ubuntu-20.04
@@ -110,7 +109,7 @@ jobs:
       fail-fast: false
       matrix:
         architecture: [extra-large-with-dr]
-        version: [2023.8.0] # can change to test multiple versions once this one works
+        version: [2023.8.0]  # can change to test multiple versions once this one works
         image: [almalinux-cloud/almalinux-8]
     steps:
       - name: Checkout Source
@@ -171,4 +170,3 @@ jobs:
               cat request.json || true; echo
             echo ::endgroup::
           fi
-
