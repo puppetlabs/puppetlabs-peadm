@@ -29,7 +29,7 @@ plan peadm::replace_failed_postgresql(
 
   # Bail if this is trying to be ran against Standard
   if $compilers.empty {
-    fail_plan('Plan peadm::add_database is only applicable for L and XL deployments')
+    fail_plan('Plan peadm::replace_failed_postgresql is only applicable for L and XL deployments')
   }
 
   $pe_hosts = peadm::flatten_compact([
@@ -47,7 +47,6 @@ plan peadm::replace_failed_postgresql(
   )
 
   # Restart pe-puppetdb.service on Puppet server primary and replica
-  # run_task('service', $pe_hosts, 'action' => 'restart', 'name' => 'pe-puppetdb.service')
   run_task('service', $pe_hosts, { action => 'restart', name => 'pe-puppetdb.service' })
 
   # Purge failed PE-PostgreSQL node from PuppetDB
