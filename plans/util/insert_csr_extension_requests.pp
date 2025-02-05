@@ -15,9 +15,10 @@ plan peadm::util::insert_csr_extension_requests (
     # If we're merging extension requests, existing requests will be preserved.
     # If we're not merging, only ours will be used; existing requests will be
     # overwritten.
-    $csr_file_data = $merge ? {
-      true  => $csr_attributes_data.deep_merge({ 'extension_requests' => $extension_requests }),
-      false => ($csr_attributes_data + { 'extension_requests' => $extension_requests }),
+    if $merge and !$csr_attributes_data.empty {
+      $csr_file_data = $csr_attributes_data.deep_merge({ 'extension_requests' => $extension_requests })
+    } else {
+      $csr_file_data = $csr_attributes_data + { 'extension_requests' => $extension_requests }
     }
 
     run_task('peadm::mkdir_p_file', $target,

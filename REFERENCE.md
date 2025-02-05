@@ -109,6 +109,7 @@ Supported use cases:
 * [`peadm::convert`](#peadm--convert): Convert an existing PE cluster to a PEAdm-managed cluster
 * [`peadm::install`](#peadm--install): Install a new PE cluster
 * [`peadm::modify_certificate`](#peadm--modify_certificate): Modify the certificate of one or more targets
+* [`peadm::replace_failed_postgresql`](#peadm--replace_failed_postgresql): Replaces a failed PostgreSQL host
 * [`peadm::restore`](#peadm--restore): Restore puppet primary configuration
 * [`peadm::restore_ca`](#peadm--restore_ca)
 * [`peadm::status`](#peadm--status): Return status information from one or more PE clusters in a table format
@@ -2369,6 +2370,50 @@ Data type: `Boolean`
 
 
 Default value: `false`
+
+### <a name="peadm--replace_failed_postgresql"></a>`peadm::replace_failed_postgresql`
+
+Replaces a failed PostgreSQL host
+
+#### Parameters
+
+The following parameters are available in the `peadm::replace_failed_postgresql` plan:
+
+* [`primary_host`](#-peadm--replace_failed_postgresql--primary_host)
+* [`replica_host`](#-peadm--replace_failed_postgresql--replica_host)
+* [`working_postgresql_host`](#-peadm--replace_failed_postgresql--working_postgresql_host)
+* [`failed_postgresql_host`](#-peadm--replace_failed_postgresql--failed_postgresql_host)
+* [`replacement_postgresql_host`](#-peadm--replace_failed_postgresql--replacement_postgresql_host)
+
+##### <a name="-peadm--replace_failed_postgresql--primary_host"></a>`primary_host`
+
+Data type: `Peadm::SingleTargetSpec`
+
+- The hostname and certname of the primary Puppet server
+
+##### <a name="-peadm--replace_failed_postgresql--replica_host"></a>`replica_host`
+
+Data type: `Peadm::SingleTargetSpec`
+
+- The hostname and certname of the replica VM
+
+##### <a name="-peadm--replace_failed_postgresql--working_postgresql_host"></a>`working_postgresql_host`
+
+Data type: `Peadm::SingleTargetSpec`
+
+- The hostname and certname of the still-working PE-PostgreSQL server
+
+##### <a name="-peadm--replace_failed_postgresql--failed_postgresql_host"></a>`failed_postgresql_host`
+
+Data type: `Peadm::SingleTargetSpec`
+
+- The hostname and certname of the failed PE-PostgreSQL server
+
+##### <a name="-peadm--replace_failed_postgresql--replacement_postgresql_host"></a>`replacement_postgresql_host`
+
+Data type: `Peadm::SingleTargetSpec`
+
+- The hostname and certname of the server being brought in to replace the failed PE-PostgreSQL server
 
 ### <a name="peadm--restore"></a>`peadm::restore`
 
