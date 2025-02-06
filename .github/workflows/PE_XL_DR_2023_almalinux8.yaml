@@ -139,7 +139,7 @@ jobs:
               --modulepath spec/fixtures/modules \
               provider=provision_service \
               image=${{ matrix.image }} \
-              architechture=standard \
+              architecture=standard \
               --log-level trace
           echo ::endgroup::
           echo ::group::info:request
