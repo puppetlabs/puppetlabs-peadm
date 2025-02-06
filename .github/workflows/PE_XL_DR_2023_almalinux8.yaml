@@ -98,7 +98,6 @@ jobs:
             echo ::endgroup::
           fi
   test-backup:  # to replace failed VM
-    test-install:
     name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
     runs-on: ubuntu-20.04
     env:
@@ -140,7 +139,7 @@ jobs:
               --modulepath spec/fixtures/modules \
               provider=provision_service \
               image=${{ matrix.image }} \
-              architecture=${{ matrix.architecture }} \
+              architechture=standard \
               --log-level trace
           echo ::endgroup::
           echo ::group::info:request
@@ -149,24 +148,3 @@ jobs:
           echo ::group::info:inventory
             sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
           echo ::endgroup::
-      - name: Install PE on test cluster
-        timeout-minutes: 120
-        run: |
-          bundle exec bolt plan run peadm_spec::install_test_cluster \
-            --inventoryfile spec/fixtures/litmus_inventory.yaml \
-            --modulepath spec/fixtures/modules \
-            architecture=${{ matrix.architecture }} \
-            version=${{ matrix.version }} \
-            console_password=${{ secrets.CONSOLE_PASSWORD }}
-      - name: Tear down test cluster
-        if: ${{ always() }}
-        continue-on-error: true
-        run: |-
-          if [ -f spec/fixtures/litmus_inventory.yaml ]; then
-            echo ::group::tear_down
-              bundle exec rake 'litmus:tear_down'
-            echo ::endgroup::
-            echo ::group::info:request
-              cat request.json || true; echo
-            echo ::endgroup::
-          fi
