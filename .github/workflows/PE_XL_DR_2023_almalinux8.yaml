@@ -98,7 +98,6 @@ jobs:
             echo ::endgroup::
           fi
   test-backup:  # to replace failed VM
-    test-install:
     name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
     runs-on: ubuntu-20.04
     env:
@@ -140,7 +139,7 @@ jobs:
               --modulepath spec/fixtures/modules \
               provider=provision_service \
               image=${{ matrix.image }} \
-              architecture=${{ matrix.architecture }} \
+              architechture=standard \
               --log-level trace
           echo ::endgroup::
           echo ::group::info:request
