@@ -43,8 +43,8 @@ on:
         default: 'false'
 jobs:
   backup:
-    name: 'Backup: Cluster A: PE ${{ inputs.version }} ${{ inputs.architecture }}
-      on ${{ inputs.image }}'
+    name: 'Backup: Cluster A: PE 2021.7.4 extra-large-with-dr
+      on almalinux-cloud/almalinux-8'
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true
@@ -84,8 +84,8 @@ jobs:
               bundle exec bolt plan run peadm_spec::provision_test_cluster \
                 --modulepath spec/fixtures/modules \
                 provider=provision_service \
-                image=${{ inputs.image }} \
-                architecture=${{ inputs.architecture }}
+                image=almalinux-cloud/almalinux-8 \
+                architecture=extra-large-with-dr
           echo ::endgroup::
           echo ::group::info:request
             cat request.json || true; echo
@@ -105,8 +105,8 @@ jobs:
           bundle exec bolt plan run peadm_spec::install_test_cluster \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
-            architecture=${{ inputs.architecture }} \
-            version=${{ inputs.version }} \
+            architecture=extra-large-with-dr \
+            version=2021.7.4 \
             console_password=${{ secrets.CONSOLE_PASSWORD }}
       - name: Start SSH session
         if: github.event.inputs.ssh-debugging == 'true'
@@ -158,8 +158,8 @@ jobs:
             echo ::endgroup::
           fi
   restore:
-    name: 'Restore: Cluster B: PE ${{ inputs.version }} ${{ inputs.architecture }}
-      on ${{ inputs.image }}'
+    name: 'Restore: Cluster B: PE 2021.7.4 standard
+      on almalinux-cloud/almalinux-8'
     runs-on: ubuntu-20.04
     env:
       BOLT_GEM: true
@@ -193,8 +193,8 @@ jobs:
               bundle exec bolt plan run peadm_spec::provision_test_cluster \
                 --modulepath spec/fixtures/modules \
                 provider=provision_service \
-                image=${{ inputs.image }} \
-                architecture=${{ inputs.architecture }}
+                image=almalinux-cloud/almalinux-8 \
+                architecture=standard
           echo ::endgroup::
           echo ::group::info:request
             cat request.json || true; echo
@@ -214,15 +214,15 @@ jobs:
           bundle exec bolt plan run peadm_spec::install_test_cluster \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
-            architecture=${{ inputs.architecture }} \
-            version=${{ inputs.version }} \
+            architecture=standard \
+            version=2021.7.4 \
             console_password=${{ secrets.CONSOLE_PASSWORD }}
       - name: Wait for backup to finish
         uses: lewagon/wait-on-check-action@v1.3.4
         with:
           ref: ${{ github.ref }}
-          check-name: 'Backup: Cluster A: PE ${{ inputs.version }} ${{ inputs.architecture }}
-            on ${{ inputs.image }}'
+          check-name: 'Backup: Cluster A: PE 2021.7.4 extra-large-with-dr
+            on almalinux-cloud/almalinux-8'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
       - name: Tear down cluster B
