@@ -172,8 +172,8 @@ plan peadm::upgrade (
   $compiler_m1_nonlegacy_targets = $compiler_targets.filter |$target| {
     ($cert_extensions.dig($target.peadm::certname, peadm::oid('peadm_availability_group'))
     == $cert_extensions.dig($primary_target[0].peadm::certname, peadm::oid('peadm_availability_group'))) and
-    ($cert_extensions.dig($target.peadm::certname, peadm::oid('peadm_legacy_compiler'))
-    == 'false')
+    ($cert_extensions.dig($target.peadm::certname, peadm::oid('pp_auth_role'))
+    == 'pe_compiler')
   }
 
   $compiler_m2_targets = $compiler_targets.filter |$target| {
@@ -184,8 +184,8 @@ plan peadm::upgrade (
   $compiler_m2_nonlegacy_targets = $compiler_targets.filter |$target| {
     ($cert_extensions.dig($target.peadm::certname, peadm::oid('peadm_availability_group'))
     == $cert_extensions.dig($replica_target[0].peadm::certname, peadm::oid('peadm_availability_group'))) and
-    ($cert_extensions.dig($target.peadm::certname, peadm::oid('peadm_legacy_compiler'))
-    == 'false')
+    ($cert_extensions.dig($target.peadm::certname, peadm::oid('pp_auth_role'))
+    == 'pe_compiler')
   }
 
   peadm::plan_step('preparation') || {
@@ -439,6 +439,8 @@ plan peadm::upgrade (
   }
 
   peadm::check_version_and_known_hosts($current_pe_version, $_version, $r10k_known_hosts)
+
+  run_task('peadm::update_pe_master_rules', $primary_target)
 
   return("Upgrade of Puppet Enterprise ${arch['architecture']} completed.")
 }
