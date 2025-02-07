@@ -85,7 +85,7 @@ jobs:
                 --modulepath spec/fixtures/modules \
                 provider=provision_service \
                 image=almalinux-cloud/almalinux-8 \
-                architecture=extra-large-with-dr
+                architecture=extra-large-with-dr-migration
           echo ::endgroup::
           echo ::group::info:request
             cat request.json || true; echo
