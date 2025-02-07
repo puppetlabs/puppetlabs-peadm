@@ -93,12 +93,14 @@ jobs:
           echo ::group::info:inventory
             sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
           echo ::endgroup::
-
-      # - name: Save inventory file A to an artifact
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: inventory_A
-      #     path: spec/fixtures/litmus_inventory.yaml
+      - name: Output value of A spec/fixtures/litmus_inventory.yaml
+        run: |
+          cat spec/fixtures/litmus_inventory.yaml
+      - name: Save inventory file A to an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: inventory_A
+          path: spec/fixtures/litmus_inventory.yaml
       - name: Install PE on test cluster
         timeout-minutes: 120
         run: |
@@ -203,9 +205,11 @@ jobs:
           echo ::group::info:inventory
             sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
           echo ::endgroup::
-
+      - name: Output value B of spec/fixtures/litmus_inventory.yaml
+        run: |
+          cat spec/fixtures/litmus_inventory.yaml
       # - name: Save inventory file B to an artifact
-      #   uses: actions/upload-artifact@v3
+      #   uses: actions/upload-artifact@v4
       #   with:
       #     name: inventory_B
       #     path: spec/fixtures/litmus_inventory.yaml
@@ -218,14 +222,14 @@ jobs:
             architecture=standard \
             version=2021.7.4 \
             console_password=${{ secrets.CONSOLE_PASSWORD }}
-      - name: Wait for backup to finish
-        uses: lewagon/wait-on-check-action@v1.3.4
-        with:
-          ref: ${{ github.ref }}
-          check-name: 'Backup: Cluster A: PE 2021.7.4 extra-large-with-dr
-            on almalinux-cloud/almalinux-8'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 10
+      # - name: Wait for restore to finish
+      #   uses: lewagon/wait-on-check-action@v1.3.4
+      #   with:
+      #     ref: ${{ github.ref }}
+      #     check-name: 'Backup: Cluster A: PE 2021.7.4 extra-large-with-dr
+      #       on almalinux-cloud/almalinux-8'
+      #     repo-token: ${{ secrets.GITHUB_TOKEN }}
+      #     wait-interval: 10
       - name: Tear down cluster B
         if: always()
         run: |-
