@@ -2205,7 +2205,7 @@ Data type: `Peadm::Pe_version`
 
 
 
-Default value: `'2023.8.0'`
+Default value: `'2023.8.1'`
 
 ##### <a name="-peadm--install--dns_alt_names"></a>`dns_alt_names`
 
