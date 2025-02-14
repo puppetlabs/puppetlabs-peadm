@@ -141,7 +141,7 @@ plan peadm::upgrade (
   }
 
   $compiler_missing_legacy_targets = $cert_extensions_temp.filter |$name,$exts| {
-    ($name in $compiler_targets.map |$t| { $t.name }) and ($exts[peadm::oid('peadm_legacy_compiler')] == undef)
+    ($name in $compiler_targets.map |$t| { $t.name }) and (peadm::oid('peadm_legacy_compiler') in $exts and $exts[peadm::oid('peadm_legacy_compiler')] == undef)
   }.keys
 
   run_plan('peadm::modify_certificate', $compiler_missing_legacy_targets,
@@ -157,7 +157,7 @@ plan peadm::upgrade (
   }
 
   $convert_targets = $cert_extensions.filter |$name,$exts| {
-    ($name in $compiler_targets.map |$t| { $t.name }) and ($exts['pp_auth_role'] == undef)
+    ($name in $compiler_targets.map |$t| { $t.name }) and ('pp_auth_role' in $exts and $exts['pp_auth_role'] == undef)
   }.keys
 
   # Determine PE version currently installed on primary
@@ -167,8 +167,8 @@ plan peadm::upgrade (
 
   # Ensure needed trusted facts are available
   if $cert_extensions.any |$_,$cert| {
-    [peadm::oid('peadm_role'), 'pp_auth_role'].all |$ext| { $cert[$ext] == undef } or
-    $cert[peadm::oid('peadm_availability_group')] == undef
+    [peadm::oid('peadm_role'), 'pp_auth_role'].all |$ext| { $ext in $cert and $cert[$ext] == undef } or
+    (peadm::oid('peadm_availability_group') in $cert and $cert[peadm::oid('peadm_availability_group')] == undef)
   } {
 # lint:ignore:strict_indent
     fail_plan(@(HEREDOC/L))
