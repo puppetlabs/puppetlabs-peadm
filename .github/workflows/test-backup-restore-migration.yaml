@@ -140,7 +140,7 @@ jobs:
           echo ::endgroup::
       - name: output useful info on config by running peadm::verify_config
         run: |
-          bundle exec bolt plan run peadm::verify_config \
+          bundle exec bolt plan run peadm_spec::verify_config \
             --inventoryfile spec/fixtures/litmus_inventory.yaml
             primary_host=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
       - name: Wait as long as the file ${HOME}/pause file is present
