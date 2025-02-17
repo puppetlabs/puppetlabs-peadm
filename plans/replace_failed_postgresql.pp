@@ -46,6 +46,21 @@ plan peadm::replace_failed_postgresql(
   # Stop puppet.service on Puppet server primary and replica
   run_task('service', $pe_hosts, 'action' => 'stop', 'name' => 'puppet.service')
 
+  # loop over pe_hosts and output info
+  $pe_hosts.each |$host| {
+    $status = run_plan('peadm::status', $host, { 'format' => 'json' })
+    out::message("Host ${host} status: ${status}")
+
+    if empty($status['failed']) {
+      out::message("Cluster on ${host} is healthy, continuing")
+    } else {
+      out::message("Cluster on ${host} is not healthy, aborting")
+    }
+
+    $result = run_task('peadm::get_peadm_config', $host, '_catch_errors' => true).first.to_data()
+    out::message("PE configuration on ${host}: ${result}")
+  }
+
   # Temporarily set both primary and replica server nodes so that they use the remaining healthy PE-PostgreSQL server
   out::message("Updating database settings on ${$pe_hosts} to use ${$working_postgresql_host}")
   run_plan('peadm::util::update_db_setting', $pe_hosts,
