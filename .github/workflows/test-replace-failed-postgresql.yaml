@@ -88,6 +88,9 @@ jobs:
             architecture=${{ matrix.install_architecture }} \
             version=${{ matrix.version }} \
             console_password=${{ secrets.CONSOLE_PASSWORD }}
+      - name: Output contents of litmus_inventory.yaml
+        run: |
+          cat spec/fixtures/litmus_inventory.yaml
       - name: Replace failed PostgreSQL
         run: |
           echo ::group::prepare

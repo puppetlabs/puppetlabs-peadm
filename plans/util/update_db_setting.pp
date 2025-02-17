@@ -35,6 +35,7 @@ plan peadm::util::update_db_setting (
 
     $db_setting = "//${db}:5432/pe-puppetdb?ssl=true&sslfactory=org.postgresql.ssl.jdbc4.LibPQFactory&sslmode=verify-full&sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem&sslkey=/etc/puppetlabs/puppetdb/ssl/${target.peadm::certname()}.private_key.pk8&sslcert=/etc/puppetlabs/puppetdb/ssl/${$target.peadm::certname()}.cert.pem" # lint:ignore:140chars
 
+    out::message("Updating PuppetDB database settings on ${target} to ${db_setting}")
     # Introduces dependency so PEADM can modify INI files
     apply($target) {
       ini_setting { 'database_setting':
