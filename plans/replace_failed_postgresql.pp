@@ -19,6 +19,12 @@ plan peadm::replace_failed_postgresql(
       $failed_postgresql_host,
       $replacement_postgresql_host,
   ])
+  # output value of each parameter individually
+  out::message("Primary host: ${$primary_host}")
+  out::message("Replica host: ${$replica_host}")
+  out::message("Working PostgreSQL host: ${$working_postgresql_host}")
+  out::message("Failed PostgreSQL host: ${$failed_postgresql_host}")
+  out::message("Replacement PostgreSQL host: ${$replacement_postgresql_host}")
 
   # verify we can connect to targets proded before proceeding
   run_command('hostname', $all_hosts)
@@ -41,6 +47,7 @@ plan peadm::replace_failed_postgresql(
   run_task('service', $pe_hosts, 'action' => 'stop', 'name' => 'puppet.service')
 
   # Temporarily set both primary and replica server nodes so that they use the remaining healthy PE-PostgreSQL server
+  out::message("Updating database settings on ${$pe_hosts} to use ${$working_postgresql_host}")
   run_plan('peadm::util::update_db_setting', $pe_hosts,
     postgresql_host => $working_postgresql_host,
     override => true,
