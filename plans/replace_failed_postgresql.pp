@@ -80,7 +80,8 @@ plan peadm::replace_failed_postgresql(
     }
 
     $result = run_task('peadm::get_peadm_config', $host, '_catch_errors' => true).first.to_data()
-    out::message("2. PE configuration on ${host}: ${result}")
+    $result_formatted = stdlib::to_json_pretty(parsejson($result))
+    out::message("2. PE configuration on ${host}: ${result_formatted}")
   }
 
   # Restart pe-puppetdb.service on Puppet server primary and replica
