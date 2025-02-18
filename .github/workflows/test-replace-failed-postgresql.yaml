@@ -37,7 +37,7 @@ jobs:
       matrix:
         architecture: [extra-large-with-dr-and-spare-replica]
         install_architecture: [extra-large-with-dr]
-        version: [2023.8.0]  # can change to test multiple versions once this one works
+        version: [2023.8.1]  # can change to test multiple versions once this one works
         image: [almalinux-cloud/almalinux-8]
     steps:
       - name: Checkout Source
