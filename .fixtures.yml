@@ -5,6 +5,7 @@ fixtures:
     service: "puppetlabs/service"
     package: "puppetlabs/package"
     reboot: "puppetlabs/reboot"
+    inifile: "puppetlabs/inifile"
   repositories:
     facts: "https://github.com/puppetlabs/puppetlabs-facts.git"
     puppet_agent: "https://github.com/puppetlabs/puppetlabs-puppet_agent.git"
