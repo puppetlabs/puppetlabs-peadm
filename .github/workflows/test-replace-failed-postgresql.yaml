@@ -87,7 +87,8 @@ jobs:
             --modulepath spec/fixtures/modules \
             architecture=${{ matrix.install_architecture }} \
             version=${{ matrix.version }} \
-            console_password=${{ secrets.CONSOLE_PASSWORD }}
+            console_password=${{ secrets.CONSOLE_PASSWORD }} \ 
+            code_manager_auto_configure=true 
       - name: Output contents of litmus_inventory.yaml
         run: |
           cat spec/fixtures/litmus_inventory.yaml
