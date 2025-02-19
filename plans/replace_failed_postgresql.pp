@@ -58,7 +58,8 @@ plan peadm::replace_failed_postgresql(
     }
 
     $result = run_task('peadm::get_peadm_config', $host, '_catch_errors' => true).first.to_data()
-    out::message("PE configuration on ${host}: ${result}")
+    $result_formatted = stdlib::to_json_pretty($result)
+    out::message("PE configuration on ${host}: ${result_formatted}")
   }
 
   # Temporarily set both primary and replica server nodes so that they use the remaining healthy PE-PostgreSQL server
