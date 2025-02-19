@@ -80,7 +80,7 @@ plan peadm::replace_failed_postgresql(
     }
 
     $result = run_task('peadm::get_peadm_config', $host, '_catch_errors' => true).first.to_data()
-    $result_formatted = stdlib::to_json_pretty(parsejson($result))
+    $result_formatted = stdlib::to_json_pretty($result)
     out::message("2. PE configuration on ${host}: ${result_formatted}")
   }
 
