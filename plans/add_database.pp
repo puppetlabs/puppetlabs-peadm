@@ -68,6 +68,7 @@ plan peadm::add_database(
     $source_db_host = $primary_host
   } else {
     out::message("PostgreSQL host: ${postgresql_host}")
+    out::message("postgresql_target: ${postgresql_target}")
     out::message("postgresql_a_host: ${postgresql_a_host}")
     out::message("postgresql_b_host: ${postgresql_b_host}")
     # The letter which doesn't yet have a server assigned or in the event this
