@@ -69,12 +69,16 @@ plan peadm::add_database(
   } else {
     out::message("PostgreSQL host: ${postgresql_host}")
     out::message("postgresql_target: ${postgresql_target}")
+    out::message("Primary host: ${primary_host}")
+    out::message("Primary target: ${primary_target}")
     out::message("postgresql_a_host: ${postgresql_a_host}")
     out::message("postgresql_b_host: ${postgresql_b_host}")
+    $fqdn = run_command('hostname -f', $postgresql_host)
+    out::message("FQDN: ${fqdn}")
     # The letter which doesn't yet have a server assigned or in the event this
     # is a replacement operation, the letter this node was assigned to previously
     $avail_group_letter = peadm::flatten_compact($roles['postgresql'].map |$k,$v| {
-        if (! $v) or ($v == $postgresql_host) {
+        if (! $v) or ($v == $postgresql_host) or ($v == $fqdn) {
           $k
         }
     })[0]
