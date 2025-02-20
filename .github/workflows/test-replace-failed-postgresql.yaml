@@ -108,7 +108,7 @@ jobs:
             echo '    ServerAliveCountMax 2'   >> $HOME/.ssh/config
             bundle exec rake spec_prep
           echo ::endgroup::
-          bundle exec bolt plan run peadm::replace_failed_postgresql \
+          bundle exec bolt plan run peadm_spec::test_replace_failed_postgres \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             primary_host=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .name' spec/fixtures/litmus_inventory.yaml) \
