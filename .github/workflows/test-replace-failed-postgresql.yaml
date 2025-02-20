@@ -79,16 +79,13 @@ jobs:
           echo ::group::info:inventory
             sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
           echo ::endgroup::
-      - name: Install PE on test cluster
-        timeout-minutes: 120
-        run: |
-          bundle exec bolt plan run peadm_spec::install_test_cluster \
-            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+          echo ::group::certnames
+            bundle exec bolt plan run peadm_spec::add_inventory_hostnames \
+            --inventory spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
-            architecture=${{ matrix.install_architecture }} \
-            version=${{ matrix.version }} \
-            console_password=${{ secrets.CONSOLE_PASSWORD }} \
-            code_manager_auto_configure=true            
+            --no-host-key-check \
+            inventory_file=spec/fixtures/litmus_inventory.yaml
+          echo ::endgroup::            
       - name: Output contents of litmus_inventory.yaml
         run: |
           cat spec/fixtures/litmus_inventory.yaml
@@ -110,6 +107,16 @@ jobs:
             failed_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .uri' spec/fixtures/litmus_inventory.yaml) \
             replacement_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "spare-replica") | .uri' spec/fixtures/litmus_inventory.yaml) \
           --no-host-key-check
+      - name: Install PE on test cluster
+        timeout-minutes: 120
+        run: |
+          bundle exec bolt plan run peadm_spec::install_test_cluster \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules \
+            architecture=${{ matrix.install_architecture }} \
+            version=${{ matrix.version }} \
+            console_password=${{ secrets.CONSOLE_PASSWORD }} \
+            code_manager_auto_configure=true
       - name: Tear down PE XL DR test cluster
         if: ${{ always() }}
         continue-on-error: true
