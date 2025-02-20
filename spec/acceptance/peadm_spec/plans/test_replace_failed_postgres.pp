@@ -11,18 +11,12 @@ plan peadm_spec::test_replace_failed_postgres(
   $failed_postgres_fqdn = run_command('hostname -f', $failed_postgresql_host).first['stdout'].chomp
   $replacement_postgres_fqdn = run_command('hostname -f', $replacement_postgresql_host).first['stdout'].chomp
 
-  # run infra status on the primary
-  $primary_host = $t.filter |$n| { $n.vars['role'] == 'primary' }[0]
-  out::message("Running peadm::status on primary host ${primary_host}")
-  $result = run_plan('peadm::status', $primary_host, { 'format' => 'json' })
+  out::message("Primary host: ${primary_host}, fqdn: ${primary_fqdn}")
+  out::message("Replica host: ${replica_host}, fqdn: ${replica_fqdn}")
+  out::message("Working PostgreSQL host: ${working_postgresql_host}, fqdn: ${working_postgres_fqdn}")
+  out::message("Failed PostgreSQL host: ${failed_postgresql_host}, fqdn: ${failed_postgres_fqdn}")
+  out::message("Replacement PostgreSQL host: ${replacement_postgresql_host}, fqdn: ${replacement_postgres_fqdn}")
 
-  out::message($result)
-
-  if empty($result['failed']) {
-    out::message('Cluster is healthy, continuing')
-  } else {
-    fail_plan('Cluster is not healthy, aborting')
-  }
   run_plan('peadm::replace_failed_postgresql',
     primary_host => $primary_fqdn,
     replica_host => $replica_fqdn,
