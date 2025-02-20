@@ -6,7 +6,6 @@ plan peadm_spec::test_replace_failed_postgres(
   Peadm::SingleTargetSpec   $replacement_postgresql_host,
 ) {
   # run infra status on the primary
-  $primary_host = $t.filter |$n| { $n.vars['role'] == 'primary' }[0]
   out::message("Running peadm::status on primary host ${primary_host}")
   $result = run_plan('peadm::status', $primary_host, { 'format' => 'json' })
   out::message($result)
