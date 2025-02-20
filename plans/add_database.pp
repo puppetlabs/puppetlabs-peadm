@@ -78,7 +78,7 @@ plan peadm::add_database(
     # The letter which doesn't yet have a server assigned or in the event this
     # is a replacement operation, the letter this node was assigned to previously
     $avail_group_letter = peadm::flatten_compact($roles['postgresql'].map |$k,$v| {
-        if (! $v) or ($v == $postgresql_host) or ($v == $fqdn) {
+        if (! $v) or ($v == $postgresql_host) {
           $k
         }
     })[0]
