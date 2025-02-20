@@ -7,10 +7,10 @@ plan peadm_spec::test_replace_failed_postgres(
 ) {
   # run infra status on the primary
   out::message("Running peadm::status on primary host ${primary_host}")
-  $result = run_plan('peadm::status', $primary_host, { 'format' => 'json' })
-  out::message($result)
+  $primary_status = run_plan('peadm::status', $primary_host, { 'format' => 'json' })
+  out::message($primary_status)
 
-  if empty($result['failed']) {
+  if empty($primary_status['failed']) {
     out::message('Cluster is healthy, continuing')
   } else {
     fail_plan('Cluster is not healthy, aborting')
