@@ -30,10 +30,10 @@ plan peadm_spec::test_replace_failed_postgres(
   out::message("Replacement PostgreSQL host: ${replacement_postgresql_host}, fqdn: ${replacement_postgres_fqdn}")
 
   run_plan('peadm::replace_failed_postgresql',
-    primary_host => $primary_fqdn,
-    replica_host => $replica_fqdn,
-    working_postgresql_host => $working_postgres_fqdn,
-    failed_postgresql_host => $failed_postgres_fqdn,
-    replacement_postgresql_host => $replacement_postgres_fqdn,
+    primary_host => $primary_host,
+    replica_host => $replica_host,
+    working_postgresql_host => $working_postgresql_host,
+    failed_postgresql_host => $failed_postgresql_host,
+    replacement_postgresql_host => $replacement_postgresql_host,
   )
 }

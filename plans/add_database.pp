@@ -73,7 +73,7 @@ plan peadm::add_database(
     out::message("Primary target: ${primary_target}")
     out::message("postgresql_a_host: ${postgresql_a_host}")
     out::message("postgresql_b_host: ${postgresql_b_host}")
-    $fqdn = run_command('hostname -f', $postgresql_host)
+    $fqdn = run_command('hostname -f', $postgresql_host).first['stdout'].chomp
     out::message("FQDN: ${fqdn}")
     # The letter which doesn't yet have a server assigned or in the event this
     # is a replacement operation, the letter this node was assigned to previously
