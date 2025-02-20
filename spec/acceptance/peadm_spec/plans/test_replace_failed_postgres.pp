@@ -32,8 +32,8 @@ plan peadm_spec::test_replace_failed_postgres(
   run_plan('peadm::replace_failed_postgresql',
     primary_host => $primary_fqdn,
     replica_host => $replica_fqdn,
-    working_postgresql_host => $working_postgresql_fqdn,
-    failed_postgresql_host => $failed_postgresql_fqdn,
-    replacement_postgresql_host => $replacement_postgresql_fqdn,
+    working_postgresql_host => $working_postgres_fqdn,
+    failed_postgresql_host => $failed_postgres_fqdn,
+    replacement_postgresql_host => $replacement_postgres_fqdn,
   )
 }
