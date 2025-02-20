@@ -5,6 +5,18 @@ plan peadm_spec::test_replace_failed_postgres(
   Peadm::SingleTargetSpec   $failed_postgresql_host,
   Peadm::SingleTargetSpec   $replacement_postgresql_host,
 ) {
+  wait_until_available($primary_host)
+  wait_until_available($replica_host)
+  wait_until_available($working_postgresql_host)
+  wait_until_available($failed_postgresql_host)
+  wait_until_available($replacement_postgresql_host)
+
+  out::message("Primary host: ${primary_host}")
+  out::message("Replica host: ${replica_host}")
+  out::message("Working PostgreSQL host: ${working_postgresql_host}")
+  out::message("Failed PostgreSQL host: ${failed_postgresql_host}")
+  out::message("Replacement PostgreSQL host: ${replacement_postgresql_host}")
+
   $primary_fqdn = run_command('hostname -f', $primary_host).first['stdout'].chomp
   $replica_fqdn = run_command('hostname -f', $replica_host).first['stdout'].chomp
   $working_postgres_fqdn = run_command('hostname -f', $working_postgresql_host).first['stdout'].chomp
