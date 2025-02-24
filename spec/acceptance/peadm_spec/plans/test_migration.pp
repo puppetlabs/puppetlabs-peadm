@@ -1,12 +1,12 @@
 plan peadm_spec::test_migration(
-  Peadm::SingleTargetSpec   $primary_host,
-  Peadm::SingleTargetSpec   $replica_host,
-  Peadm::SingleTargetSpec   $primary_postgresql_host,
-  Peadm::SingleTargetSpec   $replica_postgresql_host,
-  Peadm::SingleTargetSpec   $new_primary_host,
-  Peadm::SingleTargetSpec   $new_replica_host,
-  Peadm::SingleTargetSpec   $new_primary_postgresql_host,
-  Peadm::SingleTargetSpec   $new_replica_postgresql_host,
+  String $primary_host,
+  String $replica_host,
+  String $primary_postgresql_host,
+  String $replica_postgresql_host,
+  String $new_primary_host,
+  String $new_replica_host,
+  String $new_primary_postgresql_host,
+  String $new_replica_postgresql_host,
 ) {
   out::message("primary_host:${primary_host}.")
   out::message("replica_host:${replica_host}.")
@@ -17,9 +17,19 @@ plan peadm_spec::test_migration(
   out::message("new_primary_postgresql_host:${new_primary_postgresql_host}.")
   out::message("new_replica_postgresql_host:${new_replica_postgresql_host}.")
 
+  # Convert String values to Peadm::SingleTargetSpec if they are not blank
+  $primary_target = $primary_host ? { '' => undef, default => peadm::get_targets($primary_host, 1) }
+  $replica_target = $replica_host ? { '' => undef, default => peadm::get_targets($replica_host, 1) }
+  $primary_postgresql_target = $primary_postgresql_host ? { '' => undef, default => peadm::get_targets($primary_postgresql_host, 1) }
+  $replica_postgresql_target = $replica_postgresql_host ? { '' => undef, default => peadm::get_targets($replica_postgresql_host, 1) }
+  $new_primary_target = $new_primary_host ? { '' => undef, default => peadm::get_targets($new_primary_host, 1) }
+  $new_replica_target = $new_replica_host ? { '' => undef, default => peadm::get_targets($new_replica_host, 1) }
+  $new_primary_postgresql_target = $new_primary_postgresql_host ? { '' => undef, default => peadm::get_targets($new_primary_postgresql_host, 1) }
+  $new_replica_postgresql_target = $new_replica_postgresql_host ? { '' => undef, default => peadm::get_targets($new_replica_postgresql_host, 1) }
+
   # run infra status on the primary
-  out::message("Running peadm::status on primary host ${primary_host}")
-  $primary_status = run_plan('peadm::status', $primary_host, { 'format' => 'json' })
+  out::message("Running peadm::status on primary host ${primary_target}")
+  $primary_status = run_plan('peadm::status', $primary_target, { 'format' => 'json' })
   out::message($primary_status)
 
   if empty($primary_status['failed']) {
@@ -30,7 +40,7 @@ plan peadm_spec::test_migration(
 
   # # perform the migration
   # run_plan('peadm::migrate',
-  #   old_primary_host => $primary_host,
+  #   old_primary_host => $primary_target,
   #   new_primary_host => $new_primary_host,
   # )
 
@@ -47,8 +57,8 @@ plan peadm_spec::test_migration(
 
   # MIGHT WANT TO ADD CHECKS HERE TO VERIFY THE NEW ARCHITECTURE IS AS EXPECTED
 
-  # # get the config from primary_host and verify failed_postgresql_host is removed and replacement was added
-  # $result = run_task('peadm::get_peadm_config', $primary_host, '_catch_errors' => true).first.to_data()
+  # # get the config from primary_target and verify failed_postgresql_host is removed and replacement was added
+  # $result = run_task('peadm::get_peadm_config', $primary_target, '_catch_errors' => true).first.to_data()
   # $primary_postgres_host = $result['value']['params']['primary_postgresql_host']
   # $replica_postgres_host = $result['value']['params']['replica_postgresql_host']
 
