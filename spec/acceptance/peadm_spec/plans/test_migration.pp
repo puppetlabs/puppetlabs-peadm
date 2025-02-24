@@ -27,6 +27,16 @@ plan peadm_spec::test_migration(
   $new_primary_postgresql_target = $new_primary_postgresql_host ? { '' => undef, default => peadm::get_targets($new_primary_postgresql_host, 1) }
   $new_replica_postgresql_target = $new_replica_postgresql_host ? { '' => undef, default => peadm::get_targets($new_replica_postgresql_host, 1) }
 
+  # output converted values
+  out::message("primary_target:${primary_target}.")
+  out::message("replica_target:${replica_target}.")
+  out::message("primary_postgresql_target:${primary_postgresql_target}.")
+  out::message("replica_postgresql_target:${replica_postgresql_target}.")
+  out::message("new_primary_target:${new_primary_target}.")
+  out::message("new_replica_target:${new_replica_target}.")
+  out::message("new_primary_postgresql_target:${new_primary_postgresql_target}.")
+  out::message("new_replica_postgresql_target:${new_replica_postgresql_target}.")
+
   # run infra status on the primary
   out::message("Running peadm::status on primary host ${primary_target}")
   $primary_status = run_plan('peadm::status', $primary_target, { 'format' => 'json' })

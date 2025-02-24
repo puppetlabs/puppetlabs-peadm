@@ -37,11 +37,11 @@ jobs:
       matrix:
         architecture:
           - standard
-          # - large
-          # - extra-large
-          # - standard-with-dr
-          # - large-with-dr
-          # - extra-large-with-dr
+          - large
+          - extra-large
+          - standard-with-dr
+          - large-with-dr
+          - extra-large-with-dr
         # version: [2021.7.9, 2023.8.1, 2025.0.0]
         version: [2025.0.0]
         image: [almalinux-cloud/almalinux-8]
