@@ -45,6 +45,11 @@ jobs:
         # version: [2021.7.9, 2023.8.1, 2025.0.0]
         version: [2025.0.0]
         image: [almalinux-cloud/almalinux-8]
+        include:
+          - architecture: standard
+            version: 2023.8.1
+            image: almalinux-cloud/almalinux-8
+            new_pe_version: 2025.0.0
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
@@ -125,7 +130,7 @@ jobs:
             new_replica_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-replica") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
             new_primary_postgresql_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-primary-pdb-postgresql") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
             new_replica_postgresql_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-replica-pdb-postgresql") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
-            new_pe_version= \
+            new_pe_version=${{ matrix.new_pe_version }} \
           --no-host-key-check
       - name: Tear down PE ${{ matrix.architecture }} test cluster
         if: ${{ always() }}
