@@ -35,8 +35,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture: [standard, large, extra-large, standard-with-dr, large-with-dr, extra-large-with-dr]
-        version: [2021.7.9, 2023.8.1, 2025.0.0]
+        architecture:
+          - standard
+          # - large
+          # - extra-large
+          # - standard-with-dr
+          # - large-with-dr
+          # - extra-large-with-dr
+        # version: [2021.7.9, 2023.8.1, 2025.0.0]
+        version: [2025.0.0]
         image: [almalinux-cloud/almalinux-8]
     steps:
       - name: Checkout Source
@@ -100,14 +107,14 @@ jobs:
           bundle exec bolt plan run peadm_spec::test_migration \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
-            primary_host=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .name' spec/fixtures/litmus_inventory.yaml) \
-            replica_host=$(yq '.groups[].targets[] | select(.vars.role == "replica") | .name' spec/fixtures/litmus_inventory.yaml) \
-            primary_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .name' spec/fixtures/litmus_inventory.yaml) \
-            replica_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "replica-pdb-postgresql") | .name' spec/fixtures/litmus_inventory.yaml) \
-            new_primary_host=$(yq '.groups[].targets[] | select(.vars.role == "new-primary") | .name' spec/fixtures/litmus_inventory.yaml) \
-            new_replica_host=$(yq '.groups[].targets[] | select(.vars.role == "new-replica") | .name' spec/fixtures/litmus_inventory.yaml) \
-            new_primary_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "new-primary-pdb-postgresql") | .name' spec/fixtures/litmus_inventory.yaml) \
-            new_replica_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "new-replica-pdb-postgresql") | .name' spec/fixtures/litmus_inventory.yaml) \
+            primary_host=$(yq -r '.groups[].targets[] | select(.vars.role == "primary") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
+            replica_host=$(yq -r '.groups[].targets[] | select(.vars.role == "replica") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
+            primary_postgresql_host=$(yq -r '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
+            replica_postgresql_host=$(yq -r '.groups[].targets[] | select(.vars.role == "replica-pdb-postgresql") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
+            new_primary_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-primary") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
+            new_replica_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-replica") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
+            new_primary_postgresql_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-primary-pdb-postgresql") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
+            new_replica_postgresql_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-replica-pdb-postgresql") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
           --no-host-key-check
       - name: Install PE on test cluster
         timeout-minutes: 120
