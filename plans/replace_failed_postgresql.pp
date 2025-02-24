@@ -27,9 +27,9 @@ plan peadm::replace_failed_postgresql(
   $peadm_config = run_task('peadm::get_peadm_config', $primary_host).first.value
   $compilers = $peadm_config['params']['compilers']
 
-  # Bail if this is trying to be ran against Standard
+  # Bail if we are not running this against an XL deployment with DR enabled - the parameters also enforce this to some extent
   if $compilers.empty {
-    fail_plan('Plan peadm::replace_failed_postgresql is only applicable for L and XL deployments')
+    fail_plan('Plan peadm::replace_failed_postgresql is only applicable for XL deployments with DR enabled')
   }
 
   $pe_hosts = peadm::flatten_compact([

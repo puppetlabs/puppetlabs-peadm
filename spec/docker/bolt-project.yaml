@@ -2,12 +2,18 @@
 name: peadm_docker_examples
 modules:
   - name: nwops/container_inventory
-    version_requirement: ">= 0.1.1"
+    version_requirement: '>= 0.1.1'
   - name: puppetlabs/stdlib
-    version_requirement: ">= 6.5.0 < 8.0.0"
+    version_requirement: '>= 9.0.0 < 10.0.0'
   - puppetlabs/ruby_task_helper
   - name: puppetlabs/node_manager
-    version_requirement: ">= 1.0.1 < 2.0.0"
+    version_requirement: '>= 1.0.1 < 2.0.0'
+  - name: puppetlabs/service
+    version_requirement: '>= 1.3.0 <= 4.0.0'
+  - name: puppetlabs/package
+    version_requirement: '>= 2.1.0 <= 4.0.0'
+  - name: puppetlabs/inifile
+    version_requirement: '>= 6.1.0 < 7.0.0'
   - puppetlabs/apply_helpers
   - puppetlabs/bolt_shim
   - puppet/format
