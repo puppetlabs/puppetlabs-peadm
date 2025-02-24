@@ -7,6 +7,7 @@ plan peadm_spec::test_migration(
   String $new_replica_host,
   String $new_primary_postgresql_host,
   String $new_replica_postgresql_host,
+  String $new_pe_version,
 ) {
   out::message("primary_host:${primary_host}.")
   out::message("replica_host:${replica_host}.")
@@ -54,32 +55,53 @@ plan peadm_spec::test_migration(
   #   new_primary_host => $new_primary_host,
   # )
 
-  # # run infra status on the new primary
-  # out::message("Running peadm::status on new primary host ${new_primary_host}")
-  # $new_primary_status = run_plan('peadm::status', $new_primary_host, { 'format' => 'json' })
-  # out::message($primary_status)
+  # run infra status on the new primary
+  out::message("Running peadm::status on new primary host ${new_primary_target}")
+  $new_primary_status = run_plan('peadm::status', $new_primary_target, { 'format' => 'json' })
+  out::message($new_primary_status)
 
-  # if empty($new_primary_status['failed']) {
-  #   out::message('Migrated cluster is healthy, continuing')
-  # } else {
-  #   fail_plan('Migrated cluster is not healthy, aborting')
-  # }
+  if empty($new_primary_status['failed']) {
+    out::message('Migrated cluster is healthy, continuing')
+  } else {
+    fail_plan('Migrated cluster is not healthy, aborting')
+  }
 
-  # MIGHT WANT TO ADD CHECKS HERE TO VERIFY THE NEW ARCHITECTURE IS AS EXPECTED
+  # get the config from new_primary_target and verify config looks as expected
+  $result = run_task('peadm::get_peadm_config', $new_primary_target, '_catch_errors' => true).first.to_data()
+  out::message("peadm_config: ${result}")
+  # if new_replica_host is not empty then check that is in the expected place in the config
+  if $new_replica_host != '' {
+    if $peadm_config['params']['replica_host'] == $new_replica_host {
+      out::message("New replica host ${new_replica_host} set up correctly")
+    } else {
+      fail_plan("New replica host ${new_replica_host} was not set up correctly")
+    }
+  }
 
-  # # get the config from primary_target and verify failed_postgresql_host is removed and replacement was added
-  # $result = run_task('peadm::get_peadm_config', $primary_target, '_catch_errors' => true).first.to_data()
-  # $primary_postgres_host = $result['value']['params']['primary_postgresql_host']
-  # $replica_postgres_host = $result['value']['params']['replica_postgresql_host']
+  # if new_primary_postgresql_host is not empty then check that is in the expected place in the config
+  if $new_primary_postgresql_host != '' {
+    if $peadm_config['params']['primary_postgresql_host'] == $new_primary_postgresql_host {
+      out::message("New primary postgres host ${new_primary_postgresql_host} set up correctly")
+    } else {
+      fail_plan("New primary postgres host ${new_primary_postgresql_host} was not set up correctly")
+    }
+  }
 
-  # if $primary_postgres_host == $failed_postgresql_host or $replica_postgres_host == $failed_postgresql_host {
-  #   fail_plan("Failed PostgreSQL host ${failed_postgresql_host} was not removed from the PE configuration")
-  # } else {
-  #   out::message("Failed PostgreSQL host ${failed_postgresql_host} was removed from the PE configuration")
-  # }
-  # if $primary_postgres_host == $replacement_postgresql_host or $replica_postgres_host == $replacement_postgresql_host {
-  #   out::message("Replacement PostgreSQL host ${replacement_postgresql_host} was added to the PE configuration")
-  # } else {
-  #   fail_plan("Replacement PostgreSQL host ${replacement_postgresql_host} was not added the PE configuration")
-  # }
+  # if new_replica_postgresql_host is not empty then check that is in the expected place in the config
+  if $new_replica_postgresql_host != '' {
+    if $peadm_config['params']['replica_postgresql_host'] == $new_replica_postgresql_host {
+      out::message("New primary postgres host ${new_replica_postgresql_host} set up correctly")
+    } else {
+      fail_plan("New primary postgres host ${new_replica_postgresql_host} was not set up correctly")
+    }
+  }
+
+  # if a new PE version was specified then check it has been upgraded
+  if ($new_pe_version != '') {
+    if $peadm_config['params']['pe_version'] == $new_pe_version {
+      out::message("Upgraded to new PE version ${new_pe_version} correctly")
+    } else {
+      fail_plan("Failed to upgrade to new PE version ${new_pe_version} correctly")
+    }
+  }
 }
