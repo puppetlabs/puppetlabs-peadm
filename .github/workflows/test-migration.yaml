@@ -113,7 +113,7 @@ jobs:
           bundle exec bolt plan run peadm_spec::test_migration \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
-            primary_host=$(yq -r '.groups[].targets[] | select(.vars.role == "primary") | .name // ""' spec/fixtures/litmus_inventory.yaml) \          
+            primary_host=$(yq -r '.groups[].targets[] | select(.vars.role == "primary") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
             new_primary_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-primary") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
             new_replica_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-replica") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
             new_primary_postgresql_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-primary-pdb-postgresql") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
