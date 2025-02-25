@@ -11,6 +11,7 @@ plan peadm::migrate (
   Peadm::SingleTargetSpec $old_primary_host,
   Peadm::SingleTargetSpec $new_primary_host,
   Optional[String] $upgrade_version = undef,
+  Optional[SingleTargetSpec] $replica_host = undef,
 ) {
   peadm::assert_supported_bolt_version()
 
@@ -36,6 +37,7 @@ plan peadm::migrate (
       code_manager_auto_configure => true,
       download_mode               => 'direct',
       version                     => $old_pe_conf['pe_version'],
+      replica_host                => $replica_host,
   })
 
   run_plan('peadm::restore', {
@@ -48,7 +50,8 @@ plan peadm::migrate (
     run_plan('peadm::upgrade', {
         primary_host                => $new_primary_host,
         version                     => $upgrade_version,
-        download_mode              => 'direct',
+        download_mode               => 'direct',
+        replica_host                => $replica_host,
     })
   }
 }
