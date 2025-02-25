@@ -100,16 +100,6 @@ jobs:
       - name: Output contents of litmus_inventory.yaml
         run: |
           cat spec/fixtures/litmus_inventory.yaml
-      - name: Install PE on test cluster
-        timeout-minutes: 120
-        run: |
-          bundle exec bolt plan run peadm_spec::install_test_cluster \
-            --inventoryfile spec/fixtures/litmus_inventory.yaml \
-            --modulepath spec/fixtures/modules \
-            architecture=${{ matrix.architecture }} \
-            version=${{ matrix.version }} \
-            console_password=${{ secrets.CONSOLE_PASSWORD }} \
-            code_manager_auto_configure=true
       - name: Perform migration
         run: |
           echo ::group::prepare
@@ -122,16 +112,26 @@ jobs:
           bundle exec bolt plan run peadm_spec::test_migration \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
-            primary_host=$(yq -r '.groups[].targets[] | select(.vars.role == "primary") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
-            replica_host=$(yq -r '.groups[].targets[] | select(.vars.role == "replica") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
-            primary_postgresql_host=$(yq -r '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
-            replica_postgresql_host=$(yq -r '.groups[].targets[] | select(.vars.role == "replica-pdb-postgresql") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
-            new_primary_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-primary") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
-            new_replica_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-replica") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
-            new_primary_postgresql_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-primary-pdb-postgresql") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
-            new_replica_postgresql_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-replica-pdb-postgresql") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
+            primary_host=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .name' spec/fixtures/litmus_inventory.yaml) \
+            replica_host=$(yq '.groups[].targets[] | select(.vars.role == "replica") | .name' spec/fixtures/litmus_inventory.yaml) \
+            primary_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .name' spec/fixtures/litmus_inventory.yaml) \
+            replica_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "replica-pdb-postgresql") | .name' spec/fixtures/litmus_inventory.yaml) \
+            new_primary_host=$(yq '.groups[].targets[] | select(.vars.role == "new-primary") | .name' spec/fixtures/litmus_inventory.yaml) \
+            new_replica_host=$(yq '.groups[].targets[] | select(.vars.role == "new-replica") | .name' spec/fixtures/litmus_inventory.yaml) \
+            new_primary_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "new-primary-pdb-postgresql") | .name' spec/fixtures/litmus_inventory.yaml) \
+            new_replica_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "new-replica-pdb-postgresql") | .name' spec/fixtures/litmus_inventory.yaml) \
             upgrade_version=${{ matrix.new_pe_version }} \
           --no-host-key-check
+      - name: Install PE on test cluster
+        timeout-minutes: 120
+        run: |
+          bundle exec bolt plan run peadm_spec::install_test_cluster \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules \
+            architecture=${{ matrix.architecture }} \
+            version=${{ matrix.version }} \
+            console_password=${{ secrets.CONSOLE_PASSWORD }} \
+            code_manager_auto_configure=true
       - name: Tear down PE ${{ matrix.architecture }} test cluster
         if: ${{ always() }}
         continue-on-error: true
