@@ -7,7 +7,7 @@ plan peadm_spec::test_migration(
   Optional[Peadm::SingleTargetSpec] $new_replica_host = undef,
   Optional[Peadm::SingleTargetSpec] $new_primary_postgresql_host = undef,
   Optional[Peadm::SingleTargetSpec] $new_replica_postgresql_host = undef,
-  Optional[Peadm::SingleTargetSpec] $new_pe_version = undef,
+  Optional[Peadm::SingleTargetSpec] $upgrade_version = undef,
 ) {
   out::message("primary_host:${primary_host}.")
   out::message("replica_host:${replica_host}.")
@@ -29,11 +29,11 @@ plan peadm_spec::test_migration(
     fail_plan('Cluster is not healthy, aborting')
   }
 
-  # # perform the migration
-  # run_plan('peadm::migrate',
-  #   old_primary_host => $primary_host,
-  #   new_primary_host => $new_primary_host,
-  # )
+  # perform the migration
+  run_plan('peadm::migrate',
+    old_primary_host => $primary_host,
+    new_primary_host => $new_primary_host,
+  )
 
   # run infra status on the new primary
   out::message("Running peadm::status on new primary host ${new_primary_host}")
@@ -77,11 +77,11 @@ plan peadm_spec::test_migration(
   }
 
   # if a new PE version was specified then check it has been upgraded
-  if $new_pe_version {
-    if $peadm_config['params']['pe_version'] == $new_pe_version {
-      out::message("Upgraded to new PE version ${new_pe_version} correctly")
+  if $upgrade_version {
+    if $peadm_config['params']['pe_version'] == $upgrade_version {
+      out::message("Upgraded to new PE version ${upgrade_version} correctly")
     } else {
-      fail_plan("Failed to upgrade to new PE version ${new_pe_version} correctly")
+      fail_plan("Failed to upgrade to new PE version ${upgrade_version} correctly")
     }
   }
 }
