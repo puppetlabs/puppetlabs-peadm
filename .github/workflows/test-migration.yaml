@@ -26,7 +26,8 @@ on:
   workflow_dispatch: {}
 jobs:
   test-migration:
-    name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }} PE upgrade? ${{ matrix.new_pe_version }}
+    name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
+      PE upgrade? ${{ matrix.new_pe_version }}
     runs-on: ubuntu-latest
     env:
       BOLT_GEM: true
@@ -114,18 +115,15 @@ jobs:
           new_replica_host=$(yq '.groups[].targets[] | select(.vars.role == "new-replica") | .name // ""' spec/fixtures/litmus_inventory.yaml)
           new_primary_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "new-primary-pdb-postgresql") | .name // ""' spec/fixtures/litmus_inventory.yaml)
           new_replica_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "new-replica-pdb-postgresql") | .name // ""' spec/fixtures/litmus_inventory.yaml)
-
           bolt_command = "bundle exec bolt plan run peadm_spec::test_migration \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             primary_host=$primary_host \
             new_primary_host=new_primary_host \
-            upgrade_version=${{ matrix.new_pe_version }} \"
-
+            upgrade_version=${{ matrix.new_pe_version }} "
           [ -n "$new_replica_host" ] && [ "$new_replica_host" != "" ] && bolt_command="$bolt_command new_replica_host=$new_replica_host"
           [ -n "$new_primary_postgresql_host" ] && [ "$new_primary_postgresql_host" != "" ] && bolt_command="$bolt_command new_primary_postgresql_host=$new_primary_postgresql_host"
           [ -n "$new_replica_postgresql_host" ] && [ "$new_replica_postgresql_host" != "" ] && bolt_command="$bolt_command new_replica_postgresql_host=$new_replica_postgresql_host"
-
           bolt_command="$bolt_command --no-host-key-check"
           eval $bolt_command
       - name: Install PE on test cluster
