@@ -109,14 +109,20 @@ jobs:
             echo '    ServerAliveCountMax 2'   >> $HOME/.ssh/config
             bundle exec rake spec_prep
           echo ::endgroup::
+          primary_host=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .name' spec/fixtures/litmus_inventory.yaml) \
+          new_primary_host=$(yq '.groups[].targets[] | select(.vars.role == "new-primary") | .name' spec/fixtures/litmus_inventory.yaml) \
+          new_replica_host=$(yq '.groups[].targets[] | select(.vars.role == "new-replica") | .name // empty' spec/fixtures/litmus_inventory.yaml)
+          new_primary_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "new-primary-pdb-postgresql") | .name // empty' spec/fixtures/litmus_inventory.yaml)
+          new_replica_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "new-replica-pdb-postgresql") | .name // empty' spec/fixtures/litmus_inventory.yaml)
+          
           bundle exec bolt plan run peadm_spec::test_migration \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
-            primary_host=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .name' spec/fixtures/litmus_inventory.yaml) \
-            new_primary_host=$(yq '.groups[].targets[] | select(.vars.role == "new-primary") | .name' spec/fixtures/litmus_inventory.yaml) \
-            new_replica_host=$(yq '.groups[].targets[] | select(.vars.role == "new-replica") | .name' spec/fixtures/litmus_inventory.yaml) \
-            new_primary_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "new-primary-pdb-postgresql") | .name' spec/fixtures/litmus_inventory.yaml) \
-            new_replica_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "new-replica-pdb-postgresql") | .name' spec/fixtures/litmus_inventory.yaml) \
+            primary_host=$primary_host \
+            new_primary_host=new_primary_host \
+            ${new_replica_host:+new_replica_host=$new_replica_host} \
+            ${new_primary_postgresql_host:+new_primary_postgresql_host=$new_primary_postgresql_host} \
+            ${new_replica_postgresql_host:+new_replica_postgresql_host=$new_replica_postgresql_host} \
             upgrade_version=${{ matrix.new_pe_version }} \
           --no-host-key-check
       - name: Install PE on test cluster
