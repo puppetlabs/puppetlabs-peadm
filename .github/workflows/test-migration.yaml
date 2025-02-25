@@ -26,8 +26,8 @@ on:
   workflow_dispatch: {}
 jobs:
   test-migration:
-    name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
-    runs-on: ubuntu-20.04
+    name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }} PE upgrade? ${{ matrix.new_pe_version }}
+    runs-on: ubuntu-latest
     env:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
