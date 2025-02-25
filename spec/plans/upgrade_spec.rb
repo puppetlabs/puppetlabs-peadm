@@ -30,6 +30,7 @@ describe 'peadm::upgrade' do
 
     expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(2)
 
+    allow_task('peadm::precheck').return_for_targets('primary' => { 'hostname' => 'primary', 'platform' => 'el-7.11-x86_64' })
     expect(run_plan('peadm::upgrade',
                     'primary_host' => 'primary',
                     'version' => '2021.7.9')).to be_ok
@@ -45,6 +46,7 @@ describe 'peadm::upgrade' do
 
     expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary,
                                                        'compiler' => trusted_compiler).be_called_times(2)
+    allow_task('peadm::precheck').return_for_targets('primary' => { 'hostname' => 'primary', 'platform' => 'el-7.11-x86_64' })
 
     expect(run_plan('peadm::upgrade',
                     'primary_host' => 'primary',
@@ -95,6 +97,8 @@ describe 'peadm::upgrade' do
 
       expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(2)
       expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
+
+      allow_task('peadm::precheck').return_for_targets('primary' => { 'hostname' => 'primary', 'platform' => 'el-7.11-x86_64' })
     end
 
     it 'updates pe.conf if r10k_known_hosts is set' do
