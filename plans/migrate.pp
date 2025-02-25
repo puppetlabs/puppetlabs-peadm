@@ -21,7 +21,7 @@ plan peadm::migrate (
   $remote_backup_path = "/tmp/${backup_filename}"
   $current_dir = system::env('PWD')
 
-  upload_file("${current_dir}/downloads/backup/${old_primary_host}/${backup_filename}", $remote_backup_path, $new_primary_host)
+  upload_file("${current_dir}/downloads/backup/${old_primary_host.peadm::certname()}/${backup_filename}", $remote_backup_path, $new_primary_host)
 
   $old_primary_target = get_targets($old_primary_host)[0]
   $old_primary_password = peadm::get_pe_conf($old_primary_target)['console_admin_password']

@@ -13,7 +13,7 @@ plan peadm_spec::test_migration(
   out::message("new_replica_postgresql_host:${new_replica_postgresql_host}.")
   out::message("upgrade_version:${upgrade_version}.")
 
-  # Convert String values to Peadm::SingleTargetSpec if they are not blank
+  # Convert String values to targets if they are not blank
   $primary_target = $primary_host ? { '' => undef, default => peadm::get_targets($primary_host, 1) }
   $new_primary_target = $new_primary_host ? { '' => undef, default => peadm::get_targets($new_primary_host, 1) }
   $new_replica_target = $new_replica_host ? { '' => undef, default => peadm::get_targets($new_replica_host, 1) }
