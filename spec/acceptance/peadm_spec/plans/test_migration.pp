@@ -1,8 +1,5 @@
 plan peadm_spec::test_migration(
   Peadm::SingleTargetSpec $primary_host,
-  Optional[Peadm::SingleTargetSpec] $replica_host = undef,
-  Optional[Peadm::SingleTargetSpec] $primary_postgresql_host = undef,
-  Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
   Peadm::SingleTargetSpec $new_primary_host,
   Optional[Peadm::SingleTargetSpec] $new_replica_host = undef,
   Optional[Peadm::SingleTargetSpec] $new_primary_postgresql_host = undef,
@@ -10,9 +7,6 @@ plan peadm_spec::test_migration(
   Optional[Peadm::SingleTargetSpec] $upgrade_version = undef,
 ) {
   out::message("primary_host:${primary_host}.")
-  out::message("replica_host:${replica_host}.")
-  out::message("primary_postgresql_host:${primary_postgresql_host}.")
-  out::message("replica_postgresql_host:${replica_postgresql_host}.")
   out::message("new_primary_host:${new_primary_host}.")
   out::message("new_replica_host:${new_replica_host}.")
   out::message("new_primary_postgresql_host:${new_primary_postgresql_host}.")

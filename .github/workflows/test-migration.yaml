@@ -113,9 +113,6 @@ jobs:
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             primary_host=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .name' spec/fixtures/litmus_inventory.yaml) \
-            replica_host=$(yq '.groups[].targets[] | select(.vars.role == "replica") | .name' spec/fixtures/litmus_inventory.yaml) \
-            primary_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .name' spec/fixtures/litmus_inventory.yaml) \
-            replica_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "replica-pdb-postgresql") | .name' spec/fixtures/litmus_inventory.yaml) \
             new_primary_host=$(yq '.groups[].targets[] | select(.vars.role == "new-primary") | .name' spec/fixtures/litmus_inventory.yaml) \
             new_replica_host=$(yq '.groups[].targets[] | select(.vars.role == "new-replica") | .name' spec/fixtures/litmus_inventory.yaml) \
             new_primary_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "new-primary-pdb-postgresql") | .name' spec/fixtures/litmus_inventory.yaml) \
