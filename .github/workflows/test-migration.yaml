@@ -130,7 +130,7 @@ jobs:
             new_replica_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-replica") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
             new_primary_postgresql_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-primary-pdb-postgresql") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
             new_replica_postgresql_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-replica-pdb-postgresql") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
-            new_pe_version=${{ matrix.new_pe_version }} \
+            upgrade_version=${{ matrix.new_pe_version }} \
           --no-host-key-check
       - name: Tear down PE ${{ matrix.architecture }} test cluster
         if: ${{ always() }}
