@@ -4,10 +4,13 @@
 #   The existing PE primary server that will be migrated from
 # @param new_primary_host
 #   The new server that will become the PE primary server
+# @param upgrade_version
+#   Optional version to upgrade to after migration is complete
 #
 plan peadm::migrate (
   Peadm::SingleTargetSpec $old_primary_host,
   Peadm::SingleTargetSpec $new_primary_host,
+  Optional[String] $upgrade_version = undef,
 ) {
   peadm::assert_supported_bolt_version()
 
@@ -40,4 +43,12 @@ plan peadm::migrate (
       restore_type => 'migration',
       input_file => $remote_backup_path,
   })
+
+  if $upgrade_version {
+    run_plan('peadm::upgrade', {
+        primary_host                => $new_primary_host,
+        version                     => $upgrade_version,
+        download_mode              => 'direct',
+    })
+  }
 }
