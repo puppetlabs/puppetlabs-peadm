@@ -16,8 +16,8 @@ plan peadm::migrate (
   })
   out::message("Backup file: ${backup_file}")
   out::message("Backup file path: ${backup_file['path']}")
-  download_file($backup_file['path'], 'backup', $old_primary_host)
-
+  $down_results = download_file($backup_file['path'], 'backup', $old_primary_host)
+  out::message("Download results: ${down_results}")
   $backup_filename = basename($backup_file['path'])
   $remote_backup_path = "/tmp/${backup_filename}"
   $current_dir = system::env('PWD')
