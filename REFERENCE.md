@@ -108,6 +108,7 @@ Supported use cases:
 * [`peadm::backup_ca`](#peadm--backup_ca)
 * [`peadm::convert`](#peadm--convert): Convert an existing PE cluster to a PEAdm-managed cluster
 * [`peadm::install`](#peadm--install): Install a new PE cluster
+* [`peadm::migrate`](#peadm--migrate): Migrate a PE primary server to a new host
 * [`peadm::modify_certificate`](#peadm--modify_certificate): Modify the certificate of one or more targets
 * [`peadm::replace_failed_postgresql`](#peadm--replace_failed_postgresql): Replaces a failed PostgreSQL host
 * [`peadm::restore`](#peadm--restore): Restore puppet primary configuration
@@ -1876,7 +1877,7 @@ This should be the primary puppetserver for the puppet cluster
 
 ##### <a name="-peadm--backup--backup_type"></a>`backup_type`
 
-Data type: `Enum['recovery', 'custom']`
+Data type: `Enum['recovery', 'custom', 'migration']`
 
 Currently, the recovery and custom backup types are supported
 
@@ -2311,6 +2312,29 @@ Data type: `String`
 
 Default value: `'1y'`
 
+### <a name="peadm--migrate"></a>`peadm::migrate`
+
+Migrate a PE primary server to a new host
+
+#### Parameters
+
+The following parameters are available in the `peadm::migrate` plan:
+
+* [`old_primary_host`](#-peadm--migrate--old_primary_host)
+* [`new_primary_host`](#-peadm--migrate--new_primary_host)
+
+##### <a name="-peadm--migrate--old_primary_host"></a>`old_primary_host`
+
+Data type: `Peadm::SingleTargetSpec`
+
+The existing PE primary server that will be migrated from
+
+##### <a name="-peadm--migrate--new_primary_host"></a>`new_primary_host`
+
+Data type: `Peadm::SingleTargetSpec`
+
+The new server that will become the PE primary server
+
 ### <a name="peadm--modify_certificate"></a>`peadm::modify_certificate`
 
 Certificates can be modified by adding extensions, removing extensions, or
@@ -2444,7 +2468,7 @@ This should be the primary puppetserver for the puppet cluster
 
 ##### <a name="-peadm--restore--restore_type"></a>`restore_type`
 
-Data type: `Enum['recovery', 'recovery-db', 'custom']`
+Data type: `Enum['recovery', 'recovery-db', 'custom', 'migration']`
 
 Choose from `recovery`, `recovery-db` and `custom`
 
