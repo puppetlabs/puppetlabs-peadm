@@ -17,6 +17,8 @@ plan peadm::migrate (
   out::message("Backup file: ${backup_file}")
   out::message("Backup file path: ${backup_file['path']}")
   $down_results = download_file($backup_file['path'], 'backup', $old_primary_host)
+  $download_path = $down_results[0]['value']['path']
+  out::message("Download path: ${download_path}")
   out::message("Download results: ${down_results}")
   $backup_filename = basename($backup_file['path'])
   $remote_backup_path = "/tmp/${backup_filename}"
@@ -25,7 +27,7 @@ plan peadm::migrate (
   out::message("remote_backup_path: ${remote_backup_path}")
   out::message("current_dir: ${current_dir}")
 
-  upload_file("${current_dir}/downloads/backup/${old_primary_host.peadm::certname()}/${backup_filename}", $remote_backup_path, $new_primary_host)
+  upload_file($download_path, $remote_backup_path, $new_primary_host)
 
   $old_primary_target = get_targets($old_primary_host)[0]
   $old_primary_password = peadm::get_pe_conf($old_primary_target)['console_admin_password']
