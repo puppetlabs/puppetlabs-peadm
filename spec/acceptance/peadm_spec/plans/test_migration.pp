@@ -44,6 +44,9 @@ plan peadm_spec::test_migration(
     new_primary_host => $new_primary_target,
   )
 
+  peadm::wait_until_service_ready('bolt-server', $new_primary_target)
+  peadm::wait_until_service_ready('ace-server', $new_primary_target)
+
   # run infra status on the new primary
   out::message("Running peadm::status on new primary host ${new_primary_target}")
   $new_primary_status = run_plan('peadm::status', $new_primary_target, { 'format' => 'json' })
