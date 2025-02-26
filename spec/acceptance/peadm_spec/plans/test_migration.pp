@@ -56,8 +56,8 @@ plan peadm_spec::test_migration(
   }
 
   # get the config from new_primary_target and verify config looks as expected
-  $result = run_task('peadm::get_peadm_config', $new_primary_target, '_catch_errors' => true).first.to_data()
-  out::message("peadm_config: ${result}")
+  $peadm_config = run_task('peadm::get_peadm_config', $new_primary_target, '_catch_errors' => true).first.to_data()
+  out::message("peadm_config: ${peadm_config}")
   # if new_replica_target is supplied then check that is in the expected place in the config
   if $new_replica_target {
     if $peadm_config['params']['replica_host'] == $new_replica_target {
