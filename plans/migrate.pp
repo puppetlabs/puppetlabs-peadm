@@ -18,7 +18,7 @@ plan peadm::migrate (
   out::message("Backup file path: ${backup_file['path']}")
   $down_results = download_file($backup_file['path'], 'backup', $old_primary_host)
   out::message("Download results: ${down_results}")
-  if $down_results and $down_results[0] and $down_results[0]['value'] and $down_results[0]['value']['path'] {
+  if $down_results and $down_results[0] {
     out::message("Download results0: ${down_results[0]}")
     if $down_results[0]['value'] {
       out::message("Download results 0 value: ${down_results[0]['value']}")
