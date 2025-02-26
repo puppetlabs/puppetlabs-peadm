@@ -44,6 +44,9 @@ plan peadm_spec::test_migration(
     new_primary_host => $new_primary_target,
   )
 
+  # Initialize a variable to track the overall success status
+  $all_checks_passed = true
+
   # run infra status on the new primary
   out::message("Running peadm::status on new primary host ${new_primary_target}")
   $new_primary_status = run_plan('peadm::status', $new_primary_target, { 'format' => 'json' })
@@ -52,18 +55,21 @@ plan peadm_spec::test_migration(
   if empty($new_primary_status['failed']) {
     out::message('Migrated cluster is healthy, continuing')
   } else {
-    fail_plan('Migrated cluster is not healthy, aborting')
+    out::message('FAIL: Migrated cluster is not healthy')
+    $all_checks_passed = false
   }
 
   # get the config from new_primary_target and verify config looks as expected
   $peadm_config = run_task('peadm::get_peadm_config', $new_primary_target, '_catch_errors' => true).first.to_data()
   out::message("peadm_config: ${peadm_config}")
+
   # if new_replica_target is supplied then check that is in the expected place in the config
   if $new_replica_target {
     if $peadm_config['params']['replica_host'] == $new_replica_target {
       out::message("New replica host ${new_replica_target} set up correctly")
     } else {
-      fail_plan("New replica host ${new_replica_target} was not set up correctly")
+      out::message("FAIL: New replica host ${new_replica_target} was not set up correctly")
+      $all_checks_passed = false
     }
   }
 
@@ -72,7 +78,8 @@ plan peadm_spec::test_migration(
     if $peadm_config['params']['primary_postgresql_host'] == $new_primary_postgresql_target {
       out::message("New primary postgres host ${new_primary_postgresql_target} set up correctly")
     } else {
-      fail_plan("New primary postgres host ${new_primary_postgresql_target} was not set up correctly")
+      out::message("FAIL: New primary postgres host ${new_primary_postgresql_target} was not set up correctly")
+      $all_checks_passed = false
     }
   }
 
@@ -81,7 +88,8 @@ plan peadm_spec::test_migration(
     if $peadm_config['params']['replica_postgresql_host'] == $new_replica_postgresql_target {
       out::message("New primary postgres host ${new_replica_postgresql_target} set up correctly")
     } else {
-      fail_plan("New primary postgres host ${new_replica_postgresql_target} was not set up correctly")
+      out::message("FAIL: New primary postgres host ${new_replica_postgresql_target} was not set up correctly")
+      $all_checks_passed = false
     }
   }
 
@@ -90,7 +98,15 @@ plan peadm_spec::test_migration(
     if $peadm_config['params']['pe_version'] == $upgrade_version {
       out::message("Upgraded to new PE version ${upgrade_version} correctly")
     } else {
-      fail_plan("Failed to upgrade to new PE version ${upgrade_version} correctly")
+      out::message("FAIL: Upgrade to new PE version ${upgrade_version} did not work correctly")
+      $all_checks_passed = false
     }
+  }
+
+  # fail plan if any of the checks failed
+  if $all_checks_passed {
+    out::message('All checks passed')
+  } else {
+    fail_plan('Migration of cluster failed')
   }
 }
