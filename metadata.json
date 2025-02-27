@@ -87,6 +87,6 @@
     }
   ],
   "pdk-version": "3.4.0",
-  "template-url": "https://github.com/puppetlabs/pdk-templates.git#main",
-  "template-ref": "tags/3.4.0.3-0-g8fb22fc"
+  "template-url": "https://github.com/puppetlabs/pdk-templates#add_gem_switch_for_auth_token",
+  "template-ref": "remotes/origin/add_gem_switch_for_auth_token-0-gfde0356"
 }
