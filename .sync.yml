@@ -1,11 +1,11 @@
 ---
 Gemfile:
   required:
-    :development:
+    ':development':
       - gem: bolt
         version: '>= 3.10.0'
   optional:
-    :development:
+    ':development':
       - gem: github_changelog_generator
         version: 1.16.4  # Pinned to latest bug fix version
       - gem: octokit
@@ -13,7 +13,7 @@ Gemfile:
       # The Faraday requirements in orchestrator_client 0.7.1 causes Bundler to
       # resolve the dependency in unexpected ways and causes issues in CI
       - gem: orchestrator_client
-        version: < 0.7.1
+        version: '< 0.7.1'
 Rakefile:
   changelog_since_tag: 2.5.0
   default_disabled_lint_checks:
@@ -23,7 +23,7 @@ Rakefile:
     - PuppetSyntax.exclude_paths = ["plans/**/*.pp", "spec/acceptance/**/plans/**/*.pp",
       "vendor/**/*"]
 spec/spec_helper.rb:
-  mock_with: :rspec
+  mock_with: ':rspec'
 .gitignore:
   paths:
     - .rerun.json
