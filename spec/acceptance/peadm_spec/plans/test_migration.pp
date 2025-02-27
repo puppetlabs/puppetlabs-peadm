@@ -87,7 +87,8 @@ plan peadm_spec::test_migration(
   }
 
   # if a new PE version was specified then check it has been upgraded
-  if $upgrade_version and $upgrade_version != '' {
+  out::message("upgrade_version:${upgrade_version}.")
+  if $upgrade_version and $upgrade_version != '' and !empty($upgrade_version) {
     if $peadm_config['value']['pe_version'] == $upgrade_version {
       out::message("Upgraded to new PE version ${upgrade_version} correctly")
     } else {
