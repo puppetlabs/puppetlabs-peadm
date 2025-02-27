@@ -4,7 +4,9 @@ These instructions all assume that the failed server is destroyed, and being rep
 
 The new system needs to be provisioned with the same certificate name as the system it is replacing.
 
-## Recover from failed primary Puppet server
+Automated procedures are documented in [automated_recovery.md](automated_recovery.md)
+
+## Recover from failed Puppet primary server
 
 1. Promote the replica ([official docs](https://puppet.com/docs/pe/2019.8/dr_configure.html#dr-promote-replica))
 2. Purge the failed primary server
@@ -18,7 +20,7 @@ The new system needs to be provisioned with the same certificate name as the sys
 
 This procedure uses the following placeholder references.
 
-* _\<primary-server-fqdn\>_ - The FQDN and certname of the primary Puppet server
+* _\<primary-server-fqdn\>_ - The FQDN and certname of the Puppet primary server
 * _\<old-replica-fqdn\>_ - The FQDN and certname of the old replica Puppet server that has failed or is missing
 * _\<replacement-replica-fqdn\>_ - The FQDN and certname of the new replica Puppet server
 * _\<replacement-avail-group-letter\>_ - Either A or B; whichever of the two letter designations is appropriate for the replacement server. It will be the opposite of the primary server. 
@@ -81,7 +83,7 @@ The procedure for replacing a failed PE-PostgreSQL server is the same regardless
 * _\<replacement-postgres-server-fqdn\>_ - The FQDN and certname of the new server being brought in to replace the failed PE-PostgreSQL server
 * _\<working-postgres-server-fqdn\>_ - The FQDN and certname of the still-working PE-PostgreSQL server
 * _\<replacement-avail-group-letter\>_ - Either A or B; whichever of the two letter designations is appropriate for the server being replaced. It will be the opposite of the still-working PE-PostgreSQL server
-* _\<primary-server-fqdn\>_ - The FQDN and certname of the primary Puppet server
+* _\<primary-server-fqdn\>_ - The FQDN and certname of the Puppet primary server
 
 Procedure:
 
@@ -200,7 +202,7 @@ This procedure uses the following placeholder references.
 * _\<avail-group-letter\>_ - Either A or B; whichever of the two letter designations the compiler is being assigned to
 * _\<new-compiler-fqdn\>_ - The FQDN and certname of the new compiler
 * _\<dns-alt-names\>_ - A comma-separated list of DNS alt names for the compiler
-* _\<primary-server-fqdn\>_ - The FQDN and certname of the primary Puppet server
+* _\<primary-server-fqdn\>_ - The FQDN and certname of the Puppet primary server
 * _\<postgresql-server-fqdn\>_ - The FQDN and certname of the PE-PostgreSQL server with availability group _\<avail-group-letter\>_
 
 1. On _\<postgresql-server-fqdn\>_:
