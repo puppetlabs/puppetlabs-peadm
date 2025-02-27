@@ -4,7 +4,8 @@ AllCops:
   NewCops: enable
   DisplayCopNames: true
   TargetRubyVersion: '2.6'
-  Include: ['**/*.rb']
+  Include:
+  - "**/*.rb"
   Exclude:
     - bin/*
     - .vendor/**/*
