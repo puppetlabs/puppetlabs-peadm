@@ -4,6 +4,8 @@ These instructions all assume that the failed server is destroyed, and being rep
 
 The new system needs to be provisioned with the same certificate name as the system it is replacing.
 
+Automated procedures are documented in [automated_recovery.md](automated_recovery.md)
+
 ## Recover from failed primary Puppet server
 
 1. Promote the replica ([official docs](https://puppet.com/docs/pe/2019.8/dr_configure.html#dr-promote-replica))
