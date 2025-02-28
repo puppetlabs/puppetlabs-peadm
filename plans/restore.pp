@@ -89,7 +89,7 @@ plan peadm::restore (
       $replica_target,
       $compiler_targets,
   ])
-
+  out::message("puppetdb_postgres_targets: ${puppetdb_postgresql_targets}")
   # Map of recovery option name to array of database hosts to restore the
   # relevant .dump content to.
   $restore_databases = {
