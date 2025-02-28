@@ -1,0 +1,7 @@
+{
+  "readme": "documentation/using_private_puppet_and_facter/README.md",
+  "howtos": "documentation/using_private_puppet_and_facter/how-to",
+  "tutorials": "documentation/using_private_puppet_and_facter/tutorials",
+  "explanations": "documentation/using_private_puppet_and_facter/explanations",
+  "adr": "documentation/using_private_puppet_and_facter/exp/adr"
+}
