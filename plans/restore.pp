@@ -66,6 +66,8 @@ plan peadm::restore (
     'custom'       => peadm::recovery_opts_all() + $restore,
   }
 
+  out::message("restore_type: ${restore_type}")
+  out::message("recovery_opts: ${recovery_opts}")
   $primary_target   = peadm::get_targets(getvar('cluster.params.primary_host'), 1)
   $replica_target   = peadm::get_targets(getvar('cluster.params.replica_host'), 1)
   $compiler_targets = peadm::get_targets(getvar('cluster.params.compiler_hosts'))
@@ -296,6 +298,7 @@ plan peadm::restore (
   # TODO: consider adding a heuristic to skip when innappropriate due to size
   #       or other factors.
   if getvar('recovery_opts.puppetdb') and $restore_type == 'migration' {
+    out::message('# Importing puppetdb')
     run_command(@("CMD"/L), $primary_target)
       /opt/puppetlabs/bin/puppet-db import \
       --cert=$(/opt/puppetlabs/bin/puppet config print hostcert) \
