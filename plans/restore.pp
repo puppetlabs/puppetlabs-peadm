@@ -298,6 +298,16 @@ plan peadm::restore (
   # TODO: consider adding a heuristic to skip when innappropriate due to size
   #       or other factors.
   if getvar('recovery_opts.puppetdb') and $restore_type == 'migration' {
+    out::message('# hostcert')
+    run_command(@("CMD"/L), $primary_target)
+      /opt/puppetlabs/bin/puppet config print hostcert
+      | CMD
+
+    out::message('# hostprivkey')
+    run_command(@("CMD"/L), $primary_target)
+      /opt/puppetlabs/bin/puppet config print hostprivkey
+      | CMD
+
     out::message('# Importing puppetdb')
     run_command(@("CMD"/L), $primary_target)
       /opt/puppetlabs/bin/puppet-db import \
