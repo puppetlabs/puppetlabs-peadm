@@ -2322,6 +2322,8 @@ The following parameters are available in the `peadm::migrate` plan:
 
 * [`old_primary_host`](#-peadm--migrate--old_primary_host)
 * [`new_primary_host`](#-peadm--migrate--new_primary_host)
+* [`upgrade_version`](#-peadm--migrate--upgrade_version)
+* [`replica_host`](#-peadm--migrate--replica_host)
 
 ##### <a name="-peadm--migrate--old_primary_host"></a>`old_primary_host`
 
@@ -2334,6 +2336,22 @@ The existing PE primary server that will be migrated from
 Data type: `Peadm::SingleTargetSpec`
 
 The new server that will become the PE primary server
+
+##### <a name="-peadm--migrate--upgrade_version"></a>`upgrade_version`
+
+Data type: `Optional[String]`
+
+Optional version to upgrade to after migration is complete
+
+Default value: `undef`
+
+##### <a name="-peadm--migrate--replica_host"></a>`replica_host`
+
+Data type: `Optional[Peadm::SingleTargetSpec]`
+
+
+
+Default value: `undef`
 
 ### <a name="peadm--modify_certificate"></a>`peadm::modify_certificate`
 
