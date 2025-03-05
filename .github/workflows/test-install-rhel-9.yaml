@@ -27,7 +27,7 @@ on:
 jobs:
   test-install:
     name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     env:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true

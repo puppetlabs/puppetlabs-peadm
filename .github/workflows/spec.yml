@@ -28,7 +28,7 @@ on:
 jobs:
   setup_matrix:
     name: Setup Test Matrix
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     outputs:
       spec_matrix: ${{ steps.get-matrix.outputs.spec_matrix }}
     steps:
@@ -63,7 +63,7 @@ jobs:
     name: 'Spec Tests (Puppet: ${{matrix.puppet_version}}, Ruby Ver: ${{matrix.ruby_version}})'
     needs: [setup_matrix]
     if: ${{ needs.setup_matrix.outputs.spec_matrix != '{}' }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix: ${{fromJson(needs.setup_matrix.outputs.spec_matrix)}}

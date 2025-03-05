@@ -33,7 +33,7 @@ jobs:
   backup-restore-test:
     name: "Backup, break and restore cluster: PE ${{ github.event.inputs.version || '2025.0.0' }}\
       \ ${{ github.event.inputs.architecture || 'extra-large' }} on ${{ github.event.inputs.image || 'almalinux-cloud/almalinux-8' }}"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     env:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
