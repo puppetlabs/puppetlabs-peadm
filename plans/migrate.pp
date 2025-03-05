@@ -21,7 +21,7 @@ plan peadm::migrate (
   run_command('hostname', $all_hosts)  # verify can connect to targets
 
   # verify the cluster we are migrating from is operational and is a supported architecture
-  $cluster = run_task('peadm::get_peadm_config', $targets).first.value
+  $cluster = run_task('peadm::get_peadm_config', $old_primary_host).first.value
   $error = getvar('cluster.error')
   if $error {
     fail_plan($error)
