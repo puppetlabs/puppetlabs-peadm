@@ -5,6 +5,7 @@
 # @param new_primary_host
 #   The new server that will become the PE primary server
 #
+#
 plan peadm::migrate (
   Peadm::SingleTargetSpec $old_primary_host,
   Peadm::SingleTargetSpec $new_primary_host,
