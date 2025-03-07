@@ -7,13 +7,36 @@
 # @param upgrade_version
 #   Optional version to upgrade to after migration is complete
 #
+#
 plan peadm::migrate (
   Peadm::SingleTargetSpec $old_primary_host,
   Peadm::SingleTargetSpec $new_primary_host,
   Optional[String] $upgrade_version = undef,
   Optional[Peadm::SingleTargetSpec] $replica_host = undef,
 ) {
+  # pre-migration checks
   peadm::assert_supported_bolt_version()
+  peadm::assert_supported_pe_version($pe_version, $permit_unsafe_versions)
+
+  $all_hosts = peadm::flatten_compact([
+      $old_primary_host,
+      $new_primary_host,
+  ])
+  run_command('hostname', $all_hosts)  # verify can connect to targets
+
+  # verify the cluster we are migrating from is operational and is a supported architecture
+  $cluster = run_task('peadm::get_peadm_config', $old_primary_host).first.value
+  $error = getvar('cluster.error')
+  if $error {
+    fail_plan($error)
+  }
+  $arch = peadm::assert_supported_architecture(
+    getvar('cluster.params.primary_host'),
+    getvar('cluster.params.replica_host'),
+    getvar('cluster.params.primary_postgresql_host'),
+    getvar('cluster.params.replica_postgresql_host'),
+    getvar('cluster.params.compiler_hosts'),
+  )
 
   $backup_file = run_plan('peadm::backup', $old_primary_host, {
       backup_type => 'migration',
