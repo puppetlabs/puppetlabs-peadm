@@ -67,6 +67,6 @@ class peadm::setup::legacy_compiler_group (
   }
 
   node_group { 'PE Compiler':
-    rule   => ['and', ['=', ['trusted', 'extensions', peadm::oid('peadm_legacy_compiler')], 'false']],
+    rule => ['and', ['=', ['trusted', 'extensions', peadm::oid('peadm_legacy_compiler')], 'false']],
   }
 }
