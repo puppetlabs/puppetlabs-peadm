@@ -7,22 +7,22 @@ Manual procedures are documented in [recovery.md](recovery.md)
 ## Recover from failed Puppet primary server
 
 1. Promote the replica ([official docs](https://puppet.com/docs/pe/2019.8/dr_configure.html#dr-promote-replica))
-2. [Replace missing or failed replica Puppet server](#replace-missing-or-failed-replica-puppet-server)
+2. [Replace missing or failed replica Puppet primary server](#replace-missing-or-failed-replica-puppet-server)
 
-## Replace missing or failed replica Puppet server
+## Replace missing or failed replica Puppet primary server
 
 This procedure uses the following placeholder references.
 
 * _\<primary-server-fqdn\>_ - The FQDN and certname of the Puppet primary server
-* _\<replica-postgres-server-fqdn\>_ - The FQDN and certname of the PE-PostgreSQL server which resides in the same availability group as the replacement replica Puppet server
-* _\<replacement-replica-fqdn\>_ - The FQDN and certname of the replacement replica Puppet server
+* _\<replica-postgres-server-fqdn\>_ - The FQDN and certname of the PE-PostgreSQL server which resides in the same availability group as the replacement replica Puppet primary server
+* _\<replacement-replica-fqdn\>_ - The FQDN and certname of the replacement replica Puppet primary server
 
-1. Run `peadm::add_replica` plan to deploy replacement replica Puppet server
-    1. For Standard and Large deployments
+1. Run `peadm::add_replica` plan to deploy replacement replica Puppet primary server
+    1. For Standard and Large deployments:
 
                 bolt plan run peadm::add_replica primary_host=<primary-server-fqdn> replica_host=<replacement-replica-fqdn>
 
-    2. For Extra Large deployments
+    2. For Extra Large deployments:
 
                 bolt plan run peadm::add_replica primary_host=<primary-server-fqdn> replica_host=<replacement-replica-fqdn> replica_postgresql_host=<replica-postgres-server-fqdn>
 
@@ -34,7 +34,7 @@ The procedure for replacing a failed PE-PostgreSQL server is the same regardless
 * _\<working-postgres-server-fqdn\>_ - The FQDN and certname of the still-working PE-PostgreSQL server
 * _\<failed-postgres-server-fqdn\>_ - The FQDN and certname of the failed PE-PostgreSQL server
 * _\<primary-server-fqdn\>_ - The FQDN and certname of the Puppet primary server
-* _\<replica-server-fqdn\>_ - The FQDN and certname of the replica Puppet server
+* _\<replica-server-fqdn\>_ - The FQDN and certname of the replica Puppet primary server
 
 Procedure:
 
@@ -47,19 +47,19 @@ Procedure:
                 failed_postgresql_host=<failed-postgres-server-fqdn> \
                 replacement_postgresql_host=<replacement-postgres-server-fqdn>
 
-## Replace failed replica Puppet server AND failed replica PE-PostgreSQL server
+## Replace failed replica Puppet primary server AND failed replica PE-PostgreSQL server
 
 This procedure uses the following placeholder references.
 
 * _\<primary-server-fqdn\>_ - The FQDN and certname of the Puppet primary server
-* _\<failed-replica-fqdn\>_ - The FQDN and certname of the failed replica Puppet server
+* _\<failed-replica-fqdn\>_ - The FQDN and certname of the failed replica Puppet primary server
 
 1. Ensure the old replica server is forgotten.
 
         bolt command run "/opt/puppetlabs/bin/puppet infrastructure forget <failed-replica-fqdn>" --targets <primary-server-fqdn>
 
 2. [Replace failed PE-PostgreSQL server (A or B side)](#replace-failed-pe-postgresql-server-a-or-b-side)
-3. [Replace missing or failed replica Puppet server](#replace-missing-or-failed-replica-puppet-server)
+3. [Replace missing or failed replica Puppet primary server](#replace-missing-or-failed-replica-puppet-server)
 
 ## Add or replace compilers
 
