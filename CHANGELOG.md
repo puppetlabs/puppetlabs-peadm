@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.27.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.27.0) - 2025-03-07
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.26.1...v3.27.0)
+
+### Added
+
+- (PE-40163) automate recovery of failed postgres server [#537](https://github.com/puppetlabs/puppetlabs-peadm/pull/537) ([davidmalloncares](https://github.com/davidmalloncares))
+
+### Fixed
+
+- (PE-40239) Adding check for missing legacy flag [#547](https://github.com/puppetlabs/puppetlabs-peadm/pull/547) ([davidmalloncares](https://github.com/davidmalloncares))
+
+### Other
+
+- (PE-40784) Add support for PE 2023.8.2 and 2025.1.0 [#560](https://github.com/puppetlabs/puppetlabs-peadm/pull/560) ([davidmalloncares](https://github.com/davidmalloncares))
+- (PE-40691) document automated steps for failed postgres and adding compilers [#554](https://github.com/puppetlabs/puppetlabs-peadm/pull/554) ([davidmalloncares](https://github.com/davidmalloncares))
+
 ## [v3.26.1](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.26.1) - 2025-01-23
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.26.0...v3.26.1)

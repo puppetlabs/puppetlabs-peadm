@@ -108,7 +108,6 @@ Supported use cases:
 * [`peadm::backup_ca`](#peadm--backup_ca)
 * [`peadm::convert`](#peadm--convert): Convert an existing PE cluster to a PEAdm-managed cluster
 * [`peadm::install`](#peadm--install): Install a new PE cluster
-* [`peadm::migrate`](#peadm--migrate): Migrate a PE primary server to a new host
 * [`peadm::modify_certificate`](#peadm--modify_certificate): Modify the certificate of one or more targets
 * [`peadm::replace_failed_postgresql`](#peadm--replace_failed_postgresql): Replaces a failed PostgreSQL host
 * [`peadm::restore`](#peadm--restore): Restore puppet primary configuration
@@ -120,6 +119,7 @@ Supported use cases:
 #### Private Plans
 
 * `peadm::convert_compiler_to_legacy`
+* `peadm::migrate`: Migrate a PE primary server to a new host - Note: this plan is a work in progress and it
 * `peadm::misc::divert_code_manager`: This plan exists to account for a scenario where a PE XL
 * `peadm::modify_cert_extensions`
 * `peadm::subplans::component_install`: Install a new PEADM component
@@ -2206,7 +2206,7 @@ Data type: `Peadm::Pe_version`
 
 
 
-Default value: `'2023.8.1'`
+Default value: `'2023.8.2'`
 
 ##### <a name="-peadm--install--dns_alt_names"></a>`dns_alt_names`
 
@@ -2311,29 +2311,6 @@ Data type: `String`
 
 
 Default value: `'1y'`
-
-### <a name="peadm--migrate"></a>`peadm::migrate`
-
-Migrate a PE primary server to a new host
-
-#### Parameters
-
-The following parameters are available in the `peadm::migrate` plan:
-
-* [`old_primary_host`](#-peadm--migrate--old_primary_host)
-* [`new_primary_host`](#-peadm--migrate--new_primary_host)
-
-##### <a name="-peadm--migrate--old_primary_host"></a>`old_primary_host`
-
-Data type: `Peadm::SingleTargetSpec`
-
-The existing PE primary server that will be migrated from
-
-##### <a name="-peadm--migrate--new_primary_host"></a>`new_primary_host`
-
-Data type: `Peadm::SingleTargetSpec`
-
-The new server that will become the PE primary server
 
 ### <a name="peadm--modify_certificate"></a>`peadm::modify_certificate`
 
