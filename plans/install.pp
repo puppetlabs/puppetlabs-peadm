@@ -15,7 +15,8 @@
 #   The URL to download the Puppet Enterprise installer media from. If not
 #   specified, PEAdm will attempt to download PE installation media from its
 #   standard public source. When specified, PEAdm will download directly from the
-#   URL given.
+#   URL given. Can be an URL, that ends with a /, to a web directory that
+#   contains the original archives or an absolute URL to the .tar.gz archive.
 # @param ldap_config
 #   If specified, configures PE RBAC DS with the supplied configuration hash.
 #   The parameter should be set to a valid set of connection settings as
