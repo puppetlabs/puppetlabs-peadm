@@ -23,7 +23,7 @@ jobs:
   backup:
     name: 'Backup: Cluster A: PE ${{ inputs.version }} ${{ inputs.architecture }}
       on ${{ inputs.image }}'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     env:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
@@ -138,7 +138,7 @@ jobs:
   restore:
     name: 'Restore: Cluster B: PE ${{ inputs.version }} ${{ inputs.architecture }}
       on ${{ inputs.image }}'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     env:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
