@@ -32,7 +32,7 @@ on:
 jobs:
   upgrade_with_legacy_compilers:
     name: Upgrade PE with legacy compilers
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     env:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
