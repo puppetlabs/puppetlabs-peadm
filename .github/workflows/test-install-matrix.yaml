@@ -37,7 +37,7 @@ jobs:
       matrix:
         architecture: [standard-with-dr, large, extra-large-with-dr]
         version: [2019.8.12, 2021.7.9, 2023.8.2, 2025.1.0]
-        image: [almalinux-cloud/almalinux-8]
+        image: [litmusimage/ubuntu:24.04]
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
@@ -65,7 +65,7 @@ jobs:
           echo ::group::provision
             bundle exec bolt plan run peadm_spec::provision_test_cluster \
               --modulepath spec/fixtures/modules \
-              provider=provision_service \
+              provider=docker \
               image=${{ matrix.image }} \
               architecture=${{ matrix.architecture }} \
               --log-level trace

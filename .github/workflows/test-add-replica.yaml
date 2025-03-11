@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       image:
-        description: GCP image for test cluster
+        description: Docker image for test cluster
         required: true
-        default: almalinux-cloud/almalinux-8
+        default: litmusimage/ubuntu:24.04
       architecture:
         description: PE architecture to test
         required: true
@@ -66,7 +66,7 @@ jobs:
           echo ::group::provision
             bundle exec bolt plan run peadm_spec::provision_test_cluster \
               --modulepath spec/fixtures/modules \
-              provider=provision_service \
+              provider=docker \
               image=${{ matrix.image }} \
               architecture=${{ matrix.architecture }}-and-spare-replica
           echo ::endgroup::

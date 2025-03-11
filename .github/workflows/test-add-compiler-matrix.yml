@@ -37,7 +37,8 @@ jobs:
       matrix:
         architecture: [standard, large, extra-large]
         version: [2021.7.9, 2023.8.2, 2025.1.0]
-        image: [almalinux-cloud/almalinux-8]
+        image: ['litmusimage/ubuntu:24.04']
+        download_mode: [bolthost]
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
@@ -65,9 +66,12 @@ jobs:
           echo ::group::provision
             bundle exec bolt plan run peadm_spec::provision_test_cluster \
               --modulepath spec/fixtures/modules \
-              provider=provision_service \
+              provider=docker \
               image=${{ matrix.image }} \
               architecture=${{ matrix.architecture }}-with-extra-compiler
+          echo ::endgroup::
+          echo ::group::mv inventory.yaml to ./spec/fixtures/litmus_inventory.yaml
+            mv inventory.yaml spec/fixtures/litmus_inventory.yaml
           echo ::endgroup::
           echo ::group::info:request
             cat request.json || true; echo
@@ -82,6 +86,7 @@ jobs:
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             architecture=${{ matrix.architecture }} \
+            download_mode=${{ matrix.download_mode }} \
             console_password=${{ secrets.CONSOLE_PASSWORD }} \
             version=${{ matrix.version }}
       - name: Run add_compilers plan
