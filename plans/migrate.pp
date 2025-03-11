@@ -19,13 +19,20 @@ plan peadm::migrate (
   # pre-migration checks
   out::message('This plan is a work in progress and it is not recommended to be used until it is fully implemented and supported')
   peadm::assert_supported_bolt_version()
-  peadm::assert_supported_pe_version($pe_version, $permit_unsafe_versions)
+  if $upgrade_version and $upgrade_version != '' and !empty($upgrade_version) {
+    $permit_unsafe_versions = false
+    peadm::assert_supported_pe_version($pe_version, $permit_unsafe_versions)
+  }
 
   $all_hosts = peadm::flatten_compact([
       $old_primary_host,
       $new_primary_host,
   ])
   run_command('hostname', $all_hosts)  # verify can connect to targets
+  
+  if $replica_host != '' and !empty($replica_host) {
+    run_command('hostname', $replica_host)
+  }
 
   # verify the cluster we are migrating from is operational and is a supported architecture
   $cluster = run_task('peadm::get_peadm_config', $old_primary_host).first.value
