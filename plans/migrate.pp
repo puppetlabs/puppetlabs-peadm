@@ -29,7 +29,7 @@ plan peadm::migrate (
       $new_primary_host,
   ])
   run_command('hostname', $all_hosts)  # verify can connect to targets
-  
+
   if $replica_host != '' and !empty($replica_host) {
     run_command('hostname', $replica_host)
   }
