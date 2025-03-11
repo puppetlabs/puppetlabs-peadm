@@ -21,7 +21,7 @@ plan peadm::migrate (
   peadm::assert_supported_bolt_version()
   if $upgrade_version and $upgrade_version != '' and !empty($upgrade_version) {
     $permit_unsafe_versions = false
-    peadm::assert_supported_pe_version($pe_version, $permit_unsafe_versions)
+    peadm::assert_supported_pe_version($version, $permit_unsafe_versions)
   }
 
   $all_hosts = peadm::flatten_compact([
