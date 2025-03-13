@@ -8,7 +8,7 @@ on:
       image:
         description: GCP image for test cluster
         required: true
-        default: almalinux-cloud/almalinux-8
+        default: litmusimage/ubuntu:22.04
       architecture:
         description: PE architecture to test
         required: true
@@ -32,7 +32,7 @@ on:
 jobs:
   backup-restore-test:
     name: "Backup, break and restore cluster: PE ${{ github.event.inputs.version || '2025.1.0' }}\
-      \ ${{ github.event.inputs.architecture || 'extra-large' }} on ${{ github.event.inputs.image || 'almalinux-cloud/almalinux-8' }}"
+      \ ${{ github.event.inputs.architecture || 'extra-large' }} on ${{ github.event.inputs.image || 'litmusimage/ubuntu:22.04' }}"
     runs-on: ubuntu-latest
     env:
       BOLT_GEM: true
@@ -71,8 +71,8 @@ jobs:
           echo ::group::provision
               bundle exec bolt plan run peadm_spec::provision_test_cluster \
                 --modulepath spec/fixtures/modules \
-                provider=provision_service \
-                image=${{ github.event.inputs.image || 'almalinux-cloud/almalinux-8' }} \
+                provider=docker \
+                image=${{ github.event.inputs.image || 'litmusimage/ubuntu:22.04' }} \
                 architecture=${{ github.event.inputs.architecture || 'extra-large' }}
           echo ::endgroup::
           echo ::group::info:request
