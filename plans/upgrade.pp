@@ -140,16 +140,17 @@ plan peadm::upgrade (
     $memo + { $result.target.peadm::certname => $result['extensions'] }
   }
 
-  $compiler_missing_legacy_targets = $cert_extensions_temp.filter |$name,$exts| {
-    ($name in $compiler_targets.map |$t| { $t.name }) and (peadm::oid('peadm_legacy_compiler') in $exts and $exts[peadm::oid('peadm_legacy_compiler')] == undef)
-  }.keys
+  # Add legacy compiler role to compilers that are missing it
+  $compilers_with_legacy_compiler_flag = $cert_extensions_temp.filter |$name,$exts| {
+    ($name in $compiler_targets.map |$t| { $t.name }) and
+    ($exts[peadm::oid('peadm_legacy_compiler')] != undef)
+  }
 
-  run_plan('peadm::modify_certificate', $compiler_missing_legacy_targets,
-    primary_host   => $primary_target,
-    add_extensions => {
-      peadm::oid('peadm_legacy_compiler') => 'false',
-    },
-  )
+  if $compilers_with_legacy_compiler_flag.size > 0 {
+    fail_plan('Please run the Convert plan to convert your Puppet infrastructure to be managed by this version of PEADM.')
+  }
+
+  run_task('peadm::update_pe_master_rules', $primary_target)
 
   # Gather certificate extension information from all systems
   $cert_extensions = run_task('peadm::cert_data', $all_targets).reduce({}) |$memo,$result| {
@@ -188,8 +189,8 @@ plan peadm::upgrade (
   $compiler_m1_nonlegacy_targets = $compiler_targets.filter |$target| {
     ($cert_extensions.dig($target.peadm::certname, peadm::oid('peadm_availability_group'))
     == $cert_extensions.dig($primary_target[0].peadm::certname, peadm::oid('peadm_availability_group'))) and
-    ($cert_extensions.dig($target.peadm::certname, peadm::oid('peadm_legacy_compiler'))
-    == 'false')
+    ($cert_extensions.dig($target.peadm::certname, peadm::oid('pp_auth_role'))
+    == 'pe_compiler')
   }
 
   $compiler_m2_targets = $compiler_targets.filter |$target| {
@@ -200,8 +201,8 @@ plan peadm::upgrade (
   $compiler_m2_nonlegacy_targets = $compiler_targets.filter |$target| {
     ($cert_extensions.dig($target.peadm::certname, peadm::oid('peadm_availability_group'))
     == $cert_extensions.dig($replica_target[0].peadm::certname, peadm::oid('peadm_availability_group'))) and
-    ($cert_extensions.dig($target.peadm::certname, peadm::oid('peadm_legacy_compiler'))
-    == 'false')
+    ($cert_extensions.dig($target.peadm::certname, peadm::oid('pp_auth_role'))
+    == 'pe_compiler')
   }
 
   peadm::plan_step('preparation') || {

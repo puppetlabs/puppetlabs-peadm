@@ -16,6 +16,12 @@ plan peadm::add_compilers(
   $compiler_targets          = peadm::get_targets($compiler_hosts)
   $primary_target            = peadm::get_targets($primary_host, 1)
 
+  # Check if PE Master rules have been updated to support pe_compiler_legacy
+  $rules_check = run_task('peadm::check_pe_master_rules', $primary_host).first.value
+  unless $rules_check['updated'] {
+    fail_plan('Please run the Convert plan to convert your Puppet infrastructure to be managed by this version of PEADM.')
+  }
+
   # Get current peadm config to determine where to setup additional rules for
   # compiler's secondary PuppetDB instances
   $peadm_config = run_task('peadm::get_peadm_config', $primary_target).first.value

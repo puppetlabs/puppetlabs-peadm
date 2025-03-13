@@ -1,0 +1,24 @@
+{
+  "description": "Checks if the PE Master group rules have already been updated to support 'pe_compiler_legacy' as a pp_auth_role",
+  "input_method": "stdin",
+  "private": true,
+  "implementations": [
+    {"name": "check_pe_master_rules.rb"}
+  ],
+  "parameters": {},
+  "supports_noop": false,
+  "output": {
+    "updated": {
+      "description": "Whether the PE Master rules have already been updated",
+      "type": "Boolean"
+    },
+    "message": {
+      "description": "A message describing the current state of the PE Master rules",
+      "type": "String"
+    },
+    "error": {
+      "description": "Error message if the task failed",
+      "type": "Optional[String]"
+    }
+  }
+} 

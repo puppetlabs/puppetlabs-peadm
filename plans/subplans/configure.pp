@@ -174,5 +174,9 @@ plan peadm::subplans::configure (
         $legacy_compiler_targets,
   ]))
 
+  # Update PE Master rules to support legacy compilers
+  run_task('peadm::update_pe_master_rules', $primary_host)
+  run_task('peadm::puppet_runonce', $legacy_compiler_targets)
+
   return("Configuration of Puppet Enterprise ${arch['architecture']} succeeded.")
 }
