@@ -15,7 +15,9 @@
 #   The URL to download the Puppet Enterprise installer media from. If not
 #   specified, PEAdm will attempt to download PE installation media from its
 #   standard public source. When specified, PEAdm will download directly from the
-#   URL given.
+#   URL given. Can be an URL, that ends with a /, to a web directory that
+#   contains the original archives or an absolute URL to the .tar.gz archive.
+#   If it's an URL ending with the archive name, you don't need to set $version.
 # @param final_agent_state
 #   Configures the state the puppet agent should be in on infrastructure nodes
 #   after PE is upgraded successfully.
@@ -31,6 +33,8 @@
 #   Directory the installer tarball will be uploaded to or expected to be in
 #   for offline usage.
 # @param begin_at_step The step where the plan should start. If not set, it will start at the beginning
+# @param version
+#  The desired version for PE. This is optional for custom provided absolute URLs.
 #
 plan peadm::upgrade (
   # Standard
@@ -119,21 +123,13 @@ plan peadm::upgrade (
 
   $platform = run_task('peadm::precheck', $primary_target).first['platform']
 
-  if $pe_installer_source {
-    $pe_tarball_name   = $pe_installer_source.split('/')[-1]
-    $pe_tarball_source = $pe_installer_source
-    $_version          = $pe_tarball_name.split('-')[2]
-  } else {
-    $_version          = $version
-    $pe_tarball_name   = "puppet-enterprise-${_version}-${platform}.tar.gz"
-    $pe_tarball_source = "https://s3.amazonaws.com/pe-builds/released/${_version}/${pe_tarball_name}"
-  }
+  $pe_installer = peadm::pe_installer_source($pe_installer_source, $version, $platform)
 
-  $upload_tarball_path = "${uploaddir}/${pe_tarball_name}"
+  $upload_tarball_path = "${uploaddir}/${pe_installer['filename']}"
 
   peadm::assert_supported_bolt_version()
 
-  peadm::assert_supported_pe_version($_version, $permit_unsafe_versions)
+  peadm::assert_supported_pe_version($pe_installer['version'], $permit_unsafe_versions)
 
   # Gather certificate extension information from all systems
   $cert_extensions_temp = run_task('peadm::cert_data', $all_targets).reduce({}) |$memo,$result| {
@@ -208,14 +204,14 @@ plan peadm::upgrade (
     if $download_mode == 'bolthost' {
       # Download the PE tarball on the nodes that need it
       run_plan('peadm::util::retrieve_and_upload', $pe_installer_targets,
-        source      => $pe_tarball_source,
-        local_path  => "${stagingdir}/${pe_tarball_name}",
+        source      => $pe_installer['url'],
+        local_path  => "${stagingdir}/${pe_installer['filename']}",
         upload_path => $upload_tarball_path,
       )
     } else {
       # Download PE tarballs directly to nodes that need it
       run_task('peadm::download', $pe_installer_targets,
-        source => $pe_tarball_source,
+        source => $pe_installer['url'],
         path   => $upload_tarball_path,
       )
     }
@@ -402,7 +398,7 @@ plan peadm::upgrade (
     # doesn't deal well with the PuppetDB database being on a separate node.
     # So, move it aside before running the upgrade.
     $pdbapps = '/opt/puppetlabs/server/apps/puppetdb/cli/apps'
-    $workaround_delete_reports = $arch['disaster-recovery'] and $_version =~ SemVerRange('>= 2019.8')
+    $workaround_delete_reports = $arch['disaster-recovery'] and $pe_installer['version'] =~ SemVerRange('>= 2019.8')
     if $workaround_delete_reports {
 # lint:ignore:strict_indent
       run_command(@("COMMAND"/$), $replica_target)
@@ -454,7 +450,7 @@ plan peadm::upgrade (
     )
   }
 
-  peadm::check_version_and_known_hosts($current_pe_version, $_version, $r10k_known_hosts)
+  peadm::check_version_and_known_hosts($current_pe_version, $pe_installer['version'], $r10k_known_hosts)
 
   return("Upgrade of Puppet Enterprise ${arch['architecture']} completed.")
 }
