@@ -33,6 +33,8 @@ jobs:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
       LANG: en_US.UTF-8
+      PUPPET_FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_TOKEN }}
+      BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: forge-key:${{ secrets.PUPPET_FORGE_TOKEN }}
     strategy:
       fail-fast: false
       matrix:
