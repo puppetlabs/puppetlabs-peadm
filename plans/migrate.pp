@@ -63,6 +63,11 @@ plan peadm::migrate (
 
   out::message("old_pe_conf:${old_pe_conf}.")
 
+  $old_primary_platform = run_task('peadm::precheck', $old_primary_host).first['platform']
+  $new_primary_platform = run_task('peadm::precheck', $new_primary_host).first['platform']
+  out::message("old_primary_platform: ${old_primary_platform}")
+  out::message("new_primary_platform: ${new_primary_platform}")
+
   run_plan('peadm::install', {
       primary_host                => $new_primary_host,
       console_password            => $old_primary_password,
