@@ -47,10 +47,18 @@ describe 'peadm::add_compilers' do
       }
     end
 
+    let(:pe_rule_check) do
+      {
+        'updated' => 'true',
+      'message' => 'a message'
+      }
+    end
+
     it 'runs successfully when no alt-names are specified' do
       allow_standard_non_returning_calls
 
       expect_task('peadm::get_peadm_config').always_return(cfg)
+      expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
       expect_task('peadm::get_psql_version').with_targets(['server_a'])
 
       expect_plan('peadm::subplans::component_install')
@@ -65,6 +73,7 @@ describe 'peadm::add_compilers' do
       cfg['role-letter']['server']['B'] = 'server_b'
 
       expect_task('peadm::get_peadm_config').always_return(cfg)
+      expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
       expect_task('peadm::get_psql_version').with_targets(['server_b'])
 
       expect_plan('peadm::subplans::component_install')
@@ -79,6 +88,7 @@ describe 'peadm::add_compilers' do
       allow_standard_non_returning_calls
 
       expect_task('peadm::get_peadm_config').always_return(cfg)
+      expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
       expect_task('peadm::get_psql_version').with_targets(['custom_postgresql'])
 
       expect_plan('peadm::subplans::component_install')
@@ -94,6 +104,7 @@ describe 'peadm::add_compilers' do
       cfg['params']['replica_postgresql_host'] = 'external_postgresql'
 
       expect_task('peadm::get_peadm_config').always_return(cfg)
+      expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
       expect_task('peadm::get_psql_version').with_targets(['external_postgresql'])
 
       expect_plan('peadm::subplans::component_install')
@@ -109,6 +120,7 @@ describe 'peadm::add_compilers' do
       cfg['role-letter']['server']['B'] = 'replica'
 
       expect_task('peadm::get_peadm_config').always_return(cfg)
+      expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
       expect_task('peadm::get_psql_version').with_targets(['external_postgresql'])
 
       expect_plan('peadm::subplans::component_install')
@@ -124,6 +136,7 @@ describe 'peadm::add_compilers' do
       cfg['params']['replica_postgresql_host'] = 'replica_external_postgresql'
 
       expect_task('peadm::get_peadm_config').always_return(cfg)
+      expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
       expect_task('peadm::get_psql_version').with_targets(['replica_external_postgresql'])
 
       expect_plan('peadm::subplans::component_install')

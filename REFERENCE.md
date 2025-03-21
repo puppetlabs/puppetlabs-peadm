@@ -60,6 +60,7 @@
 * [`backup_classification`](#backup_classification): A task to call the classification api and write to file
 * [`cert_data`](#cert_data): Return certificate data related to the Puppet agent
 * [`cert_valid_status`](#cert_valid_status): Check primary for valid state of a certificate
+* [`check_pe_master_rules`](#check_pe_master_rules): Checks if the PE Master group rules have already been updated to support 'pe_compiler_legacy' as a pp_auth_role
 * [`classify_compilers`](#classify_compilers): Classify compilers as legacy or non-legacy
 * [`code_manager`](#code_manager): Perform various code manager actions
 * [`code_manager_enabled`](#code_manager_enabled): Run on a PE primary node to check if Code Manager is enabled.
@@ -74,6 +75,7 @@
 * [`infrastatus`](#infrastatus): Runs puppet infra status and returns the output
 * [`mkdir_p_file`](#mkdir_p_file): Create a file with the specified content at the specified location
 * [`mv`](#mv): Wrapper task for mv command
+* [`node_group_unpin`](#node_group_unpin): Unpins nodes from a specified PE node group
 * [`os_identification`](#os_identification): Return the operating system runnin gon the target as a string
 * [`pe_install`](#pe_install): Install Puppet Enterprise from a tarball
 * [`pe_ldap_config`](#pe_ldap_config): Set the ldap config in the PE console
@@ -90,6 +92,7 @@
 * [`ssl_clean`](#ssl_clean): Clean an agent's certificate
 * [`submit_csr`](#submit_csr): Submit a certificate signing request
 * [`transform_classification_groups`](#transform_classification_groups): Transform the user groups from a source backup to a list of groups on the target server
+* [`update_pe_master_rules`](#update_pe_master_rules): Updates the PE Master group rules to support 'pe_compiler_legacy' as a pp_auth_role
 * [`validate_rbac_token`](#validate_rbac_token): Check an RBAC token stored in a file is valid
 * [`wait_until_service_ready`](#wait_until_service_ready): Return when the orchestrator service is healthy, or timeout after 15 seconds
 
@@ -129,7 +132,6 @@ Supported use cases:
 * `peadm::subplans::modify_certificate`
 * `peadm::subplans::prepare_agent`
 * `peadm::uninstall`: Single-entry-point plan for uninstalling Puppet Enterprise
-* `peadm::update_compiler_extensions`
 * `peadm::util::code_sync_status`
 * `peadm::util::copy_file`
 * `peadm::util::db_disable_pglogical`
@@ -1110,6 +1112,12 @@ Data type: `String`
 
 The certifcate name to check validation of
 
+### <a name="check_pe_master_rules"></a>`check_pe_master_rules`
+
+Checks if the PE Master group rules have already been updated to support 'pe_compiler_legacy' as a pp_auth_role
+
+**Supports noop?** false
+
 ### <a name="classify_compilers"></a>`classify_compilers`
 
 Classify compilers as legacy or non-legacy
@@ -1325,6 +1333,26 @@ Current path of file
 Data type: `String`
 
 New path of file
+
+### <a name="node_group_unpin"></a>`node_group_unpin`
+
+Unpins nodes from a specified PE node group
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `node_certnames`
+
+Data type: `Array[String]`
+
+The certnames of the nodes to unpin
+
+##### `group_name`
+
+Data type: `String`
+
+The name of the node group to unpin the nodes from
 
 ### <a name="os_identification"></a>`os_identification`
 
@@ -1621,6 +1649,12 @@ Location of Source node group yaml file
 Data type: `String`
 
 Location of target node group yaml file and where to create the transformed file
+
+### <a name="update_pe_master_rules"></a>`update_pe_master_rules`
+
+Updates the PE Master group rules to support 'pe_compiler_legacy' as a pp_auth_role
+
+**Supports noop?** false
 
 ### <a name="validate_rbac_token"></a>`validate_rbac_token`
 
