@@ -4,6 +4,9 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+env:
+  PUPPET_FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_TOKEN }}
+  BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: forge-key:${{ secrets.PUPPET_FORGE_TOKEN }}
 jobs:
   Spec:
     if: ${{ github.repository_owner == 'puppetlabs' }}
