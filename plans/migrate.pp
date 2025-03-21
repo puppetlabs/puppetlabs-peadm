@@ -9,7 +9,6 @@
 # @param upgrade_version
 #   Optional version to upgrade to after migration is complete
 #
-#
 plan peadm::migrate (
   Peadm::SingleTargetSpec $old_primary_host,
   Peadm::SingleTargetSpec $new_primary_host,
@@ -62,6 +61,11 @@ plan peadm::migrate (
   $old_pe_conf = run_task('peadm::get_peadm_config', $old_primary_target).first.value
 
   out::message("old_pe_conf:${old_pe_conf}.")
+
+  $old_primary_platform = run_task('peadm::precheck', $old_primary_host).first['platform']
+  $new_primary_platform = run_task('peadm::precheck', $new_primary_host).first['platform']
+  out::message("old_primary_platform: ${old_primary_platform}")
+  out::message("new_primary_platform: ${new_primary_platform}")
 
   run_plan('peadm::install', {
       primary_host                => $new_primary_host,
