@@ -9,7 +9,6 @@
 # @param upgrade_version
 #   Optional version to upgrade to after migration is complete
 #
-#
 plan peadm::migrate (
   Peadm::SingleTargetSpec $old_primary_host,
   Peadm::SingleTargetSpec $new_primary_host,
