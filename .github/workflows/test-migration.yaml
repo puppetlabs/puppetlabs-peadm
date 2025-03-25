@@ -39,9 +39,9 @@ jobs:
         architecture:
           - standard
           - standard-with-dr
-            # - large
+          - large
             # - extra-large
-            # - large-with-dr
+          - large-with-dr
             # - extra-large-with-dr
         version: [2021.7.9, 2023.8.2, 2025.1.0]
         image: [almalinux-cloud/almalinux-8]
