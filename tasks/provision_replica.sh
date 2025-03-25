@@ -24,14 +24,14 @@ set -e
 if [ "$PT_legacy" = "false" ]; then
   echo "(legacy=false) query active nodes before provision replica"
   puppet query '["from","resources",["extract",["certname"],["and",["=","type","Class"],["=","title","Puppet_enterprise::Profile::Master"]]]]'
-
+  echo "(legacy=false) provision replica $PT_replica and token file $TOKEN_FILE"
   puppet infrastructure provision replica "$PT_replica" \
     --color false \
     --yes --token-file "$TOKEN_FILE" \
     --skip-agent-config \
     --topology mono-with-compile \
     --enable
-
+  echo "(legacy=false) provisioned replica"
 elif [ "$PT_legacy" = "true" ]; then
   echo "(legacy=true) query active nodes before provision replica"
   puppet query '["from","resources",["extract",["certname"],["and",["=","type","Class"],["=","title","Puppet_enterprise::Profile::Master"]]]]'

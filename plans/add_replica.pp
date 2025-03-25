@@ -42,6 +42,10 @@ plan peadm::add_replica(
       $peadm_config['params']['replica_host'],
   ]).unique
 
+  out::message("Replicas:${replicas}.")
+  out::message("replica_host:${replica_host}.")
+  out::message("peadm_config['params']['replica_host']:${peadm_config['params']['replica_host']}.")
+
   $certdata = run_task('peadm::cert_data', $primary_target).first.value
   $primary_avail_group_letter = $certdata['extensions'][peadm::oid('peadm_availability_group')]
   $replica_avail_group_letter = $primary_avail_group_letter ? { 'A' => 'B', 'B' => 'A' }
@@ -114,6 +118,11 @@ plan peadm::add_replica(
     )
   }
 
+  out::message("primary_target:${primary_target}.")
+  out::message("replica_target:${replica_target}.")
+  out::message("replica_target.peadm::certname():${replica_target.peadm::certname()}.")
+  out::message("token_file:${token_file}.")
+
   # Provision the new system as a replica
   run_task('peadm::provision_replica', $primary_target,
     replica    => $replica_target.peadm::certname(),
@@ -123,7 +132,7 @@ plan peadm::add_replica(
     # probably gets "starting", but fails out because that's not "running".
     # Can remove flag when that issue is fixed.
     legacy     => false,
-    # _catch_errors => true, # testing
+    _catch_errors => true, # testing
   )
 
   # start puppet service
