@@ -1,6 +1,6 @@
 plan peadm_spec::install_test_cluster (
   String[1]                 $architecture,
-  String                    $download_mode          = 'direct',
+  String                    $download_mode          = 'bolthost',
   Optional[Boolean]         $code_manager_auto_configure = undef,
   Optional[String[1]]       $version                = undef,
   Optional[String[1]]       $pe_installer_source    = undef,
@@ -36,7 +36,7 @@ plan peadm_spec::install_test_cluster (
 
   $common_params = {
     console_password       => $cp,
-    download_mode          => 'bolthost',
+    download_mode          => $download_mode,
     code_manager_auto_configure => $code_manager_auto_configure,
     version                => $version,
     pe_installer_source    => $pe_installer_source,
