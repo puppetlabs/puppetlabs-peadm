@@ -86,7 +86,7 @@ jobs:
             --modulepath spec/fixtures/modules \
             architecture=${{ matrix.architecture }} \
             console_password=${{ secrets.CONSOLE_PASSWORD }} \
-            version=${{ matrix.version }}
+            version=${{ matrix.version }} \ 
             download_mode=bolthost
       - name: Run add_compilers plan
         timeout-minutes: 50
