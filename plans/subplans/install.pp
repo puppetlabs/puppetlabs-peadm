@@ -246,7 +246,7 @@ plan peadm::subplans::install (
   }
 
   $upload_tarball_path = "${uploaddir}/${pe_tarball_name}"
-
+  out::message("in sub - download_mode:${download_mode}")
   if $download_mode == 'bolthost' {
     # Download the PE tarball and send it to the nodes that need it
     run_plan('peadm::util::retrieve_and_upload', $pe_installer_targets,
