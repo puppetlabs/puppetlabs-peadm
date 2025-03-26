@@ -8,6 +8,7 @@ plan peadm_spec::install_test_cluster (
   Enum['enable', 'disable'] $fips                   = 'disable',
   String                    $console_password
 ) {
+  out::message("download_mode:${download_mode}")
   $t = get_targets('*')
   wait_until_available($t)
 
@@ -75,7 +76,7 @@ plan peadm_spec::install_test_cluster (
     } }
     default: { fail('Invalid architecture!') }
   }
-
+  out::message("common_params:${common_params}")
   $install_result =
     run_plan('peadm::install', $arch_params + $common_params)
 

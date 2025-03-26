@@ -44,11 +44,11 @@ jobs:
             # - large-with-dr
             # - extra-large-with-dr
         version: [2021.7.9, 2023.8.2, 2025.1.0]
-        image: [almalinux-cloud/almalinux-8]
+        image: [litmusimage/ubuntu:24.04]
         include:
           - architecture: standard
             version: 2023.8.0
-            image: almalinux-cloud/almalinux-8
+            image: litmusimage/ubuntu:22.04
             new_pe_version: 2025.0.0
     steps:
       - name: Checkout Source
@@ -79,7 +79,7 @@ jobs:
           echo ::group::provision
             bundle exec bolt plan run peadm_spec::provision_test_cluster \
               --modulepath spec/fixtures/modules \
-              provider=provision_service \
+              provider=docker \
               image=${{ matrix.image }} \
               architecture=${{ matrix.architecture }}-migration \
               --log-level trace
