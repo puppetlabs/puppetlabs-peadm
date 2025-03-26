@@ -36,7 +36,7 @@ plan peadm_spec::install_test_cluster (
 
   $common_params = {
     console_password       => $cp,
-    download_mode          => $download_mode,
+    download_mode          => 'bolthost',
     code_manager_auto_configure => $code_manager_auto_configure,
     version                => $version,
     pe_installer_source    => $pe_installer_source,
