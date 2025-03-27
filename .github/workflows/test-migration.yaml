@@ -39,7 +39,7 @@ jobs:
         architecture:
           - standard
           - standard-with-dr
-            # - large
+          - large
             # - extra-large
             # - large-with-dr
             # - extra-large-with-dr
