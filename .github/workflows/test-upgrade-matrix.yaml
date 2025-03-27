@@ -38,26 +38,22 @@ jobs:
       matrix:
         architecture: [standard, extra-large-with-dr]
         version: [2019.8.12, 2021.7.9, 2023.8.2]
-        version_to_upgrade: [2021.7.9, 2023.8.2, 2025.1.0]
+        version_to_upgrade: [2021.7.9, 2023.8.2, 2025.2.0]
         image: [almalinux-cloud/almalinux-8]
         download_mode: [direct]
         exclude:
           - version: 2019.8.12
             version_to_upgrade: 2023.8.2
           - version: 2019.8.12
-            version_to_upgrade: 2025.1.0
+            version_to_upgrade: 2025.2.0
           - version: 2021.7.9
             version_to_upgrade: 2021.7.9
           - version: 2021.7.9
-            version_to_upgrade: 2025.1.0
+            version_to_upgrade: 2025.2.0
           - version: 2023.8.1
             version_to_upgrade: 2023.8.2
           - version: 2023.8.2
-            version_to_upgrade: 2025.1.0
-          - version: 2023.8.2
             version_to_upgrade: 2021.7.9
-          - version: 2025.0.0
-            version_to_upgrade: 2025.1.0
     steps:
       - name: Start SSH session
         if: ${{ github.event.inputs.ssh-debugging == 'true' }}
