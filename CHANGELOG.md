@@ -5,12 +5,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.28.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.28.0) - 2025-03-28
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.27.0...v3.28.0)
+
+### Added
+
+- (RE-16847) add support for PE 2025.2.0 [#570](https://github.com/puppetlabs/puppetlabs-peadm/pull/570) ([davidmalloncares](https://github.com/davidmalloncares))
+
+### Other
+
+- (PE-39577) Optimise legacy compiler support [#536](https://github.com/puppetlabs/puppetlabs-peadm/pull/536) ([petergmurphy](https://github.com/petergmurphy))
+- (PE-39397) Adding LDAP endpoint for 2023.8 [#515](https://github.com/puppetlabs/puppetlabs-peadm/pull/515) ([ragingra](https://github.com/ragingra))
+
 ## [v3.27.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.27.0) - 2025-03-07
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.26.1...v3.27.0)
 
 ### Added
 
+- (PE-40784) Add support for PE 2023.8.2 and 2025.1.0 [#560](https://github.com/puppetlabs/puppetlabs-peadm/pull/560) ([davidmalloncares](https://github.com/davidmalloncares))
 - (PE-40163) automate recovery of failed postgres server [#537](https://github.com/puppetlabs/puppetlabs-peadm/pull/537) ([davidmalloncares](https://github.com/davidmalloncares))
 
 ### Fixed
@@ -19,7 +33,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 ### Other
 
-- (PE-40784) Add support for PE 2023.8.2 and 2025.1.0 [#560](https://github.com/puppetlabs/puppetlabs-peadm/pull/560) ([davidmalloncares](https://github.com/davidmalloncares))
 - (PE-40691) document automated steps for failed postgres and adding compilers [#554](https://github.com/puppetlabs/puppetlabs-peadm/pull/554) ([davidmalloncares](https://github.com/davidmalloncares))
 
 ## [v3.26.1](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.26.1) - 2025-01-23
