@@ -46,7 +46,7 @@ jobs:
         version: [2021.7.9, 2023.8.2, 2025.2.0]
         image: [almalinux-cloud/almalinux-8]
         include:
-          - architecture: standard
+          - architecture: standard, large
             version: 2023.8.0
             image: almalinux-cloud/almalinux-8
             new_pe_version: 2025.2.0
