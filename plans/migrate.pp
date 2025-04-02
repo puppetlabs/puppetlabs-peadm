@@ -114,6 +114,12 @@ plan peadm::migrate (
     out::message('No nodes to purge from old configuration')
   }
 
+  if $primary_postgresql_host {    
+    run_plan('peadm::add_database', targets => $primary_postgresql_host,
+      primary_host => $new_primary_host,
+    )
+  }
+
   if $replica_host {
     run_plan('peadm::add_replica', {
         primary_host => $new_primary_host,
