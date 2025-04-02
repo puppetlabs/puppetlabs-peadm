@@ -40,7 +40,7 @@ jobs:
           - standard
           - standard-with-dr
           - large
-            # - extra-large
+          - extra-large
           - large-with-dr
             # - extra-large-with-dr
         version: [2021.7.9, 2023.8.2, 2025.2.0]

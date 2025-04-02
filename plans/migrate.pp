@@ -8,12 +8,17 @@
 #   The new server that will become the PE primary server
 # @param upgrade_version
 #   Optional version to upgrade to after migration is complete
+# @param replica_host
+#   Optional new server that will become the PE replica server
+# @param primary_postgresql_host
+#   Optional new server that will become the primary postgresql server
 #
 plan peadm::migrate (
   Peadm::SingleTargetSpec $old_primary_host,
   Peadm::SingleTargetSpec $new_primary_host,
   Optional[String] $upgrade_version = undef,
   Optional[Peadm::SingleTargetSpec] $replica_host = undef,
+  Optional[Peadm::SingleTargetSpec] $primary_postgresql_host = undef,
 ) {
   # pre-migration checks
   out::message('This plan is a work in progress and it is not recommended to be used until it is fully implemented and supported')
@@ -25,7 +30,8 @@ plan peadm::migrate (
 
   $new_hosts = peadm::flatten_compact([
       $new_primary_host,
-      $replica_host ? { undef => [], default => [$replica_host] }
+      $replica_host ? { undef => [], default => [$replica_host] },
+      $primary_postgresql_host ? { undef => [], default => [$primary_postgresql_host] }
   ].flatten)
   $all_hosts = peadm::flatten_compact([
       $old_primary_host,
@@ -116,6 +122,13 @@ plan peadm::migrate (
     }
   } else {
     out::message('No nodes to purge from old configuration')
+  }
+
+  if $primary_postgresql_host {
+    run_plan('peadm::add_database', targets => $primary_postgresql_host,
+      primary_host => $new_primary_host,
+      is_migration => true,
+    )
   }
 
   if $replica_host {
