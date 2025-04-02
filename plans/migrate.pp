@@ -14,7 +14,15 @@ plan peadm::migrate (
   Peadm::SingleTargetSpec $new_primary_host,
   Optional[String] $upgrade_version = undef,
   Optional[Peadm::SingleTargetSpec] $replica_host = undef,
+  Optional[Peadm::SingleTargetSpec] $primary_postgresql_host = undef,
+  Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
 ) {
+  out::message("old_primary_host: ${old_primary_host}")
+  out::message("new_primary_host: ${new_primary_host}")
+  out::message("upgrade_version: ${upgrade_version}")
+  out::message("replica_host: ${replica_host}")
+  out::message("primary_postgresql_host: ${primary_postgresql_host}")
+  out::message("replica_postgresql_host: ${replica_postgresql_host}")
   # pre-migration checks
   out::message('This plan is a work in progress and it is not recommended to be used until it is fully implemented and supported')
   peadm::assert_supported_bolt_version()
@@ -26,7 +34,9 @@ plan peadm::migrate (
   $all_hosts = peadm::flatten_compact([
     $old_primary_host,
     $new_primary_host,
-    $replica_host ? { undef => [], default => [$replica_host] }
+    $replica_host ? { undef => [], default => [$replica_host] },
+    $primary_postgresql_host ? { undef => [], default => [$primary_postgresql_host] },
+    $replica_postgresql_host ? { undef => [], default => [$replica_postgresql_host] }
   ].flatten)
   run_command('hostname', $all_hosts)  # verify can connect to targets
 
@@ -67,6 +77,9 @@ plan peadm::migrate (
 
   run_plan('peadm::install', {
       primary_host                => $new_primary_host,
+      replica_host                => $replica_host,
+      primary_postgresql_host     => $primary_postgresql_host,
+      replica_postgresql_host     => $replica_postgresql_host,
       console_password            => $old_primary_password,
       code_manager_auto_configure => true,
       download_mode               => 'direct',
@@ -112,13 +125,6 @@ plan peadm::migrate (
     }
   } else {
     out::message('No nodes to purge from old configuration')
-  }
-
-  if $replica_host {
-    run_plan('peadm::add_replica', {
-        primary_host => $new_primary_host,
-        replica_host => $replica_host,
-    })
   }
 
   if $upgrade_version and $upgrade_version != '' and !empty($upgrade_version) {

@@ -30,6 +30,8 @@ plan peadm_spec::test_migration(
     new_primary_host => $new_primary_target,
     upgrade_version => $upgrade_version,
     replica_host => $new_replica_target,
+    primary_postgresql_host => $new_primary_postgresql_target,
+    replica_postgresql_host => $new_replica_postgresql_target,
   )
 
   # run infra status on the new primary

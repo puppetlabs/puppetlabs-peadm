@@ -78,9 +78,12 @@ plan peadm::restore (
         undef   => $primary_target,
         default => peadm::get_targets(getvar('cluster.params.primary_postgresql_host'), 1),
       },
-      getvar('cluster.params.replica_postgresql_host') ? {
-        undef   => $replica_target,
-        default => peadm::get_targets(getvar('cluster.params.replica_postgresql_host'), 1),
+      ($restore_type != 'migration') ? {
+        true    => getvar('cluster.params.replica_postgresql_host') ? {
+          undef   => $replica_target,
+          default => peadm::get_targets(getvar('cluster.params.replica_postgresql_host'), 1),
+        },
+        default => [],
       },
   ])
 
