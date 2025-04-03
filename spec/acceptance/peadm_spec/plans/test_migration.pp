@@ -2,6 +2,7 @@ plan peadm_spec::test_migration(
   String $primary_host,
   String $new_primary_host,
   Optional[String] $new_replica_host = undef,
+  Optional[String] $primary_postgresql_host = undef,
   Optional[String] $new_primary_postgresql_host = undef,
   Optional[String] $new_replica_postgresql_host = undef,
   Optional[String] $upgrade_version = undef,
@@ -10,6 +11,7 @@ plan peadm_spec::test_migration(
   $primary_target = $primary_host ? { '' => undef, default => peadm::get_targets($primary_host, 1) }
   $new_primary_target = $new_primary_host ? { '' => undef, default => peadm::get_targets($new_primary_host, 1) }
   $new_replica_target = $new_replica_host ? { '' => undef, default => peadm::get_targets($new_replica_host, 1) }
+  $primary_postgresql_target = $primary_postgresql_host ? { '' => undef, default => peadm::get_targets($primary_postgresql_host, 1) }
   $new_primary_postgresql_target = $new_primary_postgresql_host ? { '' => undef, default => peadm::get_targets($new_primary_postgresql_host, 1) }
   $new_replica_postgresql_target = $new_replica_postgresql_host ? { '' => undef, default => peadm::get_targets($new_replica_postgresql_host, 1) }
 
@@ -30,6 +32,8 @@ plan peadm_spec::test_migration(
     new_primary_host => $new_primary_target,
     upgrade_version => $upgrade_version,
     replica_host => $new_replica_target,
+    primary_postgresql_host => $primary_postgresql_target,
+    new_primary_postgresql_host => $new_primary_postgresql_target,
   )
 
   # run infra status on the new primary
