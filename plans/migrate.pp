@@ -14,6 +14,7 @@ plan peadm::migrate (
   Peadm::SingleTargetSpec $new_primary_host,
   Optional[String] $upgrade_version = undef,
   Optional[Peadm::SingleTargetSpec] $replica_host = undef,
+  Optional[Peadm::SingleTargetSpec] $primary_postgresql_host = undef,
 ) {
   # pre-migration checks
   out::message('This plan is a work in progress and it is not recommended to be used until it is fully implemented and supported')
@@ -112,6 +113,12 @@ plan peadm::migrate (
     }
   } else {
     out::message('No nodes to purge from old configuration')
+  }
+
+  if $primary_postgresql_host {
+    run_plan('peadm::add_database', targets => $primary_postgresql_host,
+      primary_host => $new_primary_host,
+    )
   }
 
   if $replica_host {
