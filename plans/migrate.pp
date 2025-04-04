@@ -23,10 +23,13 @@ plan peadm::migrate (
     peadm::assert_supported_pe_version($upgrade_version, $permit_unsafe_versions)
   }
 
+  $new_hosts = peadm::flatten_compact([
+      $new_primary_host,
+      $replica_host ? { undef => [], default => [$replica_host] }
+  ].flatten)
   $all_hosts = peadm::flatten_compact([
-    $old_primary_host,
-    $new_primary_host,
-    $replica_host ? { undef => [], default => [$replica_host] }
+      $old_primary_host,
+      $new_hosts,
   ].flatten)
   run_command('hostname', $all_hosts)  # verify can connect to targets
 
@@ -120,6 +123,9 @@ plan peadm::migrate (
         replica_host => $replica_host,
     })
   }
+
+  # ensure puppet agent enabled on the hosts we migrated to
+  run_command('puppet agent --enable', $new_hosts)
 
   if $upgrade_version and $upgrade_version != '' and !empty($upgrade_version) {
     run_plan('peadm::upgrade', {
