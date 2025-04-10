@@ -77,9 +77,10 @@ plan peadm::migrate (
   })
 
   run_plan('peadm::restore', {
-      targets => $new_primary_host,
-      restore_type => 'migration',
-      input_file => $remote_backup_path,
+      targets          => $new_primary_host,
+      restore_type     => 'migration',
+      input_file       => $remote_backup_path,
+      console_password => $old_primary_password,
   })
 
   $node_types = {

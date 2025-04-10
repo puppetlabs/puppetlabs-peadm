@@ -2476,6 +2476,7 @@ The following parameters are available in the `peadm::restore` plan:
 * [`restore_type`](#-peadm--restore--restore_type)
 * [`restore`](#-peadm--restore--restore)
 * [`input_file`](#-peadm--restore--input_file)
+* [`console_password`](#-peadm--restore--console_password)
 
 ##### <a name="-peadm--restore--targets"></a>`targets`
 
@@ -2504,6 +2505,14 @@ Default value: `{}`
 Data type: `Pattern[/.*\.tar\.gz$/]`
 
 The file containing the backup to restore from
+
+##### <a name="-peadm--restore--console_password"></a>`console_password`
+
+Data type: `Optional[String]`
+
+
+
+Default value: `undef`
 
 ### <a name="peadm--restore_ca"></a>`peadm::restore_ca`
 
