@@ -19,6 +19,9 @@ plan peadm::restore (
 
   # Path to the recovery tarball
   Pattern[/.*\.tar\.gz$/] $input_file,
+
+  # Console password for restored system
+  Optional[String] $console_password = undef,
 ) {
   peadm::assert_supported_bolt_version()
 
@@ -194,8 +197,8 @@ plan peadm::restore (
   # Restore secrets/keys.json if it exists
   out::message('# Restoring ldap secret key if it exists')
   run_command(@("CMD"/L), $primary_target)
-    test -f ${shellquote($recovery_directory)}/rbac/keys.json \
-      && cp -rp ${shellquote($recovery_directory)}/keys.json /etc/puppetlabs/console-services/conf.d/secrets/ \
+    test -f ${shellquote($recovery_directory)}/rbac/secrets/keys.json \
+      && cp -rp ${shellquote($recovery_directory)}/rbac/secrets/keys.json /etc/puppetlabs/console-services/conf.d/secrets/ \
       || echo secret ldap key doesnt exist
     | CMD
 # lint:ignore:140chars
@@ -296,6 +299,11 @@ plan peadm::restore (
   # TODO: consider adding a heuristic to skip when innappropriate due to size
   #       or other factors.
   if getvar('recovery_opts.puppetdb') and $restore_type == 'migration' {
+    # ensure there is a valid token on the new primary host
+    run_task('peadm::rbac_token', $primary_target,
+      password       => $console_password,
+      token_lifetime => '1y',
+    )
     run_command(@("CMD"/L), $primary_target)
       /opt/puppetlabs/bin/puppet-db import \
       --cert=$(/opt/puppetlabs/bin/puppet config print hostcert) \
