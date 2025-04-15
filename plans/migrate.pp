@@ -8,12 +8,19 @@
 #   The new server that will become the PE primary server
 # @param upgrade_version
 #   Optional version to upgrade to after migration is complete
-#
+# @param replica_host
+#   Optional new replica server to be added to the cluster
+# @param primary_postgresql_host
+#   Optional new primary PostgreSQL server to be added to the cluster
+# @param replica_postgresql_host
+#   Optional new replica PostgreSQL server to be added to the cluster
 plan peadm::migrate (
   Peadm::SingleTargetSpec $old_primary_host,
   Peadm::SingleTargetSpec $new_primary_host,
   Optional[String] $upgrade_version = undef,
   Optional[Peadm::SingleTargetSpec] $replica_host = undef,
+  Optional[Peadm::SingleTargetSpec] $primary_postgresql_host = undef,
+  Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
 ) {
   # pre-migration checks
   out::message('This plan is a work in progress and it is not recommended to be used until it is fully implemented and supported')
@@ -25,7 +32,9 @@ plan peadm::migrate (
 
   $new_hosts = peadm::flatten_compact([
       $new_primary_host,
-      $replica_host ? { undef => [], default => [$replica_host] }
+      $replica_host ? { undef => [], default => [$replica_host] },
+      $primary_postgresql_host ? { undef => [], default => [$primary_postgresql_host] },
+      $replica_postgresql_host ? { undef => [], default => [$replica_postgresql_host] },
   ].flatten)
   $all_hosts = peadm::flatten_compact([
       $old_primary_host,
@@ -118,10 +127,27 @@ plan peadm::migrate (
     out::message('No nodes to purge from old configuration')
   }
 
+  # provision a postgresql host if one is provided
+  if $primary_postgresql_host {
+    run_plan('peadm::add_database', targets => $primary_postgresql_host,
+      primary_host => $new_primary_host,
+      is_migration => true,
+    )
+    # provision a replica postgresql host if one is provided
+    if $replica_postgresql_host {
+      run_plan('peadm::add_database', targets => $replica_postgresql_host,
+        primary_host => $new_primary_host,
+        is_migration => true,
+      )
+    }
+  }
+
+  # provision a replica if one is provided
   if $replica_host {
     run_plan('peadm::add_replica', {
         primary_host => $new_primary_host,
         replica_host => $replica_host,
+        replica_postgresql_host => $replica_postgresql_host,
     })
   }
 
@@ -134,6 +160,8 @@ plan peadm::migrate (
         version                     => $upgrade_version,
         download_mode               => 'direct',
         replica_host                => $replica_host,
+        primary_postgresql_host     => $primary_postgresql_host,
+        replica_postgresql_host     => $replica_postgresql_host,
     })
   }
 }
