@@ -30,6 +30,8 @@ plan peadm_spec::test_migration(
     new_primary_host => $new_primary_target,
     upgrade_version => $upgrade_version,
     replica_host => $new_replica_target,
+    primary_postgresql_host => $new_primary_postgresql_target,
+    replica_postgresql_host => $new_replica_postgresql_target,
   )
 
   # run infra status on the new primary
@@ -66,9 +68,9 @@ plan peadm_spec::test_migration(
   # if new_replica_postgresql_target is supplied then check that is in the expected place in the config
   if $new_replica_postgresql_target {
     if $peadm_config['params']['replica_postgresql_host'] == $new_replica_postgresql_target.peadm::certname() {
-      out::message("New primary postgres host ${new_replica_postgresql_target.peadm::certname()} set up correctly")
+      out::message("New replica postgres host ${new_replica_postgresql_target.peadm::certname()} set up correctly")
     } else {
-      fail_plan("New primary postgres host ${new_replica_postgresql_target.peadm::certname()} was not set up correctly")
+      fail_plan("New replica postgres host ${new_replica_postgresql_target.peadm::certname()} was not set up correctly")
     }
   }
 
