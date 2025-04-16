@@ -4,6 +4,8 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+env:
+  APT_SOURCE: "https://artifactory.delivery.puppetlabs.net:443/artifactory"
 jobs:
   Spec:
     if: ${{ github.repository_owner == 'puppetlabs' }}
