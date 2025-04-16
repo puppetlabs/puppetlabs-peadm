@@ -15,6 +15,13 @@ plan peadm::migrate (
   Optional[String] $upgrade_version = undef,
   Optional[Peadm::SingleTargetSpec] $replica_host = undef,
 ) {
+  # Read and parse metadata.json
+  $metadata = parsejson(file('./.modules/peadm/metadata.json'))
+  out::message("peadm module metadata: ${metadata}")
+  # Get the version value
+  $module_version = $metadata['version']
+  out::message("peadm module version: ${module_version}")
+
   # pre-migration checks
   out::message('This plan is a work in progress and it is not recommended to be used until it is fully implemented and supported')
   peadm::assert_supported_bolt_version()
