@@ -3,6 +3,13 @@ plan peadm_spec::provision_test_cluster (
   $architecture,
   $image,
 ) {
+  # Read and parse metadata.json
+  $metadata = parsejson(file('./.modules/peadm/metadata.json'))
+  out::message("peadm module metadata: ${metadata}")
+  # Get the version value
+  $module_version = $metadata['version']
+  out::message("peadm module version: ${module_version}")
+
   $nodes =
     case $architecture {
       'standard': {
