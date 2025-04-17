@@ -11,13 +11,13 @@ on:
 jobs:
   Spec:
     if: ${{ github.repository_owner == 'puppetlabs' }}
-    uses: puppetlabs/cat-github-actions/.github/workflows/module_ci.yml@v1
+    uses: puppetlabs/cat-github-actions/.github/workflows/module_ci.yml@main
     secrets: inherit
   Acceptance:
     if: ${{ github.repository_owner == 'puppetlabs' }}
     needs: Spec
-    uses: puppetlabs/cat-github-actions/.github/workflows/module_acceptance.yml@v1
+    uses: puppetlabs/cat-github-actions/.github/workflows/module_acceptance.yml@main
     with:
-      flags: "--provision-service"
+      flags: --provision-service
       APT_SOURCES: "https://artifactory.delivery.puppetlabs.net:443/artifactory/internal_nightly__local/apt"
     secrets: inherit
