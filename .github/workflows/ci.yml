@@ -21,4 +21,3 @@ jobs:
       flags: --provision-service
       secrets: inherit
       APT_SOURCES: "https://artifactory.delivery.puppetlabs.net:443/artifactory/internal_nightly__local/apt"
-    secrets: inherit
