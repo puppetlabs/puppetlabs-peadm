@@ -19,5 +19,6 @@ jobs:
     uses: puppetlabs/cat-github-actions/.github/workflows/module_acceptance.yml@main
     with:
       flags: --provision-service
+      secrets: inherit
       APT_SOURCES: "https://artifactory.delivery.puppetlabs.net:443/artifactory/internal_nightly__local/apt"
     secrets: inherit
