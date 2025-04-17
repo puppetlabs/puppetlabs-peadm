@@ -4,6 +4,10 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      APT_SOURCES:
+        required: false
+        type: string
 jobs:
   Spec:
     if: ${{ github.repository_owner == 'puppetlabs' }}
@@ -15,5 +19,5 @@ jobs:
     uses: puppetlabs/cat-github-actions/.github/workflows/module_acceptance.yml@main
     with:
       flags: "--provision-service"
-      APT_SOURCE: "https://artifactory.delivery.puppetlabs.net:443/artifactory/internal_nightly__local/apt"
+      APT_SOURCES: "https://artifactory.delivery.puppetlabs.net:443/artifactory/internal_nightly__local/apt"
     secrets: inherit
