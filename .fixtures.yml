@@ -1,21 +1,23 @@
 ---
 fixtures:
   forge_modules:
-    ruby_task_helper: "puppetlabs/ruby_task_helper"
-    service: "puppetlabs/service"
-    package: "puppetlabs/package"
-    reboot: "puppetlabs/reboot"
-    inifile: "puppetlabs/inifile"
+    ruby_task_helper: puppetlabs/ruby_task_helper
+    service: puppetlabs/service
+    package: puppetlabs/package
+    reboot: puppetlabs/reboot
+    inifile: puppetlabs/inifile
   repositories:
-    facts: "https://github.com/puppetlabs/puppetlabs-facts.git"
-    puppet_agent: "https://github.com/puppetlabs/puppetlabs-puppet_agent.git"
-    provision: "https://github.com/puppetlabs/provision.git"
-    stdlib: "https://github.com/puppetlabs/puppetlabs-stdlib.git"
-    apply_helpers: "https://github.com/puppetlabs/puppetlabs-apply_helpers"
-    bolt_shim: "https://github.com/puppetlabs/puppetlabs-bolt_shim"
-    format: "https://github.com/voxpupuli/puppet-format"
-    container_inventory: "https://gitlab.com/nwops/bolt-container_inventory.git"
-    node_manager: "https://github.com/puppetlabs/puppetlabs-node_manager.git"
+    facts: https://github.com/puppetlabs/puppetlabs-facts.git
+    puppet_agent: https://github.com/puppetlabs/puppetlabs-puppet_agent.git
+    provision:
+      repo: https://github.com/puppetlabs/provision.git
+      ref: v3.0.1
+    stdlib: https://github.com/puppetlabs/puppetlabs-stdlib.git
+    apply_helpers: https://github.com/puppetlabs/puppetlabs-apply_helpers
+    bolt_shim: https://github.com/puppetlabs/puppetlabs-bolt_shim
+    format: https://github.com/voxpupuli/puppet-format
+    container_inventory: https://gitlab.com/nwops/bolt-container_inventory.git
+    node_manager: https://github.com/puppetlabs/puppetlabs-node_manager.git
   symlinks:
-    "peadm": "#{source_dir}"
-    "peadm_spec": "#{source_dir}/spec/acceptance/peadm_spec"
+    peadm: '#{source_dir}'
+    peadm_spec: '#{source_dir}/spec/acceptance/peadm_spec'
