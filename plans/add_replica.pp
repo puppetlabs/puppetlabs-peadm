@@ -114,6 +114,9 @@ plan peadm::add_replica(
     )
   }
 
+  # kick off puppet run to ensure things are up to date
+  run_task('peadm::puppet_runonce', $primary_target)
+
   # Provision the new system as a replica
   run_task('peadm::provision_replica', $primary_target,
     replica    => $replica_target.peadm::certname(),
