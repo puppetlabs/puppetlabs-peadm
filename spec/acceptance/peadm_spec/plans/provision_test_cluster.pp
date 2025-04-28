@@ -67,10 +67,10 @@ plan peadm_spec::provision_test_cluster (
         ['primary', 'compiler', 'replica', 'compiler', 'new-primary', 'new-replica']
       }
       'extra-large-migration': {
-        ['primary', 'primary-pdb-postgresql', 'compiler', 'new-primary', 'new-primary-pdb-postgresql']
+        ['primary', 'primary-pdb-postgresql', 'new-primary', 'new-primary-pdb-postgresql']
       }
       'extra-large-with-dr-migration': {
-        ['primary', 'primary-pdb-postgresql', 'compiler', 'replica', 'replica-pdb-postgresql', 'compiler', 'new-primary', 'new-replica', 'new-primary-pdb-postgresql', 'new-replica-pdb-postgresql']
+        ['primary', 'primary-pdb-postgresql', 'replica', 'replica-pdb-postgresql', 'new-primary', 'new-replica', 'new-primary-pdb-postgresql', 'new-replica-pdb-postgresql']
       }
       default: {
         fail_plan("Unknown architecture: ${architecture}")
