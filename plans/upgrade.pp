@@ -62,6 +62,16 @@ plan peadm::upgrade (
 
   Optional[Peadm::UpgradeSteps] $begin_at_step = undef,
 ) {
+  # Log parameters for debugging
+  peadm::log_plan_parameters({
+    'primary_host' => $primary_host,
+    'replica_host' => $replica_host,
+    'compiler_hosts' => $compiler_hosts,
+    'primary_postgresql_host' => $primary_postgresql_host,
+    'replica_postgresql_host' => $replica_postgresql_host,
+    'version' => $version,
+  })
+
   out::message('# Validating inputs')
 
   # Ensure input valid for a supported architecture
