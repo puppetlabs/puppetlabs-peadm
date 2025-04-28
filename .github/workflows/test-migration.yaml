@@ -44,19 +44,19 @@ jobs:
           - large-with-dr
           - extra-large-with-dr
         version: [2021.7.9, 2023.8.2, 2025.2.0]
-        image: [almalinux-cloud/almalinux-8]
+        image: [ubuntu-2404-x86_64]
         include:
           - architecture: standard
             version: 2023.8.0
-            image: almalinux-cloud/almalinux-8
+            image: ubuntu-2404-x86_64
             new_pe_version: 2025.2.0
           - architecture: large
             version: 2023.8.0
-            image: almalinux-cloud/almalinux-8
+            image: ubuntu-2404-x86_64
             new_pe_version: 2025.2.0
           - architecture: extra-large
             version: 2023.8.0
-            image: almalinux-cloud/almalinux-8
+            image: ubuntu-2404-x86_64
             new_pe_version: 2025.2.0
     steps:
       - name: Checkout Source
@@ -87,7 +87,7 @@ jobs:
           echo ::group::provision
             bundle exec bolt plan run peadm_spec::provision_test_cluster \
               --modulepath spec/fixtures/modules \
-              provider=provision_service \
+              provider=vmpooler \
               image=${{ matrix.image }} \
               architecture=${{ matrix.architecture }}-migration \
               --log-level trace
