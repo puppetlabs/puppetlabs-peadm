@@ -39,9 +39,10 @@ group :development do
   gem "github_changelog_generator", '1.16.4',    require: false
   gem "octokit", '4.21.0',                       require: false
   gem "orchestrator_client", '< 0.7.1',          require: false
+  gem 'pry-byebug'
 end
 group :system_tests do
-  gem "puppet_litmus", '~> 1.0', require: false, platforms: [:ruby, :x64_mingw]
+  gem "puppet_litmus", git: 'https://github.com/puppetlabs/puppet_litmus.git', branch: 'main', require: false
   gem "serverspec", '~> 2.41',   require: false
 end
 group :release_prep do
