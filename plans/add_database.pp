@@ -9,6 +9,7 @@ plan peadm::add_database(
       'update-db-settings',
       'cleanup-db',
   'finalize']] $begin_at_step = undef,
+  Optional[Boolean] $is_migration = false,
 ) {
   $primary_target = peadm::get_targets($primary_host, 1)
   $postgresql_target = peadm::get_targets($targets, 1)
@@ -22,8 +23,9 @@ plan peadm::add_database(
 
   $compilers = $peadm_config['params']['compilers']
 
-  # Bail if this is trying to be ran against Standard
-  if $compilers.empty {
+  # Bail if this is trying to be ran against Standard. We need to allow this plan to progress for a migration 
+  # though as initially the installation will not have compilers added
+  if $compilers.empty and !$is_migration {
     fail_plan('Plan peadm::add_database is only applicable for L and XL deployments')
   }
 
@@ -59,11 +61,15 @@ plan peadm::add_database(
 
   if $operating_mode == 'init' {
     # If no other PSQL node then match primary group letter
-    $avail_group_letter = peadm::flatten_compact($roles['server'].map |$k,$v| {
+    $calculated_group_letter = peadm::flatten_compact($roles['server'].map |$k,$v| {
         if $v == $primary_host {
           $k
         }
     })[0]
+    $avail_group_letter = $calculated_group_letter ? {
+      undef   => $is_migration ? { true => 'A', default => undef },
+      default => $calculated_group_letter,
+    }
     # Assume PuppetDB backend hosted on Primary if in init mode
     $source_db_host = $primary_host
   } else {

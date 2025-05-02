@@ -1804,6 +1804,7 @@ The following parameters are available in the `peadm::add_database` plan:
 * [`primary_host`](#-peadm--add_database--primary_host)
 * [`mode`](#-peadm--add_database--mode)
 * [`begin_at_step`](#-peadm--add_database--begin_at_step)
+* [`is_migration`](#-peadm--add_database--is_migration)
 
 ##### <a name="-peadm--add_database--targets"></a>`targets`
 
@@ -1842,6 +1843,14 @@ Optional[Enum[
 
 
 Default value: `undef`
+
+##### <a name="-peadm--add_database--is_migration"></a>`is_migration`
+
+Data type: `Optional[Boolean]`
+
+
+
+Default value: `false`
 
 ### <a name="peadm--add_replica"></a>`peadm::add_replica`
 
