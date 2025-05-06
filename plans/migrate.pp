@@ -1,6 +1,4 @@
-# @api private
-# @summary Migrate a PE primary server to a new host - Note: this plan is a work in progress and it 
-# is not recommended to be used until it is fully implemented and supported
+# @summary Migrate a PE installation to new host(s)
 #
 # @param old_primary_host
 #   The existing PE primary server that will be migrated from
@@ -33,7 +31,6 @@ plan peadm::migrate (
   })
 
   # pre-migration checks
-  out::message('This plan is a work in progress and it is not recommended to be used until it is fully implemented and supported')
   peadm::assert_supported_bolt_version()
   if $upgrade_version and $upgrade_version != '' and !empty($upgrade_version) {
     $permit_unsafe_versions = false

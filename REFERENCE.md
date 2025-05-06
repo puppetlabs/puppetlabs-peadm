@@ -113,6 +113,7 @@ Supported use cases:
 * [`peadm::backup_ca`](#peadm--backup_ca)
 * [`peadm::convert`](#peadm--convert): Convert an existing PE cluster to a PEAdm-managed cluster
 * [`peadm::install`](#peadm--install): Install a new PE cluster
+* [`peadm::migrate`](#peadm--migrate): Migrate a PE installation to new host(s)
 * [`peadm::modify_certificate`](#peadm--modify_certificate): Modify the certificate of one or more targets
 * [`peadm::replace_failed_postgresql`](#peadm--replace_failed_postgresql): Replaces a failed PostgreSQL host
 * [`peadm::restore`](#peadm--restore): Restore puppet primary configuration
@@ -124,7 +125,6 @@ Supported use cases:
 #### Private Plans
 
 * `peadm::convert_compiler_to_legacy`
-* `peadm::migrate`: Migrate a PE primary server to a new host - Note: this plan is a work in progress and it
 * `peadm::misc::divert_code_manager`: This plan exists to account for a scenario where a PE XL
 * `peadm::modify_cert_extensions`
 * `peadm::subplans::component_install`: Install a new PEADM component
@@ -2392,6 +2392,65 @@ Data type: `String`
 
 
 Default value: `'1y'`
+
+### <a name="peadm--migrate"></a>`peadm::migrate`
+
+Migrate a PE installation to new host(s)
+
+#### Parameters
+
+The following parameters are available in the `peadm::migrate` plan:
+
+* [`old_primary_host`](#-peadm--migrate--old_primary_host)
+* [`new_primary_host`](#-peadm--migrate--new_primary_host)
+* [`upgrade_version`](#-peadm--migrate--upgrade_version)
+* [`replica_host`](#-peadm--migrate--replica_host)
+* [`primary_postgresql_host`](#-peadm--migrate--primary_postgresql_host)
+* [`replica_postgresql_host`](#-peadm--migrate--replica_postgresql_host)
+
+##### <a name="-peadm--migrate--old_primary_host"></a>`old_primary_host`
+
+Data type: `Peadm::SingleTargetSpec`
+
+The existing PE primary server that will be migrated from
+
+##### <a name="-peadm--migrate--new_primary_host"></a>`new_primary_host`
+
+Data type: `Peadm::SingleTargetSpec`
+
+The new server that will become the PE primary server
+
+##### <a name="-peadm--migrate--upgrade_version"></a>`upgrade_version`
+
+Data type: `Optional[String]`
+
+Optional version to upgrade to after migration is complete
+
+Default value: `undef`
+
+##### <a name="-peadm--migrate--replica_host"></a>`replica_host`
+
+Data type: `Optional[Peadm::SingleTargetSpec]`
+
+Optional new replica server to be added to the cluster
+
+Default value: `undef`
+
+##### <a name="-peadm--migrate--primary_postgresql_host"></a>`primary_postgresql_host`
+
+Data type: `Optional[Peadm::SingleTargetSpec]`
+
+Optional new primary PostgreSQL server to be added to the cluster
+
+Default value: `undef`
+
+##### <a name="-peadm--migrate--replica_postgresql_host"></a>`replica_postgresql_host`
+
+Data type: `Optional[Peadm::SingleTargetSpec]`
+
+Optional new replica PostgreSQL server to be added to the cluster
+
+Default value: `undef`
 
 ### <a name="peadm--modify_certificate"></a>`peadm::modify_certificate`
 
