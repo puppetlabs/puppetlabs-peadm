@@ -99,6 +99,14 @@ jobs:
             version=${{ matrix.version }} \
             console_password=${{ secrets.CONSOLE_PASSWORD }} \
             code_manager_auto_configure=true
+      - name: Uninstall on primary-pdb-postgresql to emulate it failing
+        run: |
+          primary_pdb_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .name' spec/fixtures/litmus_inventory.yaml)
+          bundle exec bolt plan run peadm::uninstall \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules \
+            -t $primary_pdb_postgresql_host \
+          --no-host-key-check
       - name: Replace failed PostgreSQL
         run: |
           echo ::group::prepare

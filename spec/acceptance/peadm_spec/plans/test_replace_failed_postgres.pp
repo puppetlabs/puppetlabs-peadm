@@ -5,16 +5,8 @@ plan peadm_spec::test_replace_failed_postgres(
   Peadm::SingleTargetSpec   $failed_postgresql_host,
   Peadm::SingleTargetSpec   $replacement_postgresql_host,
 ) {
-  # run infra status on the primary
-  out::message("Running peadm::status on primary host ${primary_host}")
-  $primary_status = run_plan('peadm::status', $primary_host, { 'format' => 'json' })
-  out::message($primary_status)
-
-  if empty($primary_status['failed']) {
-    out::message('Cluster is healthy, continuing')
-  } else {
-    fail_plan('Cluster is not healthy, aborting')
-  }
+  # run puppet once on working_postgresql_host - gives some time in CI
+  run_task('peadm::puppet_runonce', $working_postgresql_host)
 
   # replace the failed postgres server
   run_plan('peadm::replace_failed_postgresql',

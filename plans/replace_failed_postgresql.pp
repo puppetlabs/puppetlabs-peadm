@@ -28,17 +28,23 @@ plan peadm::replace_failed_postgresql(
       $failed_postgresql_host,
       $replacement_postgresql_host,
   ])
-
   # verify we can connect to targets proded before proceeding
   run_command('hostname', $all_hosts)
 
-  # Get current peadm config before making modifications
-  $peadm_config = run_task('peadm::get_peadm_config', $primary_host).first.value
-  $compilers = $peadm_config['params']['compilers']
+  # Try to get current peadm config before making modifications
+  $peadm_config = run_task('peadm::get_peadm_config', $primary_host, { '_catch_errors' => true }).first.value
 
-  # Bail if we are not running this against an XL deployment with DR enabled - the parameters also enforce this to some extent
-  if $compilers.empty {
-    fail_plan('Plan peadm::replace_failed_postgresql is only applicable for XL deployments with DR enabled')
+  if $peadm_config == undef or getvar('peadm_config.params') == undef {
+    out::message('Unable to get config - the failed postgresql host may be the primary')
+  } else {
+    $config_replica_host = $peadm_config['params']['replica_host']
+    $postgresql_a_host = $peadm_config['role-letter']['postgresql']['A']
+    $postgresql_b_host = $peadm_config['role-letter']['postgresql']['B']
+
+    # Bail if we are not running this against an XL deployment with DR enabled - the parameters also enforce this to some extent
+    if $config_replica_host == undef or $postgresql_a_host == undef or $postgresql_b_host == undef {
+      fail_plan('Plan peadm::replace_failed_postgresql is only applicable for XL deployments with DR enabled')
+    }
   }
 
   $pe_hosts = peadm::flatten_compact([
