@@ -32,7 +32,9 @@
 * [`peadm::generate_pe_conf`](#peadm--generate_pe_conf): Generate a pe.conf file in JSON format
 * [`peadm::get_pe_conf`](#peadm--get_pe_conf)
 * [`peadm::get_targets`](#peadm--get_targets): Accept undef or a SingleTargetSpec, and return an Array[Target, 1, 0]. This differs from get_target() in that:   - It returns an Array[Target
+* [`peadm::log_plan_parameters`](#peadm--log_plan_parameters)
 * [`peadm::migration_opts_default`](#peadm--migration_opts_default)
+* [`peadm::module_version`](#peadm--module_version)
 * [`peadm::node_manager_yaml_location`](#peadm--node_manager_yaml_location)
 * [`peadm::oid`](#peadm--oid)
 * [`peadm::pe_db_names`](#peadm--pe_db_names)
@@ -786,6 +788,24 @@ Data type: `Optional[Integer[1,1]]`
 
 
 
+### <a name="peadm--log_plan_parameters"></a>`peadm::log_plan_parameters`
+
+Type: Puppet Language
+
+The peadm::log_plan_parameters function.
+
+#### `peadm::log_plan_parameters(Hash $params)`
+
+The peadm::log_plan_parameters function.
+
+Returns: `Any`
+
+##### `params`
+
+Data type: `Hash`
+
+
+
 ### <a name="peadm--migration_opts_default"></a>`peadm::migration_opts_default`
 
 Type: Puppet Language
@@ -795,6 +815,18 @@ The peadm::migration_opts_default function.
 #### `peadm::migration_opts_default()`
 
 The peadm::migration_opts_default function.
+
+Returns: `Any`
+
+### <a name="peadm--module_version"></a>`peadm::module_version`
+
+Type: Ruby 4.x API
+
+The peadm::module_version function.
+
+#### `peadm::module_version()`
+
+The peadm::module_version function.
 
 Returns: `Any`
 
