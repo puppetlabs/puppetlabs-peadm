@@ -22,6 +22,16 @@ plan peadm::migrate (
   Optional[Peadm::SingleTargetSpec] $primary_postgresql_host = undef,
   Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
 ) {
+  # Log parameters for debugging 
+  peadm::log_plan_parameters({
+    'old_primary_host' => $old_primary_host,
+    'new_primary_host' => $new_primary_host,
+    'replica_host' => $replica_host,
+    'primary_postgresql_host' => $primary_postgresql_host,
+    'replica_postgresql_host' => $replica_postgresql_host,
+    'upgrade_version' => $upgrade_version,
+  })
+
   # pre-migration checks
   out::message('This plan is a work in progress and it is not recommended to be used until it is fully implemented and supported')
   peadm::assert_supported_bolt_version()

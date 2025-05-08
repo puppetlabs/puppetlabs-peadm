@@ -75,6 +75,17 @@ plan peadm::install (
   Boolean                    $permit_unsafe_versions = false,
   String                     $token_lifetime         = '1y',
 ) {
+  # Log parameters for debugging 
+  peadm::log_plan_parameters({
+    'primary_host' => $primary_host,
+    'replica_host' => $replica_host,
+    'compiler_hosts' => $compiler_hosts,
+    'legacy_compilers' => $legacy_compilers,
+    'primary_postgresql_host' => $primary_postgresql_host,
+    'replica_postgresql_host' => $replica_postgresql_host,
+    'version' => $version,
+  })
+
   peadm::assert_supported_bolt_version()
 
   peadm::assert_supported_pe_version($version, $permit_unsafe_versions)
