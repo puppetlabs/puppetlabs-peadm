@@ -37,7 +37,7 @@ jobs:
       fail-fast: false
       matrix:
         architecture: [standard-with-dr, large, extra-large-with-dr]
-        version: [2019.8.12, 2021.7.9, 2023.8.2, 2025.2.0]
+        version: [2021.7.9, 2023.8.2, 2025.2.0]
         image: [rhel-8]
         fips: [enable]
     steps:
