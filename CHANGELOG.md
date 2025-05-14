@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.29.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.29.0) - 2025-05-14
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.28.0...v3.29.0)
+
+### Added
+
+- (RE-16872) add support for PE 2025.3.0 and 2023.8.3 [#595](https://github.com/puppetlabs/puppetlabs-peadm/pull/595) ([davidmalloncares](https://github.com/davidmalloncares))
+- (PE-41176) make migrate plan public [#592](https://github.com/puppetlabs/puppetlabs-peadm/pull/592) ([davidmalloncares](https://github.com/davidmalloncares))
+
+### Fixed
+
+- (PE-41341) Allow primary postgres host to be the failure [#594](https://github.com/puppetlabs/puppetlabs-peadm/pull/594) ([davidmalloncares](https://github.com/davidmalloncares))
+
 ## [v3.28.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.28.0) - 2025-03-28
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.27.0...v3.28.0)
