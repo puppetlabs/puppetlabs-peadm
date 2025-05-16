@@ -35,11 +35,11 @@ jobs:
       - name: Checkout Source
         uses: actions/checkout@v4
         if: ${{ github.repository_owner == 'puppetlabs' }}
-      - name: Activate Ruby 2.7
+      - name: Activate Ruby 3.1
         uses: ruby/setup-ruby@v1
         if: ${{ github.repository_owner == 'puppetlabs' }}
         with:
-          ruby-version: '2.7'
+          ruby-version: '3.1'
           bundler-cache: true
       - name: Print bundle environment
         if: ${{ github.repository_owner == 'puppetlabs' }}
