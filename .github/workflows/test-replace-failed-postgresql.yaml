@@ -37,7 +37,7 @@ jobs:
       matrix:
         architecture: [extra-large-with-dr-and-spare-replica]
         install_architecture: [extra-large-with-dr]
-        version: [2021.7.9, 2023.8.3, 2025.3.0]
+        version: [2021.7.9, 2023.8.4, 2025.4.0]
         image: [almalinux-cloud/almalinux-8]
     steps:
       - name: Checkout Source
