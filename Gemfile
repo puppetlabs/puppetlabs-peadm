@@ -59,6 +59,8 @@ gems['puppet'] = location_for(puppet_version)
 
 # If facter or hiera versions have been specified via the environment
 # variables
+# 
+#
 gems['facter'] = location_for(facter_version) if facter_version
 gems['hiera'] = location_for(hiera_version) if hiera_version
 
