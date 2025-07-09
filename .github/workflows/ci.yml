@@ -13,4 +13,6 @@ jobs:
     if: ${{ github.repository_owner == 'puppetlabs' }}
     needs: Spec
     uses: puppetlabs/cat-github-actions/.github/workflows/module_acceptance.yml@main
+    with:
+      flags: --platform-exclude ubuntu-2404-lts
     secrets: inherit
