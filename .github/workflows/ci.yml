@@ -13,6 +13,4 @@ jobs:
     if: ${{ github.repository_owner == 'puppetlabs' }}
     needs: Spec
     uses: puppetlabs/cat-github-actions/.github/workflows/module_acceptance.yml@main
-    with:
-      flags: --provision-service
     secrets: inherit
