@@ -31,11 +31,14 @@ group :development do
   gem "pry", '~> 0.10',                          require: false
   gem "simplecov-console", '~> 0.5',             require: false
   gem "puppet-debugger", '~> 1.0',               require: false
-  gem "rubocop", '= 1.48.1',                     require: false
-  gem "rubocop-performance", '= 1.16.0',         require: false
-  gem "rubocop-rspec", '= 2.19.0',               require: false
+  gem "rubocop", '= 1.79.0',                     require: false
+  gem "rubocop-performance", '= 1.25.0',         require: false
+  gem "rubocop-rspec", '= 3.6.0',                require: false
+  gem "rubocop-rspec_rails", '~> 2.31.0',        require: false
+  gem "rubocop-factory_bot", '~> 2.27.1',        require: false
+  gem "rubocop-capybara", '~> 2.22.1',           require: false
   gem "rb-readline", '= 0.5.5',                  require: false, platforms: [:mswin, :mingw, :x64_mingw]
-  gem "bolt", '>= 3.27.2',                       require: false
+  gem "bolt", '>= 4.0.0',                        require: false
   gem "github_changelog_generator", '1.16.4',    require: false
   gem "octokit", '4.21.0',                       require: false
   gem "orchestrator_client", '< 0.7.1',          require: false
