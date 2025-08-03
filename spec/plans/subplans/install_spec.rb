@@ -26,7 +26,7 @@ describe 'peadm::subplans::install' do
 
     #########
     ## <🤮>
-    # rubocop:disable AnyInstance
+    # rubocop:disable RSpec/AnyInstance
     allow(Tempfile).to receive(:new).and_call_original
     allow(Pathname).to receive(:new).and_call_original
     allow(Puppet::FileSystem).to receive(:exist?).and_call_original
@@ -40,7 +40,7 @@ describe 'peadm::subplans::install' do
     allow_any_instance_of(BoltSpec::Plans::MockExecutor).to receive(:module_file_id).with('/mock').and_return('/mock')
 
     allow_upload('/mock')
-    # rubocop:enable AnyInstance
+    # rubocop:enable RSpec/AnyInstance
     ## </🤮>
     ##########
   end
