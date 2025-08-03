@@ -15,7 +15,7 @@ describe 'peadm::util::retrieve_and_upload' do
 
     #########
     ## <🤮>
-    # rubocop:disable AnyInstance
+    # rubocop:disable RSpec/AnyInstance
     allow(Pathname).to receive(:new).and_call_original
     allow(Puppet::FileSystem).to receive(:exist?).and_call_original
     allow_any_instance_of(BoltSpec::Plans::MockExecutor).to receive(:module_file_id).and_call_original
@@ -36,7 +36,7 @@ describe 'peadm::util::retrieve_and_upload' do
         Bolt::ResultSet.new(results)
       end
 
-    # rubocop:enable AnyInstance
+    # rubocop:enable RSpec/AnyInstance
     ## </🤮>
     ##########
 
