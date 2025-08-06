@@ -14,7 +14,7 @@ on:
       version_to_upgrade:
         description: PE version to upgrade to
         required: false
-        default: 2023.8.4
+        default: 2023.8.5
       ssh-debugging:
         description: Boolean; whether or not to pause for ssh debugging
         required: true
