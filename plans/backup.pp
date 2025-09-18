@@ -8,7 +8,7 @@
 #   bolt plan run peadm::backup -t primary1.example.com
 #
 plan peadm::backup (
-  # This plan should be run on the primary server
+  # This plan should be run on the primary serverggggggg
   Peadm::SingleTargetSpec     $targets,
 
   # backup type determines the backup options
