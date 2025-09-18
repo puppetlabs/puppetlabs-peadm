@@ -429,7 +429,8 @@ plan peadm::subplans::install (
     run_task('peadm::puppet_runonce', $target)
   }
 
-  wait([$bg_db_run])
+  # add a timeout to wait
+  wait([$bg_db_run], '_timeout' => 1200)
 
   # The puppetserver might be in the middle of a restart after the Puppet run,
   # so we check the status by calling the api and ensuring the puppetserver is
