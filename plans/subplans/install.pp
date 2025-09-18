@@ -407,7 +407,7 @@ plan peadm::subplans::install (
   )
 
   $bg_db_run = background('database-targets') || {
-    run_task('peadm::puppet_runonce', $database_targets, timeout => 900)
+    run_task('peadm::puppet_runonce', $database_targets)
   }
 
   parallelize($agent_installer_targets) |$target| {
