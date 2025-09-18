@@ -6,7 +6,6 @@ If your PE installation is managed by PEADM, you can migrate your PE installatio
 
 **Important:** If your PE installation is not managed by PEADM, you cannot use the `peadm::migrate` plan. For information about converting to a PEADM-managed installation, see [Convert](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/convert.md).  
 
- 
 ## Using `migrate` to migrate your PE installation 
 When you run the `migrate` plan you will specify the hostname (FQDN) of the old primary server you are migrating from and the replacement infrastructure you are migrating to – this will include the hostname (FQDN) of the new primary, and hostnames of your replica, PE-PostgreSQL server and PE-PostgreSQL replica server if they are present. You can also optionally specify a new PE version to upgrade your migrated PE installation to – the PE version used on the old primary server will be used on the new one of this parameter is not supplied. 
 
