@@ -407,7 +407,7 @@ plan peadm::subplans::install (
   )
 
   $bg_db_run = background('database-targets') || {
-    run_task('peadm::puppet_runonce', $database_targets)
+    run_task('peadm::puppet_runonce', $database_targets, timeout => 900)
   }
 
   parallelize($agent_installer_targets) |$target| {
@@ -430,7 +430,7 @@ plan peadm::subplans::install (
   }
 
   # add a timeout to wait
-  wait([$bg_db_run], '_timeout' => 1200)
+  wait([$bg_db_run], 1200)
 
   # The puppetserver might be in the middle of a restart after the Puppet run,
   # so we check the status by calling the api and ensuring the puppetserver is
