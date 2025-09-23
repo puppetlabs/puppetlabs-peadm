@@ -6,7 +6,7 @@ on:
       image:
         description: GCP image for test cluster
         required: true
-        default: almalinux-cloud/almalinux-8
+        default: almalinux-cloud/almalinux-9
       architecture:
         type: choice
         required: true
@@ -27,10 +27,11 @@ on:
       ssh-debugging:
         description: Boolean; whether or not to pause for ssh debugging
         required: true
-        default: 'false'
+        default: "false"
 jobs:
   test-upgrade:
-    name: PE ${{ matrix.version }} to latest dev using ${{ matrix.architecture }}
+    name:
+      PE ${{ matrix.version }} to latest dev using ${{ matrix.architecture }}
       on ${{ matrix.image }}
     runs-on: ubuntu-latest
     env:
@@ -40,9 +41,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture: ['${{ github.event.inputs.architecture }}']
-        version: ['${{ github.event.inputs.version }}']
-        image: ['${{ github.event.inputs.image }}']
+        architecture: ["${{ github.event.inputs.architecture }}"]
+        version: ["${{ github.event.inputs.version }}"]
+        image: ["${{ github.event.inputs.image }}"]
     steps:
       - name: Start SSH session
         if: ${{ github.event.inputs.ssh-debugging == 'true' }}
@@ -55,7 +56,7 @@ jobs:
       - name: Activate Ruby 3.1
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.1'
+          ruby-version: "3.1"
           bundler-cache: true
       - name: Print bundle environment
         if: ${{ github.repository_owner == 'puppetlabs' }}

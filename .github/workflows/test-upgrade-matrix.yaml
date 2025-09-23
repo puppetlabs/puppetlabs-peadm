@@ -26,7 +26,8 @@ on:
   workflow_dispatch: {}
 jobs:
   test-upgrade:
-    name: PE ${{ matrix.version }} to ${{ matrix.version_to_upgrade }} ${{ matrix.architecture }}
+    name:
+      PE ${{ matrix.version }} to ${{ matrix.version_to_upgrade }} ${{ matrix.architecture }}
       on ${{ matrix.image }}
     runs-on: ubuntu-latest
     env:
@@ -36,10 +37,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture: [standard, extra-large]  # removing xl-with dr until PE-40902 is addressed
+        architecture: [standard, extra-large] # removing xl-with dr until PE-40902 is addressed
         version: [2021.7.9, 2023.8.5]
         version_to_upgrade: [2021.7.9, 2023.8.5, 2025.5.0]
-        image: [almalinux-cloud/almalinux-8]
+        image: [almalinux-cloud/almalinux-9]
         download_mode: [direct]
         exclude:
           - version: 2021.7.9
@@ -62,7 +63,7 @@ jobs:
       - name: Activate Ruby 3.1
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.1'
+          ruby-version: "3.1"
           bundler-cache: true
       - name: Print bundle environment
         if: ${{ github.repository_owner == 'puppetlabs' }}

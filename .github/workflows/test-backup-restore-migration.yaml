@@ -6,7 +6,7 @@ on:
       image:
         description: GCP image for test cluster
         required: true
-        default: almalinux-cloud/almalinux-8
+        default: almalinux-cloud/almalinux-9
       architecture:
         description: PE architecture to test
         required: true
@@ -18,11 +18,12 @@ on:
       ssh-debugging:
         description: Boolean; whether or not to pause for ssh debugging
         required: true
-        default: 'false'
+        default: "false"
 jobs:
   backup:
-    name: 'Backup: Cluster A: PE ${{ inputs.version }} ${{ inputs.architecture }}
-      on ${{ inputs.image }}'
+    name:
+      "Backup: Cluster A: PE ${{ inputs.version }} ${{ inputs.architecture }}
+      on ${{ inputs.image }}"
     runs-on: ubuntu-latest
     env:
       BOLT_GEM: true
@@ -40,7 +41,7 @@ jobs:
       - name: Activate Ruby 3.1
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.1'
+          ruby-version: "3.1"
           bundler-cache: true
       - name: Print bundle environment
         if: ${{ github.repository_owner == 'puppetlabs' }}
@@ -136,8 +137,9 @@ jobs:
             echo ::endgroup::
           fi
   restore:
-    name: 'Restore: Cluster B: PE ${{ inputs.version }} ${{ inputs.architecture }}
-      on ${{ inputs.image }}'
+    name:
+      "Restore: Cluster B: PE ${{ inputs.version }} ${{ inputs.architecture }}
+      on ${{ inputs.image }}"
     runs-on: ubuntu-latest
     env:
       BOLT_GEM: true
@@ -149,7 +151,7 @@ jobs:
       - name: Activate Ruby 3.1
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.1'
+          ruby-version: "3.1"
           bundler-cache: true
       - name: Print bundle environment
         if: ${{ github.repository_owner == 'puppetlabs' }}
@@ -199,8 +201,9 @@ jobs:
         uses: lewagon/wait-on-check-action@v1.3.4
         with:
           ref: ${{ github.ref }}
-          check-name: 'Backup: Cluster A: PE ${{ inputs.version }} ${{ inputs.architecture }}
-            on ${{ inputs.image }}'
+          check-name:
+            "Backup: Cluster A: PE ${{ inputs.version }} ${{ inputs.architecture }}
+            on ${{ inputs.image }}"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
       - name: Tear down cluster B

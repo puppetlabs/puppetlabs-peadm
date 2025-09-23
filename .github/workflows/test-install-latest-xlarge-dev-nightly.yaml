@@ -8,7 +8,7 @@ on:
       ssh-debugging:
         description: Boolean; whether or not to pause for ssh debugging
         required: true
-        default: 'false'
+        default: "false"
 jobs:
   test-install:
     name: PE nightly using ${{ matrix.architecture }} on ${{ matrix.image }}
@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         architecture: [extra-large-with-dr]
-        image: [almalinux-cloud/almalinux-8]
+        image: [almalinux-cloud/almalinux-9]
     steps:
       - name: Start SSH session
         if: ${{ github.event.inputs.ssh-debugging == 'true' }}
@@ -34,7 +34,7 @@ jobs:
       - name: Activate Ruby 3.1
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.1'
+          ruby-version: "3.1"
           bundler-cache: true
       - name: Print bundle environment
         if: ${{ github.repository_owner == 'puppetlabs' }}

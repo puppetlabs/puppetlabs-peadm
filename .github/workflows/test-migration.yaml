@@ -26,7 +26,8 @@ on:
   workflow_dispatch: {}
 jobs:
   test-migration:
-    name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
+    name:
+      PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
       PE upgrade? ${{ matrix.new_pe_version }}
     runs-on: ubuntu-latest
     env:
@@ -44,30 +45,30 @@ jobs:
           - large-with-dr
           - extra-large-with-dr
         version: [2021.7.9, 2023.8.5, 2025.5.0]
-        image: [almalinux-cloud/almalinux-8]
+        image: [almalinux-cloud/almalinux-9]
         include:
           - architecture: standard
             version: 2023.8.5
-            image: almalinux-cloud/almalinux-8
+            image: almalinux-cloud/almalinux-9
             new_pe_version: 2025.5.0
           - architecture: large
             version: 2023.8.5
-            image: almalinux-cloud/almalinux-8
+            image: almalinux-cloud/almalinux-9
             new_pe_version: 2025.5.0
           - architecture: extra-large
             version: 2023.8.5
-            image: almalinux-cloud/almalinux-8
+            image: almalinux-cloud/almalinux-9
             new_pe_version: 2025.5.0
-         # excluding the following combinations as due to their long running nature they always fail due to 
-         # the test nodes in GCP that litmus provisions becoming unreachable after a time. If we address PE-40902
-         # to change how we provision test nodes in CI then we will hopefully be able to include these
+          # excluding the following combinations as due to their long running nature they always fail due to
+          # the test nodes in GCP that litmus provisions becoming unreachable after a time. If we address PE-40902
+          # to change how we provision test nodes in CI then we will hopefully be able to include these
         exclude:
           - architecture: extra-large-with-dr
             version: 2023.8.5
-            image: almalinux-cloud/almalinux-8
+            image: almalinux-cloud/almalinux-9
           - architecture: extra-large-with-dr
             version: 2025.5.0
-            image: almalinux-cloud/almalinux-8
+            image: almalinux-cloud/almalinux-9
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
@@ -76,7 +77,7 @@ jobs:
       - name: Activate Ruby 3.1
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.1'
+          ruby-version: "3.1"
           bundler-cache: true
       - name: Print bundle environment
         if: ${{ github.repository_owner == 'puppetlabs' }}
@@ -114,7 +115,7 @@ jobs:
             --modulepath spec/fixtures/modules \
             --no-host-key-check \
             inventory_file=spec/fixtures/litmus_inventory.yaml
-          echo ::endgroup::            
+          echo ::endgroup::
       - name: Output contents of litmus_inventory.yaml
         run: |
           cat spec/fixtures/litmus_inventory.yaml

@@ -6,7 +6,7 @@ on:
       image:
         description: GCP image for test cluster
         required: true
-        default: almalinux-cloud/almalinux-8
+        default: almalinux-cloud/almalinux-9
       architecture:
         description: PE architecture to test
         required: true
