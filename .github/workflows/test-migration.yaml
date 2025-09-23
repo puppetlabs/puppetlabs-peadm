@@ -26,8 +26,7 @@ on:
   workflow_dispatch: {}
 jobs:
   test-migration:
-    name:
-      PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
+    name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
       PE upgrade? ${{ matrix.new_pe_version }}
     runs-on: ubuntu-latest
     env:
@@ -77,7 +76,7 @@ jobs:
       - name: Activate Ruby 3.1
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.1"
+          ruby-version: '3.1'
           bundler-cache: true
       - name: Print bundle environment
         if: ${{ github.repository_owner == 'puppetlabs' }}

@@ -28,11 +28,10 @@ on:
       ssh-debugging:
         description: Boolean; whether or not to pause for ssh debugging
         required: true
-        default: "false"
+        default: 'false'
 jobs:
   backup-restore-test:
-    name:
-      "Backup, break and restore cluster: PE ${{ github.event.inputs.version || '2025.5.0' }}\
+    name: "Backup, break and restore cluster: PE ${{ github.event.inputs.version || '2025.5.0' }}\
       \ ${{ github.event.inputs.architecture || 'extra-large' }} on ${{ github.event.inputs.image || 'almalinux-cloud/almalinux-9' }}"
     runs-on: ubuntu-latest
     env:
@@ -51,7 +50,7 @@ jobs:
       - name: Activate Ruby 3.1
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.1"
+          ruby-version: '3.1'
           bundler-cache: true
       - name: Print bundle environment
         if: ${{ github.repository_owner == 'puppetlabs' }}
