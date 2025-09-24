@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         architecture: [extra-large-with-dr]
-        version: [2023.8.5]
+        version: [2023.8.6]
         image: [almalinux-cloud/almalinux-8]
     steps:
       - name: Checkout Source
