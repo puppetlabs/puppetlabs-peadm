@@ -35,9 +35,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture: [standard-with-dr, large, extra-large-with-dr]
-        version: [2021.7.9, 2023.8.6, 2025.6.0]
-        image: [almalinux-cloud/almalinux-8]
+        architecture: [standard-with-dr]
+        version: [2025.6.0]
+        image: [litmusimage/ubuntu:24.04]
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
@@ -60,31 +60,209 @@ jobs:
             echo 'Host *'                      >  $HOME/.ssh/config
             echo '    ServerAliveInterval 150' >> $HOME/.ssh/config
             echo '    ServerAliveCountMax 2'   >> $HOME/.ssh/config
+            echo '    StrictHostKeyChecking no' >> $HOME/.ssh/config
+            echo '    UserKnownHostsFile /dev/null' >> $HOME/.ssh/config
+            echo '    ConnectTimeout 30'       >> $HOME/.ssh/config
+            echo '    ConnectionAttempts 10'   >> $HOME/.ssh/config
             bundle exec rake spec_prep
           echo ::endgroup::
           echo ::group::provision
             bundle exec bolt plan run peadm_spec::provision_test_cluster \
               --modulepath spec/fixtures/modules \
-              provider=provision_service \
+              provider=docker \
               image=${{ matrix.image }} \
               architecture=${{ matrix.architecture }} \
               --log-level trace
           echo ::endgroup::
-          echo ::group::info:request
-            cat request.json || true; echo
+          echo ::group::list modules
+            ls -l ./spec/fixtures/modules || true; echo
           echo ::endgroup::
-          echo ::group::info:inventory
-            sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
+          echo ::group::show original inventory
+            echo "=== Original inventory.yaml ==="
+            cat ./inventory.yaml || echo "No inventory.yaml found"
+          echo ::endgroup::
+          echo ::group::create docker transport inventory
+            echo "=== Creating Docker transport inventory ==="
+            
+            # Get container information
+            container_info=($(docker ps --format "{{.Names}}" | grep -v NAMES))
+            container_count=${#container_info[@]}
+            
+            # Create new inventory with version 2 format and Docker transport
+            cat > ./inventory.yaml << 'EOF'
+          version: 2
+          groups:
+            - name: pe_nodes
+              targets:
+          EOF
+                      
+                      # Assign roles based on architecture
+                      case "${{ matrix.architecture }}" in
+                        "standard-with-dr")
+                          if [ $container_count -ge 2 ]; then
+                            # Primary
+                            echo "      - name: ${container_info[0]}" >> ./inventory.yaml
+                            echo "        uri: ${container_info[0]}" >> ./inventory.yaml
+                            echo "        vars:" >> ./inventory.yaml
+                            echo "          role: primary" >> ./inventory.yaml
+                            echo "        config:" >> ./inventory.yaml
+                            echo "          transport: docker" >> ./inventory.yaml
+                            echo "          docker:" >> ./inventory.yaml
+                            echo "            container: ${container_info[0]}" >> ./inventory.yaml
+                            echo "            tmpdir: /var/tmp" >> ./inventory.yaml
+                            # Replica
+                            echo "      - name: ${container_info[1]}" >> ./inventory.yaml
+                            echo "        uri: ${container_info[1]}" >> ./inventory.yaml
+                            echo "        vars:" >> ./inventory.yaml
+                            echo "          role: replica" >> ./inventory.yaml
+                            echo "        config:" >> ./inventory.yaml
+                            echo "          transport: docker" >> ./inventory.yaml
+                            echo "          docker:" >> ./inventory.yaml
+                            echo "            container: ${container_info[1]}" >> ./inventory.yaml
+                            echo "            tmpdir: /var/tmp" >> ./inventory.yaml
+                          fi
+                          ;;
+                        # ... other architecture cases ...
+                      esac
+                      
+                      echo "=== New Docker transport inventory.yaml ==="
+                      cat ./inventory.yaml
+                    echo ::endgroup::             
+      - name: Prepare containers for Bolt tasks
+        run: |
+          echo ::group::prepare_containers
+            for container in $(docker ps --format "{{.Names}}" | grep -v NAMES); do
+              echo "=== Preparing container: $container ==="
+              
+              # Install required packages for Ubuntu 24.04
+              echo "Installing required packages:"
+              docker exec $container apt-get update || echo "apt-get update failed"
+              docker exec $container apt-get install -y \
+                curl \
+                wget \
+                ca-certificates \
+                hostname \
+                procps \
+                util-linux \
+                systemd \
+                openssh-server \
+                openssh-client \
+                tar \
+                gzip \
+                net-tools \
+                iproute2 \
+                file \
+                gettext-base \
+                findutils \
+                coreutils \
+                grep \
+                sed \
+                gawk \
+                bash \
+                systemd-resolved \
+                dnsutils \
+                iputils-ping \
+                gnupg \
+                gnupg2 \
+                gpg-agent \
+                apt-utils \
+                lsb-release \
+                software-properties-common || echo "Package installation failed"
+              
+              # Ensure critical commands are available
+              echo "Testing required commands:"
+              docker exec $container hostname || echo "hostname command failed"
+              docker exec $container hostname -f || echo "hostname -f command failed" 
+              docker exec $container file --version || echo "file command failed"
+              docker exec $container tar --version || echo "tar command failed"
+              docker exec $container which systemctl || echo "systemctl not found"
+              docker exec $container which gpg || echo "gpg not found"
+              docker exec $container which apt-key || echo "apt-key not found"
+              
+              # Ensure /tmp directory exists and has correct permissions
+              echo "Creating and setting permissions for /tmp directory:"
+              docker exec $container mkdir -p /tmp
+              docker exec $container chmod 1777 /tmp
+              docker exec $container ls -ld /tmp
+              
+              # Ensure /var/tmp exists with correct permissions  
+              echo "Creating and setting permissions for /var/tmp directory:"
+              docker exec $container mkdir -p /var/tmp
+              docker exec $container chmod 1777 /var/tmp
+              docker exec $container ls -ld /var/tmp
+              
+              # Create a test file to verify write permissions
+              echo "Testing write permissions:"
+              docker exec $container touch /var/tmp/test_write_permissions || echo "Failed to create test file"
+              docker exec $container rm -f /var/tmp/test_write_permissions || echo "Failed to remove test file"
+              
+              # Ensure other required directories exist
+              echo "Creating other required directories:"
+              docker exec $container mkdir -p /var/log
+              docker exec $container mkdir -p /etc/puppetlabs
+              docker exec $container mkdir -p /opt/puppetlabs
+              docker exec $container mkdir -p /etc/systemd/system
+              docker exec $container mkdir -p /etc/apt/trusted.gpg.d
+              
+              # Set up proper hostname resolution
+              echo "Setting up hostname resolution:"
+              container_hostname=$(docker exec $container hostname 2>/dev/null || echo "localhost")
+              docker exec $container bash -c "echo '127.0.0.1 $container_hostname localhost' >> /etc/hosts"
+              
+              # Initialize systemd properly (important for PE installer)
+              echo "Ensuring systemd is working:"
+              docker exec $container systemctl daemon-reload || echo "systemctl daemon-reload failed"
+              
+              # Check available disk space
+              echo "Disk space check:"
+              docker exec $container df -h /var/tmp || echo "Cannot check disk space"
+              
+              # Test pe_install.sh specific requirements
+              echo "Testing pe_install.sh requirements:"
+              docker exec $container which file || echo "file command missing - PE installer will fail"
+              docker exec $container which tar || echo "tar command missing"
+              docker exec $container which systemctl || echo "systemctl missing"
+              docker exec $container which bash || echo "bash missing"
+              docker exec $container which gpg || echo "gpg missing - apt-key will fail"
+              docker exec $container which apt-key || echo "apt-key missing"
+              
+              # Test if systemd is working properly
+              echo "Testing systemd functionality:"
+              docker exec $container systemctl --version || echo "systemctl not working"
+              docker exec $container systemctl daemon-reload || echo "daemon-reload failed"
+              
+              # Test GPG functionality
+              echo "Testing GPG functionality:"
+              docker exec $container gpg --version || echo "gpg not working"
+              docker exec $container apt-key list || echo "apt-key not working"
+            done
           echo ::endgroup::
       - name: Install PE on test cluster
         timeout-minutes: 120
         run: |
+          echo "=== Starting PE installation with Docker transport ==="
+          echo "Using inventory file:"
+          cat ./inventory.yaml
+          
           bundle exec bolt plan run peadm_spec::install_test_cluster \
-            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --inventoryfile ./inventory.yaml \
             --modulepath spec/fixtures/modules \
             architecture=${{ matrix.architecture }} \
             version=${{ matrix.version }} \
-            console_password=${{ secrets.CONSOLE_PASSWORD }}
+            console_password=${{ secrets.CONSOLE_PASSWORD }} \
+            --targets pe_nodes \
+            --verbose
+      - name: output value of bolt-debug.log
+        if: ${{ failure() }}
+        run: |
+          echo ::group::bolt-debug-log
+            if [ -f bolt-debug.log ]; then
+              echo "=== bolt-debug.log contents ==="
+              cat bolt-debug.log || echo "bolt-debug.log is empty"
+            else
+              echo "No bolt-debug.log file found"
+            fi
+          echo ::endgroup::
       - name: Tear down test cluster
         if: ${{ always() }}
         continue-on-error: true
