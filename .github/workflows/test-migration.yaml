@@ -147,7 +147,7 @@ jobs:
             new_replica_postgresql_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-replica-pdb-postgresql") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
             upgrade_version=${{ matrix.new_pe_version }} \
           --no-host-key-check
-      - name: Tear down PE ${{ matrix.architecture }} test cluster
+      - name: Tear down PE ${{ matrix.architecture }} test cluster now
         if: ${{ always() }}
         continue-on-error: true
         run: |-
