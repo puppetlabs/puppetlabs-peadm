@@ -55,6 +55,7 @@ end
 puppet_version = ENV['PUPPET_GEM_VERSION']
 facter_version = ENV['FACTER_GEM_VERSION']
 hiera_version = ENV['HIERA_GEM_VERSION']
+bolt_version = ENV.fetch('BOLT_GEM_VERSION', nil)
 
 gems = {}
 
