@@ -6,14 +6,16 @@
 function peadm::assert_supported_bolt_version (
   # No arguments
 ) >> Struct[{ 'supported' => Boolean }] {
-  $supported_bolt_version = '>= 3.17.0 < 5.0.0'
+  $supported_bolt_version = '>= 3.17.0 < 6.0.0'
+  $current_bolt_version = peadm::bolt_version()
   $supported = (peadm::bolt_version() =~ SemVerRange($supported_bolt_version))
+
 # lint:ignore:strict_indent
   unless $supported {
     fail(@("REASON"/L))
       This version of puppetlabs-peadm requires Bolt version ${supported_bolt_version}.
 
-      You are using Bolt version ${peadm::bolt_version()}.
+      You are using Bolt version ${current_bolt_version}.
 
       Please make sure you have a compatible Bolt version and try again.
 
