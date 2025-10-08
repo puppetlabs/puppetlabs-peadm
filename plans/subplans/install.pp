@@ -225,7 +225,7 @@ plan peadm::subplans::install (
     $target  = getvar("${var}_target", [])
     $pe_conf = getvar("${var}_pe_conf")
 
-    peadm::file_content_upload($pe_conf, '/tmp/pe.conf', $target)
+    peadm::file_content_upload($pe_conf, '/var/tmp/pe.conf', $target)
 # lint:ignore:strict_indent
     run_task('peadm::mkdir_p_file', $target,
       path    => '/etc/puppetlabs/puppet/puppet.conf',
@@ -339,7 +339,7 @@ plan peadm::subplans::install (
   # expected, and handled by the task's install_extra_large parameter.
   run_task('peadm::pe_install', $primary_target,
     tarball               => $upload_tarball_path,
-    peconf                => '/tmp/pe.conf',
+    peconf                => '/var/tmp/pe.conf',
     puppet_service_ensure => 'stopped',
     install_extra_large   => ($arch['architecture'] == 'extra-large'),
   )
@@ -375,7 +375,7 @@ plan peadm::subplans::install (
   # Run the PE installer on the puppetdb database hosts
   run_task('peadm::pe_install', $database_targets,
     tarball               => $upload_tarball_path,
-    peconf                => '/tmp/pe.conf',
+    peconf                => '/var/tmp/pe.conf',
     puppet_service_ensure => 'stopped',
   )
 
