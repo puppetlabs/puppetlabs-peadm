@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.33.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.33.0) - 2025-10-06
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.32.0...v3.33.0)
+
+### Added
+
+- (PE-42498) Update to support Bolt v5 [#623](https://github.com/puppetlabs/puppetlabs-peadm/pull/623) ([davidmalloncares](https://github.com/davidmalloncares))
+
 ## [v3.32.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.32.0) - 2025-09-24
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.31.0...v3.32.0)
