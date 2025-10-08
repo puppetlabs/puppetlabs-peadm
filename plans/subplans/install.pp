@@ -66,16 +66,13 @@ plan peadm::subplans::install (
   Optional[String]     $license_key_content = undef,
 
   # Other
-  String                $stagingdir             = '/var/tmp',
-  String                $uploaddir              = '/var/tmp',
+  String                $stagingdir             = '/tmp',
+  String                $uploaddir              = '/tmp',
   Peadm::Download_mode  $download_mode          = 'bolthost',
   Boolean               $permit_unsafe_versions = false,
   String                $token_lifetime         = '1y',
 ) {
   peadm::assert_supported_pe_version($version, $permit_unsafe_versions)
-
-  # output values of stagingdir and uploaddir for debugging purposes
-  out::message("Using stagingdir ${stagingdir} and uploaddir ${uploaddir}")
 
   # Convert inputs into targets.
   $primary_target            = peadm::get_targets($primary_host, 1)
@@ -264,7 +261,7 @@ plan peadm::subplans::install (
       path   => $upload_tarball_path,
     )
   }
-/* 
+
   # Create csr_attributes.yaml files for the nodes that need them. Ensure that
   # if a csr_attributes.yaml file is already present, the values we need are
   # merged with the existing values.
@@ -451,7 +448,7 @@ plan peadm::subplans::install (
       path    => '/etc/puppetlabs/enterprise/conf.d/pe.conf',
       content => stdlib::to_json_pretty($pe_conf.parsejson() - $puppetdb_database_temp_config),
     )
-  } */
+  }
 
   return("Installation of Puppet Enterprise ${arch['architecture']} succeeded.")
 }
