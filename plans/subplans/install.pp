@@ -373,7 +373,11 @@ plan peadm::subplans::install (
   )
 
   out::message('HOSTNAME CHECK BEFORE INSTALL')
-  run_command('hostname -f', $database_targets)
+  parallelize($t) |$all_targets| {
+    $fqdn = run_command('hostname -f', $target)
+    $target.set_var('certname', $fqdn.first['stdout'].chomp)
+    out::message("Target: ${target}, certname: ${target.peadm::certname()}")
+  }
 
   # Run the PE installer on the puppetdb database hosts
   run_task('peadm::pe_install', $database_targets,
@@ -384,12 +388,28 @@ plan peadm::subplans::install (
   )
 
   out::message('HOSTNAME CHECK AFTER INSTALL')
-  run_command('hostname -f', $database_targets)
+  parallelize($t) |$all_targets| {
+    $fqdn = run_command('hostname -f', $target)
+    $target.set_var('certname', $fqdn.first['stdout'].chomp)
+    out::message("Target: ${target}, certname: ${target.peadm::certname()}")
+  }
 
   # Now that the main PuppetDB database node is ready, finish priming the
   # master. Explicitly stop puppetdb first to avoid any systemd interference.
-  run_command('systemctl stop pe-puppetdb', $primary_target)
-  run_command('systemctl start pe-puppetdb', $primary_target)
+  run_command('systemctl stop pe-puppetdb', $primary_target, _catch_errors => true)
+  out::message('HOSTNAME CHECK AFTER STOP PUPPETDB')
+  parallelize($t) |$all_targets| {
+    $fqdn = run_command('hostname -f', $target)
+    $target.set_var('certname', $fqdn.first['stdout'].chomp)
+    out::message("Target: ${target}, certname: ${target.peadm::certname()}")
+  }
+  run_command('systemctl start pe-puppetdb', $primary_target, _catch_errors => true)
+  out::message('HOSTNAME CHECK AFTER START PUPPETDB')
+  parallelize($t) |$all_targets| {
+    $fqdn = run_command('hostname -f', $target)
+    $target.set_var('certname', $fqdn.first['stdout'].chomp)
+    out::message("Target: ${target}, certname: ${target.peadm::certname()}")
+  }
   run_task('peadm::rbac_token', $primary_target,
     password       => $console_password,
     token_lifetime => $token_lifetime,
