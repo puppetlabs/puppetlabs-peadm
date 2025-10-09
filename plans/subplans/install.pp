@@ -101,6 +101,14 @@ plan peadm::subplans::install (
       $legacy_compiler_targets,
   ])
 
+  out::message('HOSTNAME CHECK BEFORE ANYTHING')
+  parallelize($all_targets) |$target| {
+    $fqdn = run_command('hostname -f', $target)
+    $target.set_var('certname', $fqdn.first['stdout'].chomp)
+    out::message("Target: ${target}, certname: ${target.peadm::certname()}")
+  }
+  out::message('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
+
   $primary_targets = peadm::flatten_compact([
       $primary_target,
       $replica_target,
@@ -373,11 +381,12 @@ plan peadm::subplans::install (
   )
 
   out::message('HOSTNAME CHECK BEFORE INSTALL')
-  parallelize($t) |$all_targets| {
+  parallelize($all_targets) |$target| {
     $fqdn = run_command('hostname -f', $target)
     $target.set_var('certname', $fqdn.first['stdout'].chomp)
     out::message("Target: ${target}, certname: ${target.peadm::certname()}")
   }
+  out::message('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
 
   # Run the PE installer on the puppetdb database hosts
   run_task('peadm::pe_install', $database_targets,
@@ -388,33 +397,42 @@ plan peadm::subplans::install (
   )
 
   out::message('HOSTNAME CHECK AFTER INSTALL')
-  parallelize($t) |$all_targets| {
+  parallelize($all_targets) |$target| {
     $fqdn = run_command('hostname -f', $target)
     $target.set_var('certname', $fqdn.first['stdout'].chomp)
     out::message("Target: ${target}, certname: ${target.peadm::certname()}")
   }
+  out::message('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
 
   # Now that the main PuppetDB database node is ready, finish priming the
   # master. Explicitly stop puppetdb first to avoid any systemd interference.
   run_command('systemctl stop pe-puppetdb', $primary_target, _catch_errors => true)
   out::message('HOSTNAME CHECK AFTER STOP PUPPETDB')
-  parallelize($t) |$all_targets| {
+  parallelize($all_targets) |$target| {
     $fqdn = run_command('hostname -f', $target)
     $target.set_var('certname', $fqdn.first['stdout'].chomp)
     out::message("Target: ${target}, certname: ${target.peadm::certname()}")
   }
+  out::message('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
   run_command('systemctl start pe-puppetdb', $primary_target, _catch_errors => true)
   out::message('HOSTNAME CHECK AFTER START PUPPETDB')
-  parallelize($t) |$all_targets| {
+  parallelize($all_targets) |$target| {
     $fqdn = run_command('hostname -f', $target)
     $target.set_var('certname', $fqdn.first['stdout'].chomp)
     out::message("Target: ${target}, certname: ${target.peadm::certname()}")
   }
+  out::message('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
   run_task('peadm::rbac_token', $primary_target,
     password       => $console_password,
     token_lifetime => $token_lifetime,
   )
-
+  out::message('HOSTNAME CHECK BEFORE MKDIR P FILE')
+  parallelize($all_targets) |$target| {
+    $fqdn = run_command('hostname -f', $target)
+    $target.set_var('certname', $fqdn.first['stdout'].chomp)
+    out::message("Target: ${target}, certname: ${target.peadm::certname()}")
+  }
+  out::message('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
   # Stub a production environment and commit it to file-sync. At least one
   # commit (content irrelevant) is necessary to be able to configure
   # replication. A production environment must exist when committed to avoid
@@ -428,11 +446,23 @@ plan peadm::subplans::install (
     mode    => '0644',
     content => "# Empty manifest\n",
   )
-
+  out::message('HOSTNAME CHECK BEFORE CODE MANAGER')
+  parallelize($all_targets) |$target| {
+    $fqdn = run_command('hostname -f', $target)
+    $target.set_var('certname', $fqdn.first['stdout'].chomp)
+    out::message("Target: ${target}, certname: ${target.peadm::certname()}")
+  }
+  out::message('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
   run_task('peadm::code_manager', $primary_target,
     action => 'file-sync commit',
   )
-
+  out::message('HOSTNAME CHECK BEFORE DB RUNONCE')
+  parallelize($all_targets) |$target| {
+    $fqdn = run_command('hostname -f', $target)
+    $target.set_var('certname', $fqdn.first['stdout'].chomp)
+    out::message("Target: ${target}, certname: ${target.peadm::certname()}")
+  }
+  out::message('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
   $bg_db_run = background('database-targets') || {
     run_task('peadm::puppet_runonce', $database_targets)
   }
