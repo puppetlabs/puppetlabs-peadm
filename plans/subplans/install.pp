@@ -466,36 +466,93 @@ plan peadm::subplans::install (
   $bg_db_run = background('database-targets') || {
     run_task('peadm::puppet_runonce', $database_targets)
   }
-
+  out::message('HOSTNAME CHECK AFTER DB RUNONCE')
+  parallelize($all_targets) |$target| {
+    $fqdn = run_command('hostname -f', $target)
+    $target.set_var('certname', $fqdn.first['stdout'].chomp)
+    out::message("Target: ${target}, certname: ${target.peadm::certname()}")
+  }
+  out::message('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
   parallelize($agent_installer_targets) |$target| {
     $common_install_flags = [
       '--puppet-service-ensure', 'stopped',
       "main:dns_alt_names=${dns_alt_names_csv}",
       "main:certname=${target.peadm::certname()}",
     ]
+    out::message('    HOSTNAME CHECK BEFORE AGENT INSTALL')
+    $fqdn = run_command('hostname -f', $target)
+    $target.set_var('certname', $fqdn.first['stdout'].chomp)
+    out::message("    Target: ${target}, certname: ${target.peadm::certname()}")
 
     # Get an agent installed and cert signed
     run_task('peadm::agent_install', $target,
       server        => $primary_target.peadm::certname(),
       install_flags => $common_install_flags,
     )
-
+    out::message('    HOSTNAME CHECK AFTER AGENT INSTALL')
+    $fqdn = run_command('hostname -f', $target)
+    $target.set_var('certname', $fqdn.first['stdout'].chomp)
+    out::message("    Target: ${target}, certname: ${target.peadm::certname()}")
     # Ensure certificate requests have been submitted, then run Puppet
     run_task('peadm::submit_csr', $target)
+    out::message('    HOSTNAME CHECK AFTER SUBMIT_CSR')
+    $fqdn = run_command('hostname -f', $target)
+    $target.set_var('certname', $fqdn.first['stdout'].chomp)
+    out::message("    Target: ${target}, certname: ${target.peadm::certname()}")
     run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$target.peadm::certname] })
+    out::message('    HOSTNAME CHECK AFTER SIGN_CSR')
+    $fqdn = run_command('hostname -f', $target)
+    $target.set_var('certname', $fqdn.first['stdout'].chomp)
+    out::message("    Target: ${target}, certname: ${target.peadm::certname()}")
     run_task('peadm::puppet_runonce', $target)
+    out::message('    HOSTNAME CHECK AFTER TARGET RUNONCE')
+    $fqdn = run_command('hostname -f', $target)
+    $target.set_var('certname', $fqdn.first['stdout'].chomp)
+    out::message("    Target: ${target}, certname: ${target.peadm::certname()}")
   }
-
+  out::message('HOSTNAME CHECK BEFORE WAIT')
+  parallelize($all_targets) |$target| {
+    $fqdn = run_command('hostname -f', $target)
+    $target.set_var('certname', $fqdn.first['stdout'].chomp)
+    out::message("Target: ${target}, certname: ${target.peadm::certname()}")
+  }
+  out::message('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
   wait([$bg_db_run])
-
+  out::message('HOSTNAME CHECK AFTER WAIT')
+  parallelize($all_targets) |$target| {
+    $fqdn = run_command('hostname -f', $target)
+    $target.set_var('certname', $fqdn.first['stdout'].chomp)
+    out::message("Target: ${target}, certname: ${target.peadm::certname()}")
+  }
+  out::message('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
   # The puppetserver might be in the middle of a restart after the Puppet run,
   # so we check the status by calling the api and ensuring the puppetserver is
   # taking requests before proceeding. It takes two runs to fully finish
   # configuration.
   run_task('peadm::puppet_runonce', $primary_target)
+  out::message('HOSTNAME CHECK AFTER PRIMARY RUNONCE')
+  parallelize($all_targets) |$target| {
+    $fqdn = run_command('hostname -f', $target)
+    $target.set_var('certname', $fqdn.first['stdout'].chomp)
+    out::message("Target: ${target}, certname: ${target.peadm::certname()}")
+  }
+  out::message('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
   peadm::wait_until_service_ready('pe-master', $primary_target)
+  out::message('HOSTNAME CHECK AFTER WAIT ON PE-MASTER')
+  parallelize($all_targets) |$target| {
+    $fqdn = run_command('hostname -f', $target)
+    $target.set_var('certname', $fqdn.first['stdout'].chomp)
+    out::message("Target: ${target}, certname: ${target.peadm::certname()}")
+  }
+  out::message('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
   run_task('peadm::puppet_runonce', $primary_target)
-
+  out::message('HOSTNAME CHECK AFTER SECOND PRIMARY RUNONCE')
+  parallelize($all_targets) |$target| {
+    $fqdn = run_command('hostname -f', $target)
+    $target.set_var('certname', $fqdn.first['stdout'].chomp)
+    out::message("Target: ${target}, certname: ${target.peadm::certname()}")
+  }
+  out::message('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
   # Cleanup temp bootstrapping config
   parallelize(['primary', 'primary_postgresql', 'replica_postgresql']) |$var| {
     $target  = getvar("${var}_target", [])
@@ -506,6 +563,12 @@ plan peadm::subplans::install (
       content => stdlib::to_json_pretty($pe_conf.parsejson() - $puppetdb_database_temp_config),
     )
   }
-
+  out::message('HOSTNAME CHECK AFTER CLEAN UP CONF')
+  parallelize($all_targets) |$target| {
+    $fqdn = run_command('hostname -f', $target)
+    $target.set_var('certname', $fqdn.first['stdout'].chomp)
+    out::message("Target: ${target}, certname: ${target.peadm::certname()}")
+  }
+  out::message('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
   return("Installation of Puppet Enterprise ${arch['architecture']} succeeded.")
 }
