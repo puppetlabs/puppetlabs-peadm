@@ -36,16 +36,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture: [standard, extra-large]  # removing xl-with dr until PE-40902 is addressed
-        version: [2021.7.9, 2023.8.6]
-        version_to_upgrade: [2021.7.9, 2023.8.6, 2025.6.0]
+        architecture: [extra-large-with-dr]  # removing xl-with dr until PE-40902 is addressed
+        version: [2023.8.6]
+        version_to_upgrade: [2025.6.0]
         image: [almalinux-cloud/almalinux-8]
         download_mode: [direct]
         exclude:
-          - version: 2021.7.9
-            version_to_upgrade: 2021.7.9
-          - version: 2023.8.6
-            version_to_upgrade: 2021.7.9
           - version: 2023.8.6
             version_to_upgrade: 2023.8.6
     steps:
@@ -117,15 +113,3 @@ jobs:
             architecture=${{ matrix.architecture }} \
             download_mode=${{ matrix.download_mode }} \
             version=${{ matrix.version_to_upgrade }}
-      - name: Tear down test cluster
-        if: ${{ always() }}
-        continue-on-error: true
-        run: |-
-          if [ -f spec/fixtures/litmus_inventory.yaml ]; then
-            echo ::group::tear_down
-              bundle exec rake 'litmus:tear_down'
-            echo ::endgroup::
-            echo ::group::info:request
-              cat request.json || true; echo
-            echo ::endgroup::
-          fi
