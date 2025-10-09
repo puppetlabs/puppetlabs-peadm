@@ -113,15 +113,3 @@ jobs:
             architecture=${{ matrix.architecture }} \
             download_mode=${{ matrix.download_mode }} \
             version=${{ matrix.version_to_upgrade }}
-      - name: Tear down test cluster
-        if: ${{ always() }}
-        continue-on-error: true
-        run: |-
-          if [ -f spec/fixtures/litmus_inventory.yaml ]; then
-            echo ::group::tear_down
-              bundle exec rake 'litmus:tear_down'
-            echo ::endgroup::
-            echo ::group::info:request
-              cat request.json || true; echo
-            echo ::endgroup::
-          fi
