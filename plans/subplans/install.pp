@@ -563,7 +563,7 @@ plan peadm::subplans::install (
       content => stdlib::to_json_pretty($pe_conf.parsejson() - $puppetdb_database_temp_config),
     )
   }
-  out::message('HOSTNAME CHECK AFTER CLEAN UP BOOTSTRAPPING CONF')
+  out::message('HOSTNAME CHECK AFTER CLEAN UP CONF')
   parallelize($all_targets) |$target| {
     $fqdn = run_command('hostname -f', $target)
     $target.set_var('certname', $fqdn.first['stdout'].chomp)
