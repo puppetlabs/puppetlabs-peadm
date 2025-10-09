@@ -1,5 +1,5 @@
 ---
-name: Upgrade test
+name: Upgrade test debug
 on:
   workflow_dispatch:
     inputs:
@@ -32,7 +32,7 @@ on:
         required: true
         default: 'false'
 jobs:
-  test-upgrade:
+  test-upgrade-debug:
     name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
     runs-on: ubuntu-latest
     env:
