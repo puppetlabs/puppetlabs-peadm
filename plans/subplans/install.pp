@@ -372,12 +372,19 @@ plan peadm::subplans::install (
     content => $autosign_conf,
   )
 
+  out::message('HOSTNAME CHECK BEFORE INSTALL')
+  run_command('hostname -f', $database_targets)
+
   # Run the PE installer on the puppetdb database hosts
   run_task('peadm::pe_install', $database_targets,
     tarball               => $upload_tarball_path,
     peconf                => '/tmp/pe.conf',
     puppet_service_ensure => 'stopped',
+    _catch_errors         => true,
   )
+
+  out::message('HOSTNAME CHECK AFTER INSTALL')
+  run_command('hostname -f', $database_targets)
 
   # Now that the main PuppetDB database node is ready, finish priming the
   # master. Explicitly stop puppetdb first to avoid any systemd interference.
