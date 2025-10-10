@@ -425,6 +425,7 @@ plan peadm::subplans::install (
   run_task('peadm::rbac_token', $primary_target,
     password       => $console_password,
     token_lifetime => $token_lifetime,
+    _catch_errors  => true,
   )
   out::message('HOSTNAME CHECK BEFORE MKDIR P FILE')
   parallelize($all_targets) |$target| {
@@ -445,6 +446,7 @@ plan peadm::subplans::install (
     group   => 'pe-puppet',
     mode    => '0644',
     content => "# Empty manifest\n",
+    _catch_errors => true,
   )
   out::message('HOSTNAME CHECK BEFORE CODE MANAGER')
   parallelize($all_targets) |$target| {
@@ -454,7 +456,7 @@ plan peadm::subplans::install (
   }
   out::message('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
   run_task('peadm::code_manager', $primary_target,
-    action => 'file-sync commit',
+    action => 'file-sync commit', _catch_errors => true,
   )
   out::message('HOSTNAME CHECK BEFORE DB RUNONCE')
   parallelize($all_targets) |$target| {
@@ -464,7 +466,7 @@ plan peadm::subplans::install (
   }
   out::message('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
   $bg_db_run = background('database-targets') || {
-    run_task('peadm::puppet_runonce', $database_targets)
+    run_task('peadm::puppet_runonce', $database_targets, _catch_errors => true)
   }
   out::message('HOSTNAME CHECK AFTER DB RUNONCE')
   parallelize($all_targets) |$target| {
@@ -488,23 +490,24 @@ plan peadm::subplans::install (
     run_task('peadm::agent_install', $target,
       server        => $primary_target.peadm::certname(),
       install_flags => $common_install_flags,
+      _catch_errors  => true,
     )
     out::message('    HOSTNAME CHECK AFTER AGENT INSTALL')
     $fqdn = run_command('hostname -f', $target)
     $target.set_var('certname', $fqdn.first['stdout'].chomp)
     out::message("    Target: ${target}, certname: ${target.peadm::certname()}")
     # Ensure certificate requests have been submitted, then run Puppet
-    run_task('peadm::submit_csr', $target)
+    run_task('peadm::submit_csr', $target, _catch_errors => true)
     out::message('    HOSTNAME CHECK AFTER SUBMIT_CSR')
     $fqdn = run_command('hostname -f', $target)
     $target.set_var('certname', $fqdn.first['stdout'].chomp)
     out::message("    Target: ${target}, certname: ${target.peadm::certname()}")
-    run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$target.peadm::certname] })
+    run_task('peadm::sign_csr', $primary_target, { 'certnames' => [$target.peadm::certname] }, _catch_errors => true)
     out::message('    HOSTNAME CHECK AFTER SIGN_CSR')
     $fqdn = run_command('hostname -f', $target)
     $target.set_var('certname', $fqdn.first['stdout'].chomp)
     out::message("    Target: ${target}, certname: ${target.peadm::certname()}")
-    run_task('peadm::puppet_runonce', $target)
+    run_task('peadm::puppet_runonce', $target, _catch_errors => true)
     out::message('    HOSTNAME CHECK AFTER TARGET RUNONCE')
     $fqdn = run_command('hostname -f', $target)
     $target.set_var('certname', $fqdn.first['stdout'].chomp)
@@ -529,7 +532,7 @@ plan peadm::subplans::install (
   # so we check the status by calling the api and ensuring the puppetserver is
   # taking requests before proceeding. It takes two runs to fully finish
   # configuration.
-  run_task('peadm::puppet_runonce', $primary_target)
+  run_task('peadm::puppet_runonce', $primary_target, _catch_errors => true)
   out::message('HOSTNAME CHECK AFTER PRIMARY RUNONCE')
   parallelize($all_targets) |$target| {
     $fqdn = run_command('hostname -f', $target)
@@ -545,7 +548,7 @@ plan peadm::subplans::install (
     out::message("Target: ${target}, certname: ${target.peadm::certname()}")
   }
   out::message('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
-  run_task('peadm::puppet_runonce', $primary_target)
+  run_task('peadm::puppet_runonce', $primary_target, _catch_errors => true)
   out::message('HOSTNAME CHECK AFTER SECOND PRIMARY RUNONCE')
   parallelize($all_targets) |$target| {
     $fqdn = run_command('hostname -f', $target)
@@ -561,6 +564,7 @@ plan peadm::subplans::install (
     run_task('peadm::mkdir_p_file', $target,
       path    => '/etc/puppetlabs/enterprise/conf.d/pe.conf',
       content => stdlib::to_json_pretty($pe_conf.parsejson() - $puppetdb_database_temp_config),
+      _catch_errors => true,
     )
   }
   out::message('HOSTNAME CHECK AFTER CLEAN UP CONF')
