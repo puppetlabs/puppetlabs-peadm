@@ -36,7 +36,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture: [extra-large-with-dr]  # removing xl-with dr until PE-40902 is addressed
+        architecture: [standard-with-dr]  # removing xl-with dr until PE-40902 is addressed
         version: [2023.8.6]
         version_to_upgrade: [2025.6.0]
         image: [almalinux-cloud/almalinux-8]
