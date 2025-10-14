@@ -32,7 +32,7 @@ jobs:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
       LANG: en_US.UTF-8
-      SERVICE_URL: 'https://facade-peadm-1079112402178.europe-west1.run.app'
+      SERVICE_URL: 'https://facade-peadm-1079112402178.europe-west1.run.app/v1/provision'
     strategy:
       fail-fast: false
       matrix:
