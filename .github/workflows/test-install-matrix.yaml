@@ -32,6 +32,7 @@ jobs:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
       LANG: en_US.UTF-8
+      SERVICE_URL: 'https://facade-peadm-1079112402178.europe-west1.run.app'
     strategy:
       fail-fast: false
       matrix:
@@ -55,6 +56,7 @@ jobs:
       - name: Provision test cluster
         timeout-minutes: 15
         run: |
+          env
           echo ::group::prepare
             mkdir -p $HOME/.ssh
             echo 'Host *'                      >  $HOME/.ssh/config
