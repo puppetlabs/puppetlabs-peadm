@@ -35,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture: [standard]
+        architecture: [standard-with-dr]
         version: [2025.6.0]
         image: [almalinux-cloud/almalinux-8]
     steps:
