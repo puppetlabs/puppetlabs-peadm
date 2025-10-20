@@ -196,7 +196,7 @@ jobs:
             version=${{ inputs.version }} \
             console_password=${{ secrets.CONSOLE_PASSWORD }}
       - name: Wait for backup to finish
-        uses: lewagon/wait-on-check-action@v1.3.4
+        uses: lewagon/wait-on-check-action@v1.4.1
         with:
           ref: ${{ github.ref }}
           check-name: 'Backup: Cluster A: PE ${{ inputs.version }} ${{ inputs.architecture }}
