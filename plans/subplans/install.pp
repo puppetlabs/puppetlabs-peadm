@@ -429,7 +429,7 @@ plan peadm::subplans::install (
     run_task('peadm::puppet_runonce', $target)
   }
 
-  wait([$bg_db_run])
+  wait([$bg_db_run], 1200, _catch_errors => true)
 
   # The puppetserver might be in the middle of a restart after the Puppet run,
   # so we check the status by calling the api and ensuring the puppetserver is
