@@ -38,7 +38,7 @@ group :development do
   gem "rubocop-factory_bot", '~> 2.27.1',        require: false
   gem "rubocop-capybara", '~> 2.22.1',           require: false
   gem "rb-readline", '= 0.5.5',                  require: false, platforms: [:mswin, :mingw, :x64_mingw]
-  #gem "bolt", '>= 4.0.0',                        require: false
+  gem "bolt", '>= 4.0.0',                        require: false
   gem "github_changelog_generator", '1.16.4',    require: false
   gem "octokit", '4.21.0',                       require: false
   gem "orchestrator_client", '< 0.7.1',          require: false
@@ -55,24 +55,14 @@ end
 puppet_version = ENV['PUPPET_GEM_VERSION']
 facter_version = ENV['FACTER_GEM_VERSION']
 hiera_version = ENV['HIERA_GEM_VERSION']
-bolt_version = ENV.fetch('BOLT_GEM_VERSION', nil)
 
 gems = {}
 
-# If PUPPET_FORGE_TOKEN is set then use authenticated source for both puppet and facter, since facter is a transitive dependency of puppet
-# Otherwise, do as before and use location_for to fetch gems from the default source
-if !ENV['PUPPET_FORGE_TOKEN'].to_s.empty?
-  gems['bolt'] = [bolt_version || '~> 5.0', { require: false, source: 'https://rubygems-puppetcore.puppet.com' }]
-  gems['puppet'] = [puppet_version || '~> 8.11', { require: false, source: 'https://rubygems-puppetcore.puppet.com' }]
-  gems['facter'] = [facter_version || '~> 4.0', { require: false, source: 'https://rubygems-puppetcore.puppet.com' }]
-else
-  gems['bolt'] = location_for(bolt_version)
-  gems['puppet'] = location_for(puppet_version)
-  gems['facter'] = location_for(facter_version) if facter_version  
-end
+gems['puppet'] = location_for(puppet_version)
 
-# If hiera version have been specified via the environment
+# If facter or hiera versions have been specified via the environment
 # variables
+gems['facter'] = location_for(facter_version) if facter_version
 gems['hiera'] = location_for(hiera_version) if hiera_version
 
 gems.each do |gem_name, gem_params|
