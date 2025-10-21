@@ -343,10 +343,11 @@ plan peadm::convert (
 
   peadm::plan_step('finalize') || {
     # Run Puppet on all targets to ensure catalogs and exported resources fully
-    # up-to-date. Run on primary first in case puppet server restarts, 'cause
-    # that would cause the runs to fail on all the rest.
-    run_task('peadm::puppet_runonce', $primary_target)
+    # up-to-date.
+    peadm::wait_until_service_ready('pe-master', $primary_target)
     run_task('peadm::puppet_runonce', $all_targets - $primary_target)
+    peadm::wait_until_service_ready('pe-master', $primary_target)
+    run_task('peadm::puppet_runonce', $primary_target)
 
     # Restart cluster compiler services that are likely not restarted by our
     # final Puppet run to increase chance everything is functional upon plan
