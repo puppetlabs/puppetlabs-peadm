@@ -131,8 +131,8 @@ class peadm::setup::node_manager (
       'puppet_enterprise::profile::master'   => {
         # lint:ignore:single_quote_string_with_variables
         'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_b_pool_address].filter |$_| { $_ },
+        'puppetdb_port' => ['${trusted[\'certname\']}', $internal_compiler_b_pool_address].filter |$_| { $_ }.map |$_| { 8081 },
         # lint:endignore
-        'puppetdb_port' => [8081],
       },
     },
     data           => {
@@ -190,8 +190,8 @@ class peadm::setup::node_manager (
       'puppet_enterprise::profile::master'   => {
         # lint:ignore:single_quote_string_with_variables
         'puppetdb_host' => ['${trusted[\'certname\']}', $internal_compiler_a_pool_address].filter |$_| { $_ },
+        'puppetdb_port' => ['${trusted[\'certname\']}', $internal_compiler_a_pool_address].filter |$_| { $_ }.map |$_| { 8081 },
         # lint:endignore
-        'puppetdb_port' => [8081],
       },
     },
     data           => {
@@ -209,7 +209,7 @@ class peadm::setup::node_manager (
     classes        => {
       'puppet_enterprise::profile::master'   => {
         'puppetdb_host' => [$internal_compiler_a_pool_address, $internal_compiler_b_pool_address].filter |$_| { $_ },
-        'puppetdb_port' => [8081],
+        'puppetdb_port' => [$internal_compiler_a_pool_address, $internal_compiler_b_pool_address].filter |$_| { $_ }.map |$_| { 8081 },
       },
     },
   }
@@ -227,7 +227,7 @@ class peadm::setup::node_manager (
     classes        => {
       'puppet_enterprise::profile::master'   => {
         'puppetdb_host' => [$internal_compiler_b_pool_address, $internal_compiler_a_pool_address].filter |$_| { $_ },
-        'puppetdb_port' => [8081],
+        'puppetdb_port' => [$internal_compiler_b_pool_address, $internal_compiler_a_pool_address].filter |$_| { $_ }.map |$_| { 8081 },
       },
     },
     data           => {
@@ -251,7 +251,7 @@ class peadm::setup::node_manager (
     classes        => {
       'puppet_enterprise::profile::master'   => {
         'puppetdb_host' => [$internal_compiler_a_pool_address, $internal_compiler_a_pool_address].filter |$_| { $_ },
-        'puppetdb_port' => [8081],
+        'puppetdb_port' => [$internal_compiler_a_pool_address, $internal_compiler_a_pool_address].filter |$_| { $_ }.map |$_| { 8081 },
       },
     },
     data           => {
