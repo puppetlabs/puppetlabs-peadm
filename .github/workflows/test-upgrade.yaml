@@ -55,7 +55,7 @@ jobs:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
           SSH_PASS: ${{ secrets.SSH_PASS }}
       - name: Checkout Source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Activate Ruby 3.1
         uses: ruby/setup-ruby@v1
         with:
