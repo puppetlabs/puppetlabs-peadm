@@ -71,6 +71,7 @@ plan peadm::upgrade (
     'compiler_hosts' => $compiler_hosts,
     'primary_postgresql_host' => $primary_postgresql_host,
     'replica_postgresql_host' => $replica_postgresql_host,
+    'node_group_environment' => $node_group_environment,
     'version' => $version,
   })
 
