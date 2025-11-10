@@ -31,6 +31,7 @@
 #   Directory the installer tarball will be uploaded to or expected to be in
 #   for offline usage.
 # @param begin_at_step The step where the plan should start. If not set, it will start at the beginning
+# @param node_group_environment environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
 #
 plan peadm::upgrade (
   # Standard
@@ -61,6 +62,7 @@ plan peadm::upgrade (
   Boolean                    $permit_unsafe_versions = false,
 
   Optional[Peadm::UpgradeSteps] $begin_at_step = undef,
+  String[1] $node_group_environment = peadm::get_node_group_environment($primary_host),
 ) {
   # Log parameters for debugging
   peadm::log_plan_parameters({
@@ -361,6 +363,7 @@ plan peadm::upgrade (
         compiler_pool_address            => $compiler_pool_address,
         internal_compiler_a_pool_address => $internal_compiler_a_pool_address,
         internal_compiler_b_pool_address => $internal_compiler_b_pool_address,
+        node_group_environment           => $node_group_environment,
         require                          => Class['peadm::setup::node_manager_yaml'],
       }
     }

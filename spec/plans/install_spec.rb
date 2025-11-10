@@ -8,6 +8,7 @@ describe 'peadm::install' do
       allow_out_message
       expect_plan('peadm::subplans::install')
       expect_plan('peadm::subplans::configure')
+      expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
       expect(run_plan('peadm::install', 'primary_host' => 'primary', 'console_password' => 'puppetLabs123!', 'version' => '2021.7.9')).to be_ok
     end
   end
