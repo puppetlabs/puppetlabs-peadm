@@ -41,9 +41,7 @@ jobs:
         image: [almalinux-cloud/almalinux-8]
     steps:
       - name: Checkout Source
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
+        uses: actions/checkout@v4  
       - name: Activate Ruby 3.1
         uses: ruby/setup-ruby@v1
         with:
