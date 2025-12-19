@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.34.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.34.0) - 2025-12-19
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.33.0...v3.34.0)
+
+### Added
+
+- (PE-42872) Adding support for PE 2023.8.7 and 2025.7.0 [#640](https://github.com/puppetlabs/puppetlabs-peadm/pull/640) ([davidmalloncares](https://github.com/davidmalloncares))
+- (#469) Upgrade: Assign correct environment to node groups  [#635](https://github.com/puppetlabs/puppetlabs-peadm/pull/635) ([bastelfreak](https://github.com/bastelfreak))
+
+### Fixed
+
+- (PE-41637) change order Convert does final puppet runs [#631](https://github.com/puppetlabs/puppetlabs-peadm/pull/631) ([davidmalloncares](https://github.com/davidmalloncares))
+- (PE-42079) Add timeouts around puppet run on db targets [#614](https://github.com/puppetlabs/puppetlabs-peadm/pull/614) ([davidmalloncares](https://github.com/davidmalloncares))
+
 ## [v3.33.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.33.0) - 2025-10-06
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.32.0...v3.33.0)
