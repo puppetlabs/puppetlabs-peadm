@@ -20,6 +20,8 @@ plan peadm::convert_compiler_to_legacy (
     fail_plan($error)
   }
 
+  # TODO: This node group configuration should be moved to puppet-enterprise-modules
+  # See: https://github.com/puppetlabs/puppet-enterprise-modules/tree/main/modules
   apply($primary_target) {
     class { 'peadm::setup::node_manager_yaml':
       primary_host => $primary_target.peadm::certname() ? {
