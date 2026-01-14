@@ -1,6 +1,9 @@
 # @api private
 # @summary Set up the node_manager.yaml file in the temporary Bolt confdir
 #
+# TODO: This class should be moved to puppet-enterprise-modules
+# See: https://github.com/puppetlabs/puppet-enterprise-modules/tree/main/modules
+#
 # This configuration permits node_group resources to be used during Bolt apply
 # runs. It is necessary to do it this way because node_manager requires a
 # configuration file, located in $confdir. But, when Bolt applies a catalog, it

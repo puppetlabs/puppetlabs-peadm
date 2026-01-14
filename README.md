@@ -96,6 +96,7 @@ To learn more about the PEADM module and its uses, see the following PEADM docs:
 - [Architectures](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/architectures.md)
 - [Expanding deployment](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/expanding.md)
 - [Classification](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/classification.md)
+- [Node Group Migration](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/node_group_migration.md) - Plans for moving node group configuration to puppet-enterprise-modules
 - [Testing](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/pre_post_checks.md)
 - [Docker based examples](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/docker_examples.md)
 - [Release process](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/release_process.md)
