@@ -1,4 +1,9 @@
 # @api private
+# @summary Manages legacy compiler node groups
+#
+# TODO: This class should be moved to puppet-enterprise-modules
+# See: https://github.com/puppetlabs/puppet-enterprise-modules/tree/main/modules
+#
 class peadm::setup::legacy_compiler_group (
   String[1] $primary_host,
   Optional[String] $internal_compiler_a_pool_address = undef,

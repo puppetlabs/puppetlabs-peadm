@@ -1,6 +1,11 @@
 # @api private
 # @summary Configures PEAdm's required node groups
 #
+# TODO: This class should be moved to puppet-enterprise-modules
+# See: https://github.com/puppetlabs/puppet-enterprise-modules/tree/main/modules
+# Node group configuration for PE infrastructure should be handled by PE itself,
+# not by PEADM. This is a temporary solution until that functionality is available.
+#
 # This class is not intended to be continously enforced on PE primaries.
 # Rather, it describes state to enforce as a boostrap action, preparing the
 # Puppet Enterprise console with a sane default environment configuration.

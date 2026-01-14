@@ -1,5 +1,9 @@
 # @api private
 # @summary Used during the peadm::convert plan
+#
+# TODO: This class should be moved to puppet-enterprise-modules
+# See: https://github.com/puppetlabs/puppet-enterprise-modules/tree/main/modules
+#
 class peadm::setup::convert_node_manager {
   require peadm::setup::node_manager
 

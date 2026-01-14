@@ -91,6 +91,9 @@ plan peadm::subplans::configure (
   }
 
   # Set up the console node groups to configure the various hosts in their roles
+  # TODO: This node group configuration should be moved to puppet-enterprise-modules
+  # See: https://github.com/puppetlabs/puppet-enterprise-modules/tree/main/modules
+  # Once moved, PEADM should rely on PE's native classification instead of managing it directly
 
   apply($primary_target) {
     class { 'peadm::setup::node_manager_yaml':
