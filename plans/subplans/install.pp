@@ -21,7 +21,7 @@
 #
 # @param license_key_file
 #   The license key to use with Puppet Enterprise.  If this is a local file it
-#   will be copied over to the MoM at /etc/puppetlabs/license.key
+#   will be copied over to the primary server at /etc/puppetlabs/suite-license.lic
 #   If the file does not exist the value will simply be supplied to the primaries
 #
 # @param pe_conf_data
@@ -355,7 +355,7 @@ plan peadm::subplans::install (
 
     if $license_key {
       run_task('peadm::mkdir_p_file', $target,
-        path    => '/etc/puppetlabs/license.key',
+        path    => '/etc/puppetlabs/suite-license.lic',
         mode    => '0644',
         content => $license_key,
       )
