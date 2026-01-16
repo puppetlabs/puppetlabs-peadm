@@ -37,19 +37,19 @@ jobs:
       fail-fast: false
       matrix:
         architecture: [standard, extra-large]  # removing xl-with dr until PE-40902 is addressed
-        version: [2021.7.9, 2023.8.7]
-        version_to_upgrade: [2021.7.9, 2023.8.7, 2025.7.0]
+        version: [2021.7.9, 2023.8.8]
+        version_to_upgrade: [2021.7.9, 2023.8.8, 2025.8.0]
         image: [almalinux-cloud/almalinux-8]
         download_mode: [direct]
         exclude:
           - version: 2021.7.9
             version_to_upgrade: 2021.7.9
           - version: 2021.7.9
-            version_to_upgrade: 2025.7.0
-          - version: 2023.8.7
+            version_to_upgrade: 2025.8.0
+          - version: 2023.8.8
             version_to_upgrade: 2021.7.9
-          - version: 2023.8.7
-            version_to_upgrade: 2023.8.7
+          - version: 2023.8.8
+            version_to_upgrade: 2023.8.8
     steps:
       - name: Start SSH session
         if: ${{ github.event.inputs.ssh-debugging == 'true' }}

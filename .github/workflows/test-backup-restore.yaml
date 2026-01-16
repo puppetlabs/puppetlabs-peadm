@@ -24,14 +24,14 @@ on:
       version:
         description: PE version to install
         required: true
-        default: 2025.7.0
+        default: 2025.8.0
       ssh-debugging:
         description: Boolean; whether or not to pause for ssh debugging
         required: true
         default: 'false'
 jobs:
   backup-restore-test:
-    name: "Backup, break and restore cluster: PE ${{ github.event.inputs.version || '2025.7.0' }}\
+    name: "Backup, break and restore cluster: PE ${{ github.event.inputs.version || '2025.8.0' }}\
       \ ${{ github.event.inputs.architecture || 'extra-large' }} on ${{ github.event.inputs.image || 'almalinux-cloud/almalinux-8' }}"
     runs-on: ubuntu-latest
     env:

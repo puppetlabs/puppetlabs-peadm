@@ -87,11 +87,11 @@ describe 'peadm::subplans::install' do
     expect(run_plan('peadm::subplans::install', params)).to be_ok
   end
 
-  it 'installs 2023.8.7 with legacy compilers' do
+  it 'installs 2023.8.8 with legacy compilers' do
     params = {
       'primary_host' => 'primary',
       'console_password' => 'puppetLabs123!',
-      'version' => '2023.8.7',
+      'version' => '2023.8.8',
       'legacy_compilers' => ['compiler1', 'compiler2'],
     }
     expect(run_plan('peadm::subplans::install', params)).to be_ok

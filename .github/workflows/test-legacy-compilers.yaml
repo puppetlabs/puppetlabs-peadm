@@ -99,7 +99,7 @@ jobs:
             --modulepath spec/fixtures/modules \
             architecture=large-with-dr \
             console_password=${{ secrets.CONSOLE_PASSWORD }} \
-            version=2025.7.0
+            version=2025.8.0
       - name: Wait as long as the file ${HOME}/pause file is present
         if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
         run: |

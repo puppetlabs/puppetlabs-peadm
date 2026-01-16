@@ -23,7 +23,7 @@ on:
         type: string
         required: true
         description: The initial version of PE to install before upgrade
-        default: 2023.8.7
+        default: 2023.8.8
       ssh-debugging:
         description: Boolean; whether or not to pause for ssh debugging
         required: true

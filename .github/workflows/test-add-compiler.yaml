@@ -14,7 +14,7 @@ on:
       version:
         description: PE version to install
         required: true
-        default: 2023.8.7
+        default: 2023.8.8
       ssh-debugging:
         description: Boolean; whether or not to pause for ssh debugging
         required: true
