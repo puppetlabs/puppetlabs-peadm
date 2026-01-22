@@ -1,6 +1,6 @@
 {
   "name": "puppetlabs-peadm",
-  "version": "3.34.0",
+  "version": "3.35.0",
   "author": "puppetlabs",
   "summary": "Bolt plans used to deploy an at-scale Puppet Enterprise architecture",
   "license": "Apache-2.0",
