@@ -1,9 +1,7 @@
 ---
 name: Format yaml files
 on:
-  pull_request:
-    branches: [main]
-    paths: ['**/*.yml', '**/*.yaml']
+  workflow_dispatch:
 permissions:
   contents: write
   pull-requests: write

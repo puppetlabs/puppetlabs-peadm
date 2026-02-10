@@ -1,8 +1,6 @@
 ---
 name: Backup and restore test
 on:
-  pull_request:
-    types: [ready_for_review]
   workflow_dispatch:
     inputs:
       image:

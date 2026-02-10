@@ -1,29 +1,7 @@
 ---
 name: Test Migration
 on:
-  pull_request:
-    paths:
-      - .github/workflows/**/*
-      - spec/**/*
-      - lib/**/*
-      - tasks/**/*
-      - functions/**/*
-      - types/**/*
-      - plans/**/*
-      - hiera/**/*
-      - manifests/**/*
-      - templates/**/*
-      - files/**/*
-      - metadata.json
-      - Rakefile
-      - Gemfile
-      - provision.yaml
-      - .rspec
-      - .rubocop.yml
-      - .puppet-lint.rc
-      - .fixtures.yml
-    branches: [main]
-  workflow_dispatch: {}
+  workflow_dispatch:
 jobs:
   test-migration:
     name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}

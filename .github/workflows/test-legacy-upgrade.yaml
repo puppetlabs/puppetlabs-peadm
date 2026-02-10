@@ -1,28 +1,6 @@
 ---
 name: Upgrade PE with legacy compilers
 on:
-  pull_request:
-    paths:
-      - .github/workflows/**/*
-      - spec/**/*
-      - lib/**/*
-      - tasks/**/*
-      - functions/**/*
-      - types/**/*
-      - plans/**/*
-      - hiera/**/*
-      - manifests/**/*
-      - templates/**/*
-      - files/**/*
-      - metadata.json
-      - Rakefile
-      - Gemfile
-      - provision.yaml
-      - .rspec
-      - .rubocop.yml
-      - .puppet-lint.rc
-      - .fixtures.yml
-    branches: [main]
   workflow_dispatch:
     inputs:
       ssh-debugging:

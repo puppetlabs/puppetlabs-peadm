@@ -1,29 +1,7 @@
 ---
 name: Upgrade test matrix
 on:
-  pull_request:
-    paths:
-      - .github/workflows/**/*
-      - spec/**/*
-      - lib/**/*
-      - tasks/**/*
-      - functions/**/*
-      - types/**/*
-      - plans/**/*
-      - hiera/**/*
-      - manifests/**/*
-      - templates/**/*
-      - files/**/*
-      - metadata.json
-      - Rakefile
-      - Gemfile
-      - provision.yaml
-      - .rspec
-      - .rubocop.yml
-      - .puppet-lint.rc
-      - .fixtures.yml
-    branches: [main]
-  workflow_dispatch: {}
+  workflow_dispatch:
 jobs:
   test-upgrade:
     name: PE ${{ matrix.version }} to ${{ matrix.version_to_upgrade }} ${{ matrix.architecture }}
