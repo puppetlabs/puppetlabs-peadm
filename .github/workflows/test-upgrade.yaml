@@ -95,7 +95,7 @@ jobs:
             version=${{ matrix.version }} \
             console_password=${{ secrets.CONSOLE_PASSWORD }}
       - name: Wait as long as the file ${HOME}/pause file is present
-        if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
+        if: ${{ always() && (github.event.inputs.ssh-debugging == 'true' || github.event_name == 'pull_request') }}
         run: |
           while [ -f "${HOME}/pause" ] ; do
             echo "${HOME}/pause present, sleeping for 60 seconds..."
@@ -103,7 +103,7 @@ jobs:
           done 
           echo "${HOME}/pause absent, continuing workflow."
       - name: Start SSH session before upgrade
-        if: ${{ github.event.inputs.ssh-debugging == 'true' }}
+        if: ${{ github.event.inputs.ssh-debugging == 'true' || github.event_name == 'pull_request' }}
         uses: luchihoratiu/debug-via-ssh@main
         with:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
