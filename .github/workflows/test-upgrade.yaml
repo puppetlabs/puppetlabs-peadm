@@ -95,15 +95,23 @@ jobs:
             version=${{ matrix.version }} \
             console_password=${{ secrets.CONSOLE_PASSWORD }}
       - name: Wait as long as the file ${HOME}/pause file is present
-        if: ${{ always() && (github.event.inputs.ssh-debugging == 'true' || github.event_name == 'pull_request') }}
+        if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
         run: |
           while [ -f "${HOME}/pause" ] ; do
             echo "${HOME}/pause present, sleeping for 60 seconds..."
             sleep 60
           done 
           echo "${HOME}/pause absent, continuing workflow."
+      - name: Clean cache on PE nodes before upgrade
+        run: |
+          bundle exec bolt command run \
+            'dnf clean all || yum clean all;
+             rm -rf /var/cache/dnf/* /var/tmp/* /tmp/*;
+             rm -rf /opt/puppetlabs/server/data/{packages/public,staging}/* || true' \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --targets pe_nodes
       - name: Start SSH session before upgrade
-        if: ${{ github.event.inputs.ssh-debugging == 'true' || github.event_name == 'pull_request' }}
+        if: ${{ github.event.inputs.ssh-debugging == 'true' }}
         uses: luchihoratiu/debug-via-ssh@main
         with:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
