@@ -109,7 +109,7 @@ jobs:
              rm -rf /var/cache/dnf/* /var/tmp/* /tmp/*;
              rm -rf /opt/puppetlabs/server/data/{packages/public,staging}/* || true' \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
-            --targets pe_nodes
+            --targets all
       - name: Start SSH session before upgrade
         if: ${{ github.event.inputs.ssh-debugging == 'true' }}
         uses: luchihoratiu/debug-via-ssh@main
