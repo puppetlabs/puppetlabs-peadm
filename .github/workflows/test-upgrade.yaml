@@ -44,10 +44,10 @@ jobs:
       fail-fast: false
       matrix:
         download_mode: [direct]
-        architecture: ['${{ github.event.inputs.architecture }}']
-        version: ['${{ github.event.inputs.version }}']
-        version_to_upgrade: ['${{ github.event.inputs.upgrade_version }}']
-        image: ['${{ github.event.inputs.image }}']
+        architecture: ['${{ github.event.inputs.architecture || ''standard'' }}']
+        version: ['${{ github.event.inputs.version || ''2021.7.9'' }}']
+        version_to_upgrade: ['${{ github.event.inputs.upgrade_version || ''2023.8.8'' }}']
+        image: ['${{ github.event.inputs.image || ''almalinux-cloud/almalinux-8'' }}']
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
