@@ -30,6 +30,19 @@ fi
 
 tar -C "$tgzdir" "$tar_options" "$PT_tarball"
 
+if [ $? -ne 0 ]; then
+	echo "Failed to extract Puppet Enterprise tarball"
+	exit 1
+fi
+
+if [ ! -f "${tgzdir}/${pedir}/puppet-enterprise-installer" ]; then
+	echo "Puppet Enterprise installer not found at ${tgzdir}/${pedir}/puppet-enterprise-installer"
+	exit 1
+fi
+
+# Clean up the tarball
+rm -f "$PT_tarball"
+
 if [ ! -z "$PT_peconf" ]; then
 	/bin/bash "${tgzdir}/${pedir}/puppet-enterprise-installer" -y -c "$PT_peconf"
 else
