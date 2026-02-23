@@ -107,6 +107,14 @@ jobs:
             sleep 60
           done 
           echo "${HOME}/pause absent, continuing workflow."
+      - name: Clean cache on PE nodes before upgrade
+        run: |
+          bundle exec bolt command run \
+            'dnf clean all || yum clean all;
+             rm -rf /var/cache/dnf/* /var/tmp/* /tmp/*;
+             rm -rf /opt/puppetlabs/server/data/{packages/public,staging}/* || true' \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --targets all          
       - name: Upgrade PE on test cluster
         timeout-minutes: 120
         run: |
