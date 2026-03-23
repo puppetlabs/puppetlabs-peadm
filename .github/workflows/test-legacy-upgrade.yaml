@@ -28,7 +28,7 @@ on:
       ssh-debugging:
         description: Boolean; whether or not to pause for ssh debugging
         required: true
-        default: 'false'
+        default: "false"
 jobs:
   upgrade_with_legacy_compilers:
     name: Upgrade PE with legacy compilers
@@ -49,7 +49,7 @@ jobs:
       - name: Activate Ruby 3.1
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.1'
+          ruby-version: "3.1"
           bundler-cache: true
       - name: Print bundle environment
         if: ${{ github.repository_owner == 'puppetlabs' }}
@@ -98,7 +98,7 @@ jobs:
           legacy_compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | sed -n 2p)
           replica=$(yq '.groups[].targets[] | select(.vars.role == "replica") | .name' spec/fixtures/litmus_inventory.yaml)
           hash_random=$(LC_ALL=C tr -dc 'A-Za-z0-9!#$%&'\''()*+,-./:;<=>?@[\]^_`{|}~' </dev/urandom | head -c 30; echo)
-          echo -n '{ "download_mode": "direct", "primary_host": "'$primary'", "replica_host": "'$replica'", "legacy_compilers": ["'$legacy_compiler'"], "compiler_hosts": ["'$compiler'"], "version": "2023.8.8", "console_password": "'$hash_random'" }' > params.json
+          echo -n '{ "download_mode": "direct", "primary_host": "'$primary'", "replica_host": "'$replica'", "legacy_compilers": ["'$legacy_compiler'"], "compiler_hosts": ["'$compiler'"], "version": "2023.8.9", "console_password": "'$hash_random'" }' > params.json
       - name: Install PE with legacy compilers
         timeout-minutes: 120
         run: |
@@ -152,7 +152,7 @@ jobs:
           compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | head -n 1)
           legacy_compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | sed -n 2p)
           replica=$(yq '.groups[].targets[] | select(.vars.role == "replica") | .name' spec/fixtures/litmus_inventory.yaml)
-          echo -n '{ "primary_host": "'$primary'", "replica_host": "'$replica'", "compiler_hosts": ["'$compiler'", "'$legacy_compiler'"], "version": "2025.8.0"}' > upgrade_params.json
+          echo -n '{ "primary_host": "'$primary'", "replica_host": "'$replica'", "compiler_hosts": ["'$compiler'", "'$legacy_compiler'"], "version": "2025.9.0"}' > upgrade_params.json
       - name: Clean cache on PE nodes before upgrade
         run: |
           bundle exec bolt command run \
@@ -160,7 +160,7 @@ jobs:
              rm -rf /var/cache/dnf/* /var/tmp/* /tmp/*;
              rm -rf /opt/puppetlabs/server/data/{packages/public,staging}/* || true' \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
-            --targets all            
+            --targets all
       - name: Upgrade PE with legacy compilers
         run: |
           echo ::group::upgrade_params.json

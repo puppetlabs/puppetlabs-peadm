@@ -26,7 +26,8 @@ on:
   workflow_dispatch: {}
 jobs:
   test-upgrade:
-    name: PE ${{ matrix.version }} to ${{ matrix.version_to_upgrade }} ${{ matrix.architecture }}
+    name:
+      PE ${{ matrix.version }} to ${{ matrix.version_to_upgrade }} ${{ matrix.architecture }}
       on ${{ matrix.image }}
     runs-on: ubuntu-latest
     env:
@@ -36,20 +37,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture: [standard, extra-large]  # removing xl-with dr until PE-40902 is addressed
-        version: [2021.7.9, 2023.8.8]
-        version_to_upgrade: [2021.7.9, 2023.8.8, 2025.8.0]
+        architecture: [standard, extra-large] # removing xl-with dr until PE-40902 is addressed
+        version: [2021.7.9, 2023.8.9]
+        version_to_upgrade: [2021.7.9, 2023.8.9, 2025.9.0]
         image: [almalinux-cloud/almalinux-8]
         download_mode: [direct]
         exclude:
           - version: 2021.7.9
             version_to_upgrade: 2021.7.9
           - version: 2021.7.9
-            version_to_upgrade: 2025.8.0
-          - version: 2023.8.8
+            version_to_upgrade: 2025.9.0
+          - version: 2023.8.9
             version_to_upgrade: 2021.7.9
-          - version: 2023.8.8
-            version_to_upgrade: 2023.8.8
+          - version: 2023.8.9
+            version_to_upgrade: 2023.8.9
     steps:
       - name: Start SSH session
         if: ${{ github.event.inputs.ssh-debugging == 'true' }}
@@ -62,7 +63,7 @@ jobs:
       - name: Activate Ruby 3.1
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.1'
+          ruby-version: "3.1"
           bundler-cache: true
       - name: Print bundle environment
         if: ${{ github.repository_owner == 'puppetlabs' }}
@@ -117,7 +118,7 @@ jobs:
              rm -rf /var/cache/dnf/* /var/tmp/* /tmp/*;
              rm -rf /opt/puppetlabs/server/data/{packages/public,staging}/* || true' \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
-            --targets all          
+            --targets all
       - name: Upgrade PE on test cluster
         timeout-minutes: 120
         run: |
