@@ -26,11 +26,11 @@ on:
       upgrade_version:
         description: PE version to upgrade to
         required: true
-        default: 2023.8.9
+        default: 2023.8.8
       ssh-debugging:
         description: Boolean; whether or not to pause for ssh debugging
         required: true
-        default: "false"
+        default: 'false'
 jobs:
   test-upgrade:
     name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
@@ -43,10 +43,10 @@ jobs:
       fail-fast: false
       matrix:
         download_mode: [direct]
-        architecture: ["${{ github.event.inputs.architecture }}"]
-        version: ["${{ github.event.inputs.version }}"]
-        version_to_upgrade: ["${{ github.event.inputs.upgrade_version }}"]
-        image: ["${{ github.event.inputs.image }}"]
+        architecture: ['${{ github.event.inputs.architecture }}']
+        version: ['${{ github.event.inputs.version }}']
+        version_to_upgrade: ['${{ github.event.inputs.upgrade_version }}']
+        image: ['${{ github.event.inputs.image }}']
     steps:
       - name: Start SSH session
         if: ${{ github.event.inputs.ssh-debugging == 'true' }}
@@ -59,7 +59,7 @@ jobs:
       - name: Activate Ruby 3.1
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.1"
+          ruby-version: '3.1'
           bundler-cache: true
       - name: Print bundle environment
         if: ${{ github.repository_owner == 'puppetlabs' }}
@@ -114,7 +114,7 @@ jobs:
              rm -rf /var/cache/dnf/* /var/tmp/* /tmp/*;
              rm -rf /opt/puppetlabs/server/data/{packages/public,staging}/* || true' \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
-            --targets all
+            --targets all          
       - name: Upgrade PE on test cluster
         timeout-minutes: 120
         run: |

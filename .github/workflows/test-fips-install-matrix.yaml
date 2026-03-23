@@ -26,8 +26,7 @@ on:
   workflow_dispatch: {}
 jobs:
   test-install:
-    name:
-      PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
+    name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
       with fips ${{ matrix.fips }}
     runs-on: ubuntu-latest
     env:
@@ -38,7 +37,7 @@ jobs:
       fail-fast: false
       matrix:
         architecture: [standard-with-dr, large, extra-large-with-dr]
-        version: [2021.7.9, 2023.8.9, 2025.9.0]
+        version: [2021.7.9, 2023.8.8, 2025.8.0]
         image: [rhel-8]
         fips: [enable]
     steps:
@@ -47,7 +46,7 @@ jobs:
       - name: Activate Ruby 3.1
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.1"
+          ruby-version: '3.1'
           bundler-cache: true
       - name: Print bundle environment
         if: ${{ github.repository_owner == 'puppetlabs' }}
