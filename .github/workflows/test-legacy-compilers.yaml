@@ -28,7 +28,7 @@ on:
       ssh-debugging:
         description: Boolean; whether or not to pause for ssh debugging
         required: true
-        default: 'false'
+        default: "false"
 jobs:
   convert_compiler:
     name: Convert compilers to legacy
@@ -49,7 +49,7 @@ jobs:
       - name: Activate Ruby 3.1
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.1'
+          ruby-version: "3.1"
           bundler-cache: true
       - name: Print bundle environment
         if: ${{ github.repository_owner == 'puppetlabs' }}
@@ -99,7 +99,7 @@ jobs:
             --modulepath spec/fixtures/modules \
             architecture=large-with-dr \
             console_password=${{ secrets.CONSOLE_PASSWORD }} \
-            version=2025.8.0
+            version=2025.9.0
       - name: Wait as long as the file ${HOME}/pause file is present
         if: ${{ always() && github.event.inputs.ssh-debugging == 'true' }}
         run: |

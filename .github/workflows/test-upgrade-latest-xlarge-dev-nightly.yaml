@@ -5,7 +5,8 @@ on:
     - cron: 0 3 * * *
 jobs:
   test-upgrade:
-    name: PE ${{ matrix.version }} to nightly dev using ${{ matrix.architecture }}
+    name:
+      PE ${{ matrix.version }} to nightly dev using ${{ matrix.architecture }}
       on ${{ matrix.image }}
     runs-on: ubuntu-latest
     env:
@@ -16,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         architecture: [extra-large-with-dr]
-        version: [2023.8.8]
+        version: [2023.8.9]
         image: [almalinux-cloud/almalinux-8]
     steps:
       - name: Checkout Source
@@ -24,7 +25,7 @@ jobs:
       - name: Activate Ruby 3.1
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.1'
+          ruby-version: "3.1"
           bundler-cache: true
       - name: Print bundle environment
         if: ${{ github.repository_owner == 'puppetlabs' }}
