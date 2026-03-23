@@ -17,7 +17,7 @@ class peadm::setup::legacy_compiler_group (
     rule           => ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler_legacy'],
     classes        => {
       'puppet_enterprise::profile::master'   => {
-        'puppetdb_host' => [$internal_compiler_a_pool_address, $internal_compiler_b_pool_address].filter |$_| { $_ },
+        'puppetdb_host' => [$internal_compiler_a_pool_address, $internal_compiler_b_pool_address].filter |$_| { $_ }.unique,
         'puppetdb_port' => [8081],
       },
     },
@@ -33,7 +33,7 @@ class peadm::setup::legacy_compiler_group (
     ],
     classes        => {
       'puppet_enterprise::profile::master' => {
-        'puppetdb_host' => [$internal_compiler_b_pool_address, $internal_compiler_a_pool_address].filter |$_| { $_ },
+        'puppetdb_host' => [$internal_compiler_b_pool_address, $internal_compiler_a_pool_address].filter |$_| { $_ }.unique,
         'puppetdb_port' => [8081],
       },
     },
@@ -54,7 +54,7 @@ class peadm::setup::legacy_compiler_group (
     ],
     classes        => {
       'puppet_enterprise::profile::master' => {
-        'puppetdb_host' => [$internal_compiler_a_pool_address, $internal_compiler_b_pool_address].filter |$_| { $_ },
+        'puppetdb_host' => [$internal_compiler_a_pool_address, $internal_compiler_b_pool_address].filter |$_| { $_ }.unique,
         'puppetdb_port' => [8081],
       },
     },
