@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.36.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.36.0) - 2026-03-25
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.35.0...v3.36.0)
+
+### Added
+
+- Adding support for PE 2023.8.9 and 2025.9.0 [#657](https://github.com/puppetlabs/puppetlabs-peadm/pull/657) ([Jade2153](https://github.com/Jade2153))
+
+### Fixed
+
+- (PE-43572) deduplicate hosts in legacy compiler group [#658](https://github.com/puppetlabs/puppetlabs-peadm/pull/658) ([davidmalloncares](https://github.com/davidmalloncares))
+- (PE-42686) Add checks to installer untar command [#654](https://github.com/puppetlabs/puppetlabs-peadm/pull/654) ([davidmalloncares](https://github.com/davidmalloncares))
+
 ## [v3.35.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.35.0) - 2026-01-22
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.34.0...v3.35.0)
