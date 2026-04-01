@@ -152,7 +152,7 @@ jobs:
           compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | head -n 1)
           legacy_compiler=$(yq '.groups[].targets[] | select(.vars.role == "compiler") | .name' spec/fixtures/litmus_inventory.yaml | sed -n 2p)
           replica=$(yq '.groups[].targets[] | select(.vars.role == "replica") | .name' spec/fixtures/litmus_inventory.yaml)
-          echo -n '{ "primary_host": "'$primary'", "replica_host": "'$replica'", "compiler_hosts": ["'$compiler'", "'$legacy_compiler'"], "version": "2025.9.0"}' > upgrade_params.json
+          echo -n '{ "primary_host": "'$primary'", "replica_host": "'$replica'", "compiler_hosts": ["'$compiler'", "'$legacy_compiler'"], "version": "2025.10.0"}' > upgrade_params.json
       - name: Clean cache on PE nodes before upgrade
         run: |
           bundle exec bolt command run \
@@ -160,7 +160,7 @@ jobs:
              rm -rf /var/cache/dnf/* /var/tmp/* /tmp/*;
              rm -rf /opt/puppetlabs/server/data/{packages/public,staging}/* || true' \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
-            --targets all            
+            --targets all
       - name: Upgrade PE with legacy compilers
         run: |
           echo ::group::upgrade_params.json
