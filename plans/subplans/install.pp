@@ -237,6 +237,8 @@ plan peadm::subplans::install (
     )
   }
 
+  run_task('peadm::preinstall', $all_targets)
+
   if $pe_installer_source {
     $pe_tarball_name = $pe_installer_source.split('/')[-1]
     $pe_tarball_source = $pe_installer_source
