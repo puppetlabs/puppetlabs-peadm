@@ -53,6 +53,7 @@ describe 'peadm::setup::node_manager' do
   # primed loader.
   context 'warm-up to prime the Puppet type loader' do
     let(:params) { base_params }
+
     it 'attempts a catalogue compile and tolerates a first-compile failure' do
       catalogue
     rescue
