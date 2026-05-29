@@ -19,6 +19,11 @@
 # @param final_agent_state
 #   Configures the state the puppet agent should be in on infrastructure nodes
 #   after PE is configured successfully.
+# @param cloud_database_host
+#   When set, declares that the PE PostgreSQL database is hosted externally
+#   at the given host. Propagated to peadm::setup::node_manager so the
+#   classifier groups it manages do not pin the primary's certname as the
+#   puppetdb database host. Leave unset for the default on-prem topology.
 #
 plan peadm::subplans::configure (
   # Standard
@@ -32,6 +37,9 @@ plan peadm::subplans::configure (
   # Extra Large
   Optional[Peadm::SingleTargetSpec] $primary_postgresql_host = undef,
   Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
+
+  # Cloud Database
+  Optional[Stdlib::Host]            $cloud_database_host = undef,
 
   # Common Configuration
   String                       $compiler_pool_address            = $primary_host.peadm::certname(),
@@ -106,6 +114,7 @@ plan peadm::subplans::configure (
       compiler_pool_address            => $compiler_pool_address,
       internal_compiler_a_pool_address => $internal_compiler_a_pool_address,
       internal_compiler_b_pool_address => $internal_compiler_b_pool_address,
+      cloud_database_host              => $cloud_database_host,
       require                          => Class['peadm::setup::node_manager_yaml'],
     }
   }
