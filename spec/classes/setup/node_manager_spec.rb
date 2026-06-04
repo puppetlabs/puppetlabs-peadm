@@ -37,26 +37,28 @@ describe 'peadm::setup::node_manager' do
     }
   end
 
-  # Each example triggers an independent catalogue compile. Puppet's type
-  # autoloader and APL initialisation may misbehave on the FIRST compile in
-  # an rspec process for this module (e.g. "Resource type not found: Node_group"
-  # before the node_manager fixture's custom type is registered), but
-  # succeeds on subsequent compiles thanks to cached state. Consolidating
-  # each context's assertions into a single `it` block keeps every context
-  # to a single compile, sidestepping the first-compile fragility.
-
-  # The very first catalogue compile in a process tends to fail with
-  # "Resource type not found: Node_group" before Puppet's type loader has
-  # populated its cache from the node_manager fixture; subsequent compiles
-  # in the same process succeed. This throwaway example absorbs the
-  # first-compile fragility so the real assertions below run against a
-  # primed loader.
-  context 'warm-up to prime the Puppet type loader' do
+  # WORKAROUND: the *first* catalogue compile in this rspec process fails with
+  # "Resource type not found: Node_group" even though the node_manager
+  # fixture's custom type is on the load path and in Puppet::Type's registry.
+  # The cause is spec_helper_local.rb calling BoltSpec::Plans.init, which runs
+  # Bolt::PAL.load_puppet and sets Puppet[:tasks] = true at load time. Bolt's
+  # own source warns this is "probably not safe to do in modules that also
+  # test Puppet manifest code" (bolt gem: lib/bolt_spec/plans.rb). That
+  # initialisation leaves the environment's resource-type loader unable to
+  # resolve the native type until one compile has run; the act of compiling
+  # once repairs it for the remainder of the process.
+  #
+  # peadm is otherwise a Bolt-plan module, so this is its only catalogue
+  # spec and the only place the contamination surfaces. A single throwaway
+  # compile primes the loader for every example that follows -- only the very
+  # first compile in the process is affected, not the first compile per
+  # context, so granular examples below are safe.
+  context 'warm-up to prime the contaminated resource-type loader' do
     let(:params) { base_params }
 
-    it 'attempts a catalogue compile and tolerates a first-compile failure' do
+    it 'absorbs the first-compile failure caused by BoltSpec::Plans.init' do
       catalogue
-    rescue
+    rescue StandardError
       # Intentionally swallowed; only the next compile onward matters.
     end
   end
