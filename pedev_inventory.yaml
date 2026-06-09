@@ -4,37 +4,37 @@ config:
   transport: ssh
   ssh:
     user: root
-    private-key: "~/.ssh/id_rsa-acceptance"
+    private-key: ~/.ssh/id_rsa-acceptance
     host-key-check: false
     connect-timeout: 120
     native-ssh: true
     ssh-command:
-    - ssh
-    - "-o"
-    - IdentitiesOnly=yes
-    - "-o"
-    - ControlMaster=auto
-    - "-o"
-    - ControlPath=~/.ssh/bolt-%r@%h:%p
-    - "-o"
-    - ControlPersist=60
+      - ssh
+      - -o
+      - IdentitiesOnly=yes
+      - -o
+      - ControlMaster=auto
+      - -o
+      - ControlPath=~/.ssh/bolt-%r@%h:%p
+      - -o
+      - ControlPersist=60
 groups:
-- name: pe_infrastructure
-  groups:
-  - name: primary_servers
-    targets:
-    - name: etruscan-legion.delivery.puppetlabs.net
-      uri: etruscan-legion.delivery.puppetlabs.net
-      vars:
-        role: primary
-        platform: redhat-9-x86_64
-  - name: replica_servers
-    targets:
-    - name: front-light.delivery.puppetlabs.net
-      uri: front-light.delivery.puppetlabs.net
-      vars:
-        role: replica
-        platform: redhat-9-x86_64
+  - name: pe_infrastructure
+    groups:
+      - name: primary_servers
+        targets:
+          - name: etruscan-legion.delivery.puppetlabs.net
+            uri: etruscan-legion.delivery.puppetlabs.net
+            vars:
+              role: primary
+              platform: redhat-9-x86_64
+      - name: replica_servers
+        targets:
+          - name: front-light.delivery.puppetlabs.net
+            uri: front-light.delivery.puppetlabs.net
+            vars:
+              role: replica
+              platform: redhat-9-x86_64
 vars:
   console_admin_password: Puppetlabs-1
   test_environment: ci
