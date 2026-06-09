@@ -10,10 +10,22 @@
 #
 # It is the peadm analogue of pe_acceptance_tests'
 # acceptance/high_availability/tests/provision_replica/040_provision_replica_verify_puppetdb_database.rb
-# (which guards the legacy `puppet infrastructure upgrade replica` path). The
-# assertions hold for any healthy HA replica -- they pass without a PG-major
-# upgrade and fail on the PE-44245 regression when one occurs.
-plan peadm_spec::verify_replica_pe_puppetdb() {
+# (which guards the legacy `puppet infrastructure upgrade replica` path).
+#
+# The pe-puppetdb database/service assertions hold for any healthy HA replica --
+# they pass without a PG-major upgrade and fail on the PE-44245 regression when one
+# occurs. On their own that makes them blind to a silently-skipped upgrade (e.g.
+# the override never landing in pe.conf), which would leave the replica on its
+# original PG major with the database intact and this test green having tested
+# nothing. The optional $expected_psql_version anchors that: run the plan
+# pre-upgrade asserting the UPGRADE_FROM major (PG14) and post-upgrade asserting the
+# forced major (PG17) to prove the boundary was actually crossed.
+plan peadm_spec::verify_replica_pe_puppetdb(
+  # PE-44247: when set, assert the replica's active PostgreSQL major version equals
+  # this value before running the pe-puppetdb checks. Leave unset to skip the
+  # version assertion.
+  Optional[String[1]] $expected_psql_version = undef,
+) {
   $t = get_targets('*')
   wait_until_available($t)
 
@@ -21,6 +33,20 @@ plan peadm_spec::verify_replica_pe_puppetdb() {
 
   if $replica_host == [] {
     fail_plan('"replica" role missing from inventory, cannot verify pe-puppetdb on the replica')
+  }
+
+  # PE-44247: anchor the upgrade by asserting the replica's active PG major. In
+  # standard-with-dr PostgreSQL is colocated on the replica, so peadm::get_psql_version
+  # (PEPostgresqlInfo#installed_server_version) run there reports the active major.
+  # A mismatch means the PG-major upgrade did not take effect on the replica -- the
+  # exact silent failure the pe-puppetdb checks below cannot detect on their own.
+  if $expected_psql_version =~ NotUndef {
+    out::message("PE-44247: verifying the replica is on PostgreSQL ${expected_psql_version}")
+    $actual_psql_version = String(run_task('peadm::get_psql_version', $replica_host).first.value['version'])
+    unless $actual_psql_version == $expected_psql_version {
+      fail_plan("replica PostgreSQL major version is ${actual_psql_version}, expected ${expected_psql_version} (PG-major upgrade did not take effect on the replica)") # lint:ignore:140chars
+    }
+    out::message("PE-44247: replica is on PostgreSQL ${actual_psql_version}")
   }
 
   # /opt/puppetlabs/server/bin/psql is the version-agnostic wrapper, so this still

@@ -76,6 +76,13 @@ jobs:
             architecture=${{ matrix.architecture }} \
             version=${{ matrix.version }} \
             console_password=${{ secrets.CONSOLE_PASSWORD }}
+      - name: Verify replica is on PG14 before upgrade
+        timeout-minutes: 15
+        run: |
+          bundle exec bolt plan run peadm_spec::verify_replica_pe_puppetdb \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules \
+            expected_psql_version="14"
       - name: Activate twingate to obtain unreleased build
         uses: twingate/github-action@main
         with:
@@ -95,12 +102,13 @@ jobs:
             architecture=${{ matrix.architecture }} \
             postgres_version_override="17" \
             pe_installer_source="https://artifactory.delivery.puppetlabs.net/artifactory/generic_enterprise__local/main/ci-ready/puppet-enterprise-${{ steps.latest.outputs.ver }}-el-8-x86_64.tar"
-      - name: Verify pe-puppetdb on the replica (PE-44245 regression guard)
+      - name: Verify pe-puppetdb on the replica is on PG17 (PE-44245 regression guard)
         timeout-minutes: 15
         run: |
           bundle exec bolt plan run peadm_spec::verify_replica_pe_puppetdb \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
-            --modulepath spec/fixtures/modules
+            --modulepath spec/fixtures/modules \
+            expected_psql_version="17"
       - name: Tear down test cluster
         if: ${{ always() }}
         continue-on-error: true
