@@ -5,4 +5,6 @@
 # the repo. Unless a later match takes precedence,
 # @global-owner1 and @global-owner2 will be requested for
 # review when someone opens a pull request.
-*       @puppetlabs/solutions-architecture @puppetlabs/nimbus @puppetlabs/platypus @puppetlabs/dumpling
+*       @puppetlabs/solutions-architecture @puppetlabs/nimbus @puppetlabs/platypus @puppetlabs/dumpling @puppetlabs/CharithaDunuwille @puppetlabs/Jade2153
+
+
