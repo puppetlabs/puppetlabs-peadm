@@ -137,7 +137,17 @@ plan peadm::subplans::install (
     $legacy_b_targets   = []
   }
 
-  $dns_alt_names_csv = $dns_alt_names.reduce |$csv,$x| { "${csv},${x}" }
+  # Only set dns_alt_names when the operator actually supplied some. Emitting
+  # `main:dns_alt_names=` with an empty value writes a present-but-empty
+  # `dns_alt_names = ` line into the agent's puppet.conf. That line later
+  # crashes `puppetserver ca generate` (puppetserver-ca munge_alt_names reads
+  # the key as nil rather than the absent-key default) when console/SAML certs
+  # are generated during a DR replica promotion, bricking pe-console-services.
+  # See PE-44595. Mirrors the guard in subplans/prepare_agent.pp.
+  $dns_alt_names_flag = $dns_alt_names.empty ? {
+    true    => [],
+    default => ["main:dns_alt_names=${dns_alt_names.join(',')}"],
+  }
 
   # Process user input for r10k private key (file or content) and set
   # appropriate value in $r10k_private_key. The value of this variable should
@@ -413,9 +423,8 @@ plan peadm::subplans::install (
   parallelize($agent_installer_targets) |$target| {
     $common_install_flags = [
       '--puppet-service-ensure', 'stopped',
-      "main:dns_alt_names=${dns_alt_names_csv}",
       "main:certname=${target.peadm::certname()}",
-    ]
+    ] + $dns_alt_names_flag
 
     # Get an agent installed and cert signed
     run_task('peadm::agent_install', $target,

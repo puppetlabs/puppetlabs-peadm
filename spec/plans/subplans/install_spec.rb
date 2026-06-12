@@ -96,4 +96,46 @@ describe 'peadm::subplans::install' do
     }
     expect(run_plan('peadm::subplans::install', params)).to be_ok
   end
+
+  # PE-44595: when no dns_alt_names are supplied we must NOT emit a
+  # `main:dns_alt_names=` flag, which would write a present-but-empty
+  # `dns_alt_names = ` line into the agent's puppet.conf and later crash
+  # `puppetserver ca generate` during a DR replica promotion.
+  it 'omits the dns_alt_names install flag when none are supplied' do
+    params = {
+      'primary_host' => 'primary',
+      'compiler_hosts' => ['compiler1'],
+      'console_password' => 'puppetLabs123!',
+      'version' => '2023.8.9',
+    }
+
+    expect_task('peadm::agent_install')
+      .with_params({ 'server'        => 'primary',
+                     'install_flags' => [
+                       '--puppet-service-ensure', 'stopped',
+                       'main:certname=compiler1'
+                     ] })
+
+    expect(run_plan('peadm::subplans::install', params)).to be_ok
+  end
+
+  it 'sets the dns_alt_names install flag when alt names are supplied' do
+    params = {
+      'primary_host' => 'primary',
+      'compiler_hosts' => ['compiler1'],
+      'console_password' => 'puppetLabs123!',
+      'version' => '2023.8.9',
+      'dns_alt_names' => ['puppet', 'alt.example.com'],
+    }
+
+    expect_task('peadm::agent_install')
+      .with_params({ 'server'        => 'primary',
+                     'install_flags' => [
+                       '--puppet-service-ensure', 'stopped',
+                       'main:certname=compiler1',
+                       'main:dns_alt_names=puppet,alt.example.com'
+                     ] })
+
+    expect(run_plan('peadm::subplans::install', params)).to be_ok
+  end
 end
