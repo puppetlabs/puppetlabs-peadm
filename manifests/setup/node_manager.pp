@@ -12,7 +12,7 @@
 #                 environments => ["production", "staging", "development"],
 #               }'
 #
-# @param compiler_pool_address 
+# @param compiler_pool_address
 #   The service address used by agents to connect to compilers, or the Puppet
 #   service. Typically this is a load balancer.
 # @param internal_compiler_a_pool_address
@@ -24,6 +24,17 @@
 #   compilers. This is used for DR configuration in large and extra large
 #   architectures.
 # @param node_group_environment the environment that will be assigned to all the PE Infra node groups
+# @param cloud_database_host
+#   When set, declares that PE's PostgreSQL database is hosted externally at
+#   the given host (e.g. Google Cloud SQL). The PE Database node group is
+#   not created (the cloud endpoint is not a PEADM-managed target), the
+#   puppet_enterprise::profile::puppetdb entry is omitted from the PE
+#   Primary A and PE Primary B classifier config_data (the cloud DB host is
+#   expected to be authoritatively declared in pe_install's PE PuppetDB
+#   classifier group instead), and the puppet_enterprise::profile::puppetdb
+#   database_host class parameter on PE Compiler Group A/B is set to this
+#   value so compilers reach the external database. Leave unset for the
+#   default on-prem topology.
 #
 class peadm::setup::node_manager (
   String[1] $primary_host,
@@ -38,6 +49,8 @@ class peadm::setup::node_manager (
   Optional[String[1]] $internal_compiler_a_pool_address = $server_a_host,
   Optional[String[1]] $internal_compiler_b_pool_address = $server_b_host,
   String[1]           $node_group_environment           = 'production',
+
+  Optional[Stdlib::Host] $cloud_database_host           = undef,
 ) {
   # "Not-configured" placeholder string. This will be used in places where we
   # cannot set an explicit null, and need to supply some kind of value.
@@ -90,24 +103,30 @@ class peadm::setup::node_manager (
   }
 
   # This group should pin the primary, and also map to any pe-postgresql nodes
-  # which are part of the architecture.
-  node_group { 'PE Database':
-    rule => ['or',
-      ['and', ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/puppetdb-database']],
-      ['=', 'name', $primary_host],
-    ],
+  # which are part of the architecture. When PE's database is hosted externally
+  # (cloud_database_host is set), there is no PEADM-managed Postgres node to
+  # classify here, so the group is omitted entirely.
+  unless $cloud_database_host {
+    node_group { 'PE Database':
+      rule => ['or',
+        ['and', ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/puppetdb-database']],
+        ['=', 'name', $primary_host],
+      ],
+    }
   }
 
   # Create data-only groups to store PuppetDB PostgreSQL database configuration
   # information specific to the primary and primary replica nodes.
-  node_group { 'PE Primary A':
-    ensure => present,
-    parent => 'PE Infrastructure',
-    rule   => ['and',
-      ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/server'],
-      ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'A'],
-    ],
-    data   => {
+  #
+  # In cloud database mode, the puppet_enterprise::profile::puppetdb entry is
+  # omitted from this group's config_data. The authoritative cloud DB host
+  # belongs in pe_install's PE PuppetDB classifier group; if PEADM also writes
+  # it via config_data here, the two declarations conflict in the classifier's
+  # flattened resolution view. The adjacent primary_master_replica
+  # database_host_puppetdb entry still tells the replica where PuppetDB's
+  # database lives, so it carries the cloud DB host instead.
+  $primary_a_data = $cloud_database_host ? {
+    undef   => {
       'puppet_enterprise::profile::primary_master_replica' => {
         'database_host_puppetdb' => pick($postgresql_a_host, $notconf),
       },
@@ -115,7 +134,27 @@ class peadm::setup::node_manager (
         'database_host' => pick($postgresql_a_host, $notconf),
       },
     },
+    default => {
+      'puppet_enterprise::profile::primary_master_replica' => {
+        'database_host_puppetdb' => $cloud_database_host,
+      },
+    },
   }
+
+  node_group { 'PE Primary A':
+    ensure => present,
+    parent => 'PE Infrastructure',
+    rule   => ['and',
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/server'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'A'],
+    ],
+    data   => $primary_a_data,
+  }
+
+  # Compilers must know where puppetdb's database lives to talk to it directly.
+  # When a cloud database host is supplied, prefer it; otherwise fall back to
+  # the existing postgresql_a_host value.
+  $compiler_a_puppetdb_database_host = pick($cloud_database_host, $postgresql_a_host, $notconf)
 
   # Configure the A pool for compilers. There are up to two pools for DR, each
   # having an affinity for one "availability zone" or the other.
@@ -129,7 +168,7 @@ class peadm::setup::node_manager (
     ],
     classes        => {
       'puppet_enterprise::profile::puppetdb' => {
-        'database_host' => pick($postgresql_a_host, $notconf),
+        'database_host' => $compiler_a_puppetdb_database_host,
       },
       'puppet_enterprise::profile::master'   => {
         # lint:ignore:single_quote_string_with_variables
@@ -161,14 +200,10 @@ class peadm::setup::node_manager (
     variables => { 'peadm_replica' => true },
   }
 
-  node_group { 'PE Primary B':
-    ensure => present,
-    parent => 'PE Infrastructure',
-    rule   => ['and',
-      ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/server'],
-      ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'B'],
-    ],
-    data   => {
+  # See PE Primary A above; the same cloud-DB treatment applies to the B
+  # availability group.
+  $primary_b_data = $cloud_database_host ? {
+    undef   => {
       'puppet_enterprise::profile::primary_master_replica' => {
         'database_host_puppetdb' => pick($postgresql_b_host, $notconf),
       },
@@ -176,7 +211,24 @@ class peadm::setup::node_manager (
         'database_host' => pick($postgresql_b_host, $notconf),
       },
     },
+    default => {
+      'puppet_enterprise::profile::primary_master_replica' => {
+        'database_host_puppetdb' => $cloud_database_host,
+      },
+    },
   }
+
+  node_group { 'PE Primary B':
+    ensure => present,
+    parent => 'PE Infrastructure',
+    rule   => ['and',
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_role')], 'puppet/server'],
+      ['=', ['trusted', 'extensions', peadm::oid('peadm_availability_group')], 'B'],
+    ],
+    data   => $primary_b_data,
+  }
+
+  $compiler_b_puppetdb_database_host = pick($cloud_database_host, $postgresql_b_host, $notconf)
 
   node_group { 'PE Compiler Group B':
     ensure         => 'present',
@@ -188,7 +240,7 @@ class peadm::setup::node_manager (
     ],
     classes        => {
       'puppet_enterprise::profile::puppetdb' => {
-        'database_host' => pick($postgresql_b_host, $notconf),
+        'database_host' => $compiler_b_puppetdb_database_host,
       },
       'puppet_enterprise::profile::master'   => {
         # lint:ignore:single_quote_string_with_variables

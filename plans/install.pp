@@ -30,6 +30,15 @@
 # @param uploaddir
 #   Directory the installer tarball will be uploaded to or expected to be in
 #   for offline usage.
+# @param cloud_database_host
+#   When set, declares that the PE PostgreSQL database is hosted externally
+#   (e.g. on Google Cloud SQL) at the given host. PEADM will not create or
+#   manage the PE Database node group and will not write the primary's
+#   certname into puppetdb's database_host on any classifier group. The
+#   cloud database host is propagated to the compiler classifier groups so
+#   that compilers can reach PuppetDB's external database. Leave unset for
+#   the default on-prem topology where Postgres runs on the primary or on a
+#   managed external Postgres target.
 #
 plan peadm::install (
   # Standard
@@ -43,6 +52,9 @@ plan peadm::install (
   # Extra Large
   Optional[Peadm::SingleTargetSpec] $primary_postgresql_host = undef,
   Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
+
+  # Cloud Database
+  Optional[Stdlib::Host]            $cloud_database_host = undef,
 
   # Common Configuration
   String                            $console_password,
@@ -148,6 +160,9 @@ plan peadm::install (
     internal_compiler_b_pool_address => $internal_compiler_b_pool_address,
     deploy_environment               => $deploy_environment,
     ldap_config                      => $ldap_config,
+
+    # Cloud Database
+    cloud_database_host              => $cloud_database_host,
 
     # Other
     stagingdir                       => $stagingdir,
