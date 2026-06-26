@@ -98,27 +98,16 @@ describe 'peadm::setup::node_manager' do
     let(:params) { base_params }
 
     it 'produces the expected classifier groups for an on-prem PostgreSQL topology' do
-      # postgresql_b_host is undef in this fixture, so the b-side pick falls
-      # through to the $notconf placeholder.
       is_expected.to contain_node_group('PE Database')
 
-      is_expected.to contain_node_group('PE Primary A').with_data(
-        'puppet_enterprise::profile::primary_master_replica' => {
-          'database_host_puppetdb' => primary_host,
-        },
-        'puppet_enterprise::profile::puppetdb' => {
-          'database_host' => primary_host,
-        },
-      )
-
-      is_expected.to contain_node_group('PE Primary B').with_data(
-        'puppet_enterprise::profile::primary_master_replica' => {
-          'database_host_puppetdb' => 'not-configured',
-        },
-        'puppet_enterprise::profile::puppetdb' => {
-          'database_host' => 'not-configured',
-        },
-      )
+      # On-prem with no dedicated pe-postgresql node, the PuppetDB database is
+      # co-located with each server (postgresql_a_host == server_a_host, and
+      # postgresql_b_host is undef). database_host is therefore left UNSET on both
+      # primary groups so PE creates/uses the LOCAL database. Emitting a non-undef
+      # value (the server's own host, or the 'not-configured' sentinel) makes
+      # PE 2025.11+ treat it as remote and skip creating the local pe-puppetdb DB.
+      is_expected.to contain_node_group('PE Primary A').with_data({})
+      is_expected.to contain_node_group('PE Primary B').with_data({})
 
       is_expected.to contain_node_group('PE Compiler Group A').with_classes(
         'puppet_enterprise::profile::puppetdb' => { 'database_host' => primary_host },
