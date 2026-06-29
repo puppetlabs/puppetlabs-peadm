@@ -20,10 +20,13 @@ plan peadm::subplans::db_populate(
   # Retrieve source's PSQL version
   $psql_version = run_task('peadm::get_psql_version', $source_target).first.value['version']
 
-  # Determine clientcert setting
+  # Determine clientcert setting. PostgreSQL dropped the boolean clientcert=1
+  # form in PG 12; from PG 12 onward it must be verify-ca/verify-full. Default to
+  # verify-full (correct for PG 12+, including the PG 17 shipped with PE 2025.11)
+  # and special-case only legacy PG 11.
   $clientcert = $psql_version ? {
-    '14'    => 'verify-full',
-    default => 1
+    '11'    => 1,
+    default => 'verify-full',
   }
 
   # Add the following two lines to /opt/puppetlabs/server/data/postgresql/${psql_version}/data/pg_ident.conf
