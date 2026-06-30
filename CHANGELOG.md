@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.38.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.38.0) - 2026-06-30
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.37.0...v3.38.0)
+
+### Added
+
+- Adding support for PE 2023.8.10 and 2025.11.0 [#673](https://github.com/puppetlabs/puppetlabs-peadm/pull/673) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
+- (PE-44247) Add peadm-path PG-major HA upgrade coverage for replica pe-puppetdb [#666](https://github.com/puppetlabs/puppetlabs-peadm/pull/666) ([steveax](https://github.com/steveax))
+- (PE-44022) Add cloud_database_host parameter for cloud-DB-backed installs [#665](https://github.com/puppetlabs/puppetlabs-peadm/pull/665) ([mcdonaldseanp](https://github.com/mcdonaldseanp))
+
+### Fixed
+
+- (PE-44595) Don't emit empty dns_alt_names flag in subplans::install [#672](https://github.com/puppetlabs/puppetlabs-peadm/pull/672) ([steveax](https://github.com/steveax))
+
 ## [v3.37.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.37.0) - 2026-04-01
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.36.0...v3.37.0)
