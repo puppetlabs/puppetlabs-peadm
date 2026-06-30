@@ -125,13 +125,28 @@ class peadm::setup::node_manager (
   # flattened resolution view. The adjacent primary_master_replica
   # database_host_puppetdb entry still tells the replica where PuppetDB's
   # database lives, so it carries the cloud DB host instead.
+  # On-prem: only a dedicated pe-postgresql node (Extra Large) hosts PuppetDB's
+  # database remotely. When the database is co-located with the PuppetDB server
+  # -- there is no separate postgresql host, or the postgresql host IS the server
+  # itself -- leave database_host UNSET so PE provisions and uses the LOCAL
+  # database. Emitting a non-undef value here (the server's own host, or the
+  # 'not-configured' sentinel) makes PE 2025.11+ treat the co-located database as
+  # remote and never create the local pe-puppetdb database, so pe-puppetdb fails
+  # to start (900s startup timeout).
+  $puppetdb_database_host_a = ($postgresql_a_host =~ NotUndef and $postgresql_a_host != $server_a_host) ? {
+    true    => $postgresql_a_host,
+    default => undef,
+  }
   $primary_a_data = $cloud_database_host ? {
-    undef   => {
-      'puppet_enterprise::profile::primary_master_replica' => {
-        'database_host_puppetdb' => pick($postgresql_a_host, $notconf),
-      },
-      'puppet_enterprise::profile::puppetdb'               => {
-        'database_host' => pick($postgresql_a_host, $notconf),
+    undef   => $puppetdb_database_host_a ? {
+      undef   => {},
+      default => {
+        'puppet_enterprise::profile::primary_master_replica' => {
+          'database_host_puppetdb' => $puppetdb_database_host_a,
+        },
+        'puppet_enterprise::profile::puppetdb'               => {
+          'database_host' => $puppetdb_database_host_a,
+        },
       },
     },
     default => {
@@ -200,15 +215,25 @@ class peadm::setup::node_manager (
     variables => { 'peadm_replica' => true },
   }
 
-  # See PE Primary A above; the same cloud-DB treatment applies to the B
-  # availability group.
+  # See PE Primary A above; the same co-located/dedicated/cloud treatment applies
+  # to the B availability group (the replica). The replica's PuppetDB database is
+  # co-located ($postgresql_b_host is unset, or equals the replica itself), so
+  # database_host is left UNSET and PE creates the replica's LOCAL pe-puppetdb
+  # database. Only a dedicated pe-postgresql node (XL) yields an explicit host.
+  $puppetdb_database_host_b = ($postgresql_b_host =~ NotUndef and $postgresql_b_host != $server_b_host) ? {
+    true    => $postgresql_b_host,
+    default => undef,
+  }
   $primary_b_data = $cloud_database_host ? {
-    undef   => {
-      'puppet_enterprise::profile::primary_master_replica' => {
-        'database_host_puppetdb' => pick($postgresql_b_host, $notconf),
-      },
-      'puppet_enterprise::profile::puppetdb'               => {
-        'database_host' => pick($postgresql_b_host, $notconf),
+    undef   => $puppetdb_database_host_b ? {
+      undef   => {},
+      default => {
+        'puppet_enterprise::profile::primary_master_replica' => {
+          'database_host_puppetdb' => $puppetdb_database_host_b,
+        },
+        'puppet_enterprise::profile::puppetdb'               => {
+          'database_host' => $puppetdb_database_host_b,
+        },
       },
     },
     default => {

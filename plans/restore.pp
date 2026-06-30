@@ -299,11 +299,31 @@ plan peadm::restore (
   # TODO: consider adding a heuristic to skip when innappropriate due to size
   #       or other factors.
   if getvar('recovery_opts.puppetdb') and $restore_type == 'migration' {
-    # ensure there is a valid token on the new primary host
-    run_task('peadm::rbac_token', $primary_target,
-      password       => $console_password,
-      token_lifetime => '1y',
-    )
+    # Ensure there is a valid token on the new primary host. The
+    # `puppet-infrastructure configure` run above restarts rbac-service, which
+    # can briefly return a 500 ("uncaught server error") before it is fully
+    # ready. Retry the token request to ride out that warm-up window instead of
+    # failing the whole restore on a transient error.
+    $rbac_token_max_attempts = 5
+    $rbac_token_result = range(1, $rbac_token_max_attempts).reduce(undef) |$memo, $attempt| {
+      if $memo =~ NotUndef and $memo.ok {
+        $memo
+      } else {
+        if $attempt > 1 {
+          out::message("rbac_token not ready; retrying (attempt ${attempt}) after 15s...")
+          ctrl::sleep(15)
+        }
+        run_task('peadm::rbac_token', $primary_target,
+          _catch_errors  => true,
+          password       => $console_password,
+          token_lifetime => '1y',
+        )
+      }
+    }
+    unless $rbac_token_result.ok {
+      $rbac_token_error = $rbac_token_result.first.error.message
+      fail_plan("Failed to obtain RBAC token after ${rbac_token_max_attempts} attempts: ${rbac_token_error}")
+    }
     run_command(@("CMD"/L), $primary_target)
       /opt/puppetlabs/bin/puppet-db import \
       --cert=$(/opt/puppetlabs/bin/puppet config print hostcert) \

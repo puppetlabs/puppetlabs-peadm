@@ -117,6 +117,12 @@ class GetPEAdmConfig
   end
 
   def server(role, letter, certname_array)
+    # With no candidate hosts there is no dedicated server of this role (e.g. a
+    # co-located PuppetDB database, where no database_host is classified). Skip
+    # the query: an empty `certname in []` clause matches nothing anyway, and
+    # PuppetDB's PQL parser rejects an empty `in []` as a syntax error.
+    return nil if certname_array.empty?
+
     query = 'inventory[certname] { '\
             '  trusted.extensions."1.3.6.1.4.1.34380.1.1.9812" = "' + role + '" and ' \
             '  trusted.extensions."1.3.6.1.4.1.34380.1.1.9813" = "' + letter + '" and ' \
