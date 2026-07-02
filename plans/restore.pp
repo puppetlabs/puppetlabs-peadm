@@ -225,11 +225,31 @@ plan peadm::restore (
            -c 'DROP SCHEMA IF EXISTS pglogical CASCADE;'"
       | CMD
 
+    # Recreate the public schema. On PostgreSQL 15+ (PE 2025.11) a freshly
+    # created public schema no longer carries the historic implicit
+    # `GRANT USAGE ... TO PUBLIC` (removed in the CVE-2018-1058 hardening), so
+    # re-establish the native owner and USAGE grant explicitly. Without this,
+    # runtime users such as pe-rbac-write lose USAGE on public, unqualified
+    # name resolution silently fails (e.g. RBAC init `relation "salt" does not
+    # exist`), and peadm::rbac_token returns HTTP 500. See PE-44867.
+    #
+    # `pg_database_owner` only exists on PostgreSQL 14+, so gate the extra
+    # statements on the server major version of the host(s) this database is
+    # being restored to: on older PE lines (PostgreSQL 11/12) the role does not
+    # exist and `CREATE SCHEMA public` still auto-grants USAGE, so running them
+    # there would break restore.
+    $psql_version = run_task('peadm::get_psql_version', $database_targets).first.value['version']
+# lint:ignore:140chars
+    $public_schema_sql = (versioncmp(String($psql_version), '14') >= 0) ? {
+      true    => 'DROP SCHEMA public CASCADE; CREATE SCHEMA public; ALTER SCHEMA public OWNER TO pg_database_owner; GRANT USAGE ON SCHEMA public TO PUBLIC;',
+      default => 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;',
+    }
+# lint:endignore
     run_command(@("CMD"/L), $database_targets)
       su - pe-postgres -s /bin/bash -c \
         "/opt/puppetlabs/server/bin/psql \
            -d '${dbname}' \
-           -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'"
+           -c '${public_schema_sql}'"
       | CMD
 
     # To allow db user to restore the database grant temporary privileges
