@@ -235,9 +235,15 @@ plan peadm::restore (
     #
     # `pg_database_owner` only exists on PostgreSQL 14+, so gate the extra
     # statements on the server major version of the host(s) this database is
-    # being restored to: on older PE lines (PostgreSQL 11/12) the role does not
-    # exist and `CREATE SCHEMA public` still auto-grants USAGE, so running them
-    # there would break restore.
+    # being restored to. On older PE lines (PostgreSQL 11, the last major PE
+    # shipped before 14) the role does not exist and `CREATE SCHEMA public`
+    # still auto-grants USAGE, so running these statements would break restore.
+    #
+    # The gate is `>= 14` rather than `>= 15` (where the implicit grant was
+    # actually removed) because on PG 14 both extra statements are harmless:
+    # `pg_database_owner` exists, and `GRANT USAGE ... TO PUBLIC` is a no-op
+    # since `CREATE SCHEMA public` still auto-grants it there. Keying on 14 —
+    # the version that introduced the role — keeps the condition simple.
     $psql_version = run_task('peadm::get_psql_version', $database_targets).first.value['version']
 # lint:ignore:140chars
     $public_schema_sql = (versioncmp(String($psql_version), '14') >= 0) ? {

@@ -93,10 +93,22 @@ describe 'peadm::restore' do
     it 'recreates public without the owner/USAGE re-grant', valid_cluster: true do
       expect_out_message.with_params('# Restoring database pe-puppetdb')
       expect_out_message.with_params('# Restoring ca, certs, code and config for recovery')
-      allow_any_command
 
-      # The plain DROP/CREATE must be issued, and the pg_database_owner variant must not.
+      # No allow_any_command: every command is enumerated, so emitting the
+      # pg_database_owner variant here (instead of the plain DROP/CREATE below)
+      # would surface as an unexpected command and fail the test.
+      expect_command("umask 0077   && cd /input   && tar -xzf /input/file.tar.gz\n")
+      expect_command("/opt/puppetlabs/bin/puppet-backup restore   --scope=certs,code,config   --tempdir=/input/file   --force   /input/file/recovery/pe_backup-*tgz\n")
+      expect_command("systemctl stop pe-console-services pe-nginx pxp-agent pe-puppetserver                pe-orchestration-services puppet pe-puppetdb\n")
+      expect_command("test -f /input/file/rbac/secrets/keys.json   && cp -rp /input/file/rbac/secrets/keys.json /etc/puppetlabs/console-services/conf.d/secrets/   || echo secret ldap key doesnt exist\n")
+      expect_command("su - pe-postgres -s /bin/bash -c   \"/opt/puppetlabs/server/bin/psql      --tuples-only      -d 'pe-puppetdb'      -c 'DROP SCHEMA IF EXISTS pglogical CASCADE;'\"\n").be_called_times(2)
+      # PostgreSQL < 14: plain DROP/CREATE, with no ALTER OWNER / GRANT USAGE.
       expect_command("su - pe-postgres -s /bin/bash -c   \"/opt/puppetlabs/server/bin/psql      -d 'pe-puppetdb'      -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'\"\n")
+      expect_command('su - pe-postgres -s /bin/bash -c   "/opt/puppetlabs/server/bin/psql      -d \'pe-puppetdb\'      -c \'ALTER USER \\"pe-puppetdb\\" WITH SUPERUSER;\'"' + "\n")
+      expect_command('/opt/puppetlabs/server/bin/pg_restore   -j 4   -d "sslmode=verify-ca       host=postgres       sslcert=/etc/puppetlabs/puppetdb/ssl/primary.cert.pem       sslkey=/etc/puppetlabs/puppetdb/ssl/primary.private_key.pem       sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem       dbname=pe-puppetdb       user=pe-puppetdb"   -Fd /input/file/puppetdb/pe-puppetdb.dump.d' + "\n")
+      expect_command('su - pe-postgres -s /bin/bash -c   "/opt/puppetlabs/server/bin/psql      -d \'pe-puppetdb\'      -c \'ALTER USER \\"pe-puppetdb\\" WITH NOSUPERUSER;\'"' + "\n")
+      expect_command('su - pe-postgres -s /bin/bash -c   "/opt/puppetlabs/server/bin/psql      -d \'pe-puppetdb\'      -c \'DROP EXTENSION IF EXISTS pglogical CASCADE;\'"' + "\n")
+      expect_command("/opt/puppetlabs/bin/puppet-infrastructure configure --no-recover\n")
 
       expect(run_plan('peadm::restore', recovery_params)).to be_ok
     end
