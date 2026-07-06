@@ -118,7 +118,7 @@ plan peadm::add_replica(
   }
 
   # Provision the new system as a replica
-  run_task('peadm::provision_replica', $primary_target,
+  $provision_result = run_task('peadm::provision_replica', $primary_target,
     replica    => $replica_target.peadm::certname(),
     token_file => $token_file,
 
@@ -128,6 +128,18 @@ plan peadm::add_replica(
     legacy     => false,
     _catch_errors => true,
   )
+
+  # Surface real provisioning failures instead of masking them. Without this
+  # check, errors caught by _catch_errors (e.g. an expired RBAC token) are
+  # silently dropped and the plan reports success regardless. See PE-43490.
+  unless $provision_result.ok {
+    $errors = $provision_result.error_set.map |$r| { "${r.target.name}: ${r.error.message}" }.join("\n")
+    $hint = join([
+        'peadm::provision_replica failed. Ensure a valid RBAC token exists at the',
+        'default location (~/.puppetlabs/token) or supply one via the token_file parameter.',
+    ], ' ')
+    fail_plan("${hint}\n${errors}")
+  }
 
   # start puppet service
   run_command('systemctl start puppet.service', peadm::flatten_compact([

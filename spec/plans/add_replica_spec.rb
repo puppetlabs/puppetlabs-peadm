@@ -79,5 +79,25 @@ describe 'peadm::add_replica' do
       expect(result).not_to be_ok
       expect(result.value.msg).to match(%r{Code Manager must be enabled})
     end
+
+    it 'fails and surfaces the error when provision_replica fails' do
+      allow_standard_non_returning_calls
+      expect_task('peadm::code_manager_enabled').always_return(code_manager_enabled)
+      expect_task('peadm::get_peadm_config').always_return(cfg)
+      expect_task('peadm::cert_data').always_return(certdata).be_called_times(4)
+      expect_task('peadm::cert_valid_status').always_return(certstatus)
+      expect_task('package').always_return({ 'status' => 'uninstalled' })
+      expect_plan('peadm::util::copy_file').be_called_times(5)
+      expect_task('peadm::provision_replica')
+        .error_with('msg' => 'The provided token has expired.',
+                    'kind' => 'puppetlabs.rbac/token-expired')
+
+      expect_out_verbose.with_params('Current config is...')
+      expect_out_verbose.with_params('Updating classification to...')
+      result = run_plan('peadm::add_replica', params)
+      expect(result).not_to be_ok
+      expect(result.value.msg).to match(%r{peadm::provision_replica failed})
+      expect(result.value.msg).to match(%r{RBAC token})
+    end
   end
 end
