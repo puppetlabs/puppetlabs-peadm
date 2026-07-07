@@ -44,12 +44,20 @@ describe 'peadm::restore' do
 
   let(:cluster) { { 'params' => { 'primary_host' => 'primary', 'primary_postgresql_host' => 'postgres' } } }
 
+  # PostgreSQL server major version of the restore target. 17 (PE 2025.11)
+  # exercises the public-schema owner/USAGE re-grant; override for older PE.
+  let(:psql_version) { '17' }
+
   before(:each) do
     allow_apply
 
-    expect_out_message.with_params('cluster: ' + cluster.to_s.delete('"').gsub(%r{=>}, ' => '))
+    # Normalize whitespace around `=>` so the expected string matches the plan's
+    # single-spaced hash rendering on every Ruby: Ruby 3.4's Hash#to_s already
+    # spaces `=>`, older Rubies do not — collapse both to a single ` => `.
+    expect_out_message.with_params('cluster: ' + cluster.to_s.delete('"').gsub(%r{\s*=>\s*}, ' => '))
     expect_out_message.with_params('# Restoring ldap secret key if it exists')
     allow_task('peadm::puppet_runonce')
+    allow_task('peadm::get_psql_version').always_return({ 'version' => psql_version })
   end
 
   # only run for tests that have the :valid_cluster tag
@@ -66,7 +74,7 @@ describe 'peadm::restore' do
     expect_command("systemctl stop pe-console-services pe-nginx pxp-agent pe-puppetserver                pe-orchestration-services puppet pe-puppetdb\n")
     expect_command("test -f /input/file/rbac/secrets/keys.json   && cp -rp /input/file/rbac/secrets/keys.json /etc/puppetlabs/console-services/conf.d/secrets/   || echo secret ldap key doesnt exist\n")
     expect_command("su - pe-postgres -s /bin/bash -c   \"/opt/puppetlabs/server/bin/psql      --tuples-only      -d 'pe-puppetdb'      -c 'DROP SCHEMA IF EXISTS pglogical CASCADE;'\"\n").be_called_times(2)
-    expect_command("su - pe-postgres -s /bin/bash -c   \"/opt/puppetlabs/server/bin/psql      -d 'pe-puppetdb'      -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'\"\n")
+    expect_command("su - pe-postgres -s /bin/bash -c   \"/opt/puppetlabs/server/bin/psql      -d 'pe-puppetdb'      -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public; ALTER SCHEMA public OWNER TO pg_database_owner; GRANT USAGE ON SCHEMA public TO PUBLIC;'\"\n")
     expect_command('su - pe-postgres -s /bin/bash -c   "/opt/puppetlabs/server/bin/psql      -d \'pe-puppetdb\'      -c \'ALTER USER \\"pe-puppetdb\\" WITH SUPERUSER;\'"' + "\n")
     expect_command('/opt/puppetlabs/server/bin/pg_restore   -j 4   -d "sslmode=verify-ca       host=postgres       sslcert=/etc/puppetlabs/puppetdb/ssl/primary.cert.pem       sslkey=/etc/puppetlabs/puppetdb/ssl/primary.private_key.pem       sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem       dbname=pe-puppetdb       user=pe-puppetdb"   -Fd /input/file/puppetdb/pe-puppetdb.dump.d' + "\n")
     expect_command('su - pe-postgres -s /bin/bash -c   "/opt/puppetlabs/server/bin/psql      -d \'pe-puppetdb\'      -c \'ALTER USER \\"pe-puppetdb\\" WITH NOSUPERUSER;\'"' + "\n")
@@ -74,6 +82,36 @@ describe 'peadm::restore' do
     expect_command("/opt/puppetlabs/bin/puppet-infrastructure configure --no-recover\n")
 
     expect(run_plan('peadm::restore', recovery_params)).to be_ok
+  end
+
+  # PE-44867 regression guard: pg_database_owner does not exist before
+  # PostgreSQL 14, so the owner/USAGE re-grant must be skipped on older PE
+  # targets (where CREATE SCHEMA public still auto-grants USAGE anyway).
+  context 'against a PostgreSQL < 14 target' do
+    let(:psql_version) { '11' }
+
+    it 'recreates public without the owner/USAGE re-grant', valid_cluster: true do
+      expect_out_message.with_params('# Restoring database pe-puppetdb')
+      expect_out_message.with_params('# Restoring ca, certs, code and config for recovery')
+
+      # No allow_any_command: every command is enumerated, so emitting the
+      # pg_database_owner variant here (instead of the plain DROP/CREATE below)
+      # would surface as an unexpected command and fail the test.
+      expect_command("umask 0077   && cd /input   && tar -xzf /input/file.tar.gz\n")
+      expect_command("/opt/puppetlabs/bin/puppet-backup restore   --scope=certs,code,config   --tempdir=/input/file   --force   /input/file/recovery/pe_backup-*tgz\n")
+      expect_command("systemctl stop pe-console-services pe-nginx pxp-agent pe-puppetserver                pe-orchestration-services puppet pe-puppetdb\n")
+      expect_command("test -f /input/file/rbac/secrets/keys.json   && cp -rp /input/file/rbac/secrets/keys.json /etc/puppetlabs/console-services/conf.d/secrets/   || echo secret ldap key doesnt exist\n")
+      expect_command("su - pe-postgres -s /bin/bash -c   \"/opt/puppetlabs/server/bin/psql      --tuples-only      -d 'pe-puppetdb'      -c 'DROP SCHEMA IF EXISTS pglogical CASCADE;'\"\n").be_called_times(2)
+      # PostgreSQL < 14: plain DROP/CREATE, with no ALTER OWNER / GRANT USAGE.
+      expect_command("su - pe-postgres -s /bin/bash -c   \"/opt/puppetlabs/server/bin/psql      -d 'pe-puppetdb'      -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'\"\n")
+      expect_command('su - pe-postgres -s /bin/bash -c   "/opt/puppetlabs/server/bin/psql      -d \'pe-puppetdb\'      -c \'ALTER USER \\"pe-puppetdb\\" WITH SUPERUSER;\'"' + "\n")
+      expect_command('/opt/puppetlabs/server/bin/pg_restore   -j 4   -d "sslmode=verify-ca       host=postgres       sslcert=/etc/puppetlabs/puppetdb/ssl/primary.cert.pem       sslkey=/etc/puppetlabs/puppetdb/ssl/primary.private_key.pem       sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem       dbname=pe-puppetdb       user=pe-puppetdb"   -Fd /input/file/puppetdb/pe-puppetdb.dump.d' + "\n")
+      expect_command('su - pe-postgres -s /bin/bash -c   "/opt/puppetlabs/server/bin/psql      -d \'pe-puppetdb\'      -c \'ALTER USER \\"pe-puppetdb\\" WITH NOSUPERUSER;\'"' + "\n")
+      expect_command('su - pe-postgres -s /bin/bash -c   "/opt/puppetlabs/server/bin/psql      -d \'pe-puppetdb\'      -c \'DROP EXTENSION IF EXISTS pglogical CASCADE;\'"' + "\n")
+      expect_command("/opt/puppetlabs/bin/puppet-infrastructure configure --no-recover\n")
+
+      expect(run_plan('peadm::restore', recovery_params)).to be_ok
+    end
   end
 
   it 'runs with default recovery', valid_cluster: true do
