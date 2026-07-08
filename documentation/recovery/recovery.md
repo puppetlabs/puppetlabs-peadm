@@ -37,7 +37,7 @@ This procedure uses the following placeholder references.
               extension_requests:1.3.6.1.4.1.34380.1.1.9812=puppet/server \
               extension_requests:1.3.6.1.4.1.34380.1.1.9813=<replacement-avail-group-letter>
 
-        source /ect/profile.d/puppet-agent.sh
+        source /etc/profile.d/puppet-agent.sh
 
         puppet agent -t
 
