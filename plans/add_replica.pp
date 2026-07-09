@@ -130,15 +130,28 @@ plan peadm::add_replica(
   )
 
   # Surface real provisioning failures instead of masking them. Without this
-  # check, errors caught by _catch_errors (e.g. an expired RBAC token) are
-  # silently dropped and the plan reports success regardless. See PE-43490.
+  # check, errors caught by _catch_errors are silently dropped and the plan
+  # reports success regardless. See PE-43490.
   unless $provision_result.ok {
-    $errors = $provision_result.error_set.map |$r| { "${r.target.name}: ${r.error.message}" }.join("\n")
-    $hint = join([
-        'peadm::provision_replica failed. Ensure a valid RBAC token exists at the',
-        'default location (~/.puppetlabs/token) or supply one via the token_file parameter.',
-    ], ' ')
-    fail_plan("${hint}\n${errors}")
+    $errors = $provision_result.error_set.map |$result| {
+      # Surface the task's real output rather than Bolt's generic
+      # "task failed with exit code N". provision_replica shells out to
+      # `puppet infrastructure provision replica`; the actual error text
+      # only appears in the task's captured output (_output).
+      $output = ($result.value =~ Hash) ? { true => $result.value['_output'], default => undef }
+      $detail = ($output =~ String[1]) ? { true => $output, default => $result.error.message }
+      "${result.target.name}: ${detail}"
+    }.join("\n\n")
+
+    fail_plan(@("MSG"))
+      peadm::provision_replica failed; the replica was not provisioned. Underlying error:
+
+      ${errors}
+
+      See the provision_replica CLI log under /var/log/puppetlabs/installer/ on the
+      primary for the full output. A missing or expired RBAC token (default
+      ~/.puppetlabs/token, or the token_file parameter) is one common cause.
+      | MSG
   }
 
   # start puppet service

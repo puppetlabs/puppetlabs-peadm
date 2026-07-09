@@ -97,6 +97,8 @@ describe 'peadm::add_replica' do
       result = run_plan('peadm::add_replica', params)
       expect(result).not_to be_ok
       expect(result.value.msg).to match(%r{peadm::provision_replica failed})
+      # the real underlying task error must be surfaced, not masked
+      expect(result.value.msg).to match(%r{The provided token has expired\.})
       expect(result.value.msg).to match(%r{RBAC token})
     end
   end
