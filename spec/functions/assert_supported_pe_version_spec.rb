@@ -3,6 +3,16 @@
 require 'spec_helper'
 
 describe 'peadm::assert_supported_pe_version' do
+  context 'malformed PE versions' do
+    it 'rejects a non-version string with a targeted error' do
+      is_expected.to run.with_params('ubuntu').and_raise_error(Puppet::ParseError, %r{Unable\ to\ determine\ a\ valid\ PE\ version})
+    end
+
+    it 'rejects an empty string with a targeted error' do
+      is_expected.to run.with_params('').and_raise_error(Puppet::ParseError, %r{Unable\ to\ determine\ a\ valid\ PE\ version})
+    end
+  end
+
   context 'invalid PE versions' do
     it 'rejects PE versions that are too new' do
       is_expected.to run.with_params('2035.0.0').and_raise_error(Puppet::ParseError, %r{This\ version\ of\ the})
