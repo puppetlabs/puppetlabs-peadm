@@ -74,6 +74,7 @@ plan peadm::upgrade (
     'replica_postgresql_host' => $replica_postgresql_host,
     'node_group_environment' => $node_group_environment,
     'version' => $version,
+    'pe_installer_source' => $pe_installer_source,
   })
 
   out::message('# Validating inputs')
