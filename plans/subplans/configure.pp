@@ -120,16 +120,43 @@ plan peadm::subplans::configure (
   }
 
   if $arch['disaster-recovery'] {
-    # Run the PE Replica Provision
-    run_task('peadm::provision_replica', $primary_target,
-      replica    => $replica_target.peadm::certname(),
-      token_file => $token_file,
+    # Pre-flight: wait for PuppetDB to report fully "running" (not "starting")
+    # before invoking the replica provision orchestrator, to reduce the odds
+    # of the known race described below. See PE-42816.
+    peadm::wait_until_service_ready('all', $primary_target)
+    if $primary_postgresql_host {
+      # Extra Large: PuppetDB's backend lives on a separate host.
+      peadm::wait_until_service_ready('all', $primary_postgresql_target)
+    }
 
-      # Race condition, where the provision command checks PuppetDB status and
-      # probably gets "starting", but fails out because that's not "running".
-      # Can remove flag when that issue is fixed.
-      legacy     => true,
-    )
+    # Run the PE Replica Provision
+    #
+    # Race condition, where the provision command checks PuppetDB status and
+    # probably gets "starting", but fails out because that's not "running".
+    # Can remove flag when that issue is fixed. The pre-flight wait above
+    # narrows the window; the retry below is a safety net for when it still
+    # fires (e.g. XL's extra DB-sync hop exceeds the wait budget).
+    $provision_replica_max_attempts = 3
+    $provision_replica_result = range(1, $provision_replica_max_attempts).reduce(undef) |$memo, $attempt| {
+      if $memo =~ NotUndef and $memo.ok {
+        $memo
+      } else {
+        if $attempt > 1 {
+          out::message("provision_replica not ready; retrying (attempt ${attempt}) after 15s...")
+          ctrl::sleep(15)
+        }
+        run_task('peadm::provision_replica', $primary_target,
+          replica       => $replica_target.peadm::certname(),
+          token_file    => $token_file,
+          legacy        => true,
+          _catch_errors => true,
+        )
+      }
+    }
+    unless $provision_replica_result.ok {
+      $provision_replica_error = $provision_replica_result.first.error.message
+      fail_plan("Failed to provision replica after ${provision_replica_max_attempts} attempts: ${provision_replica_error}")
+    }
   }
 
   if $ldap_config {
