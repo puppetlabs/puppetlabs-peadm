@@ -345,6 +345,15 @@ plan peadm::convert (
   }
 
   peadm::plan_step('finalize') || {
+    # Update PE Master rules before the Puppet run below that reaches
+    # compilers. Otherwise compilers can still match the PE Master group's
+    # classification (via legacy pp_auth_role/OID markers) in addition to PE
+    # Compiler, inheriting a puppetdb_hosts/puppetdb_ports count mismatch
+    # that fails catalog compilation with a pe_format_urls() error.
+    # See PE-44017.
+    peadm::wait_until_service_ready('pe-master', $primary_target)
+    run_task('peadm::update_pe_master_rules', $primary_target)
+
     # Run Puppet on all targets to ensure catalogs and exported resources fully
     # up-to-date.
     peadm::wait_until_service_ready('pe-master', $primary_target)
@@ -363,9 +372,6 @@ plan peadm::convert (
     if $compiler_targets {
       run_command('systemctl restart pe-puppetserver.service pe-puppetdb.service', $compiler_targets)
     }
-
-    # Update PE Master rules to support legacy compilers
-    run_task('peadm::update_pe_master_rules', $primary_target)
 
     # Run puppet on all targets again to ensure everything is fully up-to-date
     run_task('peadm::puppet_runonce', $all_targets)
