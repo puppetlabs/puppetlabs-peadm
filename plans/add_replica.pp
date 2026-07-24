@@ -117,17 +117,40 @@ plan peadm::add_replica(
     )
   }
 
-  # Provision the new system as a replica
-  $provision_result = run_task('peadm::provision_replica', $primary_target,
-    replica    => $replica_target.peadm::certname(),
-    token_file => $token_file,
+  # Provision the new system as a replica. The installer's orchestrated job
+  # occasionally fails with a transient "ConnectionClosedException" from the
+  # orchestration service while it runs Puppet on the primary as part of
+  # enabling the new replica -- the primary appears to bounce its own
+  # orchestration service mid-job. Retry a bounded number of times to ride
+  # out that race; any other failure (e.g. a bad token, or a genuine
+  # provisioning error) is not retried and surfaces on the first attempt.
+  $provision_replica_max_attempts = 3
+  $provision_result = range(1, $provision_replica_max_attempts).reduce(undef) |$memo, $attempt| {
+    $prior_output = ($memo =~ NotUndef and !$memo.ok and $memo.error_set.first.value =~ Hash) ? {
+      true    => $memo.error_set.first.value['_output'],
+      default => undef,
+    }
+    $prior_is_transient = ($prior_output =~ String[1]) and ($prior_output =~ /ConnectionClosedException|puppetlabs\.orchestrator\/unknown-error/)
 
-    # Race condition, where the provision command checks PuppetDB status and
-    # probably gets "starting", but fails out because that's not "running".
-    # Can remove flag when that issue is fixed.
-    legacy     => false,
-    _catch_errors => true,
-  )
+    if $memo =~ NotUndef and ($memo.ok or !$prior_is_transient) {
+      $memo
+    } else {
+      if $attempt > 1 {
+        out::message("provision_replica hit a transient orchestrator error; retrying (attempt ${attempt}/${provision_replica_max_attempts}) after 15s...")
+        ctrl::sleep(15)
+      }
+      run_task('peadm::provision_replica', $primary_target,
+        replica    => $replica_target.peadm::certname(),
+        token_file => $token_file,
+
+        # Race condition, where the provision command checks PuppetDB status and
+        # probably gets "starting", but fails out because that's not "running".
+        # Can remove flag when that issue is fixed.
+        legacy     => false,
+        _catch_errors => true,
+      )
+    }
+  }
 
   # Surface real provisioning failures instead of masking them. Without this
   # check, errors caught by _catch_errors are silently dropped and the plan
@@ -143,14 +166,22 @@ plan peadm::add_replica(
       "${result.target.name}: ${detail}"
     }.join("\n\n")
 
+    # Only point at RBAC tokens when the underlying error actually looks like
+    # a token/authorization problem -- otherwise this hint is misleading
+    # noise next to the real cause (e.g. an orchestrator timeout or a
+    # pg_basebackup failure).
+    $token_hint = ($errors =~ /(?i:token|401|unauthorized|rbac)/) ? {
+      true    => "\n\nA missing or expired RBAC token (default ~/.puppetlabs/token, or the\ntoken_file parameter) is one common cause.",
+      default => '',
+    }
+
     fail_plan(@("MSG"))
       peadm::provision_replica failed; the replica was not provisioned. Underlying error:
 
       ${errors}
 
       See the provision_replica CLI log under /var/log/puppetlabs/installer/ on the
-      primary for the full output. A missing or expired RBAC token (default
-      ~/.puppetlabs/token, or the token_file parameter) is one common cause.
+      primary for the full output.${token_hint}
       | MSG
   }
 
