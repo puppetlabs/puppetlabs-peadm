@@ -23,6 +23,15 @@ group :development do
   # i18n >= 1.15.0 uses Fiber[] (Fiber storage), which requires Ruby >= 3.2. Pin to the
   # last 3.1-compatible release on older Rubies so rake spec_prep doesn't abort in CI.
   gem "i18n", '< 1.15.0',                        require: false if Gem::Requirement.create('< 3.2.0').satisfied_by?(Gem::Version.new(RUBY_VERSION.dup))
+  # Ruby 4.0 dropped benchmark/ostruct/logger/csv/base64 from the implicit default-gem set.
+  # puppet and github_changelog_generator still `require` them without declaring the
+  # dependency themselves, so without this rake/bundle exec aborts with a LoadError on 4.0+.
+  ruby4_default_gems_removed = Gem::Requirement.create('>= 4.0.0').satisfied_by?(Gem::Version.new(RUBY_VERSION.dup))
+  gem "benchmark", require: false if ruby4_default_gems_removed
+  gem "ostruct",   require: false if ruby4_default_gems_removed
+  gem "logger",    require: false if ruby4_default_gems_removed
+  gem "csv",       require: false if ruby4_default_gems_removed
+  gem "base64",    require: false if ruby4_default_gems_removed
   gem "voxpupuli-puppet-lint-plugins", '~> 5.0', require: false
   gem "facterdb", '~> 1.18',                     require: false
   gem "metadata-json-lint", '~> 3.0',            require: false
