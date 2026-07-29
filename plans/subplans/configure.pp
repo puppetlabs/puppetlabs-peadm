@@ -143,6 +143,7 @@ plan peadm::subplans::configure (
       } else {
         if $attempt > 1 {
           out::message("provision_replica not ready; retrying (attempt ${attempt}) after 15s...")
+          out::message($memo.to_data)
           ctrl::sleep(15)
         }
         run_task('peadm::provision_replica', $primary_target,
@@ -155,6 +156,7 @@ plan peadm::subplans::configure (
     }
     unless $provision_replica_result.ok {
       $provision_replica_error = $provision_replica_result.first.error.message
+      out::message($provision_replica_result.to_data)
       fail_plan("Failed to provision replica after ${provision_replica_max_attempts} attempts: ${provision_replica_error}")
     }
   }
