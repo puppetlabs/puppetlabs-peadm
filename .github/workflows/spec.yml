@@ -88,3 +88,33 @@ jobs:
       - name: Run parallel_spec tests
         run: |-
           bundle exec rake parallel_spec
+  # Tracks PE-45110 (Puppet 9 / Ruby 4 readiness). Not driven by matrix_from_metadata_v2
+  # (its collection table has no puppet_maj_version: 9 entry) or metadata.json (which
+  # intentionally still declares only puppet >= 8.0.0 < 9.0.0, since Puppet 9 support is
+  # unvalidated). No puppet 9 gem is published yet and facter's gemspec still caps
+  # required_ruby_version at < 4.0, so this job is expected to fail until those land
+  # upstream; continue-on-error keeps it non-blocking until then.
+  Ruby4Puppet9Experimental:
+    name: 'Experimental: Puppet 9 / Ruby 4.0 (allowed to fail)'
+    if: ${{ github.repository_owner == 'puppetlabs' }}
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      PUPPET_GEM_VERSION: '~> 9.0'
+      FACTER_GEM_VERSION: https://github.com/puppetlabs/facter#main
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+      - name: Activate Ruby 4.0
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+      - name: Print bundle environment
+        run: |
+          echo ::group::bundler environment
+          bundle env
+          echo ::endgroup::
+      - name: Run parallel_spec tests
+        run: |-
+          bundle exec rake parallel_spec
