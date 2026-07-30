@@ -15,7 +15,7 @@ Gemfile:
       - gem: orchestrator_client
         version: < 0.7.1
       - gem: simplecov-cobertura
-        version: '~> 3.2'
+        version: ~> 3.2
 Rakefile:
   changelog_since_tag: 2.5.0
   default_disabled_lint_checks:
@@ -37,7 +37,6 @@ spec/spec_helper.rb:
       # native code coverage feature.
       if ENV['SIMPLECOV'] == 'yes'
         require 'simplecov-cobertura'
-
         SimpleCov.formatters = [
           SimpleCov::Formatter::HTMLFormatter,
           SimpleCov::Formatter::Console,
@@ -58,44 +57,35 @@ spec/spec_helper.rb:
       if ENV['SIMPLECOV'] == 'yes'
         require 'pathname'
         require 'rexml/document'
-
         RSpec.configure do |c|
           c.after(:suite) do
             collection = RSpec::Puppet::Coverage.instance.instance_variable_get(:@collection)
             repo_root = Pathname.new(Dir.pwd).realpath
-
             lines_by_file = Hash.new { |h, k| h[k] = Hash.new(0) }
             collection.each_value do |wrapper|
               resource = wrapper.resource
               next unless resource.file && resource.line
-
               begin
                 relative_path = Pathname.new(resource.file).realpath.relative_path_from(repo_root).to_s
               rescue Errno::ENOENT
                 next
               end
               next if relative_path.start_with?('..')
-
               lines_by_file[relative_path][resource.line] += wrapper.touched? ? 1 : 0
             end
-
             doc = REXML::Document.new
             doc << REXML::XMLDecl.new('1.0')
             doc.add(REXML::DocType.new(['coverage', 'SYSTEM', 'http://cobertura.sourceforge.net/xml/coverage-04.dtd']))
-
             total_lines = 0
             covered_lines = 0
-
             coverage_el = doc.add_element('coverage', 'version' => '0', 'timestamp' => Time.now.to_i.to_s)
             coverage_el.add_element('sources').add_element('source').text = '.'
             package_el = coverage_el.add_element('packages').add_element('package', 'name' => 'manifests')
             classes_el = package_el.add_element('classes')
-
             lines_by_file.sort.each do |file, lines|
               file_covered = lines.count { |_, hits| hits > 0 }
               total_lines += lines.size
               covered_lines += file_covered
-
               class_line_rate = lines.empty? ? 1.0 : file_covered.to_f / lines.size
               class_el = classes_el.add_element(
                 'class', 'name' => File.basename(file), 'filename' => file, 'line-rate' => class_line_rate.to_s
@@ -106,13 +96,11 @@ spec/spec_helper.rb:
                 lines_el.add_element('line', 'number' => line_number.to_s, 'hits' => hits.to_s)
               end
             end
-
             overall_line_rate = (total_lines > 0) ? covered_lines.to_f / total_lines : 1.0
             coverage_el.add_attribute('line-rate', overall_line_rate.to_s)
             coverage_el.add_attribute('lines-covered', covered_lines.to_s)
             coverage_el.add_attribute('lines-valid', total_lines.to_s)
             package_el.add_attribute('line-rate', overall_line_rate.to_s)
-
             FileUtils.mkdir_p('coverage')
             File.write('coverage/puppet-coverage.xml', doc.to_s)
           end
