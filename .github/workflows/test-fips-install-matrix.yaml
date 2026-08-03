@@ -36,8 +36,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture: [standard-with-dr, large, extra-large-with-dr]
-        version: [2021.7.9, 2023.8.10, 2025.11.0]
+        # TEMPORARY: trimmed to the single PE-42816 case for validating PR #681.
+        # Revert before merge.
+        architecture: [extra-large-with-dr]
+        version: [2025.11.0]
         image: [rhel-8]
         fips: [enable]
     steps:
