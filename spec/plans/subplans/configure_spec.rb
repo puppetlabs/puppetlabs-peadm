@@ -10,11 +10,71 @@ describe 'peadm::subplans::configure' do
       allow_any_plan
       allow_any_command
 
-      expect_task('peadm::util::copy_file').not_be_called
+      # PE-45655: peadm::util::copy_file is a *plan* (run via run_plan), not a
+      # task -- expect_task binds to a separate mock registry from
+      # expect_plan, so `expect_task(...).not_be_called` here always passed
+      # regardless of what copy_file actually did. configure.pp calls it
+      # unconditionally (once for the common content, 4x in the
+      # $replica_content_sources parallelize loop) even with no replica
+      # configured, since $replica_target being empty doesn't skip the
+      # run_plan calls -- confirmed by instrumenting this exact scenario
+      # locally; see spec/plans/add_replica_spec.rb for the same 5-call shape.
+      expect_plan('peadm::util::copy_file').be_called_times(5)
       expect_task('peadm::provision_replica').not_be_called
       expect_task('peadm::code_manager').not_be_called
 
       expect(run_plan('peadm::subplans::configure', 'primary_host' => 'primary')).to be_ok
+    end
+  end
+
+  describe 'Standard architecture with DR' do
+    it 'provisions the replica against the primary with the legacy workaround and the given token file' do
+      allow_apply
+      allow_any_task
+      allow_any_plan
+      allow_any_command
+
+      expect_task('peadm::provision_replica').with_targets(['primary']).return do |targets:, params:, **|
+        # PE-42816: `legacy` is a workaround for a provision_replica race and
+        # must stay true until that's fixed elsewhere; flipping it (or losing
+        # the replica/token_file plumbing) would silently break DR
+        # provisioning without failing this test unless asserted here.
+        expect(params['replica']).to eq('replica')
+        expect(params['token_file']).to eq('/tmp/token')
+        expect(params['legacy']).to eq(true)
+        Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+      end
+
+      expect(run_plan('peadm::subplans::configure',
+                       'primary_host' => 'primary',
+                       'replica_host' => 'replica',
+                       'token_file'   => '/tmp/token')).to be_ok
+    end
+  end
+
+  describe 'Extra Large architecture with DR' do
+    it 'still provisions the replica against the primary, not the postgresql hosts' do
+      allow_apply
+      allow_any_task
+      allow_any_plan
+      allow_any_command
+
+      # Confirms adding the split-database (XL) parameters doesn't redirect
+      # or skip replica provisioning. with_targets(['primary']) alone would
+      # already fail this test if a refactor swapped $primary_target for
+      # $primary_postgresql_target; the params assertions additionally catch
+      # the XL params corrupting replica/legacy on the call that does happen.
+      expect_task('peadm::provision_replica').with_targets(['primary']).return do |targets:, params:, **|
+        expect(params['replica']).to eq('replica')
+        expect(params['legacy']).to eq(true)
+        Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+      end
+
+      expect(run_plan('peadm::subplans::configure',
+                       'primary_host'            => 'primary',
+                       'replica_host'            => 'replica',
+                       'primary_postgresql_host' => 'primary_postgresql',
+                       'replica_postgresql_host' => 'replica_postgresql')).to be_ok
     end
   end
 end
