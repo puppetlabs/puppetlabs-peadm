@@ -88,3 +88,35 @@ jobs:
       - name: Run parallel_spec tests
         run: |-
           bundle exec rake parallel_spec
+  # PE-45655: reports Ruby line coverage. It re-runs the full spec suite
+  # sequentially (not the parallel/matrix run the Spec job already does), so
+  # a real spec regression here is redundant with -- not additional to --
+  # what Spec already catches. continue-on-error keeps this job purely
+  # advisory (matching the intent described in documentation/test-coverage.md)
+  # rather than an unannounced second required check on every PR.
+  Coverage:
+    name: 'Ruby line coverage (SimpleCov, allowed to fail)'
+    needs: [setup_matrix]
+    if: ${{ needs.setup_matrix.outputs.spec_matrix != '{}' }}
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      FACTER_GEM_VERSION: https://github.com/puppetlabs/facter#main
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+      - name: Activate Ruby 3.1
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+      - name: Run spec tests with SimpleCov
+        run: |-
+          bundle exec rake spec:simplecov
+      - name: Upload coverage report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: simplecov-report
+          path: coverage/
+          retention-days: 14
