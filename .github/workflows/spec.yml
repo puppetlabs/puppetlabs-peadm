@@ -101,6 +101,7 @@ jobs:
     if: ${{ needs.setup_matrix.outputs.spec_matrix != '{}' }}
     runs-on: ubuntu-latest
     continue-on-error: true
+    timeout-minutes: 20
     env:
       FACTER_GEM_VERSION: https://github.com/puppetlabs/facter#main
     steps:
