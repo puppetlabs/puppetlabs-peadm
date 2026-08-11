@@ -3,11 +3,12 @@ require 'spec_helper'
 describe 'peadm::subplans::configure' do
   include BoltSpec::Plans
 
-  # configure.pp syncs the CA chain and orchestrator/console encryption keys
-  # to $replica_target via copy_file -- a DR replica that never receives
-  # these can't serve traffic after failover, and syncing from the wrong
-  # source_host (or the same file 5 times instead of the 5 distinct files)
-  # would copy the wrong -- or missing -- content. PlanStub's with_targets
+  # configure.pp syncs hiera.yaml plus the CA chain and orchestrator/console
+  # encryption keys to $replica_target via copy_file -- a DR replica that
+  # never receives these can't serve traffic after failover, and syncing
+  # from the wrong source_host (or the same file 5 times instead of the 5
+  # distinct files, see synced_replica_files below) would copy the wrong --
+  # or missing -- content. PlanStub's with_targets
   # can't be used here: it compares its string names against the raw
   # `targets` param, which still holds resolved Bolt::Target objects at that
   # point, so the Set comparison never matches -- confirmed by instrumenting
