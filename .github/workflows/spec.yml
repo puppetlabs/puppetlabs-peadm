@@ -131,6 +131,7 @@ jobs:
     name: Code Coverage
     if: ${{ github.repository_owner == 'puppetlabs' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       code-quality: write
