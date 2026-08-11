@@ -3,6 +3,22 @@ require 'spec_helper'
 describe 'peadm::subplans::configure' do
   include BoltSpec::Plans
 
+  # configure.pp syncs the CA chain and orchestrator/console encryption keys
+  # to $replica_target via copy_file -- a DR replica that never receives
+  # these can't serve traffic after failover. PlanStub's with_targets can't
+  # be used here: it compares its string names against the raw `targets`
+  # param, which still holds resolved Bolt::Target objects at that point, so
+  # the Set comparison never matches -- confirmed by instrumenting this call
+  # locally. Asserting on params['targets'].map(&:name) inside a return
+  # block works instead. Shared by both DR specs below since the assertion
+  # is identical in each.
+  def expect_copy_file_called_for_replica_only!
+    expect_plan('peadm::util::copy_file').be_called_times(5).return do |params:, **|
+      expect(Array(params['targets']).map(&:name)).to eq(['replica'])
+      Bolt::PlanResult.new({}, 'success')
+    end
+  end
+
   describe 'Standard architecture without DR' do
     it 'runs successfully' do
       allow_apply
@@ -45,20 +61,10 @@ describe 'peadm::subplans::configure' do
         Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
       end
 
-      # configure.pp syncs the CA chain and orchestrator/console encryption
-      # keys to $replica_target via copy_file -- a DR replica that never
-      # receives these can't serve traffic after failover. Asserting only on
-      # provision_replica's targets/params (above) wouldn't catch a refactor
-      # that silently drops or empties the copy_file target list. PlanStub's
-      # with_targets can't be used here: it compares its string names against
-      # the raw `targets` param, which still holds resolved Bolt::Target
-      # objects at that point, so the Set comparison never matches -- confirmed
-      # by instrumenting this call locally. Asserting on
-      # params['targets'].map(&:name) inside a return block works instead.
-      expect_plan('peadm::util::copy_file').be_called_times(5).return do |params:, **|
-        expect(Array(params['targets']).map(&:name)).to eq(['replica'])
-        Bolt::PlanResult.new({}, 'success')
-      end
+      # Asserting only on provision_replica's targets/params (above) wouldn't
+      # catch a refactor that silently drops or empties the copy_file target
+      # list, so pin that down too.
+      expect_copy_file_called_for_replica_only!
 
       expect(run_plan('peadm::subplans::configure',
                        'primary_host' => 'primary',
@@ -87,10 +93,7 @@ describe 'peadm::subplans::configure' do
 
       # Same rationale as the standard-with-DR case above: the XL split-database
       # params must not redirect or drop the copy_file replica target either.
-      expect_plan('peadm::util::copy_file').be_called_times(5).return do |params:, **|
-        expect(Array(params['targets']).map(&:name)).to eq(['replica'])
-        Bolt::PlanResult.new({}, 'success')
-      end
+      expect_copy_file_called_for_replica_only!
 
       expect(run_plan('peadm::subplans::configure',
                        'primary_host'            => 'primary',
