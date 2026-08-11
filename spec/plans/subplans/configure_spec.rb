@@ -6,21 +6,36 @@ describe 'peadm::subplans::configure' do
   # configure.pp syncs the CA chain and orchestrator/console encryption keys
   # to $replica_target via copy_file -- a DR replica that never receives
   # these can't serve traffic after failover, and syncing from the wrong
-  # source_host would copy the wrong (or replica's own stale) content.
-  # PlanStub's with_targets can't be used here: it compares its string names
-  # against the raw `targets` param, which still holds resolved Bolt::Target
-  # objects at that point, so the Set comparison never matches -- confirmed
-  # by instrumenting this call locally. Asserting on
-  # params['targets'|'source_host'].map(&:name) inside a return block works
-  # instead. Shared by both DR specs below since the assertion is identical
-  # in each.
+  # source_host (or the same file 5 times instead of the 5 distinct files)
+  # would copy the wrong -- or missing -- content. PlanStub's with_targets
+  # can't be used here: it compares its string names against the raw
+  # `targets` param, which still holds resolved Bolt::Target objects at that
+  # point, so the Set comparison never matches -- confirmed by instrumenting
+  # this call locally. Asserting on params['targets'|'source_host'].map(&:name)
+  # inside a return block works instead. Returns the observed `path` values so
+  # callers can assert the full set of synced files. Shared by both DR specs
+  # below since the assertion is identical in each.
   def expect_copy_file_called_for_replica_only!
+    paths = []
     expect_plan('peadm::util::copy_file').be_called_times(5).return do |params:, **|
       expect(Array(params['targets']).map(&:name)).to eq(['replica'])
       expect(Array(params['source_host']).map(&:name)).to eq(['primary'])
+      paths << params['path']
       Bolt::PlanResult.new({}, 'success')
     end
+    paths
   end
+
+  # The 5 files configure.pp syncs to a DR replica: the common content plus
+  # the 4 replica-specific secrets/certs. Kept in sync with configure.pp's
+  # $common_content_source and $replica_content_sources.
+  SYNCED_REPLICA_FILES = [
+    '/etc/puppetlabs/puppet/hiera.yaml',
+    '/opt/puppetlabs/server/data/console-services/certs/ad_ca_chain.pem',
+    '/etc/puppetlabs/orchestration-services/conf.d/secrets/keys.json',
+    '/etc/puppetlabs/orchestration-services/conf.d/secrets/orchestrator-encryption-keys.json',
+    '/etc/puppetlabs/console-services/conf.d/secrets/keys.json',
+  ].freeze
 
   # Shared stub setup for every example below: none of them care about the
   # exact apply/task/plan/command calls configure.pp makes along the way,
@@ -71,12 +86,13 @@ describe 'peadm::subplans::configure' do
       # Asserting only on provision_replica's targets/params (above) wouldn't
       # catch a refactor that silently drops or empties the copy_file target
       # list, so pin that down too.
-      expect_copy_file_called_for_replica_only!
+      copy_file_paths = expect_copy_file_called_for_replica_only!
 
       expect(run_plan('peadm::subplans::configure',
                        'primary_host' => 'primary',
                        'replica_host' => 'replica',
                        'token_file'   => '/tmp/token')).to be_ok
+      expect(copy_file_paths).to match_array(SYNCED_REPLICA_FILES)
     end
   end
 
@@ -97,13 +113,14 @@ describe 'peadm::subplans::configure' do
 
       # Same rationale as the standard-with-DR case above: the XL split-database
       # params must not redirect or drop the copy_file replica target either.
-      expect_copy_file_called_for_replica_only!
+      copy_file_paths = expect_copy_file_called_for_replica_only!
 
       expect(run_plan('peadm::subplans::configure',
                        'primary_host'            => 'primary',
                        'replica_host'            => 'replica',
                        'primary_postgresql_host' => 'primary_postgresql',
                        'replica_postgresql_host' => 'replica_postgresql')).to be_ok
+      expect(copy_file_paths).to match_array(SYNCED_REPLICA_FILES)
     end
   end
 end
