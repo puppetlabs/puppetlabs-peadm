@@ -28,14 +28,19 @@ describe 'peadm::subplans::configure' do
 
   # The 5 files configure.pp syncs to a DR replica: the common content plus
   # the 4 replica-specific secrets/certs. Kept in sync with configure.pp's
-  # $common_content_source and $replica_content_sources.
-  SYNCED_REPLICA_FILES = [
-    '/etc/puppetlabs/puppet/hiera.yaml',
-    '/opt/puppetlabs/server/data/console-services/certs/ad_ca_chain.pem',
-    '/etc/puppetlabs/orchestration-services/conf.d/secrets/keys.json',
-    '/etc/puppetlabs/orchestration-services/conf.d/secrets/orchestrator-encryption-keys.json',
-    '/etc/puppetlabs/console-services/conf.d/secrets/keys.json',
-  ].freeze
+  # $common_content_source and $replica_content_sources. A method rather than
+  # a constant: bare constant assignment inside a describe block scopes to
+  # Object (RSpec evaluates the block via class_exec), not to this example
+  # group, which would silently leak it into the global namespace.
+  def synced_replica_files
+    [
+      '/etc/puppetlabs/puppet/hiera.yaml',
+      '/opt/puppetlabs/server/data/console-services/certs/ad_ca_chain.pem',
+      '/etc/puppetlabs/orchestration-services/conf.d/secrets/keys.json',
+      '/etc/puppetlabs/orchestration-services/conf.d/secrets/orchestrator-encryption-keys.json',
+      '/etc/puppetlabs/console-services/conf.d/secrets/keys.json',
+    ]
+  end
 
   # Shared stub setup for every example below: none of them care about the
   # exact apply/task/plan/command calls configure.pp makes along the way,
@@ -92,7 +97,7 @@ describe 'peadm::subplans::configure' do
                        'primary_host' => 'primary',
                        'replica_host' => 'replica',
                        'token_file'   => '/tmp/token')).to be_ok
-      expect(copy_file_paths).to match_array(SYNCED_REPLICA_FILES)
+      expect(copy_file_paths).to match_array(synced_replica_files)
     end
   end
 
@@ -120,7 +125,7 @@ describe 'peadm::subplans::configure' do
                        'replica_host'            => 'replica',
                        'primary_postgresql_host' => 'primary_postgresql',
                        'replica_postgresql_host' => 'replica_postgresql')).to be_ok
-      expect(copy_file_paths).to match_array(SYNCED_REPLICA_FILES)
+      expect(copy_file_paths).to match_array(synced_replica_files)
     end
   end
 end
