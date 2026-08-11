@@ -36,9 +36,10 @@ formatter is dropped in `spec_helper_local.rb`) since this repo has no
 
 ## Puppet resource coverage (`RSpec::Puppet::Coverage`)
 
-**What it measures:** the percentage of resource *types* declared across
-`manifests/*.pp` classes that get touched by catalog compilation during
-specs (via `rspec-puppet`, part of `puppetlabs_spec_helper`).
+**What it measures:** the percentage of individual resource declarations
+(e.g. `File['/etc/foo']`) across `manifests/*.pp` classes that get touched
+by catalog compilation during specs (via `rspec-puppet`, part of
+`puppetlabs_spec_helper`) -- not resource *types* as a category.
 
 **What it doesn't see:** almost all of PEADM. This repo's logic lives
 overwhelmingly in plans and functions, neither of which compile a catalog --

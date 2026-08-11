@@ -89,9 +89,10 @@ jobs:
         run: |-
           bundle exec rake parallel_spec
   # PE-45655: reports Ruby line coverage. It re-runs the full spec suite
-  # sequentially (not the parallel/matrix run the Spec job already does), so
-  # a real spec regression here is redundant with -- not additional to --
-  # what Spec already catches. continue-on-error keeps this job purely
+  # sequentially (not the parallel/matrix run the Spec job already does, and
+  # not pinned to a specific Puppet version the way that matrix is), so a
+  # real spec regression here is very likely also caught by Spec rather than
+  # being additional signal. continue-on-error keeps this job purely
   # advisory (matching the intent described in documentation/test-coverage.md)
   # rather than an unannounced second required check on every PR.
   Coverage:
