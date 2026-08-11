@@ -95,7 +95,7 @@ jobs:
   # advisory (matching the intent described in documentation/test-coverage.md)
   # rather than an unannounced second required check on every PR.
   Coverage:
-    name: 'Ruby line coverage (SimpleCov, allowed to fail)'
+    name: Ruby line coverage (SimpleCov, allowed to fail)
     needs: [setup_matrix]
     if: ${{ needs.setup_matrix.outputs.spec_matrix != '{}' }}
     runs-on: ubuntu-latest
