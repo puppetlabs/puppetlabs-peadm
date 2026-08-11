@@ -11,10 +11,10 @@ BoltSpec::Plans.init
 ENV['RSPEC_UNIT_TEST_MODE'] ||= 'TRUE'
 
 if defined?(SimpleCov)
-  # puppetlabs_spec_helper's built-in SimpleCov setup (SIMPLECOV=yes) only
-  # tracks lib/**/*.rb by default, so tasks/*.rb never shows up even as an
-  # explicit 0% gap. Widen it to cover the Ruby-side surface PE-45655 cares
-  # about (tasks/*.rb and lib/puppet/functions/peadm/*.rb).
+  # puppetlabs_spec_helper's built-in SimpleCov setup (SIMPLECOV=yes) already
+  # tracks lib/**/*.rb (including lib/puppet/functions/peadm/*.rb) by default,
+  # but not tasks/*.rb, so task files never show up even as an explicit 0%
+  # gap. Widen the glob to add tasks/*.rb to what's already covered.
   SimpleCov.track_files('{lib/**/*.rb,tasks/*.rb}')
 
   # Codecov upload needs a CODECOV_TOKEN this repo doesn't have configured.
