@@ -45,6 +45,21 @@ describe 'peadm::subplans::configure' do
         Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
       end
 
+      # configure.pp syncs the CA chain and orchestrator/console encryption
+      # keys to $replica_target via copy_file -- a DR replica that never
+      # receives these can't serve traffic after failover. Asserting only on
+      # provision_replica's targets/params (above) wouldn't catch a refactor
+      # that silently drops or empties the copy_file target list. PlanStub's
+      # with_targets can't be used here: it compares its string names against
+      # the raw `targets` param, which still holds resolved Bolt::Target
+      # objects at that point, so the Set comparison never matches -- confirmed
+      # by instrumenting this call locally. Asserting on
+      # params['targets'].map(&:name) inside a return block works instead.
+      expect_plan('peadm::util::copy_file').be_called_times(5).return do |params:, **|
+        expect(Array(params['targets']).map(&:name)).to eq(['replica'])
+        Bolt::PlanResult.new({}, 'success')
+      end
+
       expect(run_plan('peadm::subplans::configure',
                        'primary_host' => 'primary',
                        'replica_host' => 'replica',
@@ -68,6 +83,13 @@ describe 'peadm::subplans::configure' do
         expect(params['replica']).to eq('replica')
         expect(params['legacy']).to eq(true)
         Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+      end
+
+      # Same rationale as the standard-with-DR case above: the XL split-database
+      # params must not redirect or drop the copy_file replica target either.
+      expect_plan('peadm::util::copy_file').be_called_times(5).return do |params:, **|
+        expect(Array(params['targets']).map(&:name)).to eq(['replica'])
+        Bolt::PlanResult.new({}, 'success')
       end
 
       expect(run_plan('peadm::subplans::configure',
