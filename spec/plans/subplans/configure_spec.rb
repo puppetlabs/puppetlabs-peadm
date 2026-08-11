@@ -5,16 +5,19 @@ describe 'peadm::subplans::configure' do
 
   # configure.pp syncs the CA chain and orchestrator/console encryption keys
   # to $replica_target via copy_file -- a DR replica that never receives
-  # these can't serve traffic after failover. PlanStub's with_targets can't
-  # be used here: it compares its string names against the raw `targets`
-  # param, which still holds resolved Bolt::Target objects at that point, so
-  # the Set comparison never matches -- confirmed by instrumenting this call
-  # locally. Asserting on params['targets'].map(&:name) inside a return
-  # block works instead. Shared by both DR specs below since the assertion
-  # is identical in each.
+  # these can't serve traffic after failover, and syncing from the wrong
+  # source_host would copy the wrong (or replica's own stale) content.
+  # PlanStub's with_targets can't be used here: it compares its string names
+  # against the raw `targets` param, which still holds resolved Bolt::Target
+  # objects at that point, so the Set comparison never matches -- confirmed
+  # by instrumenting this call locally. Asserting on
+  # params['targets'|'source_host'].map(&:name) inside a return block works
+  # instead. Shared by both DR specs below since the assertion is identical
+  # in each.
   def expect_copy_file_called_for_replica_only!
     expect_plan('peadm::util::copy_file').be_called_times(5).return do |params:, **|
       expect(Array(params['targets']).map(&:name)).to eq(['replica'])
+      expect(Array(params['source_host']).map(&:name)).to eq(['primary'])
       Bolt::PlanResult.new({}, 'success')
     end
   end
