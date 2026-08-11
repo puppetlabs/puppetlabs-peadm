@@ -22,12 +22,19 @@ describe 'peadm::subplans::configure' do
     end
   end
 
+  # Shared stub setup for every example below: none of them care about the
+  # exact apply/task/plan/command calls configure.pp makes along the way,
+  # only about the specific expectations each sets up afterward.
+  def allow_standard_calls!
+    allow_apply
+    allow_any_task
+    allow_any_plan
+    allow_any_command
+  end
+
   describe 'Standard architecture without DR' do
     it 'runs successfully' do
-      allow_apply
-      allow_any_task
-      allow_any_plan
-      allow_any_command
+      allow_standard_calls!
 
       # PE-45655: peadm::util::copy_file is a *plan* (run via run_plan), not a
       # task -- expect_task binds to a separate mock registry from
@@ -48,10 +55,7 @@ describe 'peadm::subplans::configure' do
 
   describe 'Standard architecture with DR' do
     it 'provisions the replica against the primary with the legacy workaround and the given token file' do
-      allow_apply
-      allow_any_task
-      allow_any_plan
-      allow_any_command
+      allow_standard_calls!
 
       expect_task('peadm::provision_replica').with_targets(['primary']).return do |targets:, params:, **|
         # PE-42816: `legacy` is a workaround for a provision_replica race and
@@ -78,10 +82,7 @@ describe 'peadm::subplans::configure' do
 
   describe 'Extra Large architecture with DR' do
     it 'still provisions the replica against the primary, not the postgresql hosts' do
-      allow_apply
-      allow_any_task
-      allow_any_plan
-      allow_any_command
+      allow_standard_calls!
 
       # Confirms adding the split-database (XL) parameters doesn't redirect
       # or skip replica provisioning. with_targets(['primary']) alone would
