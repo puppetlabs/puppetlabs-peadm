@@ -116,9 +116,11 @@ describe 'peadm::subplans::configure' do
       # or skip replica provisioning. with_targets(['primary']) alone would
       # already fail this test if a refactor swapped $primary_target for
       # $primary_postgresql_target; the params assertions additionally catch
-      # the XL params corrupting replica/legacy on the call that does happen.
+      # the XL params corrupting replica/legacy/token_file on the call that
+      # does happen.
       expect_task('peadm::provision_replica').with_targets(['primary']).return do |targets:, params:, **|
         expect(params['replica']).to eq('replica')
+        expect(params['token_file']).to eq('/tmp/token')
         expect(params['legacy']).to eq(true)
         Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
       end
@@ -131,7 +133,8 @@ describe 'peadm::subplans::configure' do
                        'primary_host'            => 'primary',
                        'replica_host'            => 'replica',
                        'primary_postgresql_host' => 'primary_postgresql',
-                       'replica_postgresql_host' => 'replica_postgresql')).to be_ok
+                       'replica_postgresql_host' => 'replica_postgresql',
+                       'token_file'              => '/tmp/token')).to be_ok
       expect(copy_file_paths).to match_array(synced_replica_files)
     end
   end

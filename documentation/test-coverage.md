@@ -28,7 +28,9 @@ default (`lib/**/*.rb` only) to also include `tasks/*.rb`, so task files with
 no spec at all show up as an explicit 0% gap instead of being invisible.
 
 **In CI:** the `Coverage` job in `.github/workflows/spec.yml` runs this on
-every PR and uploads the HTML report as a build artifact. It currently only
+matching PRs (it's gated by the same path filters and fork-PR `setup_matrix`
+check as the `Spec` job, so it doesn't run on every PR) and uploads the HTML
+report as a build artifact. It currently only
 *reports* -- it does not fail the build at any threshold yet. Codecov
 upload is intentionally disabled (the `codecov` gem is present but the
 formatter is dropped in `spec_helper_local.rb`) since this repo has no
