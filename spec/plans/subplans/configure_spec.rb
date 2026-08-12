@@ -66,7 +66,13 @@ describe 'peadm::subplans::configure' do
       # configured, since $replica_target being empty doesn't skip the
       # run_plan calls -- confirmed by instrumenting this exact scenario
       # locally; see spec/plans/add_replica_spec.rb for the same 5-call shape.
-      expect_plan('peadm::util::copy_file').be_called_times(5)
+      # Asserting targets is empty (not just the call count) would catch a
+      # regression that started populating it from $primary_target or
+      # $compiler_targets in this no-replica scenario.
+      expect_plan('peadm::util::copy_file').be_called_times(5).return do |params:, **|
+        expect(Array(params['targets'])).to be_empty
+        Bolt::PlanResult.new({}, 'success')
+      end
       expect_task('peadm::provision_replica').not_be_called
       expect_task('peadm::code_manager').not_be_called
 
