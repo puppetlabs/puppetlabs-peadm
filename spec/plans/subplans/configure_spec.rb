@@ -53,6 +53,22 @@ describe 'peadm::subplans::configure' do
     allow_any_command
   end
 
+  # Shared by both DR specs below: asserts provision_replica runs against
+  # the primary with the PE-42816 legacy workaround and the given
+  # replica/token_file plumbing intact. `with_targets(['primary'])` alone
+  # would already fail if a refactor swapped $primary_target for
+  # $primary_postgresql_target (relevant for the XL case); the params
+  # assertions additionally catch the legacy/replica/token_file values
+  # getting corrupted on the call that does happen.
+  def expect_provision_replica_called_against_primary!
+    expect_task('peadm::provision_replica').with_targets(['primary']).return do |targets:, params:, **|
+      expect(params['replica']).to eq('replica')
+      expect(params['token_file']).to eq('/tmp/token')
+      expect(params['legacy']).to eq(true)
+      Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+    end
+  end
+
   describe 'Standard architecture without DR' do
     it 'runs successfully' do
       allow_standard_calls!
@@ -84,16 +100,11 @@ describe 'peadm::subplans::configure' do
     it 'provisions the replica against the primary with the legacy workaround and the given token file' do
       allow_standard_calls!
 
-      expect_task('peadm::provision_replica').with_targets(['primary']).return do |targets:, params:, **|
-        # PE-42816: `legacy` is a workaround for a provision_replica race and
-        # must stay true until that's fixed elsewhere; flipping it (or losing
-        # the replica/token_file plumbing) would silently break DR
-        # provisioning without failing this test unless asserted here.
-        expect(params['replica']).to eq('replica')
-        expect(params['token_file']).to eq('/tmp/token')
-        expect(params['legacy']).to eq(true)
-        Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
-      end
+      # PE-42816: `legacy` is a workaround for a provision_replica race and
+      # must stay true until that's fixed elsewhere; flipping it (or losing
+      # the replica/token_file plumbing) would silently break DR
+      # provisioning without failing this test unless asserted here.
+      expect_provision_replica_called_against_primary!
 
       # Asserting only on provision_replica's targets/params (above) wouldn't
       # catch a refactor that silently drops or empties the copy_file target
@@ -113,17 +124,10 @@ describe 'peadm::subplans::configure' do
       allow_standard_calls!
 
       # Confirms adding the split-database (XL) parameters doesn't redirect
-      # or skip replica provisioning. with_targets(['primary']) alone would
-      # already fail this test if a refactor swapped $primary_target for
-      # $primary_postgresql_target; the params assertions additionally catch
-      # the XL params corrupting replica/legacy/token_file on the call that
-      # does happen.
-      expect_task('peadm::provision_replica').with_targets(['primary']).return do |targets:, params:, **|
-        expect(params['replica']).to eq('replica')
-        expect(params['token_file']).to eq('/tmp/token')
-        expect(params['legacy']).to eq(true)
-        Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
-      end
+      # or skip replica provisioning -- see
+      # expect_provision_replica_called_against_primary! above for what's
+      # asserted.
+      expect_provision_replica_called_against_primary!
 
       # Same rationale as the standard-with-DR case above: the XL split-database
       # params must not redirect or drop the copy_file replica target either.
