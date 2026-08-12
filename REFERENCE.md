@@ -79,7 +79,6 @@
 * [`mkdir_p_file`](#mkdir_p_file): Create a file with the specified content at the specified location
 * [`mv`](#mv): Wrapper task for mv command
 * [`node_group_unpin`](#node_group_unpin): Unpins nodes from a specified PE node group
-* [`os_identification`](#os_identification): Return the operating system runnin gon the target as a string
 * [`pe_install`](#pe_install): Install Puppet Enterprise from a tarball
 * [`pe_ldap_config`](#pe_ldap_config): Set the ldap config in the PE console
 * [`pe_uninstall`](#pe_uninstall): Uninstall Puppet Enterprise
@@ -1404,12 +1403,6 @@ The certnames of the nodes to unpin
 Data type: `String`
 
 The name of the node group to unpin the nodes from
-
-### <a name="os_identification"></a>`os_identification`
-
-Return the operating system runnin gon the target as a string
-
-**Supports noop?** false
 
 ### <a name="pe_install"></a>`pe_install`
 
