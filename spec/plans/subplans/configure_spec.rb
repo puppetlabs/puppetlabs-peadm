@@ -30,9 +30,11 @@ describe 'peadm::subplans::configure' do
   # The 5 files configure.pp syncs to a DR replica: the common content plus
   # the 4 replica-specific secrets/certs. Kept in sync with configure.pp's
   # $common_content_source and $replica_content_sources. A method rather than
-  # a constant: bare constant assignment inside a describe block scopes to
-  # Object (RSpec evaluates the block via class_exec), not to this example
-  # group, which would silently leak it into the global namespace.
+  # a constant: constant assignment resolves lexically (based on where this
+  # code is textually nested -- top-level in a spec file), not by the
+  # receiver RSpec's class_exec/instance_eval uses at runtime, so a bare
+  # constant here would leak into Object regardless of how RSpec invokes the
+  # block.
   def synced_replica_files
     [
       '/etc/puppetlabs/puppet/hiera.yaml',
