@@ -23,6 +23,15 @@ group :development do
   # i18n >= 1.15.0 uses Fiber[] (Fiber storage), which requires Ruby >= 3.2. Pin to the
   # last 3.1-compatible release on older Rubies so rake spec_prep doesn't abort in CI.
   gem "i18n", '< 1.15.0',                        require: false if Gem::Requirement.create('< 3.2.0').satisfied_by?(Gem::Version.new(RUBY_VERSION.dup))
+  # Ruby 4.0 dropped benchmark/ostruct/logger/csv/base64 from the implicit default-gem set.
+  # puppet and github_changelog_generator still `require` them without declaring the
+  # dependency themselves, so without this rake/bundle exec aborts with a LoadError on 4.0+.
+  ruby4_default_gems_removed = Gem::Requirement.create('>= 4.0.0').satisfied_by?(Gem::Version.new(RUBY_VERSION.dup))
+  gem "benchmark", require: false if ruby4_default_gems_removed
+  gem "ostruct",   require: false if ruby4_default_gems_removed
+  gem "logger",    require: false if ruby4_default_gems_removed
+  gem "csv",       require: false if ruby4_default_gems_removed
+  gem "base64",    require: false if ruby4_default_gems_removed
   gem "voxpupuli-puppet-lint-plugins", '~> 5.0', require: false
   gem "facterdb", '~> 1.18',                     require: false
   gem "metadata-json-lint", '~> 3.0',            require: false
@@ -68,8 +77,18 @@ gems['puppet'] = location_for(puppet_version)
 gems['facter'] = location_for(facter_version) if facter_version
 gems['hiera'] = location_for(hiera_version) if hiera_version
 
-gems.each do |gem_name, gem_params|
-  gem gem_name, *gem_params
+# When PUPPET_FORGE_TOKEN is set, resolve puppet/facter/hiera from the private
+# puppetcore gem source instead of rubygems.org. This is how pre-release builds
+# (e.g. Puppet 9, ahead of its public rubygems release) get consumed -- see
+# "How to consume the private puppetcore gems" on Confluence. Declaring them
+# together in one `source do...end` block, rather than per-gem `source:`,
+# avoids Bundler resolving their dependencies from the wrong (public) source.
+if ENV['PUPPET_FORGE_TOKEN']
+  source 'https://rubygems-puppetcore.puppet.com' do
+    gems.each { |gem_name, gem_params| gem gem_name, *gem_params }
+  end
+else
+  gems.each { |gem_name, gem_params| gem gem_name, *gem_params }
 end
 
 # Evaluate Gemfile.local and ~/.gemfile if they exist
