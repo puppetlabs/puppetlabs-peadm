@@ -91,9 +91,20 @@ jobs:
   # Tracks PE-45110 (Puppet 9 / Ruby 4 readiness). Not driven by matrix_from_metadata_v2
   # (its collection table has no puppet_maj_version: 9 entry) or metadata.json (which
   # intentionally still declares only puppet >= 8.0.0 < 9.0.0, since Puppet 9 support is
-  # unvalidated). No puppet 9 gem is published yet and facter's gemspec still caps
-  # required_ruby_version at < 4.0, so this job is expected to fail until those land
-  # upstream; continue-on-error keeps it non-blocking until then.
+  # unvalidated).
+  #
+  # Puppet 9 still isn't on public rubygems, so this resolves puppet/facter from the
+  # private puppetcore gem source (https://rubygems-puppetcore.puppet.com) instead --
+  # see "How to consume the private puppetcore gems" on Confluence. The two upstream
+  # blockers that used to make this job fail outright are both fixed now: puppet's
+  # FrozenError from the old SSLv3 monkey patch under Ruby 4's frozen OpenSSL defaults
+  # (PUP-12114), and facter's gemspec capping required_ruby_version at < 4.0 (now < 5.0).
+  # Verified locally against puppet-private@9.1.0 + facter-private@4.22.0 under Ruby
+  # 4.0.6: 111 examples, 0 failures.
+  #
+  # continue-on-error stays on for this first CI run so we can confirm the puppetcore
+  # token/source wiring itself works from Actions (untested outside this repo's own
+  # runners) -- drop it once this job is observed green.
   Ruby4Puppet9Experimental:
     name: 'Experimental: Puppet 9 / Ruby 4.0 (allowed to fail)'
     if: ${{ github.repository_owner == 'puppetlabs' }}
@@ -101,7 +112,9 @@ jobs:
     continue-on-error: true
     env:
       PUPPET_GEM_VERSION: '~> 9.0'
-      FACTER_GEM_VERSION: https://github.com/puppetlabs/facter#main
+      FACTER_GEM_VERSION: '~> 4.12'
+      PUPPET_FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_API_TOKEN }}
+      BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: forge-key:${{ secrets.PUPPET_FORGE_API_TOKEN }}
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
