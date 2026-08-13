@@ -77,8 +77,18 @@ gems['puppet'] = location_for(puppet_version)
 gems['facter'] = location_for(facter_version) if facter_version
 gems['hiera'] = location_for(hiera_version) if hiera_version
 
-gems.each do |gem_name, gem_params|
-  gem gem_name, *gem_params
+# When PUPPET_FORGE_TOKEN is set, resolve puppet/facter/hiera from the private
+# puppetcore gem source instead of rubygems.org. This is how pre-release builds
+# (e.g. Puppet 9, ahead of its public rubygems release) get consumed -- see
+# "How to consume the private puppetcore gems" on Confluence. Declaring them
+# together in one `source do...end` block, rather than per-gem `source:`,
+# avoids Bundler resolving their dependencies from the wrong (public) source.
+if ENV['PUPPET_FORGE_TOKEN']
+  source 'https://rubygems-puppetcore.puppet.com' do
+    gems.each { |gem_name, gem_params| gem gem_name, *gem_params }
+  end
+else
+  gems.each { |gem_name, gem_params| gem gem_name, *gem_params }
 end
 
 # Evaluate Gemfile.local and ~/.gemfile if they exist
