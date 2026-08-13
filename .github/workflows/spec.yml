@@ -99,17 +99,13 @@ jobs:
   # blockers that used to make this job fail outright are both fixed now: puppet's
   # FrozenError from the old SSLv3 monkey patch under Ruby 4's frozen OpenSSL defaults
   # (PUP-12114), and facter's gemspec capping required_ruby_version at < 4.0 (now < 5.0).
-  # Verified locally against puppet-private@9.1.0 + facter-private@4.22.0 under Ruby
-  # 4.0.6: 111 examples, 0 failures.
-  #
-  # continue-on-error stays on for this first CI run so we can confirm the puppetcore
-  # token/source wiring itself works from Actions (untested outside this repo's own
-  # runners) -- drop it once this job is observed green.
+  # Verified both locally (puppet-private@9.1.0 + facter-private@4.22.0 under Ruby 4.0.6)
+  # and from this job's own Actions run: 111 examples, 0 failures, 6 pendings. Green, so
+  # continue-on-error has been dropped -- this job now gives a real pass/fail signal.
   Ruby4Puppet9Experimental:
-    name: 'Experimental: Puppet 9 / Ruby 4.0 (allowed to fail)'
+    name: 'Experimental: Puppet 9 / Ruby 4.0'
     if: ${{ github.repository_owner == 'puppetlabs' }}
     runs-on: ubuntu-latest
-    continue-on-error: true
     env:
       PUPPET_GEM_VERSION: '~> 9.0'
       FACTER_GEM_VERSION: '~> 4.12'
