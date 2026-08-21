@@ -147,5 +147,8 @@ plan peadm::add_compilers(
   ]))
 
   $compiler_names = $compiler_targets.map |$compiler_target| { $compiler_target.peadm::certname() }.join(', ')
+
+  out::message('Compilers are added in CA-proxy mode. Promotion to an Intermediate CA is opt-in and performed separately.')
+
   return("Adding or replacing compiler(s) ${compiler_names} succeeded.")
 }
