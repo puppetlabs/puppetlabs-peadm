@@ -56,6 +56,7 @@ describe 'peadm::add_compilers' do
 
     it 'runs successfully when no alt-names are specified' do
       allow_standard_non_returning_calls
+      expect_out_message.with_params('Compilers are added in CA-proxy mode. Promotion to an Intermediate CA is opt-in and performed separately.')
 
       expect_task('peadm::get_peadm_config').always_return(cfg)
       expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
@@ -65,11 +66,14 @@ describe 'peadm::add_compilers' do
       expect_plan('peadm::util::copy_file').be_called_times(1)
       expect_task('peadm::puppet_runonce').with_targets(['compiler'])
       expect_task('peadm::puppet_runonce').with_targets(['server_a'])
-      expect(run_plan('peadm::add_compilers', params)).to be_ok
+      result = run_plan('peadm::add_compilers', params)
+      expect(result).to be_ok
+      expect(result.value).to eq('Adding or replacing compiler(s) compiler succeeded.')
     end
 
     it 'handles different avail_group_letter values' do
       allow_standard_non_returning_calls
+      expect_out_message.with_params('Compilers are added in CA-proxy mode. Promotion to an Intermediate CA is opt-in and performed separately.')
       cfg['role-letter']['server']['B'] = 'server_b'
 
       expect_task('peadm::get_peadm_config').always_return(cfg)
@@ -86,6 +90,7 @@ describe 'peadm::add_compilers' do
 
     it 'handles specified primary_postgresql_host' do
       allow_standard_non_returning_calls
+      expect_out_message.with_params('Compilers are added in CA-proxy mode. Promotion to an Intermediate CA is opt-in and performed separately.')
 
       expect_task('peadm::get_peadm_config').always_return(cfg)
       expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
@@ -100,6 +105,7 @@ describe 'peadm::add_compilers' do
 
     it 'handles external postgresql host group A' do
       allow_standard_non_returning_calls
+      expect_out_message.with_params('Compilers are added in CA-proxy mode. Promotion to an Intermediate CA is opt-in and performed separately.')
       cfg['params']['primary_postgresql_host'] = 'external_postgresql'
       cfg['params']['replica_postgresql_host'] = 'external_postgresql'
 
@@ -116,6 +122,7 @@ describe 'peadm::add_compilers' do
 
     it 'handles external postgresql host group A with replica' do
       allow_standard_non_returning_calls
+      expect_out_message.with_params('Compilers are added in CA-proxy mode. Promotion to an Intermediate CA is opt-in and performed separately.')
       cfg['params']['primary_postgresql_host'] = 'external_postgresql'
       cfg['role-letter']['server']['B'] = 'replica'
 
@@ -133,6 +140,7 @@ describe 'peadm::add_compilers' do
 
     it 'handles external postgresql host group B' do
       allow_standard_non_returning_calls
+      expect_out_message.with_params('Compilers are added in CA-proxy mode. Promotion to an Intermediate CA is opt-in and performed separately.')
       cfg['params']['replica_postgresql_host'] = 'replica_external_postgresql'
 
       expect_task('peadm::get_peadm_config').always_return(cfg)
