@@ -161,7 +161,8 @@ plan peadm::add_replica(
       # "task failed with exit code N". provision_replica shells out to
       # `puppet infrastructure provision replica`; the actual error text
       # only appears in the task's captured output (_output).
-      $output = ($result.value =~ Hash) ? { true => $result.value['_output'], default => undef }
+      $result_value = $result.value
+      $output = ($result_value =~ Hash) ? { true => $result_value['_output'], default => undef }
       $detail = ($output =~ String[1]) ? { true => $output, default => $result.error.message }
       "${result.target.name}: ${detail}"
     }.join("\n\n")
