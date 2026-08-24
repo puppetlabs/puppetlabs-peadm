@@ -137,7 +137,7 @@ describe 'peadm::add_replica' do
       expect_plan('peadm::util::copy_file').be_called_times(5)
 
       attempts = 0
-      expect_task('peadm::provision_replica').return do |targets:, **_kwargs|
+      expect_task('peadm::provision_replica').be_called_times(2).return do |targets:, **_kwargs|
         attempts += 1
         results = targets.map do |target|
           if attempts == 1
@@ -170,7 +170,7 @@ describe 'peadm::add_replica' do
       expect_plan('peadm::util::copy_file').be_called_times(5)
 
       attempts = 0
-      expect_task('peadm::provision_replica').return do |targets:, **_kwargs|
+      expect_task('peadm::provision_replica').be_called_times(3).return do |targets:, **_kwargs|
         attempts += 1
         results = targets.map do |target|
           Bolt::Result.new(target,
