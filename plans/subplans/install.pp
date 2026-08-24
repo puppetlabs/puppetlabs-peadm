@@ -448,6 +448,94 @@ plan peadm::subplans::install (
   peadm::wait_until_service_ready('pe-master', $primary_target)
   run_task('peadm::puppet_runonce', $primary_target)
 
+  # PE-45431 (ca-db-default epic): On Large/XL/external-Postgres topologies,
+  # peadm runs peadm::pe_install on $primary_target before $database_targets
+  # (above), so pe-ca does not exist when the primary's installer runs --
+  # pe-installer-shim's own migration (PE-45430) checks
+  # ca_storage_backend_reachable, finds it unreachable, and skips loudly:
+  # "The orchestrating installer (for example, peadm) must complete the
+  # database migration once pe-ca is reachable." Complete it here, now that
+  # $database_targets are installed and converged (the wait() above) and the
+  # primary is confirmed ready (the puppet_runonce/wait_until_service_ready
+  # sequence above).
+  #
+  # peadm installs PE versions that predate this feature entirely -- neither
+  # the puppet_enterprise::ca_storage_import plan nor the ca_storage_backend
+  # classifier param exist on those versions, and no ship version for this
+  # feature has been finalized as of this writing, so this cannot be a
+  # hardcoded SemVerRange gate (peadm::assert_supported_pe_version's usual
+  # pattern) without risking a wrong guess before GA. Probe for the plan file
+  # directly instead: a PE version that ships this feature already has it in
+  # the pe-installer's own Boltdir (the same one PE-45430's shim migration
+  # reuses, and the same mechanism `puppet infrastructure run` uses for CA
+  # plans); one that doesn't fails the probe and this step no-ops. Uses
+  # `stat`, not `test -f`: `test -f` exits 1 identically (with empty stderr)
+  # whether the file is genuinely absent or exists but is unreadable (e.g. a
+  # permissions problem on the installer's own Boltdir) -- confirmed
+  # empirically. `stat` exits 1 for both cases too, but its stderr text
+  # differs ("No such file or directory" vs "Permission denied" -- also
+  # confirmed empirically), which is the only way to tell "old PE version"
+  # apart from "real infrastructure problem" here.
+  #
+  # Safe to call again on every topology, including Standard, where the shim
+  # (above, PE-45430) has already migrated when pe-ca was reachable at
+  # install time: ca_storage_import's bulk/delta import steps use upsert
+  # semantics and its Classifier write sets the same value again with no
+  # functional effect. Not a true no-op, though -- the plan unconditionally
+  # re-runs the Puppet agent, restarts pe-puppetserver, and polls readiness
+  # (up to ~145s: 29 retries x 5s between attempts) every time it's invoked,
+  # migrated-already or not. That's an accepted, small fixed cost on every
+  # peadm install, not something this step tries to skip.
+  $ca_storage_import_plan_file = '/opt/puppetlabs/installer/share/Boltdir/modules/puppet_enterprise/plans/ca_storage_import.pp'
+  $ca_storage_import_probe = run_command(
+    "stat '${ca_storage_import_plan_file}'",
+    $primary_target,
+    '_catch_errors' => true,
+  ).first
+
+  if $ca_storage_import_probe.ok {
+    out::message('Completing the Certificate Authority database storage migration (puppet_enterprise::ca_storage_import)...')
+# lint:ignore:strict_indent
+    run_command(@("CMD"/L), $primary_target)
+      BOLT_DISABLE_ANALYTICS=true BOLT_GEM=true /opt/puppetlabs/installer/bin/bolt \
+        --project /opt/puppetlabs/installer/share/Boltdir plan run \
+        puppet_enterprise::ca_storage_import targets=localhost
+      | CMD
+# lint:endignore
+  } elsif $ca_storage_import_probe.error.kind == 'puppetlabs.tasks/command-error' {
+    # The probe command ran (as opposed to failing to reach the target at
+    # all -- that's the else branch below), so a 'stderr' key is guaranteed
+    # present here (Bolt's for_command result always includes it). Only
+    # stat's own "No such file or directory" confirms the file is genuinely
+    # absent, not merely unreadable -- see the stat-vs-test-f rationale
+    # above. Anything else (e.g. "Permission denied") is a real problem with
+    # the installer's own Boltdir on a PE version that likely does ship
+    # this feature, and must fail loudly instead of being treated as "old
+    # PE version, nothing to do."
+    $ca_storage_import_probe_stderr = $ca_storage_import_probe['stderr']
+    if $ca_storage_import_probe_stderr =~ /No such file or directory/ {
+      # out::message, not out::verbose: an install running on a PE version
+      # that predates this feature should visibly say so in a normal run,
+      # not only under elevated Bolt verbosity -- matching how most
+      # status/skip messages in this repo's plans/ are logged (the handful
+      # of existing out::verbose calls in add_database.pp/
+      # util/update_classification.pp are internal step-tracing notes and
+      # config/state dumps, not messages an operator needs to notice by
+      # default).
+      out::message("puppet_enterprise::ca_storage_import is not present on ${primary_target} (this PE version predates the CA database storage feature) -- skipping.") # lint:ignore:140chars
+    } else {
+      fail_plan("Could not confirm ${primary_target} predates the CA database storage feature: ${ca_storage_import_probe_stderr}") # lint:ignore:140chars
+    }
+  } else {
+    # Any other failure kind (e.g. a transport/connect error) means the
+    # probe itself couldn't run at all -- no 'stderr' key exists on that
+    # kind of result, so it's never safe to read unconditionally. This is a
+    # real infrastructure problem, not "old PE version," and must not be
+    # silently treated as a no-op.
+    $ca_storage_import_probe_error = $ca_storage_import_probe.error.message
+    fail_plan("Could not check whether ${primary_target} has the ca_storage_import plan available: ${ca_storage_import_probe_error}") # lint:ignore:140chars
+  }
+
   # Cleanup temp bootstrapping config
   parallelize(['primary', 'primary_postgresql', 'replica_postgresql']) |$var| {
     $target  = getvar("${var}_target", [])
