@@ -43,19 +43,19 @@ jobs:
           - extra-large
           - large-with-dr
           - extra-large-with-dr
-        version: [2021.7.9, 2023.8.11, 2025.11.2]
+        version: [2021.7.9, 2023.8.10, 2025.11.2]
         image: [almalinux-cloud/almalinux-8]
         include:
           - architecture: standard
-            version: 2023.8.11
+            version: 2023.8.10
             image: almalinux-cloud/almalinux-8
             new_pe_version: 2025.11.2
           - architecture: large
-            version: 2023.8.11
+            version: 2023.8.10
             image: almalinux-cloud/almalinux-8
             new_pe_version: 2025.11.2
           - architecture: extra-large
-            version: 2023.8.11
+            version: 2023.8.10
             image: almalinux-cloud/almalinux-8
             new_pe_version: 2025.11.2
           # excluding the following combinations as due to their long running nature they always fail due to
@@ -63,7 +63,7 @@ jobs:
           # to change how we provision test nodes in CI then we will hopefully be able to include these
         exclude:
           - architecture: extra-large-with-dr
-            version: 2023.8.11
+            version: 2023.8.10
             image: almalinux-cloud/almalinux-8
           - architecture: extra-large-with-dr
             version: 2025.11.2
