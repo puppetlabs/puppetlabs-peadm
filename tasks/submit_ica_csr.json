@@ -1,0 +1,6 @@
+{
+  "description": "Generate and submit this compiler's ICA CSR to the PE primary. A thin wrapper: shells out to the puppetserver ICA provisioning subcommand, which performs all cryptography (key generation, PKCS#8 encryption, CSR and initial CRL construction) and submission. Returns the pending request id. Makes no change to bootstrap.cfg and restarts no services. Called by peadm::promote_compiler_to_ica (ticket 7.6); ICA promotion is per-compiler and operator-driven only.",
+  "input_method": "stdin",
+  "files": ["peadm/files/ica_task_helper.rb"],
+  "parameters": {}
+}
