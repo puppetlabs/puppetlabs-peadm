@@ -1,0 +1,11 @@
+{
+  "description": "Install this compiler's approved, signed ICA certificate. Config and service manipulation only, no cryptography: fetches the cert from the PE primary, installs it, swaps bootstrap.cfg from the CA-proxy service to IntermediateCAService, clears ca.conf's ica-pool, pins this compiler into the shared PE ICA Compilers classifier group (which sets pe_ca_ica_enabled), and restarts the CA service. Called by peadm::promote_compiler_to_ica (ticket 7.6) after operator approval of the pending CSR from peadm::submit_ica_csr.",
+  "input_method": "stdin",
+  "files": ["peadm/files/ica_task_helper.rb"],
+  "parameters": {
+    "primary_host": {
+      "description": "Certname/FQDN of the PE primary to fetch the approved ICA certificate from.",
+      "type": "String[1]"
+    }
+  }
+}
