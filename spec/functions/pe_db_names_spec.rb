@@ -46,32 +46,41 @@ describe 'peadm::pe_db_names' do
       )
     end
 
-    it 'still returns the 2025.6 set for the newest 2025.x release' do
-      is_expected.to run.with_params('2025.11.0').and_return(
+    it 'does not add the CA database to the release just before it' do
+      is_expected.to run.with_params('2025.10.0').and_return(
         original + ['pe-hac', 'pe-patching', 'pe-infra-assistant', 'pe-workflow'],
       )
     end
   end
 
+  context 'PE 2025.11 and later' do
+    it 'adds the CA database' do
+      is_expected.to run.with_params('2025.11.0').and_return(
+        original + ['pe-hac', 'pe-patching', 'pe-infra-assistant', 'pe-workflow', 'pe-ca'],
+      )
+    end
+
+    it 'still returns the 2025.11 set for a later 2025.x release' do
+      is_expected.to run.with_params('2025.12.0').and_return(
+        original + ['pe-hac', 'pe-patching', 'pe-infra-assistant', 'pe-workflow', 'pe-ca'],
+      )
+    end
+  end
+
   context 'PE 2026.0 and later' do
-    it 'adds the code-manager database' do
+    it 'adds the code-manager database, keeping the CA database' do
       is_expected.to run.with_params('2026.0.0').and_return(
-        original + ['pe-hac', 'pe-patching', 'pe-infra-assistant', 'pe-workflow', 'pe-code-manager'],
+        original + ['pe-hac', 'pe-patching', 'pe-infra-assistant', 'pe-workflow', 'pe-ca', 'pe-code-manager'],
       )
     end
 
     # Every branch in this function is an open-ended SemVerRange, so a 2026.x
-    # version satisfies '>= 2025.6.0' too. If the 2026 case is not matched
-    # first, 2026 silently falls through to the 2025.6 set and this fails.
-    it 'does not fall through to the 2025.6 set on a later 2026 release' do
+    # version satisfies '>= 2025.11.0' and '>= 2025.6.0' too. If the 2026 case
+    # is not matched first, 2026 silently falls through to an older set and
+    # loses 'pe-code-manager'.
+    it 'does not fall through to an older set on a later 2026 release' do
       is_expected.to run.with_params('2026.4.0').and_return(
-        original + ['pe-hac', 'pe-patching', 'pe-infra-assistant', 'pe-workflow', 'pe-code-manager'],
-      )
-    end
-
-    it 'does not add the code-manager database to the release just before it' do
-      is_expected.to run.with_params('2025.12.0').and_return(
-        original + ['pe-hac', 'pe-patching', 'pe-infra-assistant', 'pe-workflow'],
+        original + ['pe-hac', 'pe-patching', 'pe-infra-assistant', 'pe-workflow', 'pe-ca', 'pe-code-manager'],
       )
     end
   end
