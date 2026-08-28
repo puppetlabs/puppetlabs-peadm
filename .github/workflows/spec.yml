@@ -88,19 +88,20 @@ jobs:
       - name: Run parallel_spec tests
         run: |-
           bundle exec rake parallel_spec
-  # PE-45655: reports Ruby line coverage. It re-runs the full spec suite
-  # sequentially (not the parallel/matrix run the Spec job already does, and
-  # not pinned to a specific Puppet version the way that matrix is), so a
-  # real spec regression here is very likely also caught by Spec rather than
-  # being additional signal. continue-on-error keeps this job purely
-  # advisory (matching the intent described in documentation/test-coverage.md)
-  # rather than an unannounced second required check on every PR.
+  # PE-45655/PE-45737: reports Ruby line coverage and enforces a floor. It
+  # re-runs the full spec suite sequentially (not the parallel/matrix run
+  # the Spec job already does, and not pinned to a specific Puppet version
+  # the way that matrix is), so a real spec regression here is very likely
+  # also caught by Spec rather than being additional signal. The enforced
+  # floor (see SimpleCov.minimum_coverage in spec/spec_helper_local.rb) is
+  # intentionally modest -- see documentation/test-coverage.md -- so
+  # continue-on-error was removed once that floor was confirmed to hold, but
+  # this is not yet a comprehensive coverage gate.
   Coverage:
-    name: Ruby line coverage (SimpleCov, allowed to fail)
+    name: Ruby line coverage (SimpleCov)
     needs: [setup_matrix]
     if: ${{ needs.setup_matrix.outputs.spec_matrix != '{}' }}
     runs-on: ubuntu-latest
-    continue-on-error: true
     timeout-minutes: 20
     env:
       FACTER_GEM_VERSION: https://github.com/puppetlabs/facter#main
