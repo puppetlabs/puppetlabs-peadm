@@ -10,6 +10,7 @@ function peadm::pe_db_names (
   ]
 
   $pe_2026_or_later = SemVerRange('>= 2026.0.0')
+  $pe_2025_11_or_later = SemVerRange('>= 2025.11.0')
   $pe_2025_6_or_later = SemVerRange('>=2025.6.0')
   $pe_2025_3_or_later = SemVerRange('>= 2025.3.0')
   $pe_2025_or_later = SemVerRange('>= 2025.0.0')
@@ -26,7 +27,19 @@ function peadm::pe_db_names (
         'pe-patching',
         'pe-infra-assistant',
         'pe-workflow',
+        'pe-ca',
         'pe-code-manager',
+      ]
+    }
+
+    # The certificate authority gained a database in 2025.11.0
+    $pe_2025_11_or_later: {
+      $original_db_names + [
+        'pe-hac',
+        'pe-patching',
+        'pe-infra-assistant',
+        'pe-workflow',
+        'pe-ca',
       ]
     }
 
