@@ -11,11 +11,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 ### Other
 
-- Revert "(PE-45431) Complete CA storage migration for split topologies (#691)" [#695](https://github.com/puppetlabs/puppetlabs-peadm/pull/695) ([Jade2153](https://github.com/Jade2153))
+
 - Adding support for PE 2025.11.2 [#694](https://github.com/puppetlabs/puppetlabs-peadm/pull/694) ([Jade2153](https://github.com/Jade2153))
-- (PE-45431) Complete CA storage migration for split topologies [#691](https://github.com/puppetlabs/puppetlabs-peadm/pull/691) ([jonathannewman](https://github.com/jonathannewman))
-- Revert "(PE-45431) Complete CA storage migration for split topologies (#688)" [#690](https://github.com/puppetlabs/puppetlabs-peadm/pull/690) ([jonathannewman](https://github.com/jonathannewman))
-- (PE-45431) Complete CA storage migration for split topologies [#688](https://github.com/puppetlabs/puppetlabs-peadm/pull/688) ([jonathannewman](https://github.com/jonathannewman))
 
 ## [v3.38.1](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.38.1) - 2026-07-08
 
