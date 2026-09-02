@@ -107,8 +107,8 @@ jobs:
     if: ${{ github.repository_owner == 'puppetlabs' }}
     runs-on: ubuntu-latest
     env:
-      PUPPET_GEM_VERSION: '~> 9.0'
-      FACTER_GEM_VERSION: '~> 4.12'
+      PUPPET_GEM_VERSION: ~> 9.0
+      FACTER_GEM_VERSION: ~> 4.12
       PUPPET_FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_API_TOKEN }}
       BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: forge-key:${{ secrets.PUPPET_FORGE_API_TOKEN }}
     steps:
