@@ -22,6 +22,14 @@ class SubmitIcaCsr
     stdout, stderr, status = IcaTaskHelper.run_ica_provision
 
     if status.success?
+      # A successful provision can still have something to say: the subcommand
+      # owns spec section 18.5's trust bundle check, which warns without
+      # failing. stderr is otherwise only surfaced in the failure branch below,
+      # so without this any warning from a successful run is discarded and
+      # never reaches the operator. Emitted before the result so it cannot be
+      # lost behind the task's own output.
+      warn stderr unless stderr.to_s.empty?
+
       begin
         request = JSON.parse(stdout)
         STDOUT.puts({ 'request-id' => request.fetch('request-id') }.to_json)

@@ -32,6 +32,62 @@ describe SubmitIcaCsr do
     end
   end
 
+  context 'when the subcommand succeeds but writes to stderr' do
+    # The subcommand owns spec section 18.5's trust bundle check, which warns
+    # on a *successful* provision. Nothing else surfaces stderr on this path.
+    it 'surfaces the subcommand stderr and still returns the request-id' do
+      status_dbl = instance_double('Process::Status', success?: true)
+      allow(IcaTaskHelper).to receive_messages(
+        promoted_to_ica?: false,
+        run_ica_provision: ['{"request-id":"abc-123"}',
+                            'WARNING: ca.pem does not contain the root CA', status_dbl],
+      )
+      expect(STDOUT).to receive(:puts).with(JSON.generate('request-id' => 'abc-123'))
+
+      expect {
+        begin
+          task.execute!
+        rescue SystemExit => e
+          expect(e.status).to eq(0)
+        end
+      }.to output(%r{ca\.pem does not contain the root CA}).to_stderr
+    end
+
+    it 'still surfaces stderr when the subcommand exits 0 with unparseable stdout' do
+      status_dbl = instance_double('Process::Status', success?: true)
+      allow(IcaTaskHelper).to receive_messages(
+        promoted_to_ica?: false,
+        run_ica_provision: ['not json', 'WARNING: something the operator should see', status_dbl],
+      )
+
+      expect {
+        begin
+          task.execute!
+        rescue SystemExit => e
+          expect(e.status).to eq(1)
+        end
+      }.to output(%r{something the operator should see}).to_stderr
+    end
+  end
+
+  context 'when the subcommand succeeds quietly' do
+    it 'emits nothing on stderr' do
+      status_dbl = instance_double('Process::Status', success?: true)
+      allow(IcaTaskHelper).to receive_messages(
+        promoted_to_ica?: false,
+        run_ica_provision: ['{"request-id":"abc-123"}', '', status_dbl],
+      )
+
+      expect {
+        begin
+          task.execute!
+        rescue SystemExit => e
+          expect(e.status).to eq(0)
+        end
+      }.not_to output.to_stderr
+    end
+  end
+
   context 'when the subcommand fails' do
     it 'surfaces the subcommand stderr and exits 1' do
       status_dbl = instance_double('Process::Status', success?: false)
