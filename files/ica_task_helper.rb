@@ -12,13 +12,11 @@ require 'open3'
 module IcaTaskHelper
   PUPPETSERVER_BIN = '/opt/puppetlabs/bin/puppetserver'
   PUPPETSERVER_CONFDIR = '/etc/puppetlabs/puppetserver'
-  # NOTE: subcommand verb not yet confirmed against the merged ticket 7.1
-  # (PE-44789) implementation — update this constant if it differs.
   ICA_PROVISION_SUBCOMMAND = 'ica-provision'
   CA_SERVICE_PORT = 8140
   CLASSIFIER_PORT = 4433
-  # NOTE: group name/parent not specified anywhere in PE-44791/44789/44794 or
-  # spec.md as of 2026-08 — confirm with the ticket 5.5 classification owner.
+  # The shared classifier group that ICA compilers are pinned into; created with
+  # pe_ca_ica_enabled => true if absent. See ticket 5.5 for the classification.
   ICA_GROUP_NAME = 'PE ICA Compilers'
   # The classifier's well-known "All Nodes" root group UUID, used as the
   # parent when creating the ICA compilers group.
