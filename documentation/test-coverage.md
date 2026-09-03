@@ -30,11 +30,40 @@ no spec at all show up as an explicit 0% gap instead of being invisible.
 **In CI:** the `Coverage` job in `.github/workflows/spec.yml` runs this on
 matching PRs (it's gated by the same path filters and fork-PR `setup_matrix`
 check as the `Spec` job, so it doesn't run on every PR) and uploads the HTML
-report as a build artifact. It currently only
-*reports* -- it does not fail the build at any threshold yet. Codecov
-upload is intentionally disabled (the `codecov` gem is present but the
-formatter is dropped in `spec_helper_local.rb`) since this repo has no
-`CODECOV_TOKEN` configured; wiring that up is separate follow-on work.
+report as a build artifact. `spec/spec_helper_local.rb` sets
+`SimpleCov.minimum_coverage 12` (as of PE-45737), so the job now fails the
+build below that floor. Codecov upload is intentionally disabled (the
+`codecov` gem is present but the formatter is dropped in
+`spec_helper_local.rb`) since this repo has no `CODECOV_TOKEN` configured;
+wiring that up is separate follow-on work.
+
+**Why 12%, not the 90% PE-45737 named as its acceptance criterion:** SimpleCov
+only tracks `tasks/*.rb` and `lib/puppet/functions/peadm/*.rb`. PE-45737's
+scope named exactly `plan_step.rb`, `file_content_upload.rb`, and four tasks
+(`sign_csr.rb`, `ssl_clean.rb`, `rbac_token.rb`, `validate_rbac_token.rb`) --
+all of which now have direct specs. But roughly a dozen *other* tasks this
+ticket never named -- `get_peadm_config.rb` (152 lines), `check_pe_master_rules.rb`
+(125), `cert_data.rb` (80), `code_sync_status.rb` (88), `check_legacy_compilers.rb`
+(52), `code_manager_enabled.rb` (48), and several smaller ones -- remain
+completely untested and dominate the Ruby line count. Reaching 90% requires
+testing those too, which is a substantially larger scope than PE-45737
+described. The measured number after this ticket's work is **12.83%
+(161/1255 lines)**, up from the 4.29% PE-45655 baseline; the floor is set to
+12 (a small margin below that) rather than left at 0, so this at least
+catches *regressions* in what's now covered, and rather than silently
+expanding this ticket's scope to chase 90%. Closing the remaining gap is
+follow-on work (a new ticket under PE-45224).
+
+**A note for whoever picks up that follow-on work:** `plan_step.rb` and
+`file_content_upload.rb` still show 0.00% in SimpleCov's report *despite*
+having direct, passing unit specs (added in PE-45737) that exercise every
+branch. The four tasks' coverage improved as expected under the same
+process. This looks like SimpleCov (or the underlying Ruby `Coverage`
+module) not attributing execution back to `lib/puppet/functions/peadm/*.rb`
+source files when they're loaded through Puppet's function loader, rather
+than a gap in the new specs -- worth investigating before assuming any
+`lib/puppet/functions/peadm/*.rb` file's SimpleCov number reflects its real
+test coverage.
 
 ## Puppet resource coverage (`RSpec::Puppet::Coverage`)
 
@@ -54,11 +83,13 @@ small number of classes under `manifests/`.
 `after(:suite)` hook in `spec/spec_helper.rb`, and prints a report at the
 end.
 
-**In CI:** `RSpec::Puppet::Coverage.report!(0)` in `spec/spec_helper.rb`
-passes `0` as its minimum-coverage argument, which disables enforcement
-entirely -- the number is printed but can never fail a build. Raising this
-to a real floor, once one is established, is tracked separately (see
-[Open items](#open-items) below).
+**In CI:** `RSpec::Puppet::Coverage.report!(90)` in `spec/spec_helper.rb`
+(as of PE-45737, up from `0`) fails the build below 90%. This floor is
+realistic here: `manifests/setup/node_manager.pp` is the only class in this
+repo with resource declarations, and PE-45737 brought its measured resource
+coverage from 41.67% (5/12) to **100.00% (12/12)** by adding direct
+`contain_node_group` assertions in `spec/classes/setup/node_manager_spec.rb`
+for the groups that were compiling but had never been asserted against.
 
 ## Plans and functions (tracked manually, no percentage)
 
@@ -77,12 +108,24 @@ not, the test may be exercising the code without actually verifying it.
 
 ## Open items
 
-Standing up the tools above is one thing; using them to close PEADM's actual
-coverage gap is separate, larger work, tracked under
-[PE-45224](https://perforce.atlassian.net/browse/PE-45224). At the time this
-doc was written, the honest SimpleCov baseline (once `tasks/*.rb` is
-included) is **4.29% (55/1283 lines, 27 files)** -- most task files have no
-spec at all, so this number moves a lot with each file that gets one.
-Neither the SimpleCov job nor the `RSpec::Puppet::Coverage` threshold
-enforces a floor yet; both are report-only until that gap is actually
-closed.
+Standing up the tools above (PE-45655) and closing the specific gaps named
+in PE-45737 (negative-path plan specs, the three previously-spec-less
+plans, direct function/task unit specs, the remaining `configure.pp`
+branches, and `RSpec::Puppet::Coverage` reaching a real, enforced 90% floor)
+are both done as of PE-45737. What's left, tracked under
+[PE-45224](https://perforce.atlassian.net/browse/PE-45224), is the *Ruby
+line coverage* gap: SimpleCov sits at 12.83% (161/1255 lines) against a
+12% enforced floor, well short of 90%, because roughly a dozen tasks outside
+PE-45737's named scope (`get_peadm_config.rb`, `check_pe_master_rules.rb`,
+`cert_data.rb`, `code_sync_status.rb`, `check_legacy_compilers.rb`,
+`code_manager_enabled.rb`, `classify_compilers.rb`, `backup_classification.rb`,
+`get_group_rules.rb`, `cert_valid_status.rb`, and a few smaller ones) have no
+spec at all and dominate the line count. A follow-on ticket under PE-45224
+should write unit specs for those, following the same mutation-reasoning
+discipline as PE-45737, then raise `SimpleCov.minimum_coverage` in
+`spec/spec_helper_local.rb` toward 90% as real coverage is added -- not in
+one jump, the same way `RSpec::Puppet::Coverage`'s floor here was only
+raised once the number backing it was real. That ticket should also
+investigate why `plan_step.rb`/`file_content_upload.rb` report 0% despite
+having passing direct specs (see the SimpleCov section above) before relying
+on this metric for any `lib/puppet/functions/peadm/*.rb` file.
