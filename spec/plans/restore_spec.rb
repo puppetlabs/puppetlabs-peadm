@@ -246,8 +246,12 @@ describe 'peadm::restore' do
     # `.not_to be_ok` / message assertions).
     it 'gives up and fails the plan after exhausting rbac_token retries', valid_cluster: true do
       # ctrl::sleep calls Kernel#sleep for real; stub it out so the retry
-      # backoff doesn't make this example take ~60 real seconds.
+      # backoff doesn't make this example take ~60 real seconds. There's no
+      # single instance to target -- it executes inside Puppet's plan
+      # evaluation -- so any_instance_of is the only option here.
+      # rubocop:disable RSpec/AnyInstance
       allow_any_instance_of(Object).to receive(:sleep)
+      # rubocop:enable RSpec/AnyInstance
 
       allow_any_command
       allow_task('peadm::backup_classification')
@@ -289,7 +293,7 @@ describe 'peadm::restore' do
     it 'restores puppetdb against both the primary and replica PostgreSQL hosts', valid_cluster: true do
       allow_any_command
       expect_task('peadm::get_psql_version')
-        .with_targets(%w[postgres postgres-replica])
+        .with_targets(['postgres', 'postgres-replica'])
         .always_return({ 'version' => psql_version })
 
       # If $puppetdb_postgresql_targets only ever resolved to the primary
@@ -297,7 +301,7 @@ describe 'peadm::restore' do
       # this target-scoped expectation would go unmatched (unmet expectation,
       # not merely a false negative), failing the example.
       expect_command("su - pe-postgres -s /bin/bash -c   \"/opt/puppetlabs/server/bin/psql      --tuples-only      -d 'pe-puppetdb'      -c 'DROP SCHEMA IF EXISTS pglogical CASCADE;'\"\n")
-        .with_targets(%w[postgres postgres-replica])
+        .with_targets(['postgres', 'postgres-replica'])
         .be_called_times(2)
 
       expect(run_plan('peadm::restore', recovery_db_params)).to be_ok
@@ -312,7 +316,7 @@ describe 'peadm::restore' do
   # merges two branches, or drops/inverts one of the three `if` guards.
   context 'custom restore with a single ca/code/config flag set' do
     let(:isolated_restore_flag) do
-      lambda do |flag|
+      ->(flag) do
         {
           'targets'      => 'primary',
           'input_file'   => backup_tarball,
@@ -330,6 +334,9 @@ describe 'peadm::restore' do
         }
       end
     end
+    let(:ca_command) { "/opt/puppetlabs/bin/puppet-backup restore   --scope=certs   --tempdir=/input/file   --force   /input/file/ca/pe_backup-*tgz\n" }
+    let(:code_command) { "/opt/puppetlabs/bin/puppet-backup restore   --scope=code   --tempdir=/input/file   --force   /input/file/code/pe_backup-*tgz\n" }
+    let(:config_command) { "/opt/puppetlabs/bin/puppet-backup restore   --scope=config   --tempdir=/input/file   --force   /input/file/config/pe_backup-*tgz\n" }
 
     before(:each) do
       expect_command("umask 0077   && cd /input   && tar -xzf /input/file.tar.gz\n")
@@ -337,10 +344,6 @@ describe 'peadm::restore' do
       expect_command("test -f /input/file/rbac/secrets/keys.json   && cp -rp /input/file/rbac/secrets/keys.json /etc/puppetlabs/console-services/conf.d/secrets/   || echo secret ldap key doesnt exist\n")
       expect_command("/opt/puppetlabs/bin/puppet-infrastructure configure --no-recover\n")
     end
-
-    let(:ca_command) { "/opt/puppetlabs/bin/puppet-backup restore   --scope=certs   --tempdir=/input/file   --force   /input/file/ca/pe_backup-*tgz\n" }
-    let(:code_command) { "/opt/puppetlabs/bin/puppet-backup restore   --scope=code   --tempdir=/input/file   --force   /input/file/code/pe_backup-*tgz\n" }
-    let(:config_command) { "/opt/puppetlabs/bin/puppet-backup restore   --scope=config   --tempdir=/input/file   --force   /input/file/config/pe_backup-*tgz\n" }
 
     it 'restores only ca/certs when recovery_opts.ca is the only flag set', valid_cluster: true do
       expect_command(ca_command)

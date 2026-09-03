@@ -29,7 +29,7 @@ describe ValidateRbacToken do
 
     allow(File).to receive(:read).and_return('dummy-pem-contents')
     allow(File).to receive(:read).with('/root/.puppetlabs/token').and_return("the-token\n")
-    allow(validate).to receive(:puts)
+    allow(STDOUT).to receive(:puts)
   end
 
   # Catches a mutation that changes/drops the `token_file || File.join(...)`
@@ -58,7 +58,7 @@ describe ValidateRbacToken do
     resp = instance_double(Net::HTTPOK, code: '200')
     allow(https_dbl).to receive(:request).with(request_dbl).and_return(resp)
 
-    expect(validate).to receive(:puts).with('RBAC token is valid')
+    expect(STDOUT).to receive(:puts).with('RBAC token is valid')
     expect { validate.execute! }.to raise_error(SystemExit) do |error|
       expect(error.status).to eq(0)
     end
@@ -76,12 +76,12 @@ describe ValidateRbacToken do
         resp = instance_double(Net::HTTPResponse, code: code, body: { 'kind' => 'unauthorized-token' }.to_json)
         allow(https_dbl).to receive(:request).with(request_dbl).and_return(resp)
 
-        expect(validate).to receive(:puts).with(
+        expect(STDOUT).to receive(:puts).with(
           "#{code} unauthorized-token: Check your API token at /root/.puppetlabs/token.\n" \
           "Please refresh your token or provide an alternate file.\n" \
           "See https://www.puppet.com/docs/pe/latest/rbac_token_auth_intro for more details.\n",
         )
-        expect(validate).not_to receive(:puts).with(a_string_matching(/Error validating token/))
+        expect(STDOUT).not_to receive(:puts).with(a_string_matching(%r{Error validating token}))
 
         expect { validate.execute! }.to raise_error(SystemExit) do |error|
           expect(error.status).to eq(1)
@@ -93,9 +93,9 @@ describe ValidateRbacToken do
       resp = instance_double(Net::HTTPResponse, code: '500', body: { 'kind' => 'server-error', 'msg' => 'boom' }.to_json)
       allow(https_dbl).to receive(:request).with(request_dbl).and_return(resp)
 
-      expect(validate).to receive(:puts).with('Error validating token: 500 server-error')
-      expect(validate).to receive(:puts).with('boom')
-      expect(validate).not_to receive(:puts).with(a_string_matching(/Check your API token at/))
+      expect(STDOUT).to receive(:puts).with('Error validating token: 500 server-error')
+      expect(STDOUT).to receive(:puts).with('boom')
+      expect(STDOUT).not_to receive(:puts).with(a_string_matching(%r{Check your API token at}))
 
       expect { validate.execute! }.to raise_error(SystemExit) do |error|
         expect(error.status).to eq(1)

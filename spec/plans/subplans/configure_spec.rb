@@ -97,7 +97,7 @@ describe 'peadm::subplans::configure' do
     }
   end
 
-  # NOTE on $cloud_database_host (configure.pp lines ~42, ~117): it is only
+  # NOTE: on $cloud_database_host (configure.pp lines ~42, ~117): it is only
   # ever forwarded into peadm::setup::node_manager inside the apply() block
   # at line ~103. BoltSpec::Plans::MockExecutor#apply short-circuits before
   # any catalog is compiled whenever allow_apply is in effect (confirmed by
@@ -234,7 +234,7 @@ describe 'peadm::subplans::configure' do
                        'primary_host'     => 'primary',
                        'compiler_hosts'   => 'compiler',
                        'legacy_compilers' => 'legacy_compiler')).to be_ok
-      expect(common_content_targets).to match_array(%w[compiler legacy_compiler])
+      expect(common_content_targets).to match_array(['compiler', 'legacy_compiler'])
     end
   end
 

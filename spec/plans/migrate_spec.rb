@@ -57,7 +57,7 @@ describe 'peadm::migrate' do
     call_count = 0
     allow_task('peadm::get_peadm_config').return do |targets:, **_kwargs|
       call_count += 1
-      data = call_count == 1 ? cluster_data : old_pe_conf
+      data = (call_count == 1) ? cluster_data : old_pe_conf
       Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: data) })
     end
   end
