@@ -32,6 +32,30 @@ describe ValidateRbacToken do
     allow(STDOUT).to receive(:puts)
   end
 
+  # Catches a mutation that drops `.chomp` (sending a trailing newline as
+  # part of the token) or that changes/drops the `token`/`update_last_activity?`
+  # keys -- either would send a payload the RBAC API rejects or silently
+  # bumps the token's last-activity time on a mere validation check. The
+  # permissive `allow(request_dbl).to receive(:body=)` in the shared
+  # before(:each) above doesn't verify any of this on its own; this test
+  # overrides it with a real assertion, matching rbac_token_spec.rb's
+  # equivalent test for the sibling task.
+  it 'builds the auth request body with the chomped token and update_last_activity? false' do
+    expect(request_dbl).to receive(:body=) do |body|
+      expect(JSON.parse(body)).to eq(
+        'token'                  => 'the-token',
+        'update_last_activity?'  => false,
+      )
+    end
+
+    resp = instance_double(Net::HTTPOK, code: '200')
+    allow(https_dbl).to receive(:request).with(request_dbl).and_return(resp)
+
+    expect { validate.execute! }.to raise_error(SystemExit) do |error|
+      expect(error.status).to eq(0)
+    end
+  end
+
   # Catches a mutation that changes/drops the `token_file || File.join(...)`
   # fallback, which would look in the wrong place for the token when the
   # caller doesn't supply one.

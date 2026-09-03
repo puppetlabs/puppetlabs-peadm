@@ -332,17 +332,21 @@ describe 'peadm::add_database' do
     result = run_plan('peadm::add_database', default_params)
 
     expect(result).to be_ok
-    databases_by_call = captured_db_purge.map { |p| p['databases'] }
-    # One call purges the single legacy 'pe-puppetdb' database off of the
-    # previous (primary-hosted, in init mode) backend...
-    expect(databases_by_call).to include(['pe-puppetdb'])
-    # ...and the other purges the full set of copied-over databases off of
-    # the newly-added node.
-    expect(databases_by_call).to include(target_db_purge)
+    # Checking databases and targets as two independent flat lists (as this
+    # test used to do) would still pass if the two calls' databases were
+    # swapped between hosts -- correlate each call's own targets with its
+    # own databases instead, so a swap is actually caught.
+    new_db_call = captured_db_purge.find { |p| Array(p['targets']).map(&:name) == ['new_db'] }
+    primary_call = captured_db_purge.find { |p| Array(p['targets']).map(&:name).all? { |name| name == 'primary' } }
 
-    targets_by_call = captured_db_purge.map { |p| Array(p['targets']).map(&:name) }
-    expect(targets_by_call.find { |t| t == ['new_db'] }).not_to be_nil
-    expect(targets_by_call.find { |t| t.all? { |name| name == 'primary' } }).not_to be_nil
+    expect(new_db_call).not_to be_nil
+    # ...purges the full set of copied-over databases off of the newly-added node.
+    expect(new_db_call['databases']).to eq(target_db_purge)
+
+    expect(primary_call).not_to be_nil
+    # ...purges the single legacy 'pe-puppetdb' database off of the previous
+    # (primary-hosted, in init mode) backend.
+    expect(primary_call['databases']).to eq(['pe-puppetdb'])
   end
 
   # Catches: the pglogical-disable call not being gated on $replica_host (or
@@ -361,11 +365,20 @@ describe 'peadm::add_database' do
     allow_plan('peadm::subplans::component_install').return { ok_plan_result }
     allow_plan('peadm::subplans::db_populate').return { ok_plan_result }
     allow_plan('peadm::util::update_db_setting').return { ok_plan_result }
-    allow_plan('peadm::util::db_purge').return { ok_plan_result }
 
+    # Independent expectations on db_disable_pglogical and db_purge (as this
+    # test used to have) prove both happened, but not in the order the test
+    # name claims -- reordering disable after either purge call would still
+    # pass. Log both into one shared, ordered array instead.
+    call_order = []
     captured_pglogical = []
     expect_plan('peadm::util::db_disable_pglogical').be_called_times(1).return do |params:, **|
+      call_order << :disable_pglogical
       captured_pglogical << params
+      ok_plan_result
+    end
+    allow_plan('peadm::util::db_purge').return do |**|
+      call_order << :purge
       ok_plan_result
     end
     captured_classification = []
@@ -377,6 +390,8 @@ describe 'peadm::add_database' do
     result = run_plan('peadm::add_database', default_params)
 
     expect(result).to be_ok
+    expect(call_order.first).to eq(:disable_pglogical)
+    expect(call_order).to include(:purge)
     expect(captured_pglogical.first['databases']).to eq(target_db_purge)
     expect(Array(captured_pglogical.first['targets']).map(&:name)).to eq(['new_db'])
 
