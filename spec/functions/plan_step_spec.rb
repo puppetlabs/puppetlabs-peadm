@@ -26,6 +26,9 @@ describe 'peadm::plan_step' do
   end
 
   # Minimal scope double implementing only what plan_step reads/writes.
+  # rubocop:disable RSpec/InstanceVariable -- this is a plain Ruby class
+  # implementing a scope double, not example-group test state; the cop's
+  # heuristic can't distinguish the two.
   class FakeScope
     def initialize(vars = {})
       @vars = vars
@@ -43,6 +46,7 @@ describe 'peadm::plan_step' do
       @vars[name] = value
     end
   end
+  # rubocop:enable RSpec/InstanceVariable
 
   # rubocop:disable RSpec/NamedSubject
   context 'when begin_at_step is not bound at all' do

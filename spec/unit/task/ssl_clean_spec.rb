@@ -46,7 +46,7 @@ describe SslClean do
     it 'runs `puppet ssl clean --certname <name>` and exits 0 on success' do
       expect(Open3).to receive(:capture2).with('/opt/puppetlabs/bin/puppet', 'ssl', 'clean',
                                                 '--certname', 'agent.example.com')
-                                          .and_return(['done', success_status])
+                                         .and_return(['done', success_status])
       expect(Dir).not_to receive(:glob)
 
       expect { ssl_clean.execute! }.to raise_error(SystemExit) do |error|

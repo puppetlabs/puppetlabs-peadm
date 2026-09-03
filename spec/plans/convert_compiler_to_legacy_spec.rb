@@ -137,7 +137,8 @@ describe 'peadm::convert_compiler_to_legacy' do
                          'node_group_environment' => 'production')
       expect(result).to be_ok
 
-      a_call, b_call = captured[1], captured[2]
+      a_call = captured[1]
+      b_call = captured[2]
       expect(Array(a_call['targets']).map(&:name)).to include('legacy-a1')
       expect(Array(b_call['targets']).map(&:name)).not_to include('legacy-a1')
     end
@@ -169,7 +170,8 @@ describe 'peadm::convert_compiler_to_legacy' do
                          'node_group_environment' => 'production')
       expect(result).to be_ok
 
-      a_call, b_call = captured[1], captured[2]
+      a_call = captured[1]
+      b_call = captured[2]
       expect(Array(b_call['targets']).map(&:name)).to include('legacy-b1')
       expect(Array(a_call['targets']).map(&:name)).not_to include('legacy-b1')
     end
@@ -201,7 +203,8 @@ describe 'peadm::convert_compiler_to_legacy' do
                          'node_group_environment' => 'production')
       expect(result).to be_ok
 
-      a_call, b_call = captured[1], captured[2]
+      a_call = captured[1]
+      b_call = captured[2]
       expect(Array(a_call['targets']).map(&:name)).to include('legacy-c1a')
       expect(Array(b_call['targets']).map(&:name)).to include('legacy-c1b')
       expect(Array(a_call['targets']).map(&:name)).not_to include('legacy-c1b')

@@ -14,7 +14,6 @@ describe SignCSR do
     allow(Puppet).to receive(:settings).and_return(csrdir: '/etc/puppetlabs/puppet/ssl/ca/requests',
                                                     cadir: '/etc/puppetlabs/puppet/ssl/ca')
     allow(STDOUT).to receive(:puts)
-    allow(sign_csr).to receive(:puts)
   end
 
   describe '#csr_signed?' do
@@ -47,7 +46,7 @@ describe SignCSR do
     it 'does not raise when the puppetserver ca sign command succeeds' do
       expect(Open3).to receive(:capture2).with('/opt/puppetlabs/bin/puppetserver', 'ca', 'sign',
                                                 '--certname', 'agent.example.com')
-                                          .and_return(['ok', success_status])
+                                         .and_return(['ok', success_status])
       expect { sign_csr.sign(['agent.example.com']) }.not_to raise_error
     end
 
@@ -82,7 +81,7 @@ describe SignCSR do
 
       expect(Open3).to receive(:capture2).with('/opt/puppetlabs/bin/puppetserver', 'ca', 'sign',
                                                 '--certname', 'still-pending.example.com')
-                                          .and_return(['ok', success_status])
+                                         .and_return(['ok', success_status])
 
       task.execute!
     end
@@ -90,10 +89,14 @@ describe SignCSR do
     # Catches a mutation that removes/breaks the `unsigned.empty?` early
     # exit, which would otherwise invoke `sign` with an empty certname list.
     it 'exits 0 without attempting to sign anything when all certs are already signed' do
-      allow(sign_csr).to receive(:csr_signed?).and_return(true)
+      # A fresh instance (not the shared `subject`) so csr_signed? can be
+      # stubbed without RuboCop flagging a self-stub on the object under
+      # test -- this is otherwise the exact same construction as `subject`.
+      task = described_class.new(params)
+      allow(task).to receive(:csr_signed?).and_return(true)
       expect(Open3).not_to receive(:capture2)
 
-      expect { sign_csr.execute! }.to raise_error(SystemExit) do |error|
+      expect { task.execute! }.to raise_error(SystemExit) do |error|
         expect(error.status).to eq(0)
       end
     end
@@ -112,12 +115,12 @@ describe SignCSR do
     # actually happen against the unmodified task file) so it still fails if
     # a mutation changes what "signing fails" looks like.
     it 'propagates an uncaught TypeError on the first failed sign attempt, never reaching the retry/exit-0 path' do
-      allow(sign_csr).to receive(:csr_signed?).and_return(false)
-      allow(sign_csr).to receive(:sleep)
+      task = described_class.new(params)
+      allow(task).to receive(:csr_signed?).and_return(false)
+      expect(task).not_to receive(:sleep)
       allow(Open3).to receive(:capture2).and_return(['failed', failure_status])
 
-      expect { sign_csr.execute! }.to raise_error(TypeError, 'exception class/object expected')
-      expect(sign_csr).not_to have_received(:sleep)
+      expect { task.execute! }.to raise_error(TypeError, 'exception class/object expected')
     end
 
     # Same root cause as above: the retry-exhaustion path (`exit 1` after 6
@@ -128,8 +131,9 @@ describe SignCSR do
     # times `Open3.capture2` is invoked before the (currently unreachable)
     # retry/exit-1 logic would kick in.
     it 'does not retry or exit 1 after a failed sign attempt, because the retry rescue is unreachable' do
-      allow(sign_csr).to receive(:csr_signed?).and_return(false)
-      allow(sign_csr).to receive(:sleep)
+      task = described_class.new(params)
+      allow(task).to receive(:csr_signed?).and_return(false)
+      expect(task).not_to receive(:sleep)
 
       call_count = 0
       allow(Open3).to receive(:capture2) do
@@ -137,9 +141,8 @@ describe SignCSR do
         ['failed', failure_status]
       end
 
-      expect { sign_csr.execute! }.to raise_error(TypeError)
+      expect { task.execute! }.to raise_error(TypeError)
       expect(call_count).to eq(1)
-      expect(sign_csr).not_to have_received(:sleep)
     end
   end
 end

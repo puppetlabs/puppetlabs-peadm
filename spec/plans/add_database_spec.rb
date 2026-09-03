@@ -33,6 +33,7 @@ describe 'peadm::add_database' do
   # returns exactly the 5 "original" database names, keeping expected values
   # concrete and easy to assert on exactly (not just "not empty").
   let(:pe_version) { '2023.0.0' }
+  let(:default_params) { { 'targets' => 'new_db', 'primary_host' => 'primary' } }
   let(:target_db_purge) { ['pe-activity', 'pe-classifier', 'pe-inventory', 'pe-orchestrator', 'pe-rbac'] }
 
   # Baseline peadm_config: L/XL deployment (has a compiler), no replica, no
@@ -53,8 +54,6 @@ describe 'peadm::add_database' do
       },
     }
   end
-
-  let(:default_params) { { 'targets' => 'new_db', 'primary_host' => 'primary' } }
 
   # Allows every sub-plan that a "happy path" run of add_database.pp calls,
   # returning success without asserting call counts/params. Individual tests

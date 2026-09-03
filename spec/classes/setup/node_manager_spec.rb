@@ -231,7 +231,7 @@ describe 'peadm::setup::node_manager' do
       is_expected.to contain_node_group('PE Legacy Compiler Group A').with(
         'rule'    => ['and',
                       ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler_legacy'],
-                      ['=', ['trusted', 'extensions', peadm_availability_group_oid], 'A'],],
+                      ['=', ['trusted', 'extensions', peadm_availability_group_oid], 'A']],
         'classes' => {
           'puppet_enterprise::profile::master' => {
             'puppetdb_host' => [server_b_host, primary_host],
@@ -248,7 +248,7 @@ describe 'peadm::setup::node_manager' do
       is_expected.to contain_node_group('PE Legacy Compiler Group B').with(
         'rule'    => ['and',
                       ['=', ['trusted', 'extensions', 'pp_auth_role'], 'pe_compiler_legacy'],
-                      ['=', ['trusted', 'extensions', peadm_availability_group_oid], 'B'],],
+                      ['=', ['trusted', 'extensions', peadm_availability_group_oid], 'B']],
         'classes' => {
           'puppet_enterprise::profile::master' => {
             'puppetdb_host' => [primary_host, server_b_host],

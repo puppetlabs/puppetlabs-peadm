@@ -241,7 +241,7 @@ describe 'peadm::subplans::install' do
     )
 
     csr_calls = []
-    allow_plan('peadm::util::insert_csr_extension_requests').return do |plan:, params:|
+    allow_plan('peadm::util::insert_csr_extension_requests').return do |params:, **|
       csr_calls << {
         targets: Array(params['targets']).map(&:name),
         extension_requests: params['extension_requests'],
@@ -309,8 +309,8 @@ describe 'peadm::subplans::install' do
     expect(run_plan('peadm::subplans::install', params)).to be_ok
 
     primary_pe_conf = uploaded_contents
-                       .map { |c| JSON.parse(c) }
-                       .find { |c| c.key?('puppet_enterprise::profile::master::code_manager_auto_configure') }
+                      .map { |c| JSON.parse(c) }
+                      .find { |c| c.key?('puppet_enterprise::profile::master::code_manager_auto_configure') }
 
     expect(primary_pe_conf).not_to be_nil
     expect(primary_pe_conf['puppet_enterprise::profile::master::code_manager_auto_configure']).to eq(true)
