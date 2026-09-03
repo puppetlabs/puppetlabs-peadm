@@ -224,16 +224,36 @@ describe 'peadm::restore' do
     # on either `if`, or reordering the export to run after shutdown instead
     # of before it, would surface here as a missing/extra/misordered command.
     it 'exports puppetdb before shutdown and imports it after a successful rbac token fetch', valid_cluster: true do
-      allow_any_command
+      # expect_command on the export/import text alone (as this test used
+      # to do) proves both commands ran, but not in what order relative to
+      # each other or to the shutdown step -- moving the export after
+      # shutdown, or the import before a successful token fetch, would
+      # still pass. Record every command/task call into one shared,
+      # ordered log instead, and assert relative position.
+      call_log = []
+      allow_any_command.return do |targets:, command:, **|
+        call_log << command
+        Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+      end
       allow_task('peadm::backup_classification')
       allow_task('peadm::transform_classification_groups')
       allow_task('peadm::restore_classification')
-      allow_task('peadm::rbac_token').always_return({})
+      allow_task('peadm::rbac_token').return do |targets:, **|
+        call_log << 'rbac_token'
+        Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+      end
 
-      expect_command("/opt/puppetlabs/bin/puppet-db export   --cert=$(/opt/puppetlabs/bin/puppet config print hostcert)   --key=$(/opt/puppetlabs/bin/puppet config print hostprivkey)   /input/file/puppetdb-archive.bin\n")
-      expect_command("/opt/puppetlabs/bin/puppet-db import --cert=$(/opt/puppetlabs/bin/puppet config print hostcert) --key=$(/opt/puppetlabs/bin/puppet config print hostprivkey) /input/file/puppetdb-archive.bin\n")
+      export_command = "/opt/puppetlabs/bin/puppet-db export   --cert=$(/opt/puppetlabs/bin/puppet config print hostcert)   --key=$(/opt/puppetlabs/bin/puppet config print hostprivkey)   /input/file/puppetdb-archive.bin\n"
+      import_command = "/opt/puppetlabs/bin/puppet-db import --cert=$(/opt/puppetlabs/bin/puppet config print hostcert) --key=$(/opt/puppetlabs/bin/puppet config print hostprivkey) /input/file/puppetdb-archive.bin\n"
 
       expect(run_plan('peadm::restore', migration_params)).to be_ok
+
+      expect(call_log).to include(export_command, import_command, 'rbac_token')
+      shutdown_index = call_log.index { |c| c.include?('systemctl stop') }
+      expect(shutdown_index).not_to be_nil
+
+      expect(call_log.index(export_command)).to be < shutdown_index
+      expect(call_log.index('rbac_token')).to be < call_log.index(import_command)
     end
 
     # restore.pp ~333-352: on a transient rbac_token failure the plan retries
