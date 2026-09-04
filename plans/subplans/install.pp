@@ -206,6 +206,7 @@ plan peadm::subplans::install (
       'console_admin_password'                                          => $console_password,
       'puppet_enterprise::puppet_master_host'                           => $primary_target.peadm::certname(),
       'pe_install::puppet_master_dnsaltnames'                           => $dns_alt_names,
+      'puppet_enterprise::database_host'                                => $primary_postgresql_target.peadm::certname(),
       'puppet_enterprise::puppetdb_database_host'                       => $primary_postgresql_target.peadm::certname(),
       'puppet_enterprise::profile::master::code_manager_auto_configure' => $_code_manager_auto_configure,
       'puppet_enterprise::profile::master::r10k_remote'                 => $r10k_remote,

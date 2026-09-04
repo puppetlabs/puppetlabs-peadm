@@ -4,6 +4,8 @@ describe 'peadm::subplans::install' do
   # Include the BoltSpec library functions
   include BoltSpec::Plans
 
+  let(:mockfile) { instance_double('Tempfile', path: '/mock', write: nil, flush: nil, close: nil, unlink: nil) }
+
   before(:each) do
     allow_any_task
     allow_any_plan
@@ -12,6 +14,10 @@ describe 'peadm::subplans::install' do
     allow_task('peadm::precheck').return_for_targets(
       'primary' => {
         'hostname' => 'primary',
+        'platform' => 'el-7.11-x86_64',
+      },
+      'postgres1' => {
+        'hostname' => 'postgres1',
         'platform' => 'el-7.11-x86_64',
       },
       'compiler1' => {
@@ -32,7 +38,6 @@ describe 'peadm::subplans::install' do
     allow(Puppet::FileSystem).to receive(:exist?).and_call_original
     allow_any_instance_of(BoltSpec::Plans::MockExecutor).to receive(:module_file_id).and_call_original
 
-    mockfile = instance_double('Tempfile', path: '/mock', write: nil, flush: nil, close: nil, unlink: nil)
     mockpath = instance_double('Pathname', absolute?: true)
     allow(Tempfile).to receive(:new).with('peadm').and_return(mockfile)
     allow(Pathname).to receive(:new).with('/mock').and_return(mockpath)
@@ -137,5 +142,29 @@ describe 'peadm::subplans::install' do
                      ] })
 
     expect(run_plan('peadm::subplans::install', params)).to be_ok
+  end
+
+  # PE-46576: on extra-large (split-database) installs, the primary's pe.conf
+  # set puppetdb_database_host to the dedicated postgresql target but never
+  # set the general database_host, so every non-PuppetDB service (rbac,
+  # activity, classifier, etc.) fell back to a co-located Postgres on the
+  # primary instead of the dedicated host -- leaving the default admin
+  # account revoked and unable to authenticate.
+  it 'sets database_host for the primary on extra-large (split-database) installs' do
+    written_contents = []
+    allow(mockfile).to receive(:write) { |content| written_contents << content }
+
+    params = {
+      'primary_host' => 'primary',
+      'primary_postgresql_host' => 'postgres1',
+      'console_password' => 'puppetLabs123!',
+      'version' => '2023.8.10',
+    }
+
+    expect(run_plan('peadm::subplans::install', params)).to be_ok
+
+    primary_pe_conf = written_contents.find { |content| content.include?('puppetdb_database_host') }
+    expect(primary_pe_conf).to include('"puppet_enterprise::database_host": "postgres1"')
+    expect(primary_pe_conf).to include('"puppet_enterprise::puppetdb_database_host": "postgres1"')
   end
 end
