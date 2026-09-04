@@ -88,3 +88,42 @@ jobs:
       - name: Run parallel_spec tests
         run: |-
           bundle exec rake parallel_spec
+  # Tracks PE-45110 (Puppet 9 / Ruby 4 readiness). Not driven by matrix_from_metadata_v2
+  # (its collection table has no puppet_maj_version: 9 entry) or metadata.json (which
+  # intentionally still declares only puppet >= 8.0.0 < 9.0.0, since Puppet 9 support is
+  # unvalidated).
+  #
+  # Puppet 9 still isn't on public rubygems, so this resolves puppet/facter from the
+  # private puppetcore gem source (https://rubygems-puppetcore.puppet.com) instead --
+  # see "How to consume the private puppetcore gems" on Confluence. The two upstream
+  # blockers that used to make this job fail outright are both fixed now: puppet's
+  # FrozenError from the old SSLv3 monkey patch under Ruby 4's frozen OpenSSL defaults
+  # (PUP-12114), and facter's gemspec capping required_ruby_version at < 4.0 (now < 5.0).
+  # Verified both locally (puppet-private@9.1.0 + facter-private@4.22.0 under Ruby 4.0.6)
+  # and from this job's own Actions run: 111 examples, 0 failures, 6 pendings. Green, so
+  # continue-on-error has been dropped -- this job now gives a real pass/fail signal.
+  Ruby4Puppet9Experimental:
+    name: 'Experimental: Puppet 9 / Ruby 4.0'
+    if: ${{ github.repository_owner == 'puppetlabs' }}
+    runs-on: ubuntu-latest
+    env:
+      PUPPET_GEM_VERSION: ~> 9.0
+      FACTER_GEM_VERSION: ~> 4.12
+      PUPPET_FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_API_TOKEN }}
+      BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: forge-key:${{ secrets.PUPPET_FORGE_API_TOKEN }}
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+      - name: Activate Ruby 4.0
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+      - name: Print bundle environment
+        run: |
+          echo ::group::bundler environment
+          bundle env
+          echo ::endgroup::
+      - name: Run parallel_spec tests
+        run: |-
+          bundle exec rake parallel_spec
