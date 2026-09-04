@@ -5,6 +5,18 @@ function peadm::assert_supported_pe_version (
   String $version,
   Boolean $permit_unsafe_versions = false,
 ) >> Struct[{ 'supported' => Boolean }] {
+  unless $version =~ Peadm::Pe_version {
+# lint:ignore:strict_indent
+    fail(@("REASON"/L))
+      Unable to determine a valid PE version ('${version}' was extracted, which is \
+      not a valid version string).
+
+      If you passed 'pe_installer_source', check that the tarball filename follows \
+      the expected format, e.g. puppet-enterprise-<version>-<platform>.tar.gz.
+      | REASON
+# lint:endignore
+  }
+
   $oldest = '2019.7'
   $newest = '2025.11'
   $supported = ($version =~ SemVerRange(">= ${oldest} <= ${newest}"))

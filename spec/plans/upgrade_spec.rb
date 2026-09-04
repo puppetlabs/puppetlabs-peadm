@@ -62,6 +62,17 @@ describe 'peadm::upgrade' do
                     'version' => '2021.7.9')).to be_ok
   end
 
+  it 'fails with a targeted error if pe_installer_source has a malformed tarball name' do
+    allow_standard_non_returning_calls
+
+    result = run_plan('peadm::upgrade',
+                      'primary_host' => 'primary',
+                      'pe_installer_source' => 'https://example.com/downloads/my-custom-installer-name.tar.gz')
+
+    expect(result).not_to be_ok
+    expect(result.value.msg).to match(%r{Unable to determine a valid PE version})
+  end
+
   it 'fails if the primary uses the pcp transport' do
     allow_standard_non_returning_calls
 
