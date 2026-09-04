@@ -149,7 +149,7 @@ describe 'peadm::subplans::install' do
   # set the general database_host, so every non-PuppetDB service (rbac,
   # activity, classifier, etc.) fell back to a co-located Postgres on the
   # primary instead of the dedicated host -- leaving the default admin
-  # account permanently revoked.
+  # account revoked and unable to authenticate.
   it 'sets database_host for the primary on extra-large (split-database) installs' do
     written_contents = []
     allow(mockfile).to receive(:write) { |content| written_contents << content }
