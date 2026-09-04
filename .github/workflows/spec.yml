@@ -127,7 +127,6 @@ jobs:
       - name: Run parallel_spec tests
         run: |-
           bundle exec rake parallel_spec
-
   Coverage:
     name: Code Coverage
     if: ${{ github.repository_owner == 'puppetlabs' }}
