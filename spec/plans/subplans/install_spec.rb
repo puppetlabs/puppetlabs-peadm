@@ -291,4 +291,26 @@ describe 'peadm::subplans::install' do
     expect(primary_pe_conf).to include('"puppet_enterprise::database_host": "postgres1"')
     expect(primary_pe_conf).to include('"puppet_enterprise::puppetdb_database_host": "postgres1"')
   end
+
+  # PE-46576: pointing rbac/activity/classifier at the dedicated Postgres
+  # host (fixed above) surfaced a sequencing bug -- that host isn't up yet
+  # during the primary's own install pass, so those services' database
+  # bootstrap silently failed and left the admin account revoked. Re-running
+  # Puppet on the primary once the database host is up, before requesting an
+  # rbac token, lets those services finish migrating and fix the account.
+  it 'reconciles the primary with Puppet before requesting an rbac token on split-database installs' do
+    params = {
+      'primary_host' => 'primary',
+      'primary_postgresql_host' => 'postgres1',
+      'console_password' => 'puppetLabs123!',
+      'version' => '2023.8.10',
+    }
+
+    allow_task('peadm::puppet_runonce')
+    expect_task('peadm::puppet_runonce')
+      .with_targets('primary')
+      .with_params({ 'in_progress_timeout' => 600, '_catch_errors' => true })
+
+    expect(run_plan('peadm::subplans::install', params)).to be_ok
+  end
 end
