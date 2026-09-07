@@ -395,17 +395,6 @@ plan peadm::subplans::install (
   run_command('systemctl stop pe-puppetdb', $primary_target)
   run_command('systemctl start pe-puppetdb', $primary_target)
 
-  # On split-database installs, rbac/activity/classifier point at this same
-  # dedicated Postgres host, which wasn't up yet during the primary's own
-  # install pass above -- the same "not ready yet" condition install_extra_large
-  # tolerates for PuppetDB, but with no equivalent tolerance for those
-  # services. Left alone, the primary's admin account is seeded in a broken,
-  # revoked state. Re-running Puppet now that the database host is up lets
-  # those services finish their migrations and fix the account before we
-  # request a token for it. Tolerate errors here the same way the database
-  # targets' catch-up run below does; a full reconciliation happens later.
-  run_task('peadm::puppet_runonce', $primary_target, _catch_errors => true)
-
   # rbac-service can briefly 500/reject auth immediately after this
   # puppetdb bounce, before its own dependents have caught up (PE-46689,
   # the same class of transient-unavailability window restore.pp's
