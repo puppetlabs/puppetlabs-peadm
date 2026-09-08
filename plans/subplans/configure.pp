@@ -124,10 +124,6 @@ plan peadm::subplans::configure (
     # before invoking the replica provision orchestrator, to reduce the odds
     # of the known race described below. See PE-42816.
     peadm::wait_until_service_ready('all', $primary_target)
-    if $primary_postgresql_host {
-      # Extra Large: PuppetDB's backend lives on a separate host.
-      peadm::wait_until_service_ready('all', $primary_postgresql_target)
-    }
 
     # Run the PE Replica Provision
     #

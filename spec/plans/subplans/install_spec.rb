@@ -55,6 +55,21 @@ describe 'peadm::subplans::install' do
     expect(run_plan('peadm::subplans::install', params)).to be_ok
   end
 
+  it 'fails when the post-install wait_until_service_ready times out' do
+    params = {
+      'primary_host' => 'primary',
+      'console_password' => 'puppetLabs123!',
+      'version' => '2019.8.12',
+    }
+
+    expect_task('peadm::wait_until_service_ready')
+      .with_targets('primary')
+      .error_with('msg' => 'Timed out waiting for service', 'kind' => 'puppetlabs.tasks/task-error')
+
+    result = run_plan('peadm::subplans::install', params)
+    expect(result).not_to be_ok
+  end
+
   it 'installs 2023.4 without r10k_known_hosts' do
     params = {
       'primary_host' => 'primary',

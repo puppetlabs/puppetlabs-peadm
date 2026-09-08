@@ -35,13 +35,13 @@ describe 'peadm::subplans::configure' do
   end
 
   describe 'Extra Large architecture with DR' do
-    it 'waits for the primary and the postgresql host before provisioning the replica' do
+    it 'waits for the primary only before provisioning the replica' do
       allow_apply
       allow_any_task
       allow_any_plan
       allow_any_command
 
-      expect_task('peadm::wait_until_service_ready').be_called_times(2)
+      expect_task('peadm::wait_until_service_ready').be_called_times(1)
       expect_task('peadm::provision_replica').be_called_times(1)
 
       expect(run_plan('peadm::subplans::configure',
