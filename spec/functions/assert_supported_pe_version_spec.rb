@@ -11,6 +11,24 @@ describe 'peadm::assert_supported_pe_version' do
     it 'rejects an empty string with a targeted error' do
       is_expected.to run.with_params('').and_raise_error(Puppet::ParseError, %r{Unable\ to\ determine\ a\ valid\ PE\ version})
     end
+
+    it 'rejects undef (e.g. from a tarball filename with too few hyphen segments) with a targeted error' do
+      is_expected.to run.with_params(nil).and_raise_error(Puppet::ParseError, %r{Unable\ to\ determine\ a\ valid\ PE\ version})
+    end
+
+    it 'includes tarball filename guidance in the error message' do
+      is_expected.to run.with_params('ubuntu').and_raise_error(Puppet::ParseError, %r{tarball\ filename\ follows})
+    end
+
+    ['2021.7', '2021', '2021.7.9.1'].each do |bad_version|
+      it "rejects a version-like but malformed string '#{bad_version}' with a targeted error" do
+        is_expected.to run.with_params(bad_version).and_raise_error(Puppet::ParseError, %r{Unable\ to\ determine\ a\ valid\ PE\ version})
+      end
+    end
+
+    it 'does not let permit_unsafe_versions bypass the malformed-version check' do
+      is_expected.to run.with_params('ubuntu', true).and_raise_error(Puppet::ParseError, %r{Unable\ to\ determine\ a\ valid\ PE\ version})
+    end
   end
 
   context 'invalid PE versions' do
