@@ -134,14 +134,6 @@ plan peadm::convert (
 # lint:endignore
   }
 
-  # Guard against inconsistent or partially-stamped availability-group state
-  # before making any changes. A pair with no existing peadm_availability_group
-  # extensions at all is expected on a fresh conversion and is not a problem --
-  # both members will be assigned a fresh A/B pairing below. But if only one
-  # member already has a group, or both members already claim the *same*
-  # group, convert should not guess; it should fail fast so the operator can
-  # confirm the correct topology (this can happen if, for example, the wrong
-  # host was passed as primary/replica after a role swap).
   $primary_certname            = $primary_target.peadm::certname()
   $replica_certname            = $replica_target.peadm::certname()
   $primary_postgresql_certname = $primary_postgresql_target.peadm::certname()
@@ -152,48 +144,66 @@ plan peadm::convert (
   $primary_postgresql_group = $cert_extensions.dig($primary_postgresql_certname, peadm::oid('peadm_availability_group'))
   $replica_postgresql_group = $cert_extensions.dig($replica_postgresql_certname, peadm::oid('peadm_availability_group'))
 
-  if ($replica_certname) and (($primary_group in ['A', 'B']) or ($replica_group in ['A', 'B'])) {
-    if $primary_group == $replica_group {
+  # Guard against inconsistent or partially-stamped availability-group state
+  # before making any changes. A pair with no existing peadm_availability_group
+  # extensions at all is expected on a fresh conversion and is not a problem --
+  # both members will be assigned a fresh A/B pairing below. But if only one
+  # member already has a group, or both members already claim the *same*
+  # group, convert should not guess; it should fail fast so the operator can
+  # confirm the correct topology (this can happen if, for example, the wrong
+  # host was passed as primary/replica after a role swap).
+  #
+  # Only enforced on a fresh run (or one explicitly restarted at the first
+  # step). A run resumed with begin_at_step past 'modify-primary-cert' may be
+  # observing this plan's own partial progress from an earlier, interrupted
+  # invocation (e.g. the primary got stamped but the replica didn't before an
+  # orchestrator hiccup) rather than genuine operator error, and re-running
+  # this validation would permanently lock the operator out with no way to
+  # resume.
+  if ($begin_at_step == undef) or ($begin_at_step == 'modify-primary-cert') {
+    if ($replica_certname) and (($primary_group in ['A', 'B']) or ($replica_group in ['A', 'B'])) {
+      if $primary_group == $replica_group {
 # lint:ignore:strict_indent
-      fail_plan(@("EOL"/L))
-        The primary (${primary_certname}) and replica (${replica_certname}) both \
-        have availability group '${primary_group}' set on their certificates. \
-        This is invalid; please confirm these are really the correct \
-        primary/replica pair before running convert.
-        | EOL
-    }
-    if !($primary_group in ['A', 'B']) or !($replica_group in ['A', 'B']) {
-      fail_plan(@("EOL"/L))
-        The primary (${primary_certname}) and replica (${replica_certname}) have \
-        inconsistent availability group state: one has an existing \
-        peadm_availability_group certificate extension and the other does not. \
-        Please resolve this manually before running convert.
-        | EOL
-    }
+        fail_plan(@("EOL"/L))
+          The primary (${primary_certname}) and replica (${replica_certname}) both \
+          have availability group '${primary_group}' set on their certificates. \
+          This is invalid; please confirm these are really the correct \
+          primary/replica pair before running convert.
+          | EOL
+      }
+      if !($primary_group in ['A', 'B']) or !($replica_group in ['A', 'B']) {
+        fail_plan(@("EOL"/L))
+          The primary (${primary_certname}) and replica (${replica_certname}) have \
+          inconsistent availability group state: one has an existing \
+          peadm_availability_group certificate extension and the other does not. \
+          Please resolve this manually before running convert.
+          | EOL
+      }
 # lint:endignore
-  }
+    }
 
-  if ($replica_postgresql_certname) and (($primary_postgresql_group in ['A', 'B']) or ($replica_postgresql_group in ['A', 'B'])) {
-    if $primary_postgresql_group == $replica_postgresql_group {
+    if ($replica_postgresql_certname) and (($primary_postgresql_group in ['A', 'B']) or ($replica_postgresql_group in ['A', 'B'])) {
+      if $primary_postgresql_group == $replica_postgresql_group {
 # lint:ignore:strict_indent
-      fail_plan(@("EOL"/L))
-        The primary PostgreSQL host (${primary_postgresql_certname}) and replica \
-        PostgreSQL host (${replica_postgresql_certname}) both have availability \
-        group '${primary_postgresql_group}' set on their certificates. This is \
-        invalid; please confirm these are really the correct pair before running \
-        convert.
-        | EOL
-    }
-    if !($primary_postgresql_group in ['A', 'B']) or !($replica_postgresql_group in ['A', 'B']) {
-      fail_plan(@("EOL"/L))
-        The primary PostgreSQL host (${primary_postgresql_certname}) and replica \
-        PostgreSQL host (${replica_postgresql_certname}) have inconsistent \
-        availability group state: one has an existing peadm_availability_group \
-        certificate extension and the other does not. Please resolve this \
-        manually before running convert.
-        | EOL
-    }
+        fail_plan(@("EOL"/L))
+          The primary PostgreSQL host (${primary_postgresql_certname}) and replica \
+          PostgreSQL host (${replica_postgresql_certname}) both have availability \
+          group '${primary_postgresql_group}' set on their certificates. This is \
+          invalid; please confirm these are really the correct pair before running \
+          convert.
+          | EOL
+      }
+      if !($primary_postgresql_group in ['A', 'B']) or !($replica_postgresql_group in ['A', 'B']) {
+        fail_plan(@("EOL"/L))
+          The primary PostgreSQL host (${primary_postgresql_certname}) and replica \
+          PostgreSQL host (${replica_postgresql_certname}) have inconsistent \
+          availability group state: one has an existing peadm_availability_group \
+          certificate extension and the other does not. Please resolve this \
+          manually before running convert.
+          | EOL
+      }
 # lint:endignore
+    }
   }
 
   # Determine the availability group each node should carry, preserving an
@@ -380,22 +390,29 @@ plan peadm::convert (
       # certificate extension, not by which plan parameter it was passed as,
       # so that classification stays consistent with the certs just stamped
       # above even when an existing availability group was preserved.
-      $server_a_host = $primary_avail_group ? {
-        'A'     => $primary_certname,
+      #
+      # Only swap when a genuine pair exists (a replica/replica-postgresql
+      # host was actually given). Without a real pair there's nothing to
+      # preserve, and swapping on a stray leftover 'B' extension on a lone
+      # primary would point server_a_host/postgresql_a_host at the
+      # nonexistent replica (undef), which peadm::setup::node_manager
+      # requires to be a String[1] and would crash inside apply().
+      $server_a_host = ($replica_certname and $primary_avail_group == 'B') ? {
+        true    => $replica_certname,
+        default => $primary_certname,
+      }
+      $server_b_host = ($replica_certname and $primary_avail_group == 'B') ? {
+        true    => $primary_certname,
         default => $replica_certname,
       }
-      $server_b_host = $server_a_host ? {
-        $primary_certname => $replica_certname,
-        default           => $primary_certname,
-      }
 
-      $postgresql_a_host = $primary_postgresql_avail_group ? {
-        'A'     => $primary_postgresql_certname,
-        default => $replica_postgresql_certname,
+      $postgresql_a_host = ($replica_postgresql_certname and $primary_postgresql_avail_group == 'B') ? {
+        true    => $replica_postgresql_certname,
+        default => $primary_postgresql_certname,
       }
-      $postgresql_b_host = $postgresql_a_host ? {
-        $primary_postgresql_certname => $replica_postgresql_certname,
-        default                      => $primary_postgresql_certname,
+      $postgresql_b_host = ($replica_postgresql_certname and $primary_postgresql_avail_group == 'B') ? {
+        true    => $primary_postgresql_certname,
+        default => $replica_postgresql_certname,
       }
 
       apply($primary_target) {
