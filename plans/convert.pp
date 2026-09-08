@@ -66,6 +66,15 @@ plan peadm::convert (
     $memo + { $result.target.peadm::certname() => $result['extensions'] }
   }
 
+  # Update PE Master rules before any Puppet run below reaches compilers.
+  # Otherwise compilers can still match the PE Master group's classification
+  # (via legacy pp_auth_role/OID markers) in addition to PE Compiler,
+  # inheriting a puppetdb_hosts/puppetdb_ports count mismatch that fails
+  # catalog compilation with a pe_format_urls() error.
+  # See PE-44017.
+  peadm::wait_until_service_ready('pe-master', $primary_target)
+  run_task('peadm::update_pe_master_rules', $primary_target)
+
   # Add legacy compiler role to compilers that are missing it
   $compilers_with_legacy_compiler_flag = $cert_extensions_temp.filter |$name, $exts| {
     ($name in $compiler_targets.map |$t| { $t.name } or $name in $legacy_compiler_targets.map |$t| { $t.name }) and
@@ -345,15 +354,6 @@ plan peadm::convert (
   }
 
   peadm::plan_step('finalize') || {
-    # Update PE Master rules before the Puppet run below that reaches
-    # compilers. Otherwise compilers can still match the PE Master group's
-    # classification (via legacy pp_auth_role/OID markers) in addition to PE
-    # Compiler, inheriting a puppetdb_hosts/puppetdb_ports count mismatch
-    # that fails catalog compilation with a pe_format_urls() error.
-    # See PE-44017.
-    peadm::wait_until_service_ready('pe-master', $primary_target)
-    run_task('peadm::update_pe_master_rules', $primary_target)
-
     # Run Puppet on all targets to ensure catalogs and exported resources fully
     # up-to-date.
     peadm::wait_until_service_ready('pe-master', $primary_target)
