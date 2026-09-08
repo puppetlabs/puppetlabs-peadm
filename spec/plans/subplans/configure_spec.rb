@@ -165,13 +165,14 @@ describe 'peadm::subplans::configure' do
   end
 
   describe 'Extra Large architecture with DR' do
-    it 'waits for the primary and the postgresql host, then still provisions the replica against the primary, not the postgresql hosts' do
+    it 'waits for the primary only, then still provisions the replica against the primary, not the postgresql hosts' do
       allow_standard_calls!
 
-      # PE-42816: on XL, PuppetDB's backend lives on a separate host, so the
-      # pre-flight wait must cover both the primary and that host before
-      # provision_replica is attempted.
-      expect_task('peadm::wait_until_service_ready').be_called_times(2)
+      # PE-42816: the postgresql host never runs pe-puppetserver, so nothing
+      # listens on the port wait_until_service_ready checks there -- the
+      # pre-flight wait only ever covers the primary, on XL as elsewhere.
+      # The provision_replica retry loop is the real XL safety net.
+      expect_task('peadm::wait_until_service_ready').be_called_times(1)
 
       # Confirms adding the split-database (XL) parameters doesn't redirect
       # or skip replica provisioning -- see
