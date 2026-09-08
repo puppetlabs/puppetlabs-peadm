@@ -32,9 +32,15 @@ describe ClassifyCompilers do
   describe '#execute!' do
     # Catches a mutation that drops --host or --format=json, or mis-orders
     # the command, which would break the JSON.parse(stdout) call downstream.
-    it 'runs `puppet infra status --host <name> --format=json` for the compiler host' do
+    #
+    # Uses the argv form (separate arguments, not one interpolated string)
+    # so Open3.capture3 never invokes a shell -- an untrusted `compiler`
+    # value can't cause command injection or quoting bugs this way. This
+    # test asserts on the exact argv, so a mutation back to a single
+    # shell-interpolated string would fail it.
+    it 'runs `puppet infra status --host <name> --format=json` via argv, not a shell string' do
       expect(Open3).to receive(:capture3)
-        .with('puppet infra status --host compiler-a.example.com --format=json')
+        .with('puppet', 'infra', 'status', '--host', 'compiler-a.example.com', '--format=json')
         .and_return([[{ 'type' => 'puppetdb' }].to_json, '', success_status])
 
       task.execute!
@@ -97,10 +103,10 @@ describe ClassifyCompilers do
       multi_params = { 'compiler_hosts' => ['compiler-a.example.com', 'compiler-b.example.com'] }
       multi_task = described_class.new(multi_params)
       allow(Open3).to receive(:capture3)
-        .with('puppet infra status --host compiler-a.example.com --format=json')
+        .with('puppet', 'infra', 'status', '--host', 'compiler-a.example.com', '--format=json')
         .and_return([[{ 'type' => 'puppetdb' }].to_json, '', success_status])
       allow(Open3).to receive(:capture3)
-        .with('puppet infra status --host compiler-b.example.com --format=json')
+        .with('puppet', 'infra', 'status', '--host', 'compiler-b.example.com', '--format=json')
         .and_return([[{ 'type' => 'master' }].to_json, '', success_status])
 
       expect(STDOUT).to receive(:puts) do |json_str|
