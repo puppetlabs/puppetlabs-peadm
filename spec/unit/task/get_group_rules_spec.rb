@@ -3,6 +3,10 @@ require_relative '../../../tasks/get_group_rules'
 
 # tasks/get_group_rules.rb really does define GetInfrastructureAgentGroupRules,
 # not GetGroupRules -- the class name doesn't match the task's filename.
+# This spec file is intentionally named after the task file (get_group_rules.rb),
+# matching this repo's house convention (see e.g. sign_csr_spec.rb,
+# ssl_clean_spec.rb), not RuboCop's auto-derived snake_case of the class name.
+# rubocop:disable RSpec/SpecFilePathFormat
 describe GetInfrastructureAgentGroupRules do
   subject(:task) { described_class.new }
 
@@ -63,3 +67,4 @@ describe GetInfrastructureAgentGroupRules do
     task.execute!
   end
 end
+# rubocop:enable RSpec/SpecFilePathFormat

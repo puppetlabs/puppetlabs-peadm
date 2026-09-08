@@ -29,7 +29,11 @@ describe CheckLegacyCompilers do
   end
 
   describe '#execute!' do
-    subject(:task) { described_class.new('legacy_compilers' => 'legacy-a.example.com') }
+    # A plain `let`, not `subject` -- every example below stubs
+    # get_node_classification on this object, and RuboCop's
+    # RSpec/SubjectStub cop disallows stubbing methods on the object under
+    # test when it's registered as the example group's `subject`.
+    let(:task) { described_class.new('legacy_compilers' => 'legacy-a.example.com') }
 
     before(:each) { allow(STDOUT).to receive(:puts) }
 
