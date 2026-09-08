@@ -23,8 +23,7 @@ class ClassifyCompilers
     non_legacy_compilers = []
 
     @compiler_hosts.each do |compiler|
-      cmd = "puppet infra status --host #{compiler} --format=json"
-      stdout, stderr, status = Open3.capture3(cmd)
+      stdout, stderr, status = Open3.capture3('puppet', 'infra', 'status', '--host', compiler, '--format=json')
 
       if status.success?
         services = JSON.parse(stdout)
