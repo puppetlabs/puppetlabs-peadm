@@ -54,16 +54,63 @@ catches *regressions* in what's now covered, and rather than silently
 expanding this ticket's scope to chase 90%. Closing the remaining gap is
 follow-on work (a new ticket under PE-45224).
 
-**A note for whoever picks up that follow-on work:** `plan_step.rb` and
-`file_content_upload.rb` still show 0.00% in SimpleCov's report *despite*
-having direct, passing unit specs (added in PE-45737) that exercise every
-branch. The four tasks' coverage improved as expected under the same
-process. This looks like SimpleCov (or the underlying Ruby `Coverage`
-module) not attributing execution back to `lib/puppet/functions/peadm/*.rb`
-source files when they're loaded through Puppet's function loader, rather
-than a gap in the new specs -- worth investigating before assuming any
-`lib/puppet/functions/peadm/*.rb` file's SimpleCov number reflects its real
-test coverage.
+**Investigated (PE-46426): why `lib/puppet/functions/peadm/*.rb` files can
+never show real SimpleCov coverage.** `plan_step.rb` and
+`file_content_upload.rb` showed 0.00% in SimpleCov's report *despite* having
+direct, passing unit specs (added in PE-45737) that exercise every branch,
+while the four tasks tested in the same ticket (`sign_csr.rb`, `ssl_clean.rb`,
+`rbac_token.rb`, `validate_rbac_token.rb`) showed improved coverage as
+expected. The root cause is confirmed, not just suspected:
+
+* Specs `require_relative` task files directly, so Ruby's `Kernel#require`
+  registers them under their canonical repo-root path (e.g.
+  `tasks/sign_csr.rb`) -- the exact path SimpleCov's `track_files` glob (run
+  from the repo root) expects. Coverage lines up correctly.
+* Puppet functions are never `require`d. rspec-puppet's function example
+  group loads them through Puppet's own loader
+  (`Puppet::Pops::Loader::Loader::AbstractPathBasedModuleLoader#instantiate`),
+  which resolves the file via `Dir.glob` against whatever path is registered
+  on `Puppet[:module_path]` -- for rspec-puppet, that's
+  `spec/fixtures/modules` (set by `puppetlabs_spec_helper`). `.fixtures.yml`
+  maps `spec/fixtures/modules/peadm` to this repo via a *symlink*
+  (`symlinks: peadm: '#{source_dir}'`), and `Dir.glob` does not resolve
+  symlinks in the paths it returns -- so the resolved path is the literal
+  string `spec/fixtures/modules/peadm/lib/puppet/functions/peadm/plan_step.rb`,
+  not `lib/puppet/functions/peadm/plan_step.rb`.
+* For `Puppet::Functions.create_function`-style functions, the loader's
+  `RubyFunctionInstantiator.create` then `eval`s the file's contents as a
+  string, passing that symlinked-fixture path as the `eval` filename. Ruby's
+  `Coverage` module attributes executed lines to whatever filename string
+  was passed to `eval`, so the recorded coverage lands under the symlinked
+  fixture path -- a key SimpleCov's `track_files('lib/**/*.rb')` glob (run
+  from the repo root) never produces or looks up. The real, executed lines
+  are not missing; they're recorded under a path SimpleCov never reads.
+
+**Proof this is a measurement defect, not a testing gap:**
+`lib/puppet/functions/peadm/bolt_version.rb` has had a passing spec
+(`spec/functions/bolt_version_spec.rb`) since before PE-45737 or PE-46426
+existed, and it *still* shows as uncovered in SimpleCov's report. A file
+with a real, passing, unrelated-to-this-investigation spec cannot be
+"untested" -- the measurement itself is what's broken. This means **no**
+`lib/puppet/functions/peadm/*.rb` file can show real SimpleCov coverage
+under the current toolchain, regardless of how many specs exist for it.
+`node_manager_yaml_location_spec.rb` and `module_version_spec.rb` (added in
+PE-46426) are worth having for correctness/regression protection, but
+neither will move this metric, and each spec says so in a comment for
+exactly this reason.
+
+**Not fixed here (out of scope for PE-46426), for a future ticket under
+PE-45224 to pick up:**
+
+1. Repoint rspec-puppet's `module_path` at the repo root directly instead of
+   through a symlinked fixture, if module-loading semantics allow it; or
+2. Add a SimpleCov result post-processor that folds
+   `spec/fixtures/modules/peadm/...` coverage keys back onto their canonical
+   `lib/...` keys before the report is generated -- more surgical, doesn't
+   require changing how rspec-puppet resolves modules.
+
+Either is real implementation work, not a documentation change, and should
+be scoped and reviewed as its own ticket.
 
 ## Puppet resource coverage (`RSpec::Puppet::Coverage`)
 
@@ -112,20 +159,45 @@ Standing up the tools above (PE-45655) and closing the specific gaps named
 in PE-45737 (negative-path plan specs, the three previously-spec-less
 plans, direct function/task unit specs, the remaining `configure.pp`
 branches, and `RSpec::Puppet::Coverage` reaching a real, enforced 90% floor)
-are both done as of PE-45737. What's left, tracked under
-[PE-45224](https://perforce.atlassian.net/browse/PE-45224), is the *Ruby
-line coverage* gap: SimpleCov sits at 12.83% (161/1255 lines) against a
-12% enforced floor, well short of 90%, because roughly a dozen tasks outside
-PE-45737's named scope (`get_peadm_config.rb`, `check_pe_master_rules.rb`,
-`cert_data.rb`, `code_sync_status.rb`, `check_legacy_compilers.rb`,
-`code_manager_enabled.rb`, `classify_compilers.rb`, `backup_classification.rb`,
-`get_group_rules.rb`, `cert_valid_status.rb`, and a few smaller ones) have no
-spec at all and dominate the line count. A follow-on ticket under PE-45224
-should write unit specs for those, following the same mutation-reasoning
-discipline as PE-45737, then raise `SimpleCov.minimum_coverage` in
-`spec/spec_helper_local.rb` toward 90% as real coverage is added -- not in
-one jump, the same way `RSpec::Puppet::Coverage`'s floor here was only
-raised once the number backing it was real. That ticket should also
-investigate why `plan_step.rb`/`file_content_upload.rb` report 0% despite
-having passing direct specs (see the SimpleCov section above) before relying
-on this metric for any `lib/puppet/functions/peadm/*.rb` file.
+are both done as of PE-45737.
+
+PE-46426 closed most of the remaining *Ruby line coverage* gap tracked
+under [PE-45224](https://perforce.atlassian.net/browse/PE-45224): direct
+unit specs were added for the ten previously-untested tasks
+(`get_peadm_config.rb`, `check_pe_master_rules.rb`, `cert_data.rb`,
+`code_sync_status.rb`, `check_legacy_compilers.rb`, `code_manager_enabled.rb`,
+`classify_compilers.rb`, `backup_classification.rb`, `get_group_rules.rb`,
+`cert_valid_status.rb`) and the two previously-unspec'd functions
+(`node_manager_yaml_location.rb`, `module_version.rb`; `bolt_version.rb`
+already had a spec). `classify_compilers.rb` and `cert_valid_status.rb`
+also needed a structural-only class-wrap-and-guard commit before they could
+be spec'd at all, matching the same pattern PE-45737 used for
+`ssl_clean.rb`/`rbac_token.rb`. The SimpleCov attribution question for
+`lib/puppet/functions/peadm/*.rb` files is now investigated and documented
+above, with a confirmed root cause rather than an open question.
+
+**Measured result:** `bundle exec rake spec:simplecov` (run on Ruby 3.1.7,
+since this ticket's local dev machine's pinned rbenv Ruby 3.1.0 has a
+broken `socket` native extension -- see PE-46426's implementation notes)
+now reports **55.18% (575/1042 lines)**, up from the 12.83% (161/1255
+lines) PE-45737 baseline. `SimpleCov.minimum_coverage` in
+`spec/spec_helper_local.rb` is raised to 54, a small margin below that,
+the same discipline PE-45737 used for `RSpec::Puppet::Coverage`'s floor --
+not rounded up to the measured number itself, and not forced to 90%, since
+the `lib/puppet/functions/peadm/*.rb` attribution issue documented above
+means the real achievable ceiling for this metric is permanently below
+100% regardless of test effort: every function file, including
+`bolt_version.rb` (which has a real, passing, pre-existing spec), measures
+0.00%.
+
+**Still open:** running the full measurement also surfaced six task files
+never named in PE-45737 or PE-46426's scope, still completely untested and
+now the largest remaining gap: `tasks/update_pe_master_rules.rb` (90
+lines), `tasks/node_group_unpin.rb` (95 lines), `tasks/pe_ldap_config.rb`
+(56 lines), `tasks/restore_classification.rb` (34 lines),
+`tasks/transform_classification_groups.rb` (34 lines), and
+`tasks/get_psql_version.rb` (9 lines) -- 318 lines combined. A follow-on
+ticket under [PE-45224](https://perforce.atlassian.net/browse/PE-45224)
+should write specs for these next, following the same mutation-reasoning
+discipline, then raise the floor again incrementally, the same way this
+one did.
