@@ -46,7 +46,13 @@ RSpec.configure do |c|
   end
   c.filter_run_excluding(bolt: true) unless ENV['GEM_BOLT']
   c.after(:suite) do
-    RSpec::Puppet::Coverage.report!(0)
+    # PE-45737: raised from 0 (report-only) to a real enforced floor.
+    # Measured resource coverage after this ticket's work is 100% (12/12
+    # Node_group resources in manifests/setup/node_manager.pp -- the only
+    # class with any resource declarations in this repo); 90 leaves a margin
+    # so an unrelated future class addition doesn't immediately fail CI
+    # before it has its own spec. See documentation/test-coverage.md.
+    RSpec::Puppet::Coverage.report!(90)
   end
 
   # Filter backtrace noise
