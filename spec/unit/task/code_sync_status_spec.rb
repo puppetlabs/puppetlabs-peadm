@@ -2,7 +2,11 @@ require 'spec_helper'
 require_relative '../../../tasks/code_sync_status'
 
 describe CodeSyncStatus do
-  subject(:task) { described_class.new(params) }
+  # A plain `let`, not `subject` -- several examples below stub methods on
+  # this object, and RuboCop's RSpec/SubjectStub cop disallows stubbing
+  # methods on the object under test when it's registered as the example
+  # group's `subject`.
+  let(:task) { described_class.new(params) }
 
   let(:params) { { 'environments' => ['production'] } }
 

@@ -5,7 +5,12 @@ describe CheckPeMasterRules do
   # NOTE: initialize(params) stores @params, but no method in this class
   # ever reads it -- unused, dead state. Not a bug worth fixing here, just
   # flagging for anyone reading this spec.
-  subject(:task) { described_class.new({}) }
+  #
+  # A plain `let`, not `subject` -- the #execute! examples below stub
+  # methods on this object, and RuboCop's RSpec/SubjectStub cop disallows
+  # stubbing methods on the object under test when it's registered as the
+  # example group's `subject`.
+  let(:task) { described_class.new({}) }
 
   let(:https_dbl) { instance_double(Net::HTTP) }
 
@@ -216,16 +221,15 @@ describe CheckPeMasterRules do
   describe '#execute!' do
     before(:each) do
       allow(STDOUT).to receive(:puts)
-      allow(task).to receive(:get_pe_master_group_id).and_return('group-id-123')
-      allow(task).to receive(:get_current_rules).and_return([])
+      allow(task).to receive_messages(get_pe_master_group_id: 'group-id-123', get_current_rules: [])
     end
 
     # Catches a mutation that checks legacy_compiler_nodes before
     # rules_updated, which would produce the wrong message for this
     # combination.
     it 'reports not-updated when rules_updated is false, regardless of nodes_found' do
-      allow(task).to receive(:check_rules_updated).and_return(false)
-      allow(task).to receive(:check_nodes_with_legacy_compiler_oid).and_return('nodes_found' => true, 'count' => 1, 'nodes' => ['x'])
+      allow(task).to receive_messages(check_rules_updated: false,
+                                       check_nodes_with_legacy_compiler_oid: { 'nodes_found' => true, 'count' => 1, 'nodes' => ['x'] })
 
       expect(STDOUT).to receive(:puts) do |json_str|
         parsed = JSON.parse(json_str)
@@ -240,8 +244,8 @@ describe CheckPeMasterRules do
     # half of the is_updated compound, which would report updated: true
     # while nodes with the legacy OID still exist.
     it 'reports updated-but-legacy-nodes-remain when rules are updated but nodes_found is true' do
-      allow(task).to receive(:check_rules_updated).and_return(true)
-      allow(task).to receive(:check_nodes_with_legacy_compiler_oid).and_return('nodes_found' => true, 'count' => 1, 'nodes' => ['x'])
+      allow(task).to receive_messages(check_rules_updated: true,
+                                       check_nodes_with_legacy_compiler_oid: { 'nodes_found' => true, 'count' => 1, 'nodes' => ['x'] })
 
       expect(STDOUT).to receive(:puts) do |json_str|
         parsed = JSON.parse(json_str)
@@ -254,8 +258,8 @@ describe CheckPeMasterRules do
 
     # Only the fully-updated combination reports updated: true.
     it 'reports fully-updated only when rules_updated is true and nodes_found is false' do
-      allow(task).to receive(:check_rules_updated).and_return(true)
-      allow(task).to receive(:check_nodes_with_legacy_compiler_oid).and_return('nodes_found' => false, 'count' => 0, 'nodes' => [])
+      allow(task).to receive_messages(check_rules_updated: true,
+                                       check_nodes_with_legacy_compiler_oid: { 'nodes_found' => false, 'count' => 0, 'nodes' => [] })
 
       expect(STDOUT).to receive(:puts) do |json_str|
         parsed = JSON.parse(json_str)

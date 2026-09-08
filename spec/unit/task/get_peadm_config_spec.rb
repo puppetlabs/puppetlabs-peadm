@@ -1,14 +1,26 @@
 require 'spec_helper'
 require_relative '../../../tasks/get_peadm_config'
 
+# This spec file is intentionally named after the task file
+# (get_peadm_config.rb), matching this repo's house convention (see e.g.
+# sign_csr_spec.rb, ssl_clean_spec.rb), not RuboCop's auto-derived
+# snake_case of the class name (which would want get_pe_adm_config_spec.rb).
+# rubocop:disable RSpec/SpecFilePathFormat
 describe GetPEAdmConfig do
   # initialize(params) is a no-op today -- this task takes no meaningful
   # params of its own (call sites only ever pass Bolt's `_catch_errors`
   # control option, never task-level params); constructing with {} here is
   # equivalent to any other input.
-  subject(:task) { described_class.new({}) }
+  #
+  # A plain `let`, not `subject` -- most describe blocks below stub methods
+  # on this object, and RuboCop's RSpec/SubjectStub cop disallows stubbing
+  # methods on the object under test when it's registered as the example
+  # group's `subject`.
+  let(:task) { described_class.new({}) }
 
   describe GetPEAdmConfig::NodeGroup do
+    subject(:node_group) { described_class.new(data) }
+
     let(:data) do
       [
         { 'name' => 'PE Master', 'rule' => ['and'] },
@@ -19,7 +31,6 @@ describe GetPEAdmConfig do
         },
       ]
     end
-    subject(:node_group) { described_class.new(data) }
 
     describe '#dig' do
       # Catches a mutation that returns the first group (or raises) instead
@@ -166,7 +177,7 @@ describe GetPEAdmConfig do
     # key for the letter.
     it 'maps pe_compiler PuppetDB results into certname/letter pairs' do
       allow(task).to receive(:pdb_query)
-        .with(a_string_matching(/pp_auth_role = "pe_compiler"/))
+        .with(a_string_matching(%r{pp_auth_role = "pe_compiler"}))
         .and_return([{ 'certname' => 'compiler-a.example.com', 'trusted.extensions' => { '1.3.6.1.4.1.34380.1.1.9813' => 'A' } }])
 
       expect(task.compilers).to eq([{ 'certname' => 'compiler-a.example.com', 'letter' => 'A' }])
@@ -180,7 +191,7 @@ describe GetPEAdmConfig do
     # so a mutation swapping in the non-legacy filter fails this test.
     it 'maps pe_compiler_legacy PuppetDB results into certname/letter pairs' do
       allow(task).to receive(:pdb_query)
-        .with(a_string_matching(/pp_auth_role = "pe_compiler_legacy"/))
+        .with(a_string_matching(%r{pp_auth_role = "pe_compiler_legacy"}))
         .and_return([{ 'certname' => 'legacy-a.example.com', 'trusted.extensions' => { '1.3.6.1.4.1.34380.1.1.9813' => 'B' } }])
 
       expect(task.legacy_compilers).to eq([{ 'certname' => 'legacy-a.example.com', 'letter' => 'B' }])
@@ -192,8 +203,8 @@ describe GetPEAdmConfig do
     # working config from convert-detection logic that depends on this
     # task's output.
     it 'prints config.to_json when a PE Primary A group exists' do
-      allow(task).to receive(:groups).and_return(GetPEAdmConfig::NodeGroup.new([{ 'name' => 'PE Primary A' }]))
-      allow(task).to receive(:config).and_return('foo' => 'bar')
+      allow(task).to receive_messages(groups: GetPEAdmConfig::NodeGroup.new([{ 'name' => 'PE Primary A' }]),
+                                       config: { 'foo' => 'bar' })
 
       expect(STDOUT).to receive(:puts).with('{"foo":"bar"}')
 
@@ -241,11 +252,13 @@ describe GetPEAdmConfig do
     end
 
     before(:each) do
-      allow(task).to receive(:groups).and_return(GetPEAdmConfig::NodeGroup.new(base_groups))
-      allow(task).to receive(:pe_version).and_return('2023.8.9')
-      allow(task).to receive(:compilers).and_return([{ 'certname' => 'compiler-a.example.com', 'letter' => 'A' },
-                                                       { 'certname' => 'compiler-b.example.com', 'letter' => 'B' }])
-      allow(task).to receive(:legacy_compilers).and_return([])
+      allow(task).to receive_messages(
+        groups: GetPEAdmConfig::NodeGroup.new(base_groups),
+        pe_version: '2023.8.9',
+        compilers: [{ 'certname' => 'compiler-a.example.com', 'letter' => 'A' },
+                    { 'certname' => 'compiler-b.example.com', 'letter' => 'B' }],
+        legacy_compilers: [],
+      )
     end
 
     # Catches a mutation that hardcodes 'A' or inverts the ternary, which
@@ -306,3 +319,4 @@ describe GetPEAdmConfig do
     end
   end
 end
+# rubocop:enable RSpec/SpecFilePathFormat

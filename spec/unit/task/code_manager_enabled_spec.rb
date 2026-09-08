@@ -5,7 +5,12 @@ describe CodeManagerEnabled do
   # NOTE: no initialize/params by design -- this task's JSON declares
   # "parameters": {} and its sole call site (plans/add_replica.pp:27) never
   # passes any; confirmed intentional, not a gap.
-  subject(:task) { described_class.new }
+  #
+  # A plain `let`, not `subject` -- #groups and #execute! below stub
+  # methods on this object, and RuboCop's RSpec/SubjectStub cop disallows
+  # stubbing methods on the object under test when it's registered as the
+  # example group's `subject`.
+  let(:task) { described_class.new }
 
   let(:https_dbl) { instance_double(Net::HTTP) }
 
