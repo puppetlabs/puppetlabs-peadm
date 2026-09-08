@@ -46,10 +46,10 @@ describe 'peadm::convert' do
 
     call_order = []
 
-    expect_task('peadm::update_pe_master_rules').return { |targets:, **|
+    expect_task('peadm::update_pe_master_rules').return do |targets:, **|
       call_order << :update_pe_master_rules
       Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
-    }
+    end
 
     expect_task('peadm::puppet_runonce').return { |targets:, **|
       call_order << :puppet_runonce
