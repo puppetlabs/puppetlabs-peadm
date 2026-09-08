@@ -74,7 +74,13 @@ plan peadm::upgrade (
     'replica_postgresql_host' => $replica_postgresql_host,
     'node_group_environment' => $node_group_environment,
     'version' => $version,
-    'pe_installer_source' => $pe_installer_source,
+    # Log only the tarball basename, not the full URL: pe_installer_source may
+    # carry credentials or signed tokens (e.g. S3 pre-signed URLs) that
+    # shouldn't land in Bolt output or centralized logs.
+    'pe_installer_source' => $pe_installer_source ? {
+      undef   => undef,
+      default => $pe_installer_source.split('/')[-1],
+    },
   })
 
   out::message('# Validating inputs')
