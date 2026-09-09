@@ -393,10 +393,32 @@ plan peadm::subplans::install (
   # master. Explicitly stop puppetdb first to avoid any systemd interference.
   run_command('systemctl stop pe-puppetdb', $primary_target)
   run_command('systemctl start pe-puppetdb', $primary_target)
-  run_task('peadm::rbac_token', $primary_target,
-    password       => $console_password,
-    token_lifetime => $token_lifetime,
-  )
+
+  # rbac-service can briefly 500/reject auth immediately after this
+  # puppetdb bounce, before its own dependents have caught up (PE-46689,
+  # the same class of transient-unavailability window restore.pp's
+  # equivalent rbac_token call already retries around for PE-44867).
+  # Retry instead of failing the whole install on a transient error.
+  $rbac_token_max_attempts = 5
+  $rbac_token_result = range(1, $rbac_token_max_attempts).reduce(undef) |$memo, $attempt| {
+    if $memo =~ NotUndef and $memo.ok {
+      $memo
+    } else {
+      if $attempt > 1 {
+        out::message("rbac_token not ready; retrying (attempt ${attempt}) after 15s...")
+        ctrl::sleep(15)
+      }
+      run_task('peadm::rbac_token', $primary_target,
+        _catch_errors  => true,
+        password       => $console_password,
+        token_lifetime => $token_lifetime,
+      )
+    }
+  }
+  unless $rbac_token_result.ok {
+    $rbac_token_error = $rbac_token_result.first.error.message
+    fail_plan("Failed to obtain RBAC token after ${rbac_token_max_attempts} attempts: ${rbac_token_error}")
+  }
 
   # Stub a production environment and commit it to file-sync. At least one
   # commit (content irrelevant) is necessary to be able to configure
