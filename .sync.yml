@@ -14,6 +14,8 @@ Gemfile:
       # resolve the dependency in unexpected ways and causes issues in CI
       - gem: orchestrator_client
         version: < 0.7.1
+      - gem: simplecov-cobertura
+        version: ~> 3.2
 Rakefile:
   changelog_since_tag: 2.5.0
   default_disabled_lint_checks:
@@ -24,6 +26,86 @@ Rakefile:
       "vendor/**/*"]
 spec/spec_helper.rb:
   mock_with: :rspec
+  spec_overrides:
+    - |
+      # puppetlabs_spec_helper's module_spec_helper hardcodes SimpleCov.formatters to
+      # [HTMLFormatter, Console, Codecov] when ENV['SIMPLECOV'] == 'yes' (see
+      # `rake spec:simplecov`). Override it here to drop Codecov -- there's no
+      # CODECOV_TOKEN configured anywhere in this repo, so that formatter does nothing
+      # but attempt (and fail) a real network upload to codecov.io on every coverage run
+      # -- and add CoberturaFormatter instead, whose XML output CI uploads via GitHub's
+      # native code coverage feature.
+      if ENV['SIMPLECOV'] == 'yes'
+        require 'simplecov-cobertura'
+        SimpleCov.formatters = [
+          SimpleCov::Formatter::HTMLFormatter,
+          SimpleCov::Formatter::Console,
+          SimpleCov::Formatter::CoberturaFormatter,
+        ]
+      end
+    - |
+      # Ruby's Coverage library (which SimpleCov/CoberturaFormatter above rely on) can only
+      # instrument .rb files -- it can't measure coverage of Puppet manifests (.pp). rspec-puppet
+      # tracks its own "resource coverage" instead: which resources declared across compiled
+      # catalogs were touched by at least one example (see the `RSpec::Puppet::Coverage.report!`
+      # call above). Convert that per-resource data -- each resource carries its declaring file and
+      # line from the catalog -- into Cobertura XML, so manifest coverage rides the same GitHub
+      # code-coverage upload step as the Ruby coverage above.
+      #
+      # Caveat: this is resource-declaration-line coverage, not true statement coverage -- a .pp
+      # file with N declared resources gets N reported lines, not one per source line.
+      if ENV['SIMPLECOV'] == 'yes'
+        require 'pathname'
+        require 'rexml/document'
+        RSpec.configure do |c|
+          c.after(:suite) do
+            collection = RSpec::Puppet::Coverage.instance.instance_variable_get(:@collection)
+            repo_root = Pathname.new(Dir.pwd).realpath
+            lines_by_file = Hash.new { |h, k| h[k] = Hash.new(0) }
+            collection.each_value do |wrapper|
+              resource = wrapper.resource
+              next unless resource.file && resource.line
+              begin
+                relative_path = Pathname.new(resource.file).realpath.relative_path_from(repo_root).to_s
+              rescue Errno::ENOENT
+                next
+              end
+              next if relative_path.start_with?('..')
+              lines_by_file[relative_path][resource.line] += wrapper.touched? ? 1 : 0
+            end
+            doc = REXML::Document.new
+            doc << REXML::XMLDecl.new('1.0')
+            doc.add(REXML::DocType.new(['coverage', 'SYSTEM', 'http://cobertura.sourceforge.net/xml/coverage-04.dtd']))
+            total_lines = 0
+            covered_lines = 0
+            coverage_el = doc.add_element('coverage', 'version' => '0', 'timestamp' => Time.now.to_i.to_s)
+            coverage_el.add_element('sources').add_element('source').text = '.'
+            package_el = coverage_el.add_element('packages').add_element('package', 'name' => 'manifests')
+            classes_el = package_el.add_element('classes')
+            lines_by_file.sort.each do |file, lines|
+              file_covered = lines.count { |_, hits| hits > 0 }
+              total_lines += lines.size
+              covered_lines += file_covered
+              class_line_rate = lines.empty? ? 1.0 : file_covered.to_f / lines.size
+              class_el = classes_el.add_element(
+                'class', 'name' => File.basename(file), 'filename' => file, 'line-rate' => class_line_rate.to_s
+              )
+              class_el.add_element('methods')
+              lines_el = class_el.add_element('lines')
+              lines.sort.each do |line_number, hits|
+                lines_el.add_element('line', 'number' => line_number.to_s, 'hits' => hits.to_s)
+              end
+            end
+            overall_line_rate = (total_lines > 0) ? covered_lines.to_f / total_lines : 1.0
+            coverage_el.add_attribute('line-rate', overall_line_rate.to_s)
+            coverage_el.add_attribute('lines-covered', covered_lines.to_s)
+            coverage_el.add_attribute('lines-valid', total_lines.to_s)
+            package_el.add_attribute('line-rate', overall_line_rate.to_s)
+            FileUtils.mkdir_p('coverage')
+            File.write('coverage/puppet-coverage.xml', doc.to_s)
+          end
+        end
+      end
 .gitignore:
   paths:
     - .rerun.json
