@@ -127,3 +127,35 @@ jobs:
       - name: Run parallel_spec tests
         run: |-
           bundle exec rake parallel_spec
+  Coverage:
+    name: Code Coverage
+    if: ${{ github.repository_owner == 'puppetlabs' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      code-quality: write
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+      - name: Activate Ruby 3.1
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+      # puppetlabs_spec_helper has no parallel_spec equivalent of the spec:simplecov task, so
+      # coverage runs as its own single, non-parallelized job rather than joining the Spec
+      # matrix above.
+      - name: Run rspec with coverage
+        run: bundle exec rake spec:simplecov
+      - name: Upload Ruby code coverage
+        uses: actions/upload-code-coverage@v1
+        with:
+          file: coverage/coverage.xml
+          language: Ruby
+          label: code-coverage/rspec
+      - name: Upload Puppet manifest coverage
+        uses: actions/upload-code-coverage@v1
+        with:
+          file: coverage/puppet-coverage.xml
+          language: Puppet
+          label: code-coverage/rspec-puppet
