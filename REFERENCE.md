@@ -82,6 +82,7 @@
 * [`os_identification`](#os_identification): Return the operating system runnin gon the target as a string
 * [`pe_install`](#pe_install): Install Puppet Enterprise from a tarball
 * [`pe_ldap_config`](#pe_ldap_config): Set the ldap config in the PE console
+* [`pe_reinstall`](#pe_reinstall): Re-run the Puppet Enterprise installer against an already-extracted installer directory
 * [`pe_uninstall`](#pe_uninstall): Uninstall Puppet Enterprise
 * [`precheck`](#precheck): Return pre-check information about a system
 * [`provision_replica`](#provision_replica): Execute the replica provision puppet command
@@ -1468,6 +1469,32 @@ The PE Main server
 Data type: `String`
 
 The PE version
+
+### <a name="pe_reinstall"></a>`pe_reinstall`
+
+Re-run the Puppet Enterprise installer against an already-extracted installer directory
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `installer_dir`
+
+Data type: `String`
+
+The path to the already-extracted Puppet Enterprise installer directory
+
+##### `peconf`
+
+Data type: `String`
+
+The path to the pe.conf file
+
+##### `puppet_service_ensure`
+
+Data type: `Optional[Enum['stopped']]`
+
+If 'stopped', ensure the Puppet agent is not running when install completes
 
 ### <a name="pe_uninstall"></a>`pe_uninstall`
 
