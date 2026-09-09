@@ -291,4 +291,44 @@ describe 'peadm::subplans::install' do
     expect(primary_pe_conf).to include('"puppet_enterprise::database_host": "postgres1"')
     expect(primary_pe_conf).to include('"puppet_enterprise::puppetdb_database_host": "postgres1"')
   end
+
+  # PE-46576: on split-database installs, the primary's own install pass
+  # runs before the dedicated Postgres host is up. Every one-time bootstrap
+  # step in that pass which depends on a database-backed service -- rbac's
+  # admin account activation, classifier's default node groups, and
+  # potentially others -- fails silently when it calls that service's local
+  # API, because the service can't reach its now-remote database yet. Those
+  # steps only exist in the installer's one-shot catalog apply, so nothing
+  # later (including a normal Puppet run) ever retries them. Re-run the
+  # installer once the database host is confirmed up, before requesting an
+  # rbac token, so it can finish what it couldn't the first time.
+  it 'reinstalls the primary before requesting an rbac token on split-database installs' do
+    params = {
+      'primary_host' => 'primary',
+      'primary_postgresql_host' => 'postgres1',
+      'console_password' => 'puppetLabs123!',
+      'version' => '2023.8.10',
+    }
+
+    expect_task('peadm::pe_reinstall')
+      .with_targets('primary')
+      .with_params({
+                     'installer_dir' => '/tmp/puppet-enterprise-2023.8.10-el-7.11-x86_64',
+                     'peconf'        => '/tmp/pe.conf',
+                   })
+
+    expect(run_plan('peadm::subplans::install', params)).to be_ok
+  end
+
+  it 'does not reinstall the primary on standard (non-split-database) installs' do
+    params = {
+      'primary_host' => 'primary',
+      'console_password' => 'puppetLabs123!',
+      'version' => '2023.8.10',
+    }
+
+    expect_task('peadm::pe_reinstall').not_be_called
+
+    expect(run_plan('peadm::subplans::install', params)).to be_ok
+  end
 end
