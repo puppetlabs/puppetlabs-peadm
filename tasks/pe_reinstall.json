@@ -1,0 +1,21 @@
+{
+  "description": "Re-run the Puppet Enterprise installer against an already-extracted installer directory",
+  "parameters": {
+    "installer_dir": {
+      "type": "String",
+      "description": "The path to the already-extracted Puppet Enterprise installer directory"
+    },
+    "peconf": {
+      "type": "String",
+      "description": "The path to the pe.conf file"
+    },
+    "puppet_service_ensure": {
+      "type": "Optional[Enum['stopped']]",
+      "description": "If 'stopped', ensure the Puppet agent is not running when install completes"
+    }
+  },
+  "input_method": "environment",
+  "implementations": [
+    {"name": "pe_reinstall.sh"}
+  ]
+}
