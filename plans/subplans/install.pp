@@ -464,18 +464,21 @@ plan peadm::subplans::install (
   # classifier param exist on those versions, and no ship version for this
   # feature has been finalized as of this writing, so this cannot be a
   # hardcoded SemVerRange gate (peadm::assert_supported_pe_version's usual
-  # pattern) without risking a wrong guess before GA. Probe for the plan file
-  # directly instead: a PE version that ships this feature already has it in
-  # the pe-installer's own Boltdir (the same one PE-45430's shim migration
-  # reuses, and the same mechanism `puppet infrastructure run` uses for CA
-  # plans); one that doesn't fails the probe and this step no-ops. Uses
-  # `stat`, not `test -f`: `test -f` exits 1 identically (with empty stderr)
-  # whether the file is genuinely absent or exists but is unreadable (e.g. a
-  # permissions problem on the installer's own Boltdir) -- confirmed
-  # empirically. `stat` exits 1 for both cases too, but its stderr text
-  # differs ("No such file or directory" vs "Permission denied" -- also
-  # confirmed empirically), which is the only way to tell "old PE version"
-  # apart from "real infrastructure problem" here.
+  # pattern) without risking a wrong guess before GA. Probe by asking Bolt
+  # itself whether the plan resolves, instead of statting one hardcoded
+  # directory (PE-46685): the installer's own Boltdir
+  # (/opt/puppetlabs/installer/share/Boltdir) configures a three-entry
+  # modulepath in its bolt.yaml, and puppet_enterprise is shipped from the
+  # *enterprise environment* entry (.../server/data/environments/enterprise/
+  # modules), never from that Boltdir's own modules/ subdirectory --
+  # confirmed empirically against a live install. A raw `stat` against
+  # Boltdir/modules/puppet_enterprise/plans/ca_storage_import.pp therefore
+  # reports "No such file or directory" unconditionally, on every PE
+  # version, which silently no-ops this entire migration step always, not
+  # just on versions that predate the feature. `bolt ... plan show
+  # puppet_enterprise::ca_storage_import` resolves through the same
+  # modulepath the real `plan run` invocation below uses, so it can't drift
+  # from what that invocation actually finds.
   #
   # Safe to call again on every topology, including Standard, where the shim
   # (above, PE-45430) has already migrated when pe-ca was reachable at
@@ -486,9 +489,8 @@ plan peadm::subplans::install (
   # (up to ~145s: 29 retries x 5s between attempts) every time it's invoked,
   # migrated-already or not. That's an accepted, small fixed cost on every
   # peadm install, not something this step tries to skip.
-  $ca_storage_import_plan_file = '/opt/puppetlabs/installer/share/Boltdir/modules/puppet_enterprise/plans/ca_storage_import.pp'
   $ca_storage_import_probe = run_command(
-    "stat '${ca_storage_import_plan_file}'",
+    'BOLT_DISABLE_ANALYTICS=true BOLT_GEM=true /opt/puppetlabs/installer/bin/bolt --project /opt/puppetlabs/installer/share/Boltdir plan show puppet_enterprise::ca_storage_import', # lint:ignore:140chars
     $primary_target,
     '_catch_errors' => true,
   ).first
@@ -504,16 +506,18 @@ plan peadm::subplans::install (
 # lint:endignore
   } elsif $ca_storage_import_probe.error.kind == 'puppetlabs.tasks/command-error' {
     # The probe command ran (as opposed to failing to reach the target at
-    # all -- that's the else branch below), so a 'stderr' key is guaranteed
-    # present here (Bolt's for_command result always includes it). Only
-    # stat's own "No such file or directory" confirms the file is genuinely
-    # absent, not merely unreadable -- see the stat-vs-test-f rationale
-    # above. Anything else (e.g. "Permission denied") is a real problem with
-    # the installer's own Boltdir on a PE version that likely does ship
-    # this feature, and must fail loudly instead of being treated as "old
-    # PE version, nothing to do."
-    $ca_storage_import_probe_stderr = $ca_storage_import_probe['stderr']
-    if $ca_storage_import_probe_stderr =~ /No such file or directory/ {
+    # all -- that's the else branch below), so 'stdout'/'stderr' keys are
+    # guaranteed present here (Bolt's for_command result always includes
+    # both). `bolt plan show <missing-plan>` prints "Could not find a plan
+    # named '...'." to STDOUT (confirmed empirically -- NOT stderr, unlike
+    # most CLI error conventions) and exits 1. Only that specific message
+    # confirms the plan is genuinely absent from every modulepath entry, not
+    # merely that something else went wrong resolving it; anything else
+    # (e.g. a Puppetfile/module-resolution error) is a real problem on a PE
+    # version that likely does ship this feature, and must fail loudly
+    # instead of being treated as "old PE version, nothing to do."
+    $ca_storage_import_probe_stdout = $ca_storage_import_probe['stdout']
+    if $ca_storage_import_probe_stdout =~ /Could not find a plan named/ {
       # out::message, not out::verbose: an install running on a PE version
       # that predates this feature should visibly say so in a normal run,
       # not only under elevated Bolt verbosity -- matching how most
@@ -524,14 +528,15 @@ plan peadm::subplans::install (
       # default).
       out::message("puppet_enterprise::ca_storage_import is not present on ${primary_target} (this PE version predates the CA database storage feature) -- skipping.") # lint:ignore:140chars
     } else {
-      fail_plan("Could not confirm ${primary_target} predates the CA database storage feature: ${ca_storage_import_probe_stderr}") # lint:ignore:140chars
+      $ca_storage_import_probe_stderr = $ca_storage_import_probe['stderr']
+      fail_plan("Could not confirm ${primary_target} predates the CA database storage feature: ${ca_storage_import_probe_stdout} ${ca_storage_import_probe_stderr}") # lint:ignore:140chars
     }
   } else {
     # Any other failure kind (e.g. a transport/connect error) means the
-    # probe itself couldn't run at all -- no 'stderr' key exists on that
-    # kind of result, so it's never safe to read unconditionally. This is a
-    # real infrastructure problem, not "old PE version," and must not be
-    # silently treated as a no-op.
+    # probe itself couldn't run at all -- no 'stdout'/'stderr' keys exist on
+    # that kind of result, so it's never safe to read them unconditionally.
+    # This is a real infrastructure problem, not "old PE version," and must
+    # not be silently treated as a no-op.
     $ca_storage_import_probe_error = $ca_storage_import_probe.error.message
     fail_plan("Could not check whether ${primary_target} has the ca_storage_import plan available: ${ca_storage_import_probe_error}") # lint:ignore:140chars
   }

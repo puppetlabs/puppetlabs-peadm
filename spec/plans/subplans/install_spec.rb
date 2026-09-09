@@ -152,8 +152,16 @@ describe 'peadm::subplans::install' do
         'version' => '2023.8.10',
       }
     end
-    let(:plan_file) { '/opt/puppetlabs/installer/share/Boltdir/modules/puppet_enterprise/plans/ca_storage_import.pp' }
-    let(:probe_command) { "stat '#{plan_file}'" }
+    # PE-46685: probes via `bolt plan show`, which resolves through the
+    # installer Boltdir's full modulepath (site-modules, the enterprise
+    # environment, then Boltdir/modules itself) -- the same resolution the
+    # migration_command below relies on -- instead of statting one hardcoded
+    # subdirectory of that modulepath that never actually contains
+    # puppet_enterprise on a real install.
+    let(:probe_command) do
+      'BOLT_DISABLE_ANALYTICS=true BOLT_GEM=true /opt/puppetlabs/installer/bin/bolt ' \
+        '--project /opt/puppetlabs/installer/share/Boltdir plan show puppet_enterprise::ca_storage_import'
+    end
     # The exact literal command text the @("CMD"/L) heredoc in install.pp
     # produces: margin-trimmed backslash-continuation joins leave the
     # multi-space gaps below, and the heredoc always keeps its trailing
@@ -168,14 +176,15 @@ describe 'peadm::subplans::install' do
     end
 
     # error_with/always_return can't simulate a real nonzero-exit command
-    # result with custom stderr (BoltSpec's CommandStub#result_for hardcodes
-    # exit_code to 0 either way) -- construct the Bolt::Result directly via
-    # a .return block instead, matching how Bolt's own Result.for_command
-    # builds a real command failure (stdout/stderr preserved, 'puppetlabs.
-    # tasks/command-error' kind attached only when exit_code != 0).
-    def stub_probe_command_failure(stderr:)
+    # result with custom stdout/stderr (BoltSpec's CommandStub#result_for
+    # hardcodes exit_code to 0 either way) -- construct the Bolt::Result
+    # directly via a .return block instead, matching how Bolt's own
+    # Result.for_command builds a real command failure (stdout/stderr
+    # preserved, 'puppetlabs.tasks/command-error' kind attached only when
+    # exit_code != 0).
+    def stub_probe_command_failure(stdout: '', stderr: '')
       expect_command(probe_command).with_targets('primary').return do |targets:, command:, params:| # rubocop:disable Lint/UnusedBlockArgument
-        value = { 'stdout' => '', 'stderr' => stderr, 'exit_code' => 1 }
+        value = { 'stdout' => stdout, 'stderr' => stderr, 'exit_code' => 1 }
         Bolt::ResultSet.new(targets.map { |target| Bolt::Result.for_command(target, value, 'command', command, []) })
       end
     end
@@ -208,26 +217,25 @@ describe 'peadm::subplans::install' do
     end
 
     it 'no-ops without running the migration when this PE version predates the feature' do
-      stub_probe_command_failure(stderr: "stat: cannot stat '#{plan_file}': No such file or directory")
+      stub_probe_command_failure(stdout: "Could not find a plan named 'puppet_enterprise::ca_storage_import'. " \
+                                          "For a list of available plans, run 'bolt plan show'.\n")
       expect_command(migration_command).not_be_called
 
       expect(run_plan('peadm::subplans::install', params)).to be_ok
     end
 
-    # The whole reason this probes with `stat` instead of `test -f`: a real
-    # permissions problem on the installer's own Boltdir exits non-zero
-    # identically to a genuinely missing file, but stat's stderr text is
-    # different for the two cases, and only "No such file or directory" may
-    # be treated as "this PE version predates the feature." Anything else
-    # (e.g. "Permission denied") is a real infrastructure problem that must
-    # fail loudly, not silently skip a needed migration.
-    it 'fails the install when the probe fails for a reason other than a missing file' do
-      stub_probe_command_failure(stderr: "stat: cannot stat '#{plan_file}': Permission denied")
+    # `bolt plan show` prints its "not found" message to STDOUT, not stderr
+    # (confirmed empirically) -- only that specific message on stdout may be
+    # treated as "this PE version predates the feature." Anything else
+    # (e.g. a Puppetfile/module-resolution error) is a real infrastructure
+    # problem that must fail loudly, not silently skip a needed migration.
+    it 'fails the install when the probe fails for a reason other than a missing plan' do
+      stub_probe_command_failure(stderr: "Fatal Puppetfile error while resolving modules: connection refused\n")
       expect_command(migration_command).not_be_called
 
       result = run_plan('peadm::subplans::install', params)
       expect(result).not_to be_ok
-      expect(result.value.msg).to match(%r{Permission denied})
+      expect(result.value.msg).to match(%r{connection refused})
     end
 
     # A transport/connect failure must not be silently conflated with "this
