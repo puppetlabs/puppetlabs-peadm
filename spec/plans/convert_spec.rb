@@ -12,22 +12,57 @@ describe 'peadm::convert' do
     { 'primary_host' => 'primary', 'legacy_compilers' => ['pe_compiler_legacy'] }
   end
 
-  it 'single primary no dr valid' do
+  before(:each) do
     allow_out_message
     allow_any_command
-    allow_any_task
     allow_apply
 
-    expect_task('peadm::cert_data').return_for_targets('primary' => trustedjson).be_called_times(2)
+    # For some reason, expect_plan() was not working??
+    allow_plan('peadm::modify_certificate').always_return({})
+
+    # 'pe_compiler_legacy' carries the legacy-compiler OID marker so the
+    # convert plan's early cert-cleanup branch (which runs a puppet_runonce
+    # on compilers before update_pe_master_rules is even reached in
+    # unpatched code) is actually exercised by these tests. See PE-44017.
+    expect_task('peadm::cert_data').return_for_targets(
+      'primary' => trustedjson,
+      'pe_compiler_legacy' => { 'extensions' => { '1.3.6.1.4.1.34380.1.1.9814' => 'true' } },
+    ).be_called_times(2)
     expect_task('peadm::read_file').with_params('path' => '/opt/puppetlabs/server/pe_version').always_return({ 'content' => '2021.7.9' })
     expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
     expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
     expect_task('peadm::node_group_unpin').with_targets('primary').with_params({ 'node_certnames' => ['pe_compiler_legacy'], 'group_name' => 'PE Master' })
     expect_task('peadm::check_legacy_compilers').with_targets('primary').with_params({ 'legacy_compilers' => 'pe_compiler_legacy' }).return_for_targets('primary' => { '_output' => '' })
+  end
 
-    # For some reason, expect_plan() was not working??
-    allow_plan('peadm::modify_certificate').always_return({})
+  it 'single primary no dr valid' do
+    allow_any_task
 
     expect(run_plan('peadm::convert', params)).to be_ok
+  end
+
+  it 'updates PE Master rules before the first Puppet run on compilers' do
+    allow_task('peadm::wait_until_service_ready')
+
+    call_order = []
+
+    expect_task('peadm::update_pe_master_rules').return do |targets:, **|
+      call_order << :update_pe_master_rules
+      Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+    end
+
+    expect_task('peadm::puppet_runonce').return { |targets:, **|
+      call_order << :puppet_runonce
+      Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+    }.be_called_times(4) # 1 early legacy-compiler cleanup run, 3 in finalize
+
+    expect(run_plan('peadm::convert', params)).to be_ok
+
+    # update_pe_master_rules must run before every puppet_runonce call that
+    # reaches compilers - including the early legacy-compiler cleanup run,
+    # not just the ones in finalize - otherwise they can still be
+    # double-classified under PE Master and hit the pe_format_urls()
+    # host/port mismatch (PE-44017).
+    expect(call_order.index(:update_pe_master_rules)).to be < call_order.index(:puppet_runonce)
   end
 end
