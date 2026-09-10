@@ -206,6 +206,7 @@ plan peadm::subplans::install (
       'console_admin_password'                                          => $console_password,
       'puppet_enterprise::puppet_master_host'                           => $primary_target.peadm::certname(),
       'pe_install::puppet_master_dnsaltnames'                           => $dns_alt_names,
+      'puppet_enterprise::database_host'                                => $primary_postgresql_target.peadm::certname(),
       'puppet_enterprise::puppetdb_database_host'                       => $primary_postgresql_target.peadm::certname(),
       'puppet_enterprise::profile::master::code_manager_auto_configure' => $_code_manager_auto_configure,
       'puppet_enterprise::profile::master::r10k_remote'                 => $r10k_remote,
@@ -256,6 +257,7 @@ plan peadm::subplans::install (
   }
 
   $upload_tarball_path = "${uploaddir}/${pe_tarball_name}"
+  $pe_installer_dir    = "${uploaddir}/${pe_tarball_name.regsubst('\.tar\.gz$', '')}"
 
   if $download_mode == 'bolthost' {
     # Download the PE tarball and send it to the nodes that need it
@@ -393,6 +395,25 @@ plan peadm::subplans::install (
   # master. Explicitly stop puppetdb first to avoid any systemd interference.
   run_command('systemctl stop pe-puppetdb', $primary_target)
   run_command('systemctl start pe-puppetdb', $primary_target)
+
+  if $primary_postgresql_host {
+    # On split-database installs, the primary's own install pass runs before
+    # the dedicated Postgres host is up. Every one-time bootstrap step in
+    # that pass which depends on a database-backed service -- rbac's admin
+    # account activation, classifier's default node groups, and potentially
+    # others -- fails silently when it calls that service's local API,
+    # because the service can't reach its now-remote database yet. Those
+    # steps only exist in the installer's one-shot catalog apply, so nothing
+    # later in a normal install (including an ordinary Puppet run) ever
+    # retries them. Re-run the installer against the already-extracted
+    # installer directory now that the database host is up, so it can finish
+    # what it couldn't the first time.
+    run_task('peadm::pe_reinstall', $primary_target,
+      installer_dir => $pe_installer_dir,
+      peconf        => '/tmp/pe.conf',
+    )
+  }
+
   run_task('peadm::rbac_token', $primary_target,
     password       => $console_password,
     token_lifetime => $token_lifetime,
