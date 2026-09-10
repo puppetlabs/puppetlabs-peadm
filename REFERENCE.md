@@ -73,8 +73,10 @@
 * [`enable_replica`](#enable_replica): Execute the enable replica puppet command
 * [`filesize`](#filesize): Return the size of a file in bytes
 * [`get_group_rules`](#get_group_rules): Run on a PE primary node to return the rules currently applied to the PE Infrastructure Agent group
+* [`get_ica_state`](#get_ica_state): Query the current ICA state for a compiler from the PE primary (GET /puppet-ca/v1/intermediate-ca/:fqdn). Runs on the primary. Returns {"stat
 * [`get_peadm_config`](#get_peadm_config): Run on a PE primary node to return the currently configured PEAdm parameters
 * [`get_psql_version`](#get_psql_version): Run on a PE PSQL node to return the major version of the PSQL server currently installed
+* [`get_request_status`](#get_request_status): Query the terminal/pending status of a pending ICA request from the PE primary (GET /puppet-ca/v1/intermediate-ca/requests/:id). Runs on the 
 * [`infrastatus`](#infrastatus): Runs puppet infra status and returns the output
 * [`install_ica_cert`](#install_ica_cert): Install this compiler's approved, signed ICA certificate. Config and service manipulation only, no cryptography: fetches the cert from the PE
 * [`mkdir_p_file`](#mkdir_p_file): Create a file with the specified content at the specified location
@@ -91,6 +93,7 @@
 * [`rbac_token`](#rbac_token): Get and save an rbac token for the root user, admin rbac user
 * [`read_file`](#read_file): Read the contents of a file
 * [`reinstall_pe`](#reinstall_pe): Reinstall PE, only to be used to restore PE
+* [`resolve_current_primary`](#resolve_current_primary): Probe an array of candidate primary FQDNs (each once, ~10s connect timeout) and return the first that answers. Used to recover peadm::poll_ic
 * [`restore_classification`](#restore_classification): A short description of this task
 * [`sign_csr`](#sign_csr): Submit a certificate signing request
 * [`ssl_clean`](#ssl_clean): Clean an agent's certificate
@@ -98,6 +101,7 @@
 * [`submit_ica_csr`](#submit_ica_csr): Generate and submit this compiler's ICA CSR to the PE primary. A thin wrapper: shells out to the puppetserver ICA provisioning subcommand, wh
 * [`transform_classification_groups`](#transform_classification_groups): Transform the user groups from a source backup to a list of groups on the target server
 * [`update_pe_master_rules`](#update_pe_master_rules): Updates the PE Master group rules to support 'pe_compiler_legacy' as a pp_auth_role
+* [`validate_ica_compiler`](#validate_ica_compiler): Submit a synthetic test CSR through the compiler's own (just-promoted) ICA and verify the signed chain against the root CA. Runs on the compi
 * [`validate_rbac_token`](#validate_rbac_token): Check an RBAC token stored in a file is valid
 * [`wait_until_service_ready`](#wait_until_service_ready): Return when the orchestrator service is healthy, or timeout after 15 seconds
 
@@ -118,6 +122,12 @@ Supported use cases:
 * [`peadm::install`](#peadm--install): Install a new PE cluster
 * [`peadm::migrate`](#peadm--migrate): Migrate a PE installation to new host(s)
 * [`peadm::modify_certificate`](#peadm--modify_certificate): Modify the certificate of one or more targets
+* [`peadm::poll_ica_approval`](#peadm--poll_ica_approval): Poll the primary for approval of a pending ICA request, re-targeting to a resolved
+replica if the primary becomes unreachable mid-poll (Decision S).
+* [`peadm::promote_compiler_to_ica`](#peadm--promote_compiler_to_ica): Promote an existing CA-proxy compiler to an intermediate CA (ICA) compiler.
+Implements the full promote workflow: preflight, generate/submit a CSR, poll for operator
+approval, install the signed certificate, validate independent signing, and print the
+ica-pool follow-up instructions. See SPEC.md sec 12.2 and Decision S.
 * [`peadm::replace_failed_postgresql`](#peadm--replace_failed_postgresql): Replaces a failed PostgreSQL host
 * [`peadm::restore`](#peadm--restore): Restore puppet primary configuration
 * [`peadm::restore_ca`](#peadm--restore_ca)
@@ -1297,6 +1307,20 @@ Run on a PE primary node to return the rules currently applied to the PE Infrast
 
 **Supports noop?** false
 
+### <a name="get_ica_state"></a>`get_ica_state`
+
+Query the current ICA state for a compiler from the PE primary (GET /puppet-ca/v1/intermediate-ca/:fqdn). Runs on the primary. Returns {"state": "none"} when no ICA request has ever been made for the compiler. Used by peadm::promote_compiler_to_ica's preflight step (ticket 7.6).
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `compiler_fqdn`
+
+Data type: `String[1]`
+
+Certname/FQDN of the compiler whose ICA state to query.
+
 ### <a name="get_peadm_config"></a>`get_peadm_config`
 
 Run on a PE primary node to return the currently configured PEAdm parameters
@@ -1308,6 +1332,20 @@ Run on a PE primary node to return the currently configured PEAdm parameters
 Run on a PE PSQL node to return the major version of the PSQL server currently installed
 
 **Supports noop?** false
+
+### <a name="get_request_status"></a>`get_request_status`
+
+Query the terminal/pending status of a pending ICA request from the PE primary (GET /puppet-ca/v1/intermediate-ca/requests/:id). Runs on the primary. Authenticates with mTLS only -- per SPEC.md sec 3.2 this endpoint needs no RBAC token, the request UUID is the authorization. Used by peadm::poll_ica_approval (ticket 7.6).
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `request_id`
+
+Data type: `String[1]`
+
+The pending ICA request id to look up.
 
 ### <a name="infrastatus"></a>`infrastatus`
 
@@ -1641,6 +1679,20 @@ Data type: `Boolean`
 
 Whether we want to uninstall PE before installing
 
+### <a name="resolve_current_primary"></a>`resolve_current_primary`
+
+Probe an array of candidate primary FQDNs (each once, ~10s connect timeout) and return the first that answers. Used to recover peadm::poll_ica_approval's approval poll when the primary becomes unreachable mid-poll (Decision S). Runs on the compiler being promoted -- the one target proven reachable when the primary is down. Owns no retry loop; the caller re-invokes this on its own polling cadence.
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `candidates`
+
+Data type: `Array[String[1]]`
+
+Array of candidate primary FQDNs to probe, in order.
+
 ### <a name="restore_classification"></a>`restore_classification`
 
 A short description of this task
@@ -1728,6 +1780,20 @@ Location of target node group yaml file and where to create the transformed file
 Updates the PE Master group rules to support 'pe_compiler_legacy' as a pp_auth_role
 
 **Supports noop?** false
+
+### <a name="validate_ica_compiler"></a>`validate_ica_compiler`
+
+Submit a synthetic test CSR through the compiler's own (just-promoted) ICA and verify the signed chain against the root CA. Runs on the compiler; proves it signs certificates without primary involvement. On a verification failure, reverts the compiler's bootstrap.cfg back to CA-proxy mode before reporting invalid. Used by peadm::promote_compiler_to_ica (ticket 7.6).
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `primary_host`
+
+Data type: `String[1]`
+
+Certname/FQDN of the PE primary, used to fetch the root CA certificate to verify the test chain against.
 
 ### <a name="validate_rbac_token"></a>`validate_rbac_token`
 
@@ -2595,6 +2661,133 @@ Data type: `Boolean`
 
 
 Default value: `false`
+
+### <a name="peadm--poll_ica_approval"></a>`peadm::poll_ica_approval`
+
+Poll the primary for approval of a pending ICA request, re-targeting to a resolved
+replica if the primary becomes unreachable mid-poll (Decision S).
+
+#### Parameters
+
+The following parameters are available in the `peadm::poll_ica_approval` plan:
+
+* [`primary`](#-peadm--poll_ica_approval--primary)
+* [`request_id`](#-peadm--poll_ica_approval--request_id)
+* [`probe_target`](#-peadm--poll_ica_approval--probe_target)
+* [`timeout`](#-peadm--poll_ica_approval--timeout)
+* [`interval`](#-peadm--poll_ica_approval--interval)
+* [`replica`](#-peadm--poll_ica_approval--replica)
+
+##### <a name="-peadm--poll_ica_approval--primary"></a>`primary`
+
+Data type: `Peadm::SingleTargetSpec`
+
+The host currently believed to be the PE primary.
+
+##### <a name="-peadm--poll_ica_approval--request_id"></a>`request_id`
+
+Data type: `String[1]`
+
+The pending ICA request id to poll.
+
+##### <a name="-peadm--poll_ica_approval--probe_target"></a>`probe_target`
+
+Data type: `Peadm::SingleTargetSpec`
+
+The compiler being promoted -- the one target proven reachable when the
+primary is down, where peadm::resolve_current_primary is run.
+
+##### <a name="-peadm--poll_ica_approval--timeout"></a>`timeout`
+
+Data type: `Integer[1]`
+
+How long, in seconds, to wait for a terminal state before giving up.
+
+Default value: `3600`
+
+##### <a name="-peadm--poll_ica_approval--interval"></a>`interval`
+
+Data type: `Integer[1]`
+
+How often, in seconds, to poll for a terminal state.
+
+Default value: `30`
+
+##### <a name="-peadm--poll_ica_approval--replica"></a>`replica`
+
+Data type: `Optional[Peadm::SingleTargetSpec]`
+
+FQDN of the DR replica to fail over to if the primary becomes unreachable.
+Undef disables failover: a connection failure against $primary fails the plan immediately.
+
+Default value: `undef`
+
+### <a name="peadm--promote_compiler_to_ica"></a>`peadm::promote_compiler_to_ica`
+
+Promote an existing CA-proxy compiler to an intermediate CA (ICA) compiler.
+Implements the full promote workflow: preflight, generate/submit a CSR, poll for operator
+approval, install the signed certificate, validate independent signing, and print the
+ica-pool follow-up instructions. See SPEC.md sec 12.2 and Decision S.
+
+#### Parameters
+
+The following parameters are available in the `peadm::promote_compiler_to_ica` plan:
+
+* [`compiler`](#-peadm--promote_compiler_to_ica--compiler)
+* [`primary`](#-peadm--promote_compiler_to_ica--primary)
+* [`approval_timeout_seconds`](#-peadm--promote_compiler_to_ica--approval_timeout_seconds)
+* [`approval_poll_interval_seconds`](#-peadm--promote_compiler_to_ica--approval_poll_interval_seconds)
+* [`replica`](#-peadm--promote_compiler_to_ica--replica)
+* [`resume_request_id`](#-peadm--promote_compiler_to_ica--resume_request_id)
+
+##### <a name="-peadm--promote_compiler_to_ica--compiler"></a>`compiler`
+
+Data type: `Peadm::SingleTargetSpec`
+
+FQDN of the compiler to promote.
+
+##### <a name="-peadm--promote_compiler_to_ica--primary"></a>`primary`
+
+Data type: `Peadm::SingleTargetSpec`
+
+FQDN of the PE primary.
+
+##### <a name="-peadm--promote_compiler_to_ica--approval_timeout_seconds"></a>`approval_timeout_seconds`
+
+Data type: `Integer[1]`
+
+How long to wait for operator approval before failing.
+
+Default value: `3600`
+
+##### <a name="-peadm--promote_compiler_to_ica--approval_poll_interval_seconds"></a>`approval_poll_interval_seconds`
+
+Data type: `Integer[1]`
+
+How often to poll for approval.
+
+Default value: `30`
+
+##### <a name="-peadm--promote_compiler_to_ica--replica"></a>`replica`
+
+Data type: `Optional[Peadm::SingleTargetSpec]`
+
+FQDN of the DR replica, used as the failover candidate if the primary becomes
+unreachable mid-poll (Decision S). peadm does not discover topology, so this is supplied
+rather than resolved. When unset, a primary connection failure fails the plan with a message
+naming this parameter rather than retrying a dead host until timeout.
+
+Default value: `undef`
+
+##### <a name="-peadm--promote_compiler_to_ica--resume_request_id"></a>`resume_request_id`
+
+Data type: `Optional[String[1]]`
+
+An existing pending request id, to resume a run whose approval poll
+timed out. Skips CSR submission and polls the supplied id -- a fresh submission would
+collide with the still-pending row (409, partial unique index).
+
+Default value: `undef`
 
 ### <a name="peadm--replace_failed_postgresql"></a>`peadm::replace_failed_postgresql`
 

@@ -1,0 +1,11 @@
+{
+  "description": "Probe an array of candidate primary FQDNs (each once, ~10s connect timeout) and return the first that answers. Used to recover peadm::poll_ica_approval's approval poll when the primary becomes unreachable mid-poll (Decision S). Runs on the compiler being promoted -- the one target proven reachable when the primary is down. Owns no retry loop; the caller re-invokes this on its own polling cadence.",
+  "input_method": "stdin",
+  "files": ["peadm/files/ica_task_helper.rb"],
+  "parameters": {
+    "candidates": {
+      "description": "Array of candidate primary FQDNs to probe, in order.",
+      "type": "Array[String[1]]"
+    }
+  }
+}
