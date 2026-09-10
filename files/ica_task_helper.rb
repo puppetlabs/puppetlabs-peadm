@@ -84,7 +84,17 @@ module IcaTaskHelper
     req.body = {
       'name' => ICA_GROUP_NAME,
       'parent' => ALL_NODES_GROUP_ID,
-      'classes' => { 'puppet_enterprise' => { 'pe_ca_ica_enabled' => true } },
+      # Both flags, and on profile::master, where both are actually declared.
+      # master.pp evaluates `if $enable_ca_proxy` before `elsif $pe_ca_ica_enabled`
+      # and enable_ca_proxy defaults to true, so setting the ICA flag alone leaves
+      # the next catalog silently taking the proxy branch and never binding
+      # intermediate-ca-service, on a compiler the operator believes is promoted.
+      'classes' => {
+        'puppet_enterprise::profile::master' => {
+          'pe_ca_ica_enabled' => true,
+          'enable_ca_proxy' => false,
+        },
+      },
     }.to_json
 
     res = https.request(req)
