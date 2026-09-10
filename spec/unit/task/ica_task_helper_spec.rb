@@ -123,7 +123,12 @@ describe IcaTaskHelper do
         body = JSON.parse(req.body)
         expect(body['name']).to eq('PE ICA Compilers')
         expect(body['parent']).to eq('00000000-0000-4000-8000-000000000000')
-        expect(body.dig('classes', 'puppet_enterprise', 'pe_ca_ica_enabled')).to eq(true)
+        params = body.dig('classes', 'puppet_enterprise::profile::master')
+        # Both flags, or the catalog silently takes master.pp's earlier
+        # `if $enable_ca_proxy` branch and never binds intermediate-ca-service.
+        expect(params).to eq('pe_ca_ica_enabled' => true, 'enable_ca_proxy' => false)
+        # The parameters are declared on profile::master, not the base class.
+        expect(body['classes']).not_to have_key('puppet_enterprise')
         create_response
       }.ordered
 
