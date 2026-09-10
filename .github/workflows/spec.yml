@@ -33,7 +33,7 @@ jobs:
       spec_matrix: ${{ steps.get-matrix.outputs.spec_matrix }}
     steps:
       - name: Checkout Source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         if: ${{ github.repository_owner == 'puppetlabs' }}
       - name: Activate Ruby 3.1
         uses: ruby/setup-ruby@v1
@@ -74,7 +74,7 @@ jobs:
       - run: |
           echo "SANITIZED_PUPPET_VERSION=$(echo '${{ matrix.puppet_version }}' | sed 's/~> //g')" >> $GITHUB_ENV
       - name: Checkout Source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Activate Ruby ${{ matrix.ruby_version }}
         uses: ruby/setup-ruby@v1
         with:
