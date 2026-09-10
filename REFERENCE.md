@@ -76,6 +76,7 @@
 * [`get_peadm_config`](#get_peadm_config): Run on a PE primary node to return the currently configured PEAdm parameters
 * [`get_psql_version`](#get_psql_version): Run on a PE PSQL node to return the major version of the PSQL server currently installed
 * [`infrastatus`](#infrastatus): Runs puppet infra status and returns the output
+* [`install_ica_cert`](#install_ica_cert): Install this compiler's approved, signed ICA certificate. Config and service manipulation only, no cryptography: fetches the cert from the PE
 * [`mkdir_p_file`](#mkdir_p_file): Create a file with the specified content at the specified location
 * [`mv`](#mv): Wrapper task for mv command
 * [`node_group_unpin`](#node_group_unpin): Unpins nodes from a specified PE node group
@@ -94,6 +95,7 @@
 * [`sign_csr`](#sign_csr): Submit a certificate signing request
 * [`ssl_clean`](#ssl_clean): Clean an agent's certificate
 * [`submit_csr`](#submit_csr): Submit a certificate signing request
+* [`submit_ica_csr`](#submit_ica_csr): Generate and submit this compiler's ICA CSR to the PE primary. A thin wrapper: shells out to the puppetserver ICA provisioning subcommand, wh
 * [`transform_classification_groups`](#transform_classification_groups): Transform the user groups from a source backup to a list of groups on the target server
 * [`update_pe_master_rules`](#update_pe_master_rules): Updates the PE Master group rules to support 'pe_compiler_legacy' as a pp_auth_role
 * [`validate_rbac_token`](#validate_rbac_token): Check an RBAC token stored in a file is valid
@@ -1321,6 +1323,20 @@ Data type: `Enum[json,text]`
 
 The type of output to return
 
+### <a name="install_ica_cert"></a>`install_ica_cert`
+
+Install this compiler's approved, signed ICA certificate. Config and service manipulation only, no cryptography: fetches the cert from the PE primary, installs it, swaps bootstrap.cfg from the CA-proxy service to IntermediateCAService, clears ca.conf's ica-pool, pins this compiler into the shared PE ICA Compilers classifier group (which sets pe_ca_ica_enabled), and restarts the CA service. Called by peadm::promote_compiler_to_ica (ticket 7.6) after operator approval of the pending CSR from peadm::submit_ica_csr.
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `primary_host`
+
+Data type: `String[1]`
+
+Certname/FQDN of the PE primary to fetch the approved ICA certificate from.
+
 ### <a name="mkdir_p_file"></a>`mkdir_p_file`
 
 Create a file with the specified content at the specified location
@@ -1680,6 +1696,12 @@ Submit a certificate signing request
 Data type: `Optional[Array[String]]`
 
 DNS Alternative Names to request for the certificate
+
+### <a name="submit_ica_csr"></a>`submit_ica_csr`
+
+Generate and submit this compiler's ICA CSR to the PE primary. A thin wrapper: shells out to the puppetserver ICA provisioning subcommand, which performs all cryptography (key generation, PKCS#8 encryption, CSR and initial CRL construction) and submission. Returns the pending request id. Makes no change to bootstrap.cfg and restarts no services. Called by peadm::promote_compiler_to_ica (ticket 7.6); ICA promotion is per-compiler and operator-driven only.
+
+**Supports noop?** false
 
 ### <a name="transform_classification_groups"></a>`transform_classification_groups`
 
