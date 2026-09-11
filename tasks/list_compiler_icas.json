@@ -1,0 +1,17 @@
+{
+  "puppet_task_version": 1,
+  "supports_noop": false,
+  "description": "Run on a PE primary to list all compiler ICAs and their state, including autosign fingerprint consistency across the fleet",
+  "parameters": {
+    "state": {
+      "type": "Optional[Enum[active,draining,revoked,decommissioned]]",
+      "description": "Only return ICAs in this state. Unfiltered by default."
+    },
+    "format": {
+      "type": "Enum[table,json]",
+      "description": "table for human-readable output (default), json to return the endpoint's response unmodified for use in another plan",
+      "default": "table"
+    }
+  },
+  "input_method": "stdin"
+}
