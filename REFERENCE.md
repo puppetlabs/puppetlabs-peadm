@@ -72,6 +72,7 @@
 * [`download`](#download): Download a file using curl
 * [`enable_replica`](#enable_replica): Execute the enable replica puppet command
 * [`filesize`](#filesize): Return the size of a file in bytes
+* [`get_autosign_consistency`](#get_autosign_consistency): Query the primary's fleet-wide autosign consistency flag (GET /puppet-ca/v1/intermediate-ca). Runs on the primary. Returns {"autosign-inconsistent": <bool>}.
 * [`get_group_rules`](#get_group_rules): Run on a PE primary node to return the rules currently applied to the PE Infrastructure Agent group
 * [`get_ica_state`](#get_ica_state): Query the current ICA state for a compiler from the PE primary (GET /puppet-ca/v1/intermediate-ca/:fqdn). Runs on the primary. Returns {"stat
 * [`get_peadm_config`](#get_peadm_config): Run on a PE primary node to return the currently configured PEAdm parameters
@@ -123,11 +124,11 @@ Supported use cases:
 * [`peadm::migrate`](#peadm--migrate): Migrate a PE installation to new host(s)
 * [`peadm::modify_certificate`](#peadm--modify_certificate): Modify the certificate of one or more targets
 * [`peadm::poll_ica_approval`](#peadm--poll_ica_approval): Poll the primary for approval of a pending ICA request, re-targeting to a resolved
-replica if the primary becomes unreachable mid-poll (Decision S).
+replica if the primary becomes unreachable mid-poll.
 * [`peadm::promote_compiler_to_ica`](#peadm--promote_compiler_to_ica): Promote an existing CA-proxy compiler to an intermediate CA (ICA) compiler.
 Implements the full promote workflow: preflight, generate/submit a CSR, poll for operator
 approval, install the signed certificate, validate independent signing, and print the
-ica-pool follow-up instructions. See SPEC.md sec 12.2 and Decision S.
+ica-pool follow-up instructions.
 * [`peadm::replace_failed_postgresql`](#peadm--replace_failed_postgresql): Replaces a failed PostgreSQL host
 * [`peadm::restore`](#peadm--restore): Restore puppet primary configuration
 * [`peadm::restore_ca`](#peadm--restore_ca)
@@ -1301,6 +1302,12 @@ Data type: `String`
 
 Path to the file to return the size of
 
+### <a name="get_autosign_consistency"></a>`get_autosign_consistency`
+
+Query the primary's fleet-wide autosign consistency flag (GET /puppet-ca/v1/intermediate-ca). Runs on the primary. Returns {"autosign-inconsistent": <bool>}. Used by peadm::promote_compiler_to_ica's preflight step to warn, without failing, when the fleet is already in autosign disagreement.
+
+**Supports noop?** false
+
 ### <a name="get_group_rules"></a>`get_group_rules`
 
 Run on a PE primary node to return the rules currently applied to the PE Infrastructure Agent group
@@ -1309,7 +1316,7 @@ Run on a PE primary node to return the rules currently applied to the PE Infrast
 
 ### <a name="get_ica_state"></a>`get_ica_state`
 
-Query the current ICA state for a compiler from the PE primary (GET /puppet-ca/v1/intermediate-ca/:fqdn). Runs on the primary. Returns {"state": "none"} when no ICA request has ever been made for the compiler. Used by peadm::promote_compiler_to_ica's preflight step (ticket 7.6).
+Query the current ICA state for a compiler from the PE primary (GET /puppet-ca/v1/intermediate-ca/:fqdn). Runs on the primary. Returns {"state": "none"} when no ICA request has ever been made for the compiler. Used by peadm::promote_compiler_to_ica's preflight step.
 
 **Supports noop?** false
 
@@ -1335,7 +1342,7 @@ Run on a PE PSQL node to return the major version of the PSQL server currently i
 
 ### <a name="get_request_status"></a>`get_request_status`
 
-Query the terminal/pending status of a pending ICA request from the PE primary (GET /puppet-ca/v1/intermediate-ca/requests/:id). Runs on the primary. Authenticates with mTLS only -- per SPEC.md sec 3.2 this endpoint needs no RBAC token, the request UUID is the authorization. Used by peadm::poll_ica_approval (ticket 7.6).
+Query the terminal/pending status of a pending ICA request from the PE primary (GET /puppet-ca/v1/intermediate-ca/requests/:id). Runs on the primary. Authenticates with mTLS only -- this endpoint needs no RBAC token, the request UUID is the authorization. Used by peadm::poll_ica_approval.
 
 **Supports noop?** false
 
@@ -1363,7 +1370,7 @@ The type of output to return
 
 ### <a name="install_ica_cert"></a>`install_ica_cert`
 
-Install this compiler's approved, signed ICA certificate. Config and service manipulation only, no cryptography: fetches the cert from the PE primary, installs it, swaps bootstrap.cfg from the CA-proxy service to IntermediateCAService, clears ca.conf's ica-pool, pins this compiler into the shared PE ICA Compilers classifier group (which sets pe_ca_ica_enabled), and restarts the CA service. Called by peadm::promote_compiler_to_ica (ticket 7.6) after operator approval of the pending CSR from peadm::submit_ica_csr.
+Install this compiler's approved, signed ICA certificate. Config and service manipulation only, no cryptography: fetches the cert from the PE primary, installs it, swaps bootstrap.cfg from the CA-proxy service to IntermediateCAService, clears ca.conf's ica-pool, pins this compiler into the shared PE ICA Compilers classifier group (which sets pe_ca_ica_enabled), and restarts the CA service. Called by peadm::promote_compiler_to_ica after operator approval of the pending CSR from peadm::submit_ica_csr.
 
 **Supports noop?** false
 
@@ -1681,7 +1688,7 @@ Whether we want to uninstall PE before installing
 
 ### <a name="resolve_current_primary"></a>`resolve_current_primary`
 
-Probe an array of candidate primary FQDNs (each once, ~10s connect timeout) and return the first that answers. Used to recover peadm::poll_ica_approval's approval poll when the primary becomes unreachable mid-poll (Decision S). Runs on the compiler being promoted -- the one target proven reachable when the primary is down. Owns no retry loop; the caller re-invokes this on its own polling cadence.
+Probe an array of candidate primary FQDNs (each once, ~10s connect timeout) and return the first that answers. Used to recover peadm::poll_ica_approval's approval poll when the primary becomes unreachable mid-poll. Runs on the compiler being promoted -- the one target proven reachable when the primary is down. Owns no retry loop; the caller re-invokes this on its own polling cadence.
 
 **Supports noop?** false
 
@@ -1751,7 +1758,7 @@ DNS Alternative Names to request for the certificate
 
 ### <a name="submit_ica_csr"></a>`submit_ica_csr`
 
-Generate and submit this compiler's ICA CSR to the PE primary. A thin wrapper: shells out to the puppetserver ICA provisioning subcommand, which performs all cryptography (key generation, PKCS#8 encryption, CSR and initial CRL construction) and submission. Returns the pending request id. Makes no change to bootstrap.cfg and restarts no services. Called by peadm::promote_compiler_to_ica (ticket 7.6); ICA promotion is per-compiler and operator-driven only.
+Generate and submit this compiler's ICA CSR to the PE primary. A thin wrapper: shells out to the puppetserver ICA provisioning subcommand, which performs all cryptography (key generation, PKCS#8 encryption, CSR and initial CRL construction) and submission. Returns the pending request id. Makes no change to bootstrap.cfg and restarts no services. Called by peadm::promote_compiler_to_ica; ICA promotion is per-compiler and operator-driven only.
 
 **Supports noop?** false
 
@@ -1783,7 +1790,7 @@ Updates the PE Master group rules to support 'pe_compiler_legacy' as a pp_auth_r
 
 ### <a name="validate_ica_compiler"></a>`validate_ica_compiler`
 
-Submit a synthetic test CSR through the compiler's own (just-promoted) ICA and verify the signed chain against the root CA. Runs on the compiler; proves it signs certificates without primary involvement. On a verification failure, reverts the compiler's bootstrap.cfg back to CA-proxy mode before reporting invalid. Used by peadm::promote_compiler_to_ica (ticket 7.6).
+Submit a synthetic test CSR through the compiler's own (just-promoted) ICA and verify the signed chain against the root CA. Runs on the compiler; proves it signs certificates without primary involvement. On a verification failure, reverts the compiler's bootstrap.cfg back to CA-proxy mode before reporting invalid. Used by peadm::promote_compiler_to_ica.
 
 **Supports noop?** false
 
@@ -2665,7 +2672,7 @@ Default value: `false`
 ### <a name="peadm--poll_ica_approval"></a>`peadm::poll_ica_approval`
 
 Poll the primary for approval of a pending ICA request, re-targeting to a resolved
-replica if the primary becomes unreachable mid-poll (Decision S).
+replica if the primary becomes unreachable mid-poll.
 
 #### Parameters
 
@@ -2727,7 +2734,7 @@ Default value: `undef`
 Promote an existing CA-proxy compiler to an intermediate CA (ICA) compiler.
 Implements the full promote workflow: preflight, generate/submit a CSR, poll for operator
 approval, install the signed certificate, validate independent signing, and print the
-ica-pool follow-up instructions. See SPEC.md sec 12.2 and Decision S.
+ica-pool follow-up instructions.
 
 #### Parameters
 
@@ -2773,7 +2780,7 @@ Default value: `30`
 Data type: `Optional[Peadm::SingleTargetSpec]`
 
 FQDN of the DR replica, used as the failover candidate if the primary becomes
-unreachable mid-poll (Decision S). peadm does not discover topology, so this is supplied
+unreachable mid-poll. peadm does not discover topology, so this is supplied
 rather than resolved. When unset, a primary connection failure fails the plan with a message
 naming this parameter rather than retrying a dead host until timeout.
 

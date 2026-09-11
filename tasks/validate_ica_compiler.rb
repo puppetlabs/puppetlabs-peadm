@@ -22,7 +22,7 @@ require_relative '../files/ica_task_helper'
 # than the module's usual _error/exit-1 contract: unlike the sibling tasks,
 # "the ICA doesn't actually work" is this task's designed, expected failure
 # mode, not an exceptional one, and the calling plan branches on
-# $validation['valid'] rather than a task error (see SPEC.md sec 12.2).
+# $validation['valid'] rather than a task error.
 # Reverting bootstrap.cfg back to CA-proxy mode on ANY failure here --
 # not just a failed chain verification, but also a submission error or a
 # signing timeout -- is deliberate: if this task cannot even complete the

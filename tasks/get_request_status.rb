@@ -6,16 +6,16 @@ require 'puppet'
 require_relative '../files/ica_task_helper'
 
 # Bolt task: fetch the status of a pending ICA request from the primary. Thin
-# wrapper over GET /puppet-ca/v1/intermediate-ca/requests/:id (SPEC.md sec
-# 3.2). This endpoint authenticates with mTLS only -- the request UUID is
-# itself the authorization -- so the poll loop in peadm::poll_ica_approval
-# needs no privileged credential.
+# wrapper over GET /puppet-ca/v1/intermediate-ca/requests/:id. This endpoint
+# authenticates with mTLS only -- the request UUID is itself the
+# authorization -- so the poll loop in peadm::poll_ica_approval needs no
+# privileged credential.
 #
 # A 404 is reported through the task's own _error contract with a distinct
 # 'kind' (peadm/ica_request_not_found) rather than as a generic HTTP failure,
 # so the calling plan can tell "the request genuinely does not exist" (a hard
 # error) apart from a connection-level failure against this target (which
-# should trigger primary-failover resolution instead, per Decision S).
+# should trigger primary-failover resolution instead).
 class GetRequestStatus
   def initialize(params)
     @request_id = params.fetch('request_id')

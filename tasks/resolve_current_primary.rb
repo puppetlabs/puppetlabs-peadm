@@ -7,9 +7,9 @@ require 'timeout'
 require_relative '../files/ica_task_helper'
 
 # Bolt task: probe candidate primary FQDNs and report the first reachable one.
-# Decision S. Runs on the compiler being promoted: the primary is the host
-# that just stopped answering, and the compiler is the one target the calling
-# plan already knows is healthy (it just ran submit_ica_csr there). Read-only,
+# Runs on the compiler being promoted: the primary is the host that just
+# stopped answering, and the compiler is the one target the calling plan
+# already knows is healthy (it just ran submit_ica_csr there). Read-only,
 # idempotent, and owns no retry loop of its own -- peadm::poll_ica_approval
 # calls this again on its own polling cadence.
 class ResolveCurrentPrimary

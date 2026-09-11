@@ -1,5 +1,5 @@
 {
-  "description": "Submit a synthetic test CSR through the compiler's own (just-promoted) ICA and verify the signed chain against the root CA. Runs on the compiler; proves it signs certificates without primary involvement. On a verification failure, reverts the compiler's bootstrap.cfg back to CA-proxy mode before reporting invalid. Used by peadm::promote_compiler_to_ica (ticket 7.6).",
+  "description": "Submit a synthetic test CSR through the compiler's own (just-promoted) ICA and verify the signed chain against the root CA. Runs on the compiler; proves it signs certificates without primary involvement. On a verification failure, reverts the compiler's bootstrap.cfg back to CA-proxy mode before reporting invalid. Used by peadm::promote_compiler_to_ica.",
   "input_method": "stdin",
   "files": ["peadm/files/ica_task_helper.rb"],
   "parameters": {

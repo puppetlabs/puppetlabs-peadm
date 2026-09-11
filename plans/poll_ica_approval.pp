@@ -1,5 +1,5 @@
 # @summary Poll the primary for approval of a pending ICA request, re-targeting to a resolved
-#   replica if the primary becomes unreachable mid-poll (Decision S).
+#   replica if the primary becomes unreachable mid-poll.
 # @param primary The host currently believed to be the PE primary.
 # @param request_id The pending ICA request id to poll.
 # @param probe_target The compiler being promoted -- the one target proven reachable when the
@@ -80,11 +80,10 @@ plan peadm::poll_ica_approval (
           # not 'bolt/connect-error', which Bolt never emits. Getting this
           # string wrong means every real primary outage falls through to the
           # `default` branch below and fails immediately, never attempting
-          # the Decision-S failover this branch exists for.
+          # the failover this branch exists for.
           'puppetlabs.tasks/connect-error': {
             # Connection-level failure against the current target only: try
-            # to resolve the new primary over the failover candidates. See
-            # Decision S.
+            # to resolve the new primary over the failover candidates.
             if $replica =~ Undef {
               fail_plan(@("MSG"))
                 Could not reach primary ${state['primary']} to poll ICA request ${request_id}.

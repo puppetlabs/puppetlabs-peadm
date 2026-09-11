@@ -1,5 +1,5 @@
 {
-  "description": "Query the terminal/pending status of a pending ICA request from the PE primary (GET /puppet-ca/v1/intermediate-ca/requests/:id). Runs on the primary. Authenticates with mTLS only -- per SPEC.md sec 3.2 this endpoint needs no RBAC token, the request UUID is the authorization. Used by peadm::poll_ica_approval (ticket 7.6).",
+  "description": "Query the terminal/pending status of a pending ICA request from the PE primary (GET /puppet-ca/v1/intermediate-ca/requests/:id). Runs on the primary. Authenticates with mTLS only -- this endpoint needs no RBAC token, the request UUID is the authorization. Used by peadm::poll_ica_approval.",
   "input_method": "stdin",
   "files": ["peadm/files/ica_task_helper.rb"],
   "parameters": {

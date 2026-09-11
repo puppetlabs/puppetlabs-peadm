@@ -8,11 +8,10 @@ require 'puppet'
 require_relative '../files/ica_task_helper'
 
 # Bolt task: install this compiler's approved, signed ICA certificate.
-# PE-44791 / Phase 3 plan ticket 7.3. Config and service manipulation only —
-# no cryptography. Fetches the cert (spec.md sec 3.7), swaps bootstrap.cfg to
-# IntermediateCAService (sec 5.4), clears ca.conf's ica-pool, pins this
-# compiler into the shared ICA classifier group (sets pe_ca_ica_enabled), and
-# restarts the CA service.
+# Config and service manipulation only -- no cryptography. Fetches the cert,
+# swaps bootstrap.cfg to IntermediateCAService, clears ca.conf's ica-pool,
+# pins this compiler into the shared ICA classifier group (sets
+# pe_ca_ica_enabled), and restarts the CA service.
 class InstallIcaCert
   def initialize(params)
     @primary_host = params.fetch('primary_host')

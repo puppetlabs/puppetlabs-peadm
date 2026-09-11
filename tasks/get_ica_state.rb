@@ -7,7 +7,7 @@ require_relative '../files/ica_task_helper'
 
 # Bolt task: query the primary's record of a compiler's ICA state. Runs on
 # the primary, querying its own local CA service
-# (GET /puppet-ca/v1/intermediate-ca/:fqdn, SPEC.md sec 3.3). Used by
+# (GET /puppet-ca/v1/intermediate-ca/:fqdn). Used by
 # peadm::promote_compiler_to_ica's preflight step to decide whether a CSR
 # still needs submitting.
 class GetIcaState

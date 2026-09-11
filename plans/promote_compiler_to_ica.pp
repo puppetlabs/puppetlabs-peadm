@@ -1,15 +1,15 @@
 # @summary Promote an existing CA-proxy compiler to an intermediate CA (ICA) compiler.
 #   Implements the full promote workflow: preflight, generate/submit a CSR, poll for operator
 #   approval, install the signed certificate, validate independent signing, and print the
-#   ica-pool follow-up instructions. See SPEC.md sec 12.2 and Decision S.
+#   ica-pool follow-up instructions.
 # @param compiler FQDN of the compiler to promote.
 # @param primary FQDN of the PE primary.
 # @param approval_timeout_seconds How long to wait for operator approval before failing.
 # @param approval_poll_interval_seconds How often to poll for approval.
 # @param replica FQDN of the DR replica, used as the failover candidate if the primary becomes
-#   unreachable mid-poll (Decision S). peadm does not discover topology, so this is supplied
-#   rather than resolved. When unset, a primary connection failure fails the plan with a message
-#   naming this parameter rather than retrying a dead host until timeout.
+#   unreachable mid-poll. peadm does not discover topology, so this is supplied rather than
+#   resolved. When unset, a primary connection failure fails the plan with a message naming
+#   this parameter rather than retrying a dead host until timeout.
 # @param resume_request_id An existing pending request id, to resume a run whose approval poll
 #   timed out. Skips CSR submission and polls the supplied id -- a fresh submission would
 #   collide with the still-pending row (409, partial unique index).
@@ -39,6 +39,13 @@ plan peadm::promote_compiler_to_ica (
       ${compiler_target} already has an approved ICA on the primary. Skipping submission and
       approval; resuming at certificate install.
       | MSG
+  }
+
+  # Warn, but do not fail, when the fleet is already flagged autosign-inconsistent: an
+  # operator promoting a new compiler into a fleet already in disagreement should know.
+  $autosign_consistency = run_task('peadm::get_autosign_consistency', $primary_target).first.value
+  if $autosign_consistency['autosign-inconsistent'] {
+    out::message("Warning: fleet autosign is inconsistent. Review autosign config before or after promoting ${compiler}.")
   }
 
   # 2. Generate ICA key pair and submit CSR (runs on the compiler). Skipped
