@@ -1,0 +1,6 @@
+{
+  "description": "Query the primary's fleet-wide autosign consistency flag (GET /puppet-ca/v1/intermediate-ca). Runs on the primary. Returns {\"autosign-inconsistent\": <bool>}. Used by peadm::promote_compiler_to_ica's preflight step to warn, without failing, when the fleet is already in autosign disagreement.",
+  "input_method": "stdin",
+  "files": ["peadm/files/ica_task_helper.rb"],
+  "parameters": {}
+}

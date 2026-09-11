@@ -6,10 +6,9 @@ require 'puppet'
 require_relative '../files/ica_task_helper'
 
 # Bolt task: generate and submit this compiler's ICA CSR to the PE primary.
-# PE-44791 / Phase 3 plan ticket 7.3. All cryptography is delegated to the
-# puppetserver ICA provisioning subcommand (ticket 7.1 / PE-44789); this task
-# only invokes it and returns its result. Makes no change to bootstrap.cfg
-# and restarts no services.
+# All cryptography is delegated to the puppetserver ICA provisioning
+# subcommand; this task only invokes it and returns its result. Makes no
+# change to bootstrap.cfg and restarts no services.
 class SubmitIcaCsr
   def initialize(_params); end
 

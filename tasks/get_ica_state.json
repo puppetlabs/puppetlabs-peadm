@@ -1,0 +1,11 @@
+{
+  "description": "Query the current ICA state for a compiler from the PE primary (GET /puppet-ca/v1/intermediate-ca/:fqdn). Runs on the primary. Returns {\"state\": \"none\"} when no ICA request has ever been made for the compiler. Used by peadm::promote_compiler_to_ica's preflight step.",
+  "input_method": "stdin",
+  "files": ["peadm/files/ica_task_helper.rb"],
+  "parameters": {
+    "compiler_fqdn": {
+      "description": "Certname/FQDN of the compiler whose ICA state to query.",
+      "type": "String[1]"
+    }
+  }
+}

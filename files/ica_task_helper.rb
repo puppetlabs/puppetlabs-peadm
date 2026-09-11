@@ -8,7 +8,7 @@ require 'open3'
 # Shared helpers for the peadm ICA promotion tasks (submit_ica_csr,
 # install_ica_cert): path resolution, puppetserver subcommand invocation, and
 # the mTLS HTTP client used to talk to the PE primary's CA and classifier
-# services. See ticket PE-44791.
+# services.
 module IcaTaskHelper
   PUPPETSERVER_BIN = '/opt/puppetlabs/bin/puppetserver'
   PUPPETSERVER_CONFDIR = '/etc/puppetlabs/puppetserver'
@@ -16,7 +16,7 @@ module IcaTaskHelper
   CA_SERVICE_PORT = 8140
   CLASSIFIER_PORT = 4433
   # The shared classifier group that ICA compilers are pinned into; created with
-  # pe_ca_ica_enabled => true if absent. See ticket 5.5 for the classification.
+  # pe_ca_ica_enabled => true if absent.
   ICA_GROUP_NAME = 'PE ICA Compilers'
   # The classifier's well-known "All Nodes" root group UUID, used as the
   # parent when creating the ICA compilers group.
@@ -39,9 +39,9 @@ module IcaTaskHelper
     File.readlines(bootstrap_cfg_path).any? { |l| !l.strip.start_with?('#') && l.include?('intermediate-ca-service') }
   end
 
-  # Runs the puppetserver ICA provisioning subcommand (ticket 7.1 / PE-44789).
-  # All ICA cryptography and CSR/CRL construction happens inside the
-  # subcommand; this only shells out and captures its result.
+  # Runs the puppetserver ICA provisioning subcommand. All ICA cryptography
+  # and CSR/CRL construction happens inside the subcommand; this only shells
+  # out and captures its result.
   def run_ica_provision
     Open3.capture3(PUPPETSERVER_BIN, ICA_PROVISION_SUBCOMMAND)
   end
