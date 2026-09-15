@@ -5,14 +5,35 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.38.3](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.38.3) - 2026-09-15
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.38.2...v3.38.3)
+
+### Added
+
+- (PE-45431) Complete CA storage migration for split topologies [#696](https://github.com/puppetlabs/puppetlabs-peadm/pull/696) ([Jade2153](https://github.com/Jade2153))
+- (PE-44793) Note CA-proxy mode and opt-in ICA promotion in add_compilers output [#692](https://github.com/puppetlabs/puppetlabs-peadm/pull/692) ([coreymbe](https://github.com/coreymbe))
+- (PE-43490) Surface provision_replica failures in add_replica plan [#677](https://github.com/puppetlabs/puppetlabs-peadm/pull/677) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
+
+### Fixed
+
+- (PE-45885) Add code-manager to the managed database list [#698](https://github.com/puppetlabs/puppetlabs-peadm/pull/698) ([Magisus](https://github.com/Magisus))
+
+### Other
+
+- Revert "(PE-44793) Note CA-proxy mode and opt-in ICA promotion in add_compilers output" (#692) [#706](https://github.com/puppetlabs/puppetlabs-peadm/pull/706) ([Jade2153](https://github.com/Jade2153))
+
 ## [v3.38.2](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.38.2) - 2026-09-01
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.38.1...v3.38.2)
 
 ### Other
 
-
+- Revert "(PE-45431) Complete CA storage migration for split topologies (#691)" [#695](https://github.com/puppetlabs/puppetlabs-peadm/pull/695) ([Jade2153](https://github.com/Jade2153))
 - Adding support for PE 2025.11.2 [#694](https://github.com/puppetlabs/puppetlabs-peadm/pull/694) ([Jade2153](https://github.com/Jade2153))
+- (PE-45431) Complete CA storage migration for split topologies [#691](https://github.com/puppetlabs/puppetlabs-peadm/pull/691) ([jonathannewman](https://github.com/jonathannewman))
+- Revert "(PE-45431) Complete CA storage migration for split topologies (#688)" [#690](https://github.com/puppetlabs/puppetlabs-peadm/pull/690) ([jonathannewman](https://github.com/jonathannewman))
+- (PE-45431) Complete CA storage migration for split topologies [#688](https://github.com/puppetlabs/puppetlabs-peadm/pull/688) ([jonathannewman](https://github.com/jonathannewman))
 
 ## [v3.38.1](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.38.1) - 2026-07-08
 
