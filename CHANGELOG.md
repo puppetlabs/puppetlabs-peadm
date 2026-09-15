@@ -5,12 +5,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.38.3](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.38.3) - 2026-09-15
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.38.2...v3.38.3)
+
+### Added
+
+- Adding support for PE 2023.8.11 and 2025.11.3 [#702](https://github.com/puppetlabs/puppetlabs-peadm/pull/702) ([Jade2153](https://github.com/Jade2153))
+- (PE-45431) Complete CA storage migration for split topologies [#696](https://github.com/puppetlabs/puppetlabs-peadm/pull/696) ([Jade2153](https://github.com/Jade2153))
+- (PE-43490) Surface provision_replica failures in add_replica plan [#677](https://github.com/puppetlabs/puppetlabs-peadm/pull/677) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
+
+### Fixed
+
+- (PE-45885) Add code-manager to the managed database list [#698](https://github.com/puppetlabs/puppetlabs-peadm/pull/698) ([Magisus](https://github.com/Magisus))
+
+### Other
+
+- (PE-45110) Ruby 4.0 compatibility: fix missing default-gem deps, document upstream blockers maintenance [#685](https://github.com/puppetlabs/puppetlabs-peadm/pull/685) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
+- (PE-45390) Add code coverage reporting to CI [#686](https://github.com/puppetlabs/puppetlabs-peadm/pull/686) ([seamymckenna](https://github.com/seamymckenna))
+
 ## [v3.38.2](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.38.2) - 2026-09-01
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.38.1...v3.38.2)
 
-### Other
-
+### Added
 
 - Adding support for PE 2025.11.2 [#694](https://github.com/puppetlabs/puppetlabs-peadm/pull/694) ([Jade2153](https://github.com/Jade2153))
 
