@@ -140,6 +140,73 @@ describe 'peadm::subplans::install' do
     expect(run_plan('peadm::subplans::install', params)).to be_ok
   end
 
+  # PE-46689: rbac-service can briefly 500/reject auth immediately after
+  # the pe-puppetdb bounce just above this call, before its own dependents
+  # have caught up -- the same class of transient-unavailability window
+  # restore.pp's equivalent rbac_token call already retries around
+  # (PE-44867). subplans::install had no equivalent retry.
+  describe 'rbac_token retry (PE-46689)' do
+    let(:params) do
+      {
+        'primary_host' => 'primary',
+        'console_password' => 'puppetLabs123!',
+        'version' => '2023.8.10',
+      }
+    end
+
+    # error_with/always_return can't simulate a real failure result and then
+    # a later success from the *same* stub (they set one fixed default for
+    # every call) -- construct the Bolt::Result directly via a .return
+    # block with a closure counter instead, so each successive call to
+    # peadm::rbac_token can return a different result.
+    def stub_rbac_token(fail_count:)
+      attempts = 0
+      expected_calls = [fail_count + 1, 5].min
+      expect_task('peadm::rbac_token').with_targets('primary').be_called_times(expected_calls).return do |targets:, task:, params:| # rubocop:disable Lint/UnusedBlockArgument
+        attempts += 1
+        results = targets.map do |target|
+          if attempts <= fail_count
+            Bolt::Result.new(target, error: { 'msg' => 'User admin failed to login', 'kind' => 'puppetlabs.rbac/server-error' })
+          else
+            Bolt::Result.new(target, value: {})
+          end
+        end
+        Bolt::ResultSet.new(results)
+      end
+    end
+
+    # ctrl::sleep resolves Kernel#sleep as a private instance method (mixed
+    # into every Object via the Kernel module), not the module_function
+    # singleton `Kernel.sleep` -- stubbing the singleton doesn't intercept
+    # it, so this needs any_instance_of like the file's other Ruby-internals
+    # stubs above.
+    # rubocop:disable RSpec/AnyInstance
+    before(:each) do
+      allow_any_instance_of(Puppet::Functions::Function).to receive(:sleep)
+    end
+    # rubocop:enable RSpec/AnyInstance
+
+    it 'succeeds on the first attempt without retrying' do
+      stub_rbac_token(fail_count: 0)
+
+      expect(run_plan('peadm::subplans::install', params)).to be_ok
+    end
+
+    it 'retries and succeeds once rbac-service catches up' do
+      stub_rbac_token(fail_count: 2)
+
+      expect(run_plan('peadm::subplans::install', params)).to be_ok
+    end
+
+    it 'fails the install after exhausting all retry attempts' do
+      stub_rbac_token(fail_count: 5)
+
+      result = run_plan('peadm::subplans::install', params)
+      expect(result).not_to be_ok
+      expect(result.value.msg).to match(%r{Failed to obtain RBAC token after 5 attempts})
+    end
+  end
+
   # PE-45431: on Large/XL/external-Postgres topologies the primary's installer
   # runs before $database_targets exist, so pe-installer-shim's own
   # migration (PE-45430) finds pe-ca unreachable and skips loudly -- peadm
