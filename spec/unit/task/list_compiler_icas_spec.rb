@@ -259,4 +259,79 @@ describe ListCompilerIcas do
       expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(0) }
     end
   end
+
+  context 'with a null field on an ICA row (e.g. provisioned-at on a revoked entry)' do
+    let(:intermediate_cas) do
+      {
+        'intermediate-cas' => [
+          {
+            'compiler-fqdn' => 'compiler1.example.com',
+            'state' => 'revoked',
+            'provisioned-at' => nil,
+            'not-after' => nil,
+          },
+        ],
+        'autosign-inconsistent' => false,
+        'autosign-fingerprint-baseline' => nil,
+      }
+    end
+
+    it 'renders a dash instead of crashing on nil' do
+      expect(STDOUT).to receive(:puts) do |output|
+        expect(output).to include('compiler1.example.com', 'revoked')
+      end
+
+      expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(0) }
+    end
+  end
+
+  context 'when the primary returns a malformed JSON body on a 200' do
+    let(:response) { instance_double(Net::HTTPResponse, code: '200', body: 'not json') }
+
+    it 'exits non-zero through the _error envelope instead of crashing' do
+      expect(STDOUT).to receive(:puts) do |output|
+        parsed = JSON.parse(output)
+        expect(parsed['_error']['kind']).to eq('peadm/list_compiler_icas_invalid_response')
+      end
+
+      expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
+    end
+  end
+
+  context "when the primary's 200 response is missing intermediate-cas" do
+    let(:response) { instance_double(Net::HTTPResponse, code: '200', body: '{}') }
+
+    it 'exits non-zero through the _error envelope instead of crashing' do
+      expect(STDOUT).to receive(:puts) do |output|
+        parsed = JSON.parse(output)
+        expect(parsed['_error']['kind']).to eq('peadm/list_compiler_icas_invalid_response')
+      end
+
+      expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
+    end
+  end
+
+  context "when this node's agent credentials cannot be loaded" do
+    subject(:task) { described_class.new(params) }
+
+    before(:each) do
+      allow(Puppet).to receive(:settings).and_return(certname: 'primary.example.com', hostcert: '/nonexistent/hostcert.pem',
+                                                      hostprivkey: '/nonexistent/hostprivkey.pem', localcacert: '/nonexistent/ca.pem')
+    end
+
+    it 'reports a distinct kind from a network connection failure' do
+      expect(STDOUT).to receive(:puts) do |output|
+        parsed = JSON.parse(output)
+        expect(parsed['_error']['kind']).to eq('peadm/list_compiler_icas_credential_error')
+      end
+
+      expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
+    end
+  end
+
+  it 'keeps VALID_STATES in sync with the task metadata Enum' do
+    metadata = JSON.parse(File.read(File.join(__dir__, '..', '..', '..', 'tasks', 'list_compiler_icas.json')))
+    enum_values = metadata['parameters']['state']['type'][%r{Enum\[(.*?)\]}, 1].split(',')
+    expect(ListCompilerIcas::VALID_STATES.sort).to eq(enum_values.sort)
+  end
 end

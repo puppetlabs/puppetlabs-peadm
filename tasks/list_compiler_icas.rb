@@ -27,7 +27,7 @@ class ListCompilerIcas
       error!("Failed to list compiler ICAs: HTTP #{response.code} - #{response.body}", 'peadm/list_compiler_icas_failed')
     end
 
-    body = JSON.parse(response.body)
+    body = parse_body(response)
     all_icas = body.fetch('intermediate-cas')
     icas = filtered_icas(all_icas)
 
@@ -52,6 +52,14 @@ class ListCompilerIcas
     error!("TLS handshake with the primary failed: #{e.message}", 'peadm/list_compiler_icas_tls_failed')
   rescue SystemCallError, SocketError, Net::OpenTimeout, Net::ReadTimeout => e
     error!("Failed to connect to the primary: #{e.message}", 'peadm/list_compiler_icas_connection_failed')
+  end
+
+  def parse_body(response)
+    body = JSON.parse(response.body)
+    body.fetch('intermediate-cas')
+    body
+  rescue JSON::ParserError, KeyError => e
+    error!("Invalid response body from the primary: #{e.message}", 'peadm/list_compiler_icas_invalid_response')
   end
 
   def error!(msg, kind)
@@ -85,8 +93,8 @@ class ListCompilerIcas
   def row_values(ica)
     [
       ica['compiler-fqdn'], ica['state'], ica['provisioned-at'], ica['not-after'],
-      ica['autosign-state'] || '-', ica['autosign-config-fingerprint'] || '-'
-    ]
+      ica['autosign-state'], ica['autosign-config-fingerprint']
+    ].map { |v| v || '-' }
   end
 
   def format_row(values, widths)
@@ -98,17 +106,21 @@ class ListCompilerIcas
   end
 
   def https
-    @https_client ||= begin
-      client = Net::HTTP.new(Puppet.settings[:certname], 8140)
-      client.use_ssl = true
-      client.open_timeout = 10
-      client.read_timeout = 10
-      client.cert = OpenSSL::X509::Certificate.new(File.read(Puppet.settings[:hostcert]))
-      client.key = OpenSSL::PKey::RSA.new(File.read(Puppet.settings[:hostprivkey]))
-      client.verify_mode = OpenSSL::SSL::VERIFY_PEER
-      client.ca_file = Puppet.settings[:localcacert]
-      client
-    end
+    @https_client ||= build_https_client
+  end
+
+  def build_https_client
+    client = Net::HTTP.new(Puppet.settings[:certname], 8140)
+    client.use_ssl = true
+    client.open_timeout = 10
+    client.read_timeout = 10
+    client.cert = OpenSSL::X509::Certificate.new(File.read(Puppet.settings[:hostcert]))
+    client.key = OpenSSL::PKey::RSA.new(File.read(Puppet.settings[:hostprivkey]))
+    client.verify_mode = OpenSSL::SSL::VERIFY_PEER
+    client.ca_file = Puppet.settings[:localcacert]
+    client
+  rescue Errno::ENOENT, Errno::EACCES, OpenSSL::X509::CertificateError, OpenSSL::PKey::RSAError => e
+    error!("Failed to load this node's agent certificate/key: #{e.message}", 'peadm/list_compiler_icas_credential_error')
   end
 end
 
