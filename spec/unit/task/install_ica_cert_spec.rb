@@ -8,9 +8,26 @@ describe InstallIcaCert do
   subject(:task) { described_class.new('primary_host' => 'primary.example.com') }
 
   let(:https) { instance_double('Net::HTTP') }
+  let(:own_cert_pem) { build_cert_pem('compiler-a.example.com') }
   let(:classifier_https) { instance_double('Net::HTTP') }
   let(:bootstrap_cfg) { Tempfile.new('bootstrap.cfg') }
   let(:ca_conf) { Tempfile.new('ca.conf') }
+  # One key reused across fixtures: these tests turn on subject CN and
+  # content equality, not on the key material itself.
+  let(:signing_key) { OpenSSL::PKey::RSA.new(2048) }
+
+  def build_cert_pem(cn)
+    cert = OpenSSL::X509::Certificate.new
+    cert.version = 2
+    cert.serial = rand(1..1_000_000)
+    cert.subject = OpenSSL::X509::Name.parse("/CN=#{cn}")
+    cert.issuer = cert.subject
+    cert.public_key = signing_key.public_key
+    cert.not_before = Time.now - 3600
+    cert.not_after = Time.now + 3600
+    cert.sign(signing_key, OpenSSL::Digest.new('SHA256'))
+    cert.to_pem
+  end
 
   before(:each) do
     allow(STDOUT).to receive(:puts)
@@ -30,21 +47,66 @@ describe InstallIcaCert do
     ca_conf.close!
   end
 
-  context 'when already installed' do
-    it 'is a no-op and exits 0' do
+  context 'when already installed and the installed certificate matches what the primary reports as active' do
+    it 'is a no-op and exits 0, without restarting the CA service' do
       bootstrap_cfg.write('puppetlabs.services.ca.intermediate-ca-service/intermediate-ca-service')
       bootstrap_cfg.rewind
+      cert_file = Tempfile.new('ica.pem')
+      cert_file.write(own_cert_pem)
+      cert_file.rewind
+      allow(task).to receive(:ica_cert_path).and_return(cert_file.path) # rubocop:disable RSpec/SubjectStub
       allow(IcaTaskHelper).to receive(:promoted_to_ica?).and_return(true)
-      expect(https).not_to receive(:get)
+
+      cert_response = instance_double('Net::HTTPResponse', code: '200', body: { 'cert-pem' => own_cert_pem }.to_json)
+      expect(https).to receive(:get).with('/puppet-ca/v1/intermediate-ca/compiler-a.example.com').and_return(cert_response)
+      expect(Open3).not_to receive(:capture2e)
+      expect(IcaTaskHelper).not_to receive(:pin_to_ica_group!)
       expect(STDOUT).to receive(:puts).with(JSON.generate('status' => 'already-installed'))
 
       expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(0) }
+      cert_file.close!
     end
+  end
 
-    it 'still re-attempts the CA reload and fails the task when that reload fails' do
+  context 'when bootstrap.cfg already shows intermediate-ca-service but the installed certificate is missing or does not match' do
+    # This is the state a run left behind if it crashed after swapping
+    # bootstrap.cfg but before the CA service reload completed: the file at
+    # ica_cert_path was never written (it's written last, after the reload
+    # succeeds), so the comparison below correctly treats the promotion as
+    # incomplete rather than trusting the bootstrap.cfg text alone.
+    it 'redoes the remaining steps, restart included, rather than reporting a false already-installed' do
       bootstrap_cfg.write('puppetlabs.services.ca.intermediate-ca-service/intermediate-ca-service')
       bootstrap_cfg.rewind
+      ca_conf.write("certificate-authority {\n  ica-pool = [\"https://old.example.com:8140\"]\n}\n")
+      ca_conf.rewind
+      cert_file = Tempfile.new('ica.pem')
+      allow(task).to receive(:ica_cert_path).and_return(cert_file.path) # rubocop:disable RSpec/SubjectStub
       allow(IcaTaskHelper).to receive(:promoted_to_ica?).and_return(true)
+
+      cert_response = instance_double('Net::HTTPResponse', code: '200', body: { 'cert-pem' => own_cert_pem }.to_json)
+      expect(https).to receive(:get).with('/puppet-ca/v1/intermediate-ca/compiler-a.example.com').and_return(cert_response)
+      expect(IcaTaskHelper).to receive(:pin_to_ica_group!).with(classifier_https, 'compiler-a.example.com')
+      expect(Open3).to receive(:capture2e)
+        .with('/opt/puppetlabs/bin/puppetserver', 'ca', 'reload')
+        .and_return(['', instance_double('Process::Status', success?: true)])
+      expect(STDOUT).to receive(:puts).with(JSON.generate('status' => 'installed'))
+
+      expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(0) }
+
+      expect(File.read(cert_file.path)).to eq(own_cert_pem)
+      expect(File.read(ca_conf.path)).not_to include('ica-pool')
+      cert_file.close!
+    end
+
+    it 'still fails the task, with the previous state left in place, when the redone restart fails' do
+      bootstrap_cfg.write('puppetlabs.services.ca.intermediate-ca-service/intermediate-ca-service')
+      bootstrap_cfg.rewind
+      cert_file = Tempfile.new('ica.pem')
+      allow(task).to receive(:ica_cert_path).and_return(cert_file.path) # rubocop:disable RSpec/SubjectStub
+      allow(IcaTaskHelper).to receive(:promoted_to_ica?).and_return(true)
+
+      cert_response = instance_double('Net::HTTPResponse', code: '200', body: { 'cert-pem' => own_cert_pem }.to_json)
+      allow(https).to receive(:get).and_return(cert_response)
       expect(Open3).to receive(:capture2e)
         .with(IcaTaskHelper::PUPPETSERVER_BIN, 'ca', 'reload')
         .and_return(['reload refused', instance_double('Process::Status', success?: false)])
@@ -55,18 +117,20 @@ describe InstallIcaCert do
       end
 
       expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
+      expect(File.exist?(cert_file.path) ? File.read(cert_file.path) : '').to eq('')
+      cert_file.close!
     end
   end
 
   context 'when an active ICA is available on the primary' do
-    it 'installs the cert, swaps bootstrap.cfg, clears ica-pool, pins the classifier group, and restarts the service' do
+    it 'fetches the cert, pins the classifier group, clears ica-pool, swaps bootstrap.cfg, restarts the service, and installs the cert last' do
       bootstrap_cfg.write("puppetlabs.services.ca.certificate-authority-disabled-service/certificate-authority-disabled-service\n")
       bootstrap_cfg.rewind
       ca_conf.write("certificate-authority {\n  ica-pool = [\"https://old.example.com:8140\"]\n}\n")
       ca_conf.rewind
 
       allow(IcaTaskHelper).to receive(:promoted_to_ica?).and_return(false)
-      cert_response = instance_double('Net::HTTPResponse', code: '200', body: { 'cert-pem' => 'CERT-PEM-DATA' }.to_json)
+      cert_response = instance_double('Net::HTTPResponse', code: '200', body: { 'cert-pem' => own_cert_pem }.to_json)
       expect(https).to receive(:get).with('/puppet-ca/v1/intermediate-ca/compiler-a.example.com').and_return(cert_response)
 
       cert_file = Tempfile.new('ica.pem')
@@ -80,7 +144,7 @@ describe InstallIcaCert do
 
       expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(0) }
 
-      expect(File.read(cert_file.path)).to eq('CERT-PEM-DATA')
+      expect(File.read(cert_file.path)).to eq(own_cert_pem)
       expect(File.read(bootstrap_cfg.path)).to include('intermediate-ca-service')
       expect(File.read(bootstrap_cfg.path)).not_to include('certificate-authority-disabled-service')
       expect(File.read(ca_conf.path)).not_to include('ica-pool')
@@ -94,7 +158,7 @@ describe InstallIcaCert do
       ca_conf.rewind
 
       allow(IcaTaskHelper).to receive(:promoted_to_ica?).and_return(false)
-      cert_response = instance_double('Net::HTTPResponse', code: '200', body: { 'cert-pem' => 'CERT-PEM-DATA' }.to_json)
+      cert_response = instance_double('Net::HTTPResponse', code: '200', body: { 'cert-pem' => own_cert_pem }.to_json)
       allow(https).to receive(:get).and_return(cert_response)
 
       cert_file = Tempfile.new('ica.pem')
@@ -106,6 +170,46 @@ describe InstallIcaCert do
       expect(File.read(ca_conf.path)).to include('ica-pool')
       expect(File.read(bootstrap_cfg.path)).to include('certificate-authority-disabled-service')
       cert_file.close!
+    end
+
+    it "refuses to install a certificate issued for a different node's identity" do
+      bootstrap_cfg.write("puppetlabs.services.ca.certificate-authority-disabled-service/certificate-authority-disabled-service\n")
+      bootstrap_cfg.rewind
+      ca_conf.write("certificate-authority {\n  ica-pool = [\"https://old.example.com:8140\"]\n}\n")
+      ca_conf.rewind
+
+      allow(IcaTaskHelper).to receive(:promoted_to_ica?).and_return(false)
+      wrong_node_cert = build_cert_pem('compiler-b.example.com')
+      cert_response = instance_double('Net::HTTPResponse', code: '200', body: { 'cert-pem' => wrong_node_cert }.to_json)
+      allow(https).to receive(:get).and_return(cert_response)
+      expect(IcaTaskHelper).not_to receive(:pin_to_ica_group!)
+      expect(Open3).not_to receive(:capture2e)
+      expect(STDOUT).to receive(:puts) do |output|
+        parsed = JSON.parse(output)
+        expect(parsed['_error']['kind']).to eq('peadm/install_ica_cert_failed')
+        expect(parsed['_error']['msg']).to include('compiler-b.example.com')
+        expect(parsed['_error']['msg']).to include('does not belong to this compiler')
+      end
+
+      expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
+      expect(File.read(bootstrap_cfg.path)).to include('certificate-authority-disabled-service')
+      expect(File.read(ca_conf.path)).to include('ica-pool')
+    end
+
+    it 'fails clearly when the primary returns something that does not parse as a certificate at all' do
+      bootstrap_cfg.write("puppetlabs.services.ca.certificate-authority-disabled-service/certificate-authority-disabled-service\n")
+      bootstrap_cfg.rewind
+
+      allow(IcaTaskHelper).to receive(:promoted_to_ica?).and_return(false)
+      cert_response = instance_double('Net::HTTPResponse', code: '200', body: { 'cert-pem' => 'not a certificate' }.to_json)
+      allow(https).to receive(:get).and_return(cert_response)
+      expect(STDOUT).to receive(:puts) do |output|
+        parsed = JSON.parse(output)
+        expect(parsed['_error']['kind']).to eq('peadm/install_ica_cert_failed')
+        expect(parsed['_error']['msg']).to include('Could not parse the certificate')
+      end
+
+      expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
     end
   end
 
@@ -140,7 +244,7 @@ describe InstallIcaCert do
 
     it 'removes ica-pool without complaint when unrelated brackets exist elsewhere in ca.conf' do
       ca_conf.write(<<~HOCON)
-        # see PEADM-123 [tracking] for why this is here
+        # unrelated tracking note with [brackets] in it
         certificate-authority: {
           allow-subject-alt-names: true
           some-other-url: "https://[fe80::1]:8140"
@@ -154,7 +258,7 @@ describe InstallIcaCert do
       content = File.read(ca_conf.path)
       expect(content).not_to include('ica-pool')
       expect(content).not_to include('old.example.com')
-      expect(content).to include('# see PEADM-123 [tracking] for why this is here')
+      expect(content).to include('# unrelated tracking note with [brackets] in it')
       expect(content).to include('some-other-url: "https://[fe80::1]:8140"')
     end
 
@@ -205,40 +309,49 @@ describe InstallIcaCert do
       )
     end
 
-    it 'keeps a commented-out disabled-service line and still refuses the swap' do
+    it 'is a no-op on a bootstrap.cfg already swapped to intermediate-ca-service' do
+      original = "puppetlabs.services.ca.intermediate-ca-service/intermediate-ca-service\n"
+      bootstrap_cfg.write(original)
+      bootstrap_cfg.rewind
+
+      task.send(:swap_bootstrap_cfg!)
+
+      expect(File.read(bootstrap_cfg.path)).to eq(original)
+    end
+
+    it 'keeps a commented-out disabled-service line and still refuses to modify the file' do
       original = "# puppetlabs.services.ca.certificate-authority-disabled-service/certificate-authority-disabled-service\n"
       bootstrap_cfg.write(original)
       bootstrap_cfg.rewind
 
-      expect { task.send(:swap_bootstrap_cfg!) }.to raise_error(%r{refusing to swap})
+      expect { task.send(:swap_bootstrap_cfg!) }.to raise_error(%r{refusing to modify it})
       expect(File.read(bootstrap_cfg.path)).to eq(original)
     end
 
-    it 'refuses to swap a bootstrap.cfg that has no CA-proxy service entry' do
+    it 'refuses to modify a bootstrap.cfg that has neither a CA-proxy nor an intermediate CA service entry' do
       original = "puppetlabs.services.ca.certificate-authority-service/certificate-authority-service\n"
       bootstrap_cfg.write(original)
       bootstrap_cfg.rewind
 
       expect { task.send(:swap_bootstrap_cfg!) }
-        .to raise_error(%r{does not show the expected CA-proxy service entry.*refusing to swap})
+        .to raise_error(%r{shows neither a CA-proxy nor an intermediate CA service entry.*refusing to modify it})
       expect(File.read(bootstrap_cfg.path)).to eq(original)
     end
   end
 
-  context 'when run against a node that is not a CA-proxy compiler' do
-    it 'fails before touching any local state' do
+  context 'when run against a node that is neither a CA-proxy nor an ICA compiler' do
+    it 'fails before touching any local state or contacting the primary' do
       original = "puppetlabs.services.ca.certificate-authority-service/certificate-authority-service\n"
       bootstrap_cfg.write(original)
       bootstrap_cfg.rewind
       ca_conf.write("certificate-authority {\n  ica-pool = [\"https://old.example.com:8140\"]\n}\n")
       ca_conf.rewind
 
-      allow(IcaTaskHelper).to receive(:promoted_to_ica?).and_return(false)
       expect(https).not_to receive(:get)
       expect(STDOUT).to receive(:puts) do |output|
         parsed = JSON.parse(output)
         expect(parsed['_error']['kind']).to eq('peadm/install_ica_cert_failed')
-        expect(parsed['_error']['msg']).to match(%r{refusing to swap})
+        expect(parsed['_error']['msg']).to match(%r{refusing to modify it})
       end
 
       expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
@@ -251,7 +364,6 @@ describe InstallIcaCert do
     it 'fails the task without touching local state' do
       bootstrap_cfg.write("puppetlabs.services.ca.certificate-authority-disabled-service/certificate-authority-disabled-service\n")
       bootstrap_cfg.rewind
-      allow(IcaTaskHelper).to receive(:promoted_to_ica?).and_return(false)
       not_found = instance_double('Net::HTTPResponse', code: '404', body: '')
       expect(https).to receive(:get).and_return(not_found)
 

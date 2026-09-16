@@ -1325,7 +1325,7 @@ The type of output to return
 
 ### <a name="install_ica_cert"></a>`install_ica_cert`
 
-Install this compiler's approved, signed ICA certificate. Config and service manipulation only, no cryptography: fetches the cert from the PE primary, installs it, swaps bootstrap.cfg from the CA-proxy service to IntermediateCAService, clears ca.conf's ica-pool, pins this compiler into the shared PE ICA Compilers classifier group (which sets pe_ca_ica_enabled), and restarts the CA service. Called by peadm::promote_compiler_to_ica (ticket 7.6) after operator approval of the pending CSR from peadm::submit_ica_csr.
+Install this compiler's approved, signed ICA certificate. Config and service manipulation only, no cryptography: fetches the cert from the PE primary, pins this compiler into the shared PE ICA Compilers classifier group (which sets pe_ca_ica_enabled and clears enable_ca_proxy), clears ca.conf's ica-pool, swaps bootstrap.cfg from the CA-proxy service to IntermediateCAService, and restarts the CA service. Re-running on an already-promoted compiler is a no-op unless the installed certificate no longer matches what the primary reports as active, in which case the remaining steps are redone. Called as part of promoting a proxy compiler to an intermediate CA, after operator approval of the pending CSR.
 
 **Supports noop?** false
 
@@ -1699,7 +1699,7 @@ DNS Alternative Names to request for the certificate
 
 ### <a name="submit_ica_csr"></a>`submit_ica_csr`
 
-Generate and submit this compiler's ICA CSR to the PE primary. A thin wrapper: shells out to the puppetserver ICA provisioning subcommand, which performs all cryptography (key generation, PKCS#8 encryption, CSR and initial CRL construction) and submission. Returns the pending request id. Makes no change to bootstrap.cfg and restarts no services. Called by peadm::promote_compiler_to_ica (ticket 7.6); ICA promotion is per-compiler and operator-driven only.
+Generate and submit this compiler's ICA CSR to the PE primary. A thin wrapper: shells out to the puppetserver ICA provisioning subcommand, which performs all cryptography (key generation, PKCS#8 encryption, CSR and initial CRL construction) and submission. Returns the pending request id. Makes no change to bootstrap.cfg and restarts no services. Called as part of promoting a proxy compiler to an intermediate CA; promotion is per-compiler and operator-driven only.
 
 **Supports noop?** false
 

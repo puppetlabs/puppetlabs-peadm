@@ -59,6 +59,20 @@ describe IcaTaskHelper do
     end
   end
 
+  describe '.active_service_line?' do
+    it 'is true for an uncommented line naming the service' do
+      expect(described_class.active_service_line?('puppetlabs.services.ca.intermediate-ca-service/intermediate-ca-service', 'intermediate-ca-service')).to eq(true)
+    end
+
+    it 'is false for a commented-out line naming the service' do
+      expect(described_class.active_service_line?('  # puppetlabs.services.ca.intermediate-ca-service/intermediate-ca-service', 'intermediate-ca-service')).to eq(false)
+    end
+
+    it 'is false for a line naming a different service' do
+      expect(described_class.active_service_line?('puppetlabs.services.ca.certificate-authority-service/certificate-authority-service', 'intermediate-ca-service')).to eq(false)
+    end
+  end
+
   describe '.run_ica_provision' do
     it 'shells out to the puppetserver ICA provisioning subcommand only' do
       status_dbl = instance_double('Process::Status', success?: true)
@@ -91,15 +105,20 @@ describe IcaTaskHelper do
       expect(client.key).to eq(fake_key)
       expect(client.verify_mode).to eq(OpenSSL::SSL::VERIFY_PEER)
       expect(client.ca_file).to eq('/not/a/real/file/ca.pem')
+      expect(client.open_timeout).to eq(10)
+      expect(client.read_timeout).to eq(30)
     end
   end
 
   describe '.pin_to_ica_group!' do
     let(:https) { instance_double('Net::HTTP') }
+    let(:correct_classes) do
+      { 'puppet_enterprise::profile::master' => { 'pe_ca_ica_enabled' => true, 'enable_ca_proxy' => false } }
+    end
 
-    it 'finds the existing ICA group by name and pins the node to it' do
+    it 'finds an existing, correctly-configured ICA group by name and pins the node to it, without reconciling' do
       groups_response = instance_double('Net::HTTPResponse', code: '200',
-                                         body: [{ 'id' => 'group-1', 'name' => 'PE ICA Compilers' }].to_json)
+                                         body: [{ 'id' => 'group-1', 'name' => 'PE ICA Compilers', 'classes' => correct_classes }].to_json)
       expect(https).to receive(:get).with('/classifier-api/v1/groups').and_return(groups_response)
 
       pin_response = instance_double('Net::HTTPResponse', code: '204', body: '')
@@ -110,6 +129,41 @@ describe IcaTaskHelper do
       end
 
       described_class.pin_to_ica_group!(https, 'compiler-a.example.com')
+    end
+
+    it "reconciles an existing group's classes before pinning, when they don't match" do
+      # No 'classes' key at all here -- the same shape a group created by an
+      # older or manually edited version of this task could carry.
+      groups_response = instance_double('Net::HTTPResponse', code: '200',
+                                         body: [{ 'id' => 'group-1', 'name' => 'PE ICA Compilers' }].to_json)
+      expect(https).to receive(:get).with('/classifier-api/v1/groups').and_return(groups_response)
+
+      reconcile_response = instance_double('Net::HTTPResponse', code: '200', body: '')
+      expect(https).to receive(:request) { |req|
+        expect(req.path).to eq('/classifier-api/v1/groups/group-1')
+        expect(JSON.parse(req.body)).to eq('classes' => correct_classes)
+        reconcile_response
+      }.ordered
+
+      pin_response = instance_double('Net::HTTPResponse', code: '204', body: '')
+      expect(https).to receive(:request) { |req|
+        expect(req.path).to eq('/classifier-api/v1/groups/group-1/pin')
+        pin_response
+      }.ordered
+
+      described_class.pin_to_ica_group!(https, 'compiler-a.example.com')
+    end
+
+    it 'raises when reconciling an existing group fails' do
+      groups_response = instance_double('Net::HTTPResponse', code: '200',
+                                         body: [{ 'id' => 'group-1', 'name' => 'PE ICA Compilers' }].to_json)
+      expect(https).to receive(:get).with('/classifier-api/v1/groups').and_return(groups_response)
+
+      reconcile_response = instance_double('Net::HTTPResponse', code: '403', body: 'forbidden')
+      expect(https).to receive(:request).and_return(reconcile_response)
+
+      expect { described_class.pin_to_ica_group!(https, 'compiler-a.example.com') }
+        .to raise_error(%r{Failed to reconcile classifier group group-1.*403.*forbidden})
     end
 
     it 'creates the ICA group when it does not yet exist, then pins' do
@@ -151,7 +205,7 @@ describe IcaTaskHelper do
 
     it 'raises when the pin call returns a non-204 response' do
       groups_response = instance_double('Net::HTTPResponse', code: '200',
-                                         body: [{ 'id' => 'group-1', 'name' => 'PE ICA Compilers' }].to_json)
+                                         body: [{ 'id' => 'group-1', 'name' => 'PE ICA Compilers', 'classes' => correct_classes }].to_json)
       expect(https).to receive(:get).with('/classifier-api/v1/groups').and_return(groups_response)
 
       pin_response = instance_double('Net::HTTPResponse', code: '403', body: 'forbidden')

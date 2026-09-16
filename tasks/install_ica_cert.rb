@@ -4,38 +4,31 @@
 require 'fileutils'
 require 'json'
 require 'open3'
+require 'openssl'
 require 'puppet'
 require_relative '../files/ica_task_helper'
 
 # Bolt task: install this compiler's approved, signed ICA certificate.
-# PE-44791 / Phase 3 plan ticket 7.3. Config and service manipulation only —
-# no cryptography. Fetches the cert (spec.md sec 3.7), swaps bootstrap.cfg to
-# IntermediateCAService (sec 5.4), clears ca.conf's ica-pool, pins this
-# compiler into the shared ICA classifier group (sets pe_ca_ica_enabled), and
-# restarts the CA service.
+# Config and service manipulation only, no cryptography: fetches the cert
+# from the primary, pins this compiler into the shared ICA classifier group,
+# clears ca.conf's ica-pool, swaps bootstrap.cfg from the CA-proxy service to
+# IntermediateCAService, and restarts the CA service.
 class InstallIcaCert
   def initialize(params)
     @primary_host = params.fetch('primary_host')
   end
 
   def execute!
-    if IcaTaskHelper.promoted_to_ica?
-      # bootstrap.cfg is swapped before the CA service is reloaded, so a run
-      # that died between those two steps would otherwise be permanently stuck
-      # in this branch with the service never reloaded. The reload is safe to
-      # repeat, so always re-attempt it here; a failure must still surface.
-      restart_ca_service!
+    assert_promotable_bootstrap!
+
+    https = IcaTaskHelper.primary_https_client(@primary_host, IcaTaskHelper::CA_SERVICE_PORT)
+    active_cert_pem = fetch_active_ica_cert(https)
+    assert_cert_belongs_to_this_node!(active_cert_pem)
+
+    if IcaTaskHelper.promoted_to_ica? && cert_matches_installed_file?(active_cert_pem)
       STDOUT.puts({ 'status' => 'already-installed' }.to_json)
       exit 0
     end
-
-    assert_ca_proxy_bootstrap!
-
-    https = IcaTaskHelper.primary_https_client(@primary_host, IcaTaskHelper::CA_SERVICE_PORT)
-    cert_pem = fetch_active_ica_cert(https)
-
-    FileUtils.mkdir_p(File.dirname(ica_cert_path))
-    File.write(ica_cert_path, cert_pem)
 
     classifier_https = IcaTaskHelper.primary_https_client(@primary_host, IcaTaskHelper::CLASSIFIER_PORT)
     IcaTaskHelper.pin_to_ica_group!(classifier_https, Puppet.settings[:certname])
@@ -44,10 +37,22 @@ class InstallIcaCert
     swap_bootstrap_cfg!
     restart_ca_service!
 
+    # Written only after every step above succeeds, so its presence and
+    # content are themselves the record that a promotion completed in full.
+    # A run that dies between the bootstrap swap and the restart leaves
+    # bootstrap.cfg already pointing at IntermediateCAService but this file
+    # still missing (or holding an older cert) — the next run's comparison
+    # above sees that mismatch and redoes the remaining steps, restart
+    # included, instead of mistaking the partial state for done.
+    FileUtils.mkdir_p(File.dirname(ica_cert_path))
+    File.write(ica_cert_path, active_cert_pem)
+
     STDOUT.puts({ 'status' => 'installed' }.to_json)
     exit 0
   rescue StandardError => e
-    STDOUT.puts({ '_error' => { 'msg' => e.message, 'kind' => 'peadm/install_ica_cert_failed' } }.to_json)
+    warn "#{e.class}: #{e.message}"
+    warn e.backtrace.first(10).join("\n") if e.backtrace
+    IcaTaskHelper.emit_error!(e.message, 'peadm/install_ica_cert_failed')
     exit 1
   end
 
@@ -61,30 +66,54 @@ class InstallIcaCert
     res = https.get("/puppet-ca/v1/intermediate-ca/#{Puppet.settings[:certname]}")
     raise "No active ICA found on #{@primary_host} for this compiler: HTTP #{res.code} - #{res.body}" unless res.code == '200'
     JSON.parse(res.body).fetch('cert-pem')
+  rescue JSON::ParserError => e
+    raise "Malformed response fetching the active ICA certificate from #{@primary_host} (#{e.message}). Raw body: #{res.body}"
   end
 
-  def comment?(line)
-    line.strip.start_with?('#')
+  # mTLS only proves the responder holds a certificate this node's trust
+  # anchor accepts, not that the cert it just handed back for installation
+  # was actually issued for this node. Confirm the subject CN matches before
+  # treating the response as this compiler's own ICA certificate.
+  def assert_cert_belongs_to_this_node!(cert_pem)
+    cert = OpenSSL::X509::Certificate.new(cert_pem)
+    cn = cert.subject.to_a.find { |name, _value, _type| name == 'CN' }&.at(1)
+    return if cn == Puppet.settings[:certname]
+    raise "The certificate #{@primary_host} returned is for '#{cn || cert.subject}', not this node " \
+          "(#{Puppet.settings[:certname]}); refusing to install a certificate that does not belong to this compiler"
+  rescue OpenSSL::X509::CertificateError => e
+    raise "Could not parse the certificate #{@primary_host} returned as an active ICA cert: #{e.message}"
   end
 
-  # Only a CA-proxy compiler (one loading certificate-authority-disabled-service)
-  # may be swapped to the intermediate CA service. Swapping any other node shape
-  # -- a primary loading certificate-authority-service, for instance -- would
-  # leave two CA services registered in bootstrap.cfg.
-  def assert_ca_proxy_bootstrap!
+  def cert_matches_installed_file?(active_cert_pem)
+    return false unless File.exist?(ica_cert_path)
+    OpenSSL::X509::Certificate.new(File.read(ica_cert_path)).to_der == OpenSSL::X509::Certificate.new(active_cert_pem).to_der
+  rescue OpenSSL::X509::CertificateError
+    false
+  end
+
+  # Both a fresh CA-proxy compiler and one already swapped to
+  # IntermediateCAService are valid starting points -- the latter is how a
+  # run that crashed after the bootstrap swap but before the restart gets
+  # retried. Anything else (a primary, or a node with neither service
+  # entry) is refused: swapping it would leave two CA services registered.
+  def assert_promotable_bootstrap!
     path = IcaTaskHelper.bootstrap_cfg_path
     return if File.exist?(path) &&
-              File.readlines(path).any? { |l| !comment?(l) && l.include?('certificate-authority-disabled-service') }
-    raise "This node's bootstrap.cfg does not show the expected CA-proxy service entry; refusing to swap. Is this actually a CA-proxy compiler?"
+              File.readlines(path).any? do |l|
+                IcaTaskHelper.active_service_line?(l, 'certificate-authority-disabled-service') ||
+                IcaTaskHelper.active_service_line?(l, 'intermediate-ca-service')
+              end
+    raise "This node's bootstrap.cfg shows neither a CA-proxy nor an intermediate CA service entry; " \
+          'refusing to modify it. Is this actually a compiler?'
   end
 
   def swap_bootstrap_cfg!
-    assert_ca_proxy_bootstrap!
+    assert_promotable_bootstrap!
 
     path = IcaTaskHelper.bootstrap_cfg_path
     lines = File.readlines(path)
-    lines.reject! { |l| !comment?(l) && l.include?('certificate-authority-disabled-service') }
-    unless lines.any? { |l| !comment?(l) && l.include?('intermediate-ca-service') }
+    lines.reject! { |l| IcaTaskHelper.active_service_line?(l, 'certificate-authority-disabled-service') }
+    unless lines.any? { |l| IcaTaskHelper.active_service_line?(l, 'intermediate-ca-service') }
       lines[-1] = "#{lines[-1]}\n" if lines.any? && !lines[-1].end_with?("\n")
       lines << "puppetlabs.services.ca.intermediate-ca-service/intermediate-ca-service\n"
     end
