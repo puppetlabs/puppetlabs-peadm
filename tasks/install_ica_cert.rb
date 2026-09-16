@@ -189,7 +189,14 @@ class InstallIcaCert
   # this repo already uses elsewhere for the same service.
   def restart_ca_service!
     output, status = Open3.capture2e('systemctl', 'restart', 'pe-puppetserver.service')
-    raise "Failed to restart the CA service: #{output}" unless status.success?
+    return if status.success?
+
+    # A compiler left with proxy config gone and no working CA is worse than
+    # a failed promotion, so a bare exit code isn't enough here: capture the
+    # service's own status output so the operator isn't left running the
+    # command themselves just to see why it didn't come back up.
+    status_output, = Open3.capture2e('systemctl', 'status', 'pe-puppetserver.service', '--no-pager')
+    raise "Failed to restart the CA service: #{output}\n#{status_output}"
   end
 end
 
