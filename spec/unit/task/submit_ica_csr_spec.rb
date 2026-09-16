@@ -33,8 +33,8 @@ describe SubmitIcaCsr do
   end
 
   context 'when the subcommand succeeds but writes to stderr' do
-    # The subcommand owns spec section 18.5's trust bundle check, which warns
-    # on a *successful* provision. Nothing else surfaces stderr on this path.
+    # The subcommand can warn without failing (for example if the agent trust
+    # bundle looks incomplete). Nothing else surfaces stderr on this path.
     it 'surfaces the subcommand stderr and still returns the request-id' do
       status_dbl = instance_double('Process::Status', success?: true)
       allow(IcaTaskHelper).to receive_messages(

@@ -67,8 +67,8 @@ class InstallIcaCert
     res = https.get("/puppet-ca/v1/intermediate-ca/#{Puppet.settings[:certname]}")
     raise "No active ICA found on #{@primary_host} for this compiler: HTTP #{res.code} - #{res.body}" unless res.code == '200'
     JSON.parse(res.body).fetch('cert-pem')
-  rescue JSON::ParserError => e
-    raise "Malformed response fetching the active ICA certificate from #{@primary_host} (#{e.message}). Raw body: #{res&.body || '<no response body>'}"
+  rescue JSON::ParserError, KeyError => e
+    raise "Malformed response fetching the active ICA certificate from #{@primary_host} (#{e.class}: #{e.message}). Raw body: #{res&.body || '<no response body>'}"
   end
 
   # mTLS only proves the responder holds a certificate this node's trust

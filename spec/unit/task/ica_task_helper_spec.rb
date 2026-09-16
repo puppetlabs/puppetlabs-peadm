@@ -154,6 +154,32 @@ describe IcaTaskHelper do
       described_class.pin_to_ica_group!(https, 'compiler-a.example.com')
     end
 
+    it "reconciles an existing group's classes when they're present but only partially correct" do
+      # This is the field scenario the reconciliation exists for: a group
+      # that already has a 'classes' key, just missing or wrong on one of
+      # the two required flags -- not the "classes absent entirely" case
+      # covered above.
+      partial_classes = { 'puppet_enterprise::profile::master' => { 'pe_ca_ica_enabled' => true } }
+      groups_response = instance_double('Net::HTTPResponse', code: '200',
+                                         body: [{ 'id' => 'group-1', 'name' => 'PE ICA Compilers', 'classes' => partial_classes }].to_json)
+      expect(https).to receive(:get).with('/classifier-api/v1/groups').and_return(groups_response)
+
+      reconcile_response = instance_double('Net::HTTPResponse', code: '200', body: '')
+      expect(https).to receive(:request) { |req|
+        expect(req.path).to eq('/classifier-api/v1/groups/group-1')
+        expect(JSON.parse(req.body)).to eq('classes' => correct_classes)
+        reconcile_response
+      }.ordered
+
+      pin_response = instance_double('Net::HTTPResponse', code: '204', body: '')
+      expect(https).to receive(:request) { |req|
+        expect(req.path).to eq('/classifier-api/v1/groups/group-1/pin')
+        pin_response
+      }.ordered
+
+      described_class.pin_to_ica_group!(https, 'compiler-a.example.com')
+    end
+
     it 'raises when reconciling an existing group fails' do
       groups_response = instance_double('Net::HTTPResponse', code: '200',
                                          body: [{ 'id' => 'group-1', 'name' => 'PE ICA Compilers' }].to_json)

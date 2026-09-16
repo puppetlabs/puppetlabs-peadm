@@ -211,6 +211,24 @@ describe InstallIcaCert do
 
       expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
     end
+
+    it "fails clearly, preserving the raw body, when the primary's response is valid JSON but missing cert-pem" do
+      bootstrap_cfg.write("puppetlabs.services.ca.certificate-authority-disabled-service/certificate-authority-disabled-service\n")
+      bootstrap_cfg.rewind
+
+      allow(IcaTaskHelper).to receive(:promoted_to_ica?).and_return(false)
+      cert_response = instance_double('Net::HTTPResponse', code: '200', body: { 'state' => 'active' }.to_json)
+      allow(https).to receive(:get).and_return(cert_response)
+      expect(STDOUT).to receive(:puts) do |output|
+        parsed = JSON.parse(output)
+        expect(parsed['_error']['kind']).to eq('peadm/install_ica_cert_failed')
+        expect(parsed['_error']['msg']).to include('Malformed response')
+        expect(parsed['_error']['msg']).to include('KeyError')
+        expect(parsed['_error']['msg']).to include('"state":"active"')
+      end
+
+      expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
+    end
   end
 
   describe '#clear_ica_pool!' do
