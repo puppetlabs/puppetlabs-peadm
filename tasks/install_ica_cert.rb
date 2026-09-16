@@ -63,11 +63,12 @@ class InstallIcaCert
   private
 
   def fetch_active_ica_cert(https)
+    res = nil
     res = https.get("/puppet-ca/v1/intermediate-ca/#{Puppet.settings[:certname]}")
     raise "No active ICA found on #{@primary_host} for this compiler: HTTP #{res.code} - #{res.body}" unless res.code == '200'
     JSON.parse(res.body).fetch('cert-pem')
   rescue JSON::ParserError => e
-    raise "Malformed response fetching the active ICA certificate from #{@primary_host} (#{e.message}). Raw body: #{res.body}"
+    raise "Malformed response fetching the active ICA certificate from #{@primary_host} (#{e.message}). Raw body: #{res&.body || '<no response body>'}"
   end
 
   # mTLS only proves the responder holds a certificate this node's trust
@@ -120,28 +121,65 @@ class InstallIcaCert
     File.write(path, lines.join)
   end
 
+  ICA_POOL_ASSIGNMENT = %r{^[ \t]*ica-pool\s*[:=]\s*\[}.freeze
+
   def clear_ica_pool!
     path = IcaTaskHelper.ca_conf_path
-    content = File.read(path)
-    stripped = content.gsub(%r{^\s*ica-pool\s*[:=]\s*\[.*?\]\s*\n?}m, '')
-
-    # The non-greedy match above stops at the first ']', which can be a literal
-    # inside a quoted value (e.g. an IPv6 URL) rather than the array's real
-    # close. Cheap sanity check: removing a well-formed value leaves the
-    # bracket/brace balance of the file unchanged, so compare deltas before and
-    # after rather than requiring the whole file to be internally balanced --
-    # unrelated brackets in comments or quoted strings must not trip this.
-    unless balanced?(content, stripped)
-      raise 'Removing ica-pool from ca.conf produced unbalanced brackets - ' \
-            'refusing to write a possibly-corrupt ca.conf; manual intervention required'
-    end
-
-    File.write(path, stripped)
+    File.write(path, strip_ica_pool(File.read(path)))
   end
 
-  def balanced?(before, after)
-    before.count('[') - before.count(']') == after.count('[') - after.count(']') &&
-      before.count('{') - before.count('}') == after.count('{') - after.count('}')
+  # Removing a non-greedy match up to the first ']' is not enough: that
+  # character can be a literal inside a quoted value (an IPv6 URL, for
+  # instance) rather than the array's own close, so a naive strip can leave
+  # an orphaned remainder of the value written into ca.conf without ever
+  # tripping a bracket-count check, since the removed and orphaned text can
+  # carry matching counts of their own. Scans forward from the array's
+  # opening bracket instead, tracking quote state so a bracket inside a
+  # quoted string is never mistaken for the array's own boundary.
+  def strip_ica_pool(content)
+    loop do
+      match = content.match(ICA_POOL_ASSIGNMENT)
+      break content unless match
+
+      open_index = match.end(0) - 1
+      close_index = matching_close_bracket_index(content, open_index)
+      unless close_index
+        raise 'Could not find a closing bracket for ica-pool in ca.conf - refusing to write a possibly-corrupt ca.conf; manual intervention required'
+      end
+
+      remove_through = close_index + 1
+      remove_through += 1 if content[remove_through] == "\n"
+      content = content[0...match.begin(0)] + content[remove_through..]
+    end
+  end
+
+  def matching_close_bracket_index(content, open_index)
+    depth = 1
+    in_string = false
+    escaped = false
+    index = open_index + 1
+    while index < content.length
+      char = content[index]
+      if in_string
+        if escaped
+          escaped = false # rubocop:disable Lint/UselessAssignment -- read at `if escaped` on the loop's next pass
+        elsif char == '\\'
+          escaped = true
+        elsif char == '"'
+          in_string = false # rubocop:disable Lint/UselessAssignment -- read at `if in_string` on the loop's next pass
+        end
+      else
+        case char
+        when '"' then in_string = true
+        when '[' then depth += 1
+        when ']'
+          depth -= 1
+          return index if depth.zero?
+        end
+      end
+      index += 1
+    end
+    nil
   end
 
   def restart_ca_service!
