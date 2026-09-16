@@ -70,8 +70,8 @@ describe InstallIcaCert do
 
   context 'when bootstrap.cfg already shows intermediate-ca-service but the installed certificate is missing or does not match' do
     # This is the state a run left behind if it crashed after swapping
-    # bootstrap.cfg but before the CA service reload completed: the file at
-    # ica_cert_path was never written (it's written last, after the reload
+    # bootstrap.cfg but before the CA service restart completed: the file at
+    # ica_cert_path was never written (it's written last, after the restart
     # succeeds), so the comparison below correctly treats the promotion as
     # incomplete rather than trusting the bootstrap.cfg text alone.
     it 'redoes the remaining steps, restart included, rather than reporting a false already-installed' do
@@ -87,7 +87,7 @@ describe InstallIcaCert do
       expect(https).to receive(:get).with('/puppet-ca/v1/intermediate-ca/compiler-a.example.com').and_return(cert_response)
       expect(IcaTaskHelper).to receive(:pin_to_ica_group!).with(classifier_https, 'compiler-a.example.com')
       expect(Open3).to receive(:capture2e)
-        .with('/opt/puppetlabs/bin/puppetserver', 'ca', 'reload')
+        .with('systemctl', 'restart', 'pe-puppetserver.service')
         .and_return(['', instance_double('Process::Status', success?: true)])
       expect(STDOUT).to receive(:puts).with(JSON.generate('status' => 'installed'))
 
@@ -108,12 +108,12 @@ describe InstallIcaCert do
       cert_response = instance_double('Net::HTTPResponse', code: '200', body: { 'cert-pem' => own_cert_pem }.to_json)
       allow(https).to receive(:get).and_return(cert_response)
       expect(Open3).to receive(:capture2e)
-        .with(IcaTaskHelper::PUPPETSERVER_BIN, 'ca', 'reload')
-        .and_return(['reload refused', instance_double('Process::Status', success?: false)])
+        .with('systemctl', 'restart', 'pe-puppetserver.service')
+        .and_return(['restart refused', instance_double('Process::Status', success?: false)])
       expect(STDOUT).to receive(:puts) do |output|
         parsed = JSON.parse(output)
         expect(parsed['_error']['kind']).to eq('peadm/install_ica_cert_failed')
-        expect(parsed['_error']['msg']).to include('Failed to reload CA service')
+        expect(parsed['_error']['msg']).to include('Failed to restart the CA service')
       end
 
       expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
@@ -138,7 +138,7 @@ describe InstallIcaCert do
 
       expect(IcaTaskHelper).to receive(:pin_to_ica_group!).with(classifier_https, 'compiler-a.example.com')
       expect(Open3).to receive(:capture2e)
-        .with('/opt/puppetlabs/bin/puppetserver', 'ca', 'reload')
+        .with('systemctl', 'restart', 'pe-puppetserver.service')
         .and_return(['', instance_double('Process::Status', success?: true)])
       expect(STDOUT).to receive(:puts).with(JSON.generate('status' => 'installed'))
 
