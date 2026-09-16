@@ -182,9 +182,14 @@ class InstallIcaCert
     nil
   end
 
+  # A full restart, not a reload: bootstrap.cfg (which now names
+  # IntermediateCAService), the ICA private key (memory-only, decrypted at
+  # that service's init), and the ICA database connection pool (built at
+  # init too) are all only picked up at JVM boot. Matches the invocation
+  # this repo already uses elsewhere for the same service.
   def restart_ca_service!
-    output, status = Open3.capture2e(IcaTaskHelper::PUPPETSERVER_BIN, 'ca', 'reload')
-    raise "Failed to reload CA service: #{output}" unless status.success?
+    output, status = Open3.capture2e('systemctl', 'restart', 'pe-puppetserver.service')
+    raise "Failed to restart the CA service: #{output}" unless status.success?
   end
 end
 
