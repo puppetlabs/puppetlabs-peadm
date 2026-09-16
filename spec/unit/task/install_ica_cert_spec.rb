@@ -110,10 +110,15 @@ describe InstallIcaCert do
       expect(Open3).to receive(:capture2e)
         .with('systemctl', 'restart', 'pe-puppetserver.service')
         .and_return(['restart refused', instance_double('Process::Status', success?: false)])
+      expect(Open3).to receive(:capture2e)
+        .with('systemctl', 'status', 'pe-puppetserver.service', '--no-pager')
+        .and_return(["● pe-puppetserver.service - failed to start\n", instance_double('Process::Status', success?: false)])
       expect(STDOUT).to receive(:puts) do |output|
         parsed = JSON.parse(output)
         expect(parsed['_error']['kind']).to eq('peadm/install_ica_cert_failed')
         expect(parsed['_error']['msg']).to include('Failed to restart the CA service')
+        expect(parsed['_error']['msg']).to include('restart refused')
+        expect(parsed['_error']['msg']).to include('failed to start')
       end
 
       expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
