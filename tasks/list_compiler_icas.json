@@ -9,7 +9,7 @@
     },
     "format": {
       "type": "Enum[table,json]",
-      "description": "table for human-readable output (default), json to return the endpoint's response unmodified for use in another plan",
+      "description": "table for human-readable output (default), json to return the endpoint's response for use in another plan. Every field is passed through unmodified; if state is also set, intermediate-cas is narrowed to the matching entries but each entry's fields are still verbatim.",
       "default": "table"
     }
   },

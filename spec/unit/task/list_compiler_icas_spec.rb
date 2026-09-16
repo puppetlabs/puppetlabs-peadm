@@ -41,6 +41,19 @@ describe ListCompilerIcas do
     expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(0) }
   end
 
+  it 'labels columns with a header and aligns them by width' do
+    expect(STDOUT).to receive(:puts) do |output|
+      lines = output.split("\n")
+      expect(lines.first).to match(%r{COMPILER-FQDN}i).and match(%r{STATE}i).and match(%r{PROVISIONED-AT}i).and match(%r{NOT-AFTER}i)
+
+      header_columns = lines[0].split(%r{\s{2,}})
+      row_columns = lines[1].split(%r{\s{2,}})
+      expect(row_columns.length).to eq(header_columns.length)
+    end
+
+    expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(0) }
+  end
+
   context 'with a state filter' do
     let(:params) { { 'state' => 'active' } }
 
@@ -93,6 +106,19 @@ describe ListCompilerIcas do
     end
   end
 
+  context 'with a state filter that matches nothing, but the fleet is not empty' do
+    let(:params) { { 'state' => 'draining' } }
+
+    it 'distinguishes "no match for this state" from "fleet is empty"' do
+      expect(STDOUT).to receive(:puts) do |output|
+        expect(output).to include('draining')
+        expect(output).not_to eq('no compiler ICAs are provisioned')
+      end
+
+      expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(0) }
+    end
+  end
+
   context 'with no ICAs registered' do
     let(:intermediate_cas) { { 'intermediate-cas' => [], 'autosign-inconsistent' => false, 'autosign-fingerprint-baseline' => nil } }
 
@@ -112,6 +138,36 @@ describe ListCompilerIcas do
 
         expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(0) }
       end
+    end
+  end
+
+  context 'when the connection to the primary fails' do
+    before(:each) do
+      allow(https).to receive(:get).and_raise(Errno::ECONNREFUSED)
+    end
+
+    it 'exits non-zero through the _error envelope instead of crashing' do
+      expect(STDOUT).to receive(:puts) do |output|
+        parsed = JSON.parse(output)
+        expect(parsed['_error']['kind']).to eq('peadm/list_compiler_icas_connection_failed')
+      end
+
+      expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
+    end
+  end
+
+  context 'when the TLS handshake fails (e.g. an expired or rotated hostcert)' do
+    before(:each) do
+      allow(https).to receive(:get).and_raise(OpenSSL::SSL::SSLError)
+    end
+
+    it 'exits non-zero through the _error envelope instead of crashing' do
+      expect(STDOUT).to receive(:puts) do |output|
+        parsed = JSON.parse(output)
+        expect(parsed['_error']['kind']).to eq('peadm/list_compiler_icas_tls_failed')
+      end
+
+      expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
     end
   end
 
@@ -161,6 +217,19 @@ describe ListCompilerIcas do
       end
 
       expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(0) }
+    end
+
+    context 'when a state filter excludes the diverging compilers' do
+      let(:params) { { 'state' => 'decommissioned' } }
+
+      it 'still names the diverging compilers, not nobody' do
+        expect(STDOUT).to receive(:puts) do |output|
+          expect(output).to match(%r{warning}i)
+          expect(output).to include('compiler1.example.com', 'compiler2.example.com')
+        end
+
+        expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(0) }
+      end
     end
   end
 
