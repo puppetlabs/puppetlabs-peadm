@@ -108,7 +108,11 @@ describe SignCSR do
       call_count = 0
       allow(Open3).to receive(:capture2) do
         call_count += 1
-        call_count < 3 ? ['failed', failure_status] : ['ok', success_status]
+        if call_count < 3
+          ['failed', failure_status]
+        else
+          ['ok', success_status]
+        end
       end
 
       expect { task.execute! }.not_to raise_error
