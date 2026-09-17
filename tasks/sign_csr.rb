@@ -7,7 +7,7 @@ require 'puppet'
 
 # Class to run and execute the `puppetserver ca sign` command as a task.
 class SignCSR
-  class SigningError; end
+  class SigningError < StandardError; end
 
   def initialize(params)
     Puppet.initialize_settings
