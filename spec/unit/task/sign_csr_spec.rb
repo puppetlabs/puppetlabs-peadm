@@ -50,22 +50,15 @@ describe SignCSR do
       expect { sign_csr.sign(['agent.example.com']) }.not_to raise_error
     end
 
-    # DOCUMENTS AN EXISTING BUG (not fixed here; tasks/sign_csr.rb is out of
-    # scope for this ticket). `SigningError` is defined as
-    # `class SigningError; end` with no Exception/StandardError superclass,
-    # so `raise SigningError` never actually raises a SigningError: Ruby's
-    # `raise` immediately raises `TypeError: exception class/object expected`
-    # instead, because the given class isn't Exception-like. This test pins
-    # that real, current behavior so it still catches a mutation that drops
-    # or inverts the `unless status.success?` guard (which would make `sign`
-    # raise nothing at all on failure). If `SigningError` is ever corrected
-    # to `< StandardError`, this test must be updated to expect
-    # `SignCSR::SigningError` instead of `TypeError`, and the two `#execute!`
-    # retry-loop tests below should be revisited, since the `rescue
-    # SigningError` clause in `execute!` currently can never be entered.
-    it 'raises TypeError (not the intended SigningError) when the sign command fails' do
+    # Catches a mutation that drops or inverts the `unless status.success?`
+    # guard (which would make `sign` raise nothing at all on failure).
+    # `SigningError` inherits from `StandardError` (PE-46427) so this is the
+    # exception `#execute!`'s retry loop actually catches; previously it
+    # inherited from nothing, `raise SigningError` raised a bare `TypeError`
+    # instead, and the retry loop below could never enter its rescue clause.
+    it 'raises SigningError when the sign command fails' do
       allow(Open3).to receive(:capture2).and_return(['failed', failure_status])
-      expect { sign_csr.sign(['agent.example.com']) }.to raise_error(TypeError, 'exception class/object expected')
+      expect { sign_csr.sign(['agent.example.com']) }.to raise_error(SignCSR::SigningError)
     end
   end
 
@@ -103,37 +96,32 @@ describe SignCSR do
 
     # Catches a mutation to the retry bound (e.g. `attempts > 5` -> `attempts
     # > 4`) that would cause the task to give up too early even though the
-    # cert eventually became signed.
-    #
-    # NOTE: because of the `SigningError` bug documented above (it isn't a
-    # StandardError, so `raise SigningError` in `#sign` raises a bare
-    # TypeError that `rescue SigningError` cannot catch), the retry branch in
-    # `execute!` is currently unreachable dead code: the very first failed
-    # sign attempt propagates an uncaught TypeError instead of being
-    # rescued and retried. This test pins that real, current behavior
-    # (rather than asserting a retry-then-`exit 0` sequence that cannot
-    # actually happen against the unmodified task file) so it still fails if
-    # a mutation changes what "signing fails" looks like.
-    it 'propagates an uncaught TypeError on the first failed sign attempt, never reaching the retry/exit-0 path' do
+    # cert eventually became signed. Exercises the real retry path now that
+    # `SigningError` is a `StandardError` (PE-46427): a transient failure
+    # (e.g. a CSR not yet visible due to replication lag) is retried, with a
+    # 1s sleep between attempts, rather than crashing on the first failure.
+    it 'retries a failed sign attempt and succeeds once the command eventually succeeds' do
       task = described_class.new(params)
       allow(task).to receive(:csr_signed?).and_return(false)
-      expect(task).not_to receive(:sleep)
-      allow(Open3).to receive(:capture2).and_return(['failed', failure_status])
+      expect(task).to receive(:sleep).with(1).twice
 
-      expect { task.execute! }.to raise_error(TypeError, 'exception class/object expected')
+      call_count = 0
+      allow(Open3).to receive(:capture2) do
+        call_count += 1
+        call_count < 3 ? ['failed', failure_status] : ['ok', success_status]
+      end
+
+      expect { task.execute! }.not_to raise_error
+      expect(call_count).to eq(3)
     end
 
-    # Same root cause as above: the retry-exhaustion path (`exit 1` after 6
-    # failed attempts) is dead code today because `rescue SigningError` never
-    # matches the TypeError that `#sign` actually raises. This test pins
-    # that exactly one sign attempt is made (not 7) and that no SystemExit
-    # is ever raised, so it still catches a mutation that changed how many
-    # times `Open3.capture2` is invoked before the (currently unreachable)
-    # retry/exit-1 logic would kick in.
-    it 'does not retry or exit 1 after a failed sign attempt, because the retry rescue is unreachable' do
+    # Catches a mutation that widens, narrows, or removes the retry bound,
+    # which would make the task retry forever, give up too early, or too
+    # late instead of exiting 1 after a bounded number of failed attempts.
+    it 'exits 1 after exhausting all retries on a sign command that always fails' do
       task = described_class.new(params)
       allow(task).to receive(:csr_signed?).and_return(false)
-      expect(task).not_to receive(:sleep)
+      expect(task).to receive(:sleep).with(1).exactly(6).times
 
       call_count = 0
       allow(Open3).to receive(:capture2) do
@@ -141,8 +129,10 @@ describe SignCSR do
         ['failed', failure_status]
       end
 
-      expect { task.execute! }.to raise_error(TypeError)
-      expect(call_count).to eq(1)
+      expect { task.execute! }.to raise_error(SystemExit) do |error|
+        expect(error.status).to eq(1)
+      end
+      expect(call_count).to eq(7)
     end
   end
 end
