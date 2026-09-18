@@ -7,7 +7,7 @@ describe SignCSR do
   let(:params) { { 'certnames' => certnames } }
   let(:certnames) { ['agent.example.com'] }
   let(:success_status) { instance_double('Process::Status', success?: true) }
-  let(:failure_status) { instance_double('Process::Status', success?: false) }
+  let(:failure_status) { instance_double('Process::Status', success?: false, exitstatus: 1) }
 
   before(:each) do
     allow(Puppet).to receive(:initialize_settings)
@@ -44,9 +44,9 @@ describe SignCSR do
 
   describe '#sign' do
     it 'does not raise when the puppetserver ca sign command succeeds' do
-      expect(Open3).to receive(:capture2).with('/opt/puppetlabs/bin/puppetserver', 'ca', 'sign',
-                                                '--certname', 'agent.example.com')
-                                         .and_return(['ok', success_status])
+      expect(Open3).to receive(:capture2e).with('/opt/puppetlabs/bin/puppetserver', 'ca', 'sign',
+                                                 '--certname', 'agent.example.com')
+                                          .and_return(['ok', success_status])
       expect { sign_csr.sign(['agent.example.com']) }.not_to raise_error
     end
 
@@ -56,9 +56,12 @@ describe SignCSR do
     # exception `#execute!`'s retry loop actually catches; previously it
     # inherited from nothing, `raise SigningError` raised a bare `TypeError`
     # instead, and the retry loop below could never enter its rescue clause.
-    it 'raises SigningError when the sign command fails' do
-      allow(Open3).to receive(:capture2).and_return(['failed', failure_status])
-      expect { sign_csr.sign(['agent.example.com']) }.to raise_error(SignCSR::SigningError)
+    # The message carries the exit status and captured output (stdout+stderr,
+    # merged via capture2e) so a final "giving up" log actually says why.
+    it 'raises SigningError with the exit status and output when the sign command fails' do
+      allow(Open3).to receive(:capture2e).and_return(['some error output', failure_status])
+      expect { sign_csr.sign(['agent.example.com']) }
+        .to raise_error(SignCSR::SigningError, 'puppetserver ca sign exited 1: some error output')
     end
   end
 
@@ -72,9 +75,9 @@ describe SignCSR do
       allow(task).to receive(:csr_signed?).with('already-signed.example.com').and_return(true)
       allow(task).to receive(:csr_signed?).with('still-pending.example.com').and_return(false)
 
-      expect(Open3).to receive(:capture2).with('/opt/puppetlabs/bin/puppetserver', 'ca', 'sign',
-                                                '--certname', 'still-pending.example.com')
-                                         .and_return(['ok', success_status])
+      expect(Open3).to receive(:capture2e).with('/opt/puppetlabs/bin/puppetserver', 'ca', 'sign',
+                                                 '--certname', 'still-pending.example.com')
+                                          .and_return(['ok', success_status])
 
       task.execute!
     end
@@ -87,7 +90,7 @@ describe SignCSR do
       # test -- this is otherwise the exact same construction as `subject`.
       task = described_class.new(params)
       allow(task).to receive(:csr_signed?).and_return(true)
-      expect(Open3).not_to receive(:capture2)
+      expect(Open3).not_to receive(:capture2e)
 
       expect { task.execute! }.to raise_error(SystemExit) do |error|
         expect(error.status).to eq(0)
@@ -104,39 +107,29 @@ describe SignCSR do
       task = described_class.new(params)
       allow(task).to receive(:csr_signed?).and_return(false)
       expect(task).to receive(:sleep).with(1).twice
-
-      call_count = 0
-      allow(Open3).to receive(:capture2) do
-        call_count += 1
-        if call_count < 3
-          ['failed', failure_status]
-        else
-          ['ok', success_status]
-        end
-      end
+      expect(Open3).to receive(:capture2e).exactly(3).times
+                                          .and_return(['failed', failure_status],
+                                                       ['failed', failure_status],
+                                                       ['ok', success_status])
 
       expect { task.execute! }.not_to raise_error
-      expect(call_count).to eq(3)
     end
 
     # Catches a mutation that widens, narrows, or removes the retry bound,
     # which would make the task retry forever, give up too early, or too
     # late instead of exiting 1 after a bounded number of failed attempts.
+    # Also catches a mutation that drops the final "giving up" message,
+    # which is the only diagnostic an operator gets once retries run out.
     it 'exits 1 after exhausting all retries on a sign command that always fails' do
       task = described_class.new(params)
       allow(task).to receive(:csr_signed?).and_return(false)
       expect(task).to receive(:sleep).with(1).exactly(6).times
-
-      call_count = 0
-      allow(Open3).to receive(:capture2) do
-        call_count += 1
-        ['failed', failure_status]
-      end
+      expect(Open3).to receive(:capture2e).exactly(7).times.and_return(['failed', failure_status])
+      expect(task).to receive(:warn).with(%r{Signing failed after 7 attempts, giving up})
 
       expect { task.execute! }.to raise_error(SystemExit) do |error|
         expect(error.status).to eq(1)
       end
-      expect(call_count).to eq(7)
     end
   end
 end

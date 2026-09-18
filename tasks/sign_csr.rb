@@ -21,10 +21,17 @@ class SignCSR
       unsigned = @certnames.reject { |name| csr_signed?(name) }
       exit 0 if unsigned.empty?
       sign(unsigned)
-    rescue SigningError
-      exit 1 if attempts > 5
+    rescue SigningError => e
+      # The 1s/6-retry backoff and lack of transient-vs-permanent failure
+      # differentiation are known simplifications -- revisit if puppetserver
+      # ca sign failures prove to need longer backoff or finer-grained
+      # handling in practice.
+      if attempts > 5
+        warn "Signing failed after #{attempts + 1} attempts, giving up: #{e.message}"
+        exit 1
+      end
       attempts += 1
-      puts "Signing attempt #{attempts} failed; waiting 1s and trying again"
+      puts "Signing attempt #{attempts} failed (#{e.message}); waiting 1s and trying again"
       sleep 1
       retry
     end
@@ -39,9 +46,9 @@ class SignCSR
     cmd = ['/opt/puppetlabs/bin/puppetserver', 'ca', 'sign',
            '--certname', certnames.join(',')]
 
-    stdout, status = Open3.capture2(*cmd)
+    stdout, status = Open3.capture2e(*cmd)
     puts stdout
-    raise SigningError unless status.success?
+    raise SigningError, "puppetserver ca sign exited #{status.exitstatus}: #{stdout}" unless status.success?
   end
 end
 
