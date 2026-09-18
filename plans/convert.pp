@@ -61,6 +61,7 @@ plan peadm::convert (
   )
 
   out::message('# Gathering information')
+  peadm::check_availability($all_targets)
 
   $cert_extensions_temp = run_task('peadm::cert_data', $all_targets).reduce({}) |$memo,$result| {
     $memo + { $result.target.peadm::certname() => $result['extensions'] }
