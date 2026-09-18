@@ -7,7 +7,7 @@ describe SignCSR do
   let(:params) { { 'certnames' => certnames } }
   let(:certnames) { ['agent.example.com'] }
   let(:success_status) { instance_double('Process::Status', success?: true) }
-  let(:failure_status) { instance_double('Process::Status', success?: false) }
+  let(:failure_status) { instance_double('Process::Status', success?: false, exitstatus: 1) }
 
   before(:each) do
     allow(Puppet).to receive(:initialize_settings)
@@ -44,28 +44,55 @@ describe SignCSR do
 
   describe '#sign' do
     it 'does not raise when the puppetserver ca sign command succeeds' do
-      expect(Open3).to receive(:capture2).with('/opt/puppetlabs/bin/puppetserver', 'ca', 'sign',
-                                                '--certname', 'agent.example.com')
-                                         .and_return(['ok', success_status])
+      expect(Open3).to receive(:capture2e).with('/opt/puppetlabs/bin/puppetserver', 'ca', 'sign',
+                                                 '--certname', 'agent.example.com')
+                                          .and_return(['ok', success_status])
       expect { sign_csr.sign(['agent.example.com']) }.not_to raise_error
     end
 
-    # DOCUMENTS AN EXISTING BUG (not fixed here; tasks/sign_csr.rb is out of
-    # scope for this ticket). `SigningError` is defined as
-    # `class SigningError; end` with no Exception/StandardError superclass,
-    # so `raise SigningError` never actually raises a SigningError: Ruby's
-    # `raise` immediately raises `TypeError: exception class/object expected`
-    # instead, because the given class isn't Exception-like. This test pins
-    # that real, current behavior so it still catches a mutation that drops
-    # or inverts the `unless status.success?` guard (which would make `sign`
-    # raise nothing at all on failure). If `SigningError` is ever corrected
-    # to `< StandardError`, this test must be updated to expect
-    # `SignCSR::SigningError` instead of `TypeError`, and the two `#execute!`
-    # retry-loop tests below should be revisited, since the `rescue
-    # SigningError` clause in `execute!` currently can never be entered.
-    it 'raises TypeError (not the intended SigningError) when the sign command fails' do
-      allow(Open3).to receive(:capture2).and_return(['failed', failure_status])
-      expect { sign_csr.sign(['agent.example.com']) }.to raise_error(TypeError, 'exception class/object expected')
+    # Catches a mutation that drops or inverts the `return if status.success?`
+    # guard (which would make `sign` raise on success or swallow a failure).
+    # `SigningError` inherits from `StandardError` (PE-46427) so this is the
+    # exception `#execute!`'s retry loop actually catches; previously it
+    # inherited from nothing, `raise SigningError` raised a bare `TypeError`
+    # instead, and the retry loop below could never enter its rescue clause.
+    # The message carries the exit status and captured output (stdout+stderr,
+    # merged via capture2e) so a final "giving up" log actually says why.
+    # Uses a distinct exit code (2, not the shared failure_status's 1) so a
+    # mutation hardcoding the exit code in the message would still be caught.
+    it 'raises SigningError with the exit status and output when the sign command fails' do
+      distinct_exit_status = instance_double('Process::Status', success?: false, exitstatus: 2)
+      allow(Open3).to receive(:capture2e).and_return(['some error output', distinct_exit_status])
+      expect { sign_csr.sign(['agent.example.com']) }
+        .to raise_error(SignCSR::SigningError, 'puppetserver ca sign exited 2: some error output')
+    end
+
+    # Catches a mutation that drops the newline-collapsing before the output
+    # is embedded in SigningError's message. capture2e can return multi-line
+    # output (e.g. a Java stack trace); without collapsing it, the per-retry
+    # and give-up log lines that embed this message would themselves become
+    # multi-line and stop being a single grep-able line per attempt. Leading
+    # and trailing newlines are included so a mutation dropping `.strip`
+    # (leaving stray leading/trailing spaces after the collapse) is also
+    # caught, not just a mutation dropping `gsub` entirely.
+    it 'collapses multi-line command output to a single line in the error message' do
+      output = "\n  line one\n  line two\nline three\n"
+      allow(Open3).to receive(:capture2e).and_return([output, failure_status])
+      expect { sign_csr.sign(['agent.example.com']) }
+        .to raise_error(SignCSR::SigningError, 'puppetserver ca sign exited 1: line one line two line three')
+    end
+
+    # Catches a mutation that drops the `.scrub` call before the newline
+    # collapse. gsub raises ArgumentError on an invalid byte sequence for the
+    # string's encoding, which -- unlike SigningError -- execute!'s `rescue
+    # SigningError` does not catch, so a garbled byte in the subprocess
+    # output would otherwise crash this formatting step itself and bypass
+    # the retry loop entirely, regardless of how many retries remained.
+    it 'raises SigningError, not ArgumentError, when the output contains an invalid byte sequence' do
+      invalid_output = "abc\xFFdef\nghi".force_encoding('UTF-8')
+      allow(Open3).to receive(:capture2e).and_return([invalid_output, failure_status])
+      expect { sign_csr.sign(['agent.example.com']) }
+        .to raise_error(SignCSR::SigningError, 'puppetserver ca sign exited 1: abc?def ghi')
     end
   end
 
@@ -79,9 +106,9 @@ describe SignCSR do
       allow(task).to receive(:csr_signed?).with('already-signed.example.com').and_return(true)
       allow(task).to receive(:csr_signed?).with('still-pending.example.com').and_return(false)
 
-      expect(Open3).to receive(:capture2).with('/opt/puppetlabs/bin/puppetserver', 'ca', 'sign',
-                                                '--certname', 'still-pending.example.com')
-                                         .and_return(['ok', success_status])
+      expect(Open3).to receive(:capture2e).with('/opt/puppetlabs/bin/puppetserver', 'ca', 'sign',
+                                                 '--certname', 'still-pending.example.com')
+                                          .and_return(['ok', success_status])
 
       task.execute!
     end
@@ -94,55 +121,57 @@ describe SignCSR do
       # test -- this is otherwise the exact same construction as `subject`.
       task = described_class.new(params)
       allow(task).to receive(:csr_signed?).and_return(true)
-      expect(Open3).not_to receive(:capture2)
+      expect(Open3).not_to receive(:capture2e)
 
       expect { task.execute! }.to raise_error(SystemExit) do |error|
         expect(error.status).to eq(0)
       end
     end
 
-    # Catches a mutation to the retry bound (e.g. `attempts > 5` -> `attempts
-    # > 4`) that would cause the task to give up too early even though the
-    # cert eventually became signed.
-    #
-    # NOTE: because of the `SigningError` bug documented above (it isn't a
-    # StandardError, so `raise SigningError` in `#sign` raises a bare
-    # TypeError that `rescue SigningError` cannot catch), the retry branch in
-    # `execute!` is currently unreachable dead code: the very first failed
-    # sign attempt propagates an uncaught TypeError instead of being
-    # rescued and retried. This test pins that real, current behavior
-    # (rather than asserting a retry-then-`exit 0` sequence that cannot
-    # actually happen against the unmodified task file) so it still fails if
-    # a mutation changes what "signing fails" looks like.
-    it 'propagates an uncaught TypeError on the first failed sign attempt, never reaching the retry/exit-0 path' do
+    # Catches a mutation that breaks the retry-then-succeed path itself (e.g.
+    # giving up on the first failure, or not retrying at all) now that
+    # `SigningError` is a `StandardError` (PE-46427): a transient failure
+    # (e.g. a CSR not yet visible due to replication lag) is retried, with a
+    # 1s sleep between attempts, rather than crashing on the first failure.
+    # The retry-bound boundary itself (e.g. `attempts > 6` -> `attempts >
+    # 5`) is pinned by the exhaustion test below, which actually reaches it.
+    it 'retries a failed sign attempt and succeeds once the command eventually succeeds' do
       task = described_class.new(params)
       allow(task).to receive(:csr_signed?).and_return(false)
-      expect(task).not_to receive(:sleep)
-      allow(Open3).to receive(:capture2).and_return(['failed', failure_status])
+      expect(task).to receive(:sleep).with(1).twice
+      expect(Open3).to receive(:capture2e).exactly(3).times
+                                          .and_return(['failed', failure_status],
+                                                       ['failed', failure_status],
+                                                       ['ok', success_status])
+      # Pins the retry log line to include the failure's cause, not just an
+      # attempt number -- a mutation that drops `(#{e.message})` would
+      # otherwise go uncaught, since STDOUT.puts is stubbed unconditionally
+      # in before(:each).
+      expect(STDOUT).to receive(:puts)
+        .with('Signing attempt 1 failed (puppetserver ca sign exited 1: failed); waiting 1s and trying again')
 
-      expect { task.execute! }.to raise_error(TypeError, 'exception class/object expected')
+      expect { task.execute! }.not_to raise_error
     end
 
-    # Same root cause as above: the retry-exhaustion path (`exit 1` after 6
-    # failed attempts) is dead code today because `rescue SigningError` never
-    # matches the TypeError that `#sign` actually raises. This test pins
-    # that exactly one sign attempt is made (not 7) and that no SystemExit
-    # is ever raised, so it still catches a mutation that changed how many
-    # times `Open3.capture2` is invoked before the (currently unreachable)
-    # retry/exit-1 logic would kick in.
-    it 'does not retry or exit 1 after a failed sign attempt, because the retry rescue is unreachable' do
+    # Catches a mutation that widens, narrows, or removes the retry bound,
+    # which would make the task retry forever, give up too early, or too
+    # late instead of exiting 1 after a bounded number of failed attempts.
+    # Also catches a mutation that drops the final "giving up" message,
+    # which is the only diagnostic an operator gets once retries run out.
+    it 'exits 1 after exhausting all retries on a sign command that always fails' do
       task = described_class.new(params)
       allow(task).to receive(:csr_signed?).and_return(false)
-      expect(task).not_to receive(:sleep)
+      expect(task).to receive(:sleep).with(1).exactly(6).times
+      expect(Open3).to receive(:capture2e).exactly(7).times.and_return(['failed', failure_status])
+      # Full-string match, not just an anchor-free substring, so a mutation
+      # that drops the `: #{e.message}` suffix (the actual failure cause)
+      # would still be caught here.
+      expect(task).to receive(:warn)
+        .with('Signing failed after 7 attempts, giving up: puppetserver ca sign exited 1: failed')
 
-      call_count = 0
-      allow(Open3).to receive(:capture2) do
-        call_count += 1
-        ['failed', failure_status]
+      expect { task.execute! }.to raise_error(SystemExit) do |error|
+        expect(error.status).to eq(1)
       end
-
-      expect { task.execute! }.to raise_error(TypeError)
-      expect(call_count).to eq(1)
     end
   end
 end
