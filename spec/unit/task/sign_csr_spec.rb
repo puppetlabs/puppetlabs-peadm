@@ -88,7 +88,7 @@ describe SignCSR do
     # SigningError` does not catch, so a garbled byte in the subprocess
     # output would otherwise crash this formatting step itself and bypass
     # the retry loop entirely, regardless of how many retries remained.
-    it 'does not raise when the command output contains an invalid byte sequence' do
+    it 'raises SigningError, not ArgumentError, when the output contains an invalid byte sequence' do
       invalid_output = "abc\xFFdef\nghi".force_encoding('UTF-8')
       allow(Open3).to receive(:capture2e).and_return([invalid_output, failure_status])
       expect { sign_csr.sign(['agent.example.com']) }
@@ -128,12 +128,13 @@ describe SignCSR do
       end
     end
 
-    # Catches a mutation to the retry bound (e.g. `attempts > 6` -> `attempts
-    # > 5`) that would cause the task to give up too early even though the
-    # cert eventually became signed. Exercises the real retry path now that
+    # Catches a mutation that breaks the retry-then-succeed path itself (e.g.
+    # giving up on the first failure, or not retrying at all) now that
     # `SigningError` is a `StandardError` (PE-46427): a transient failure
     # (e.g. a CSR not yet visible due to replication lag) is retried, with a
     # 1s sleep between attempts, rather than crashing on the first failure.
+    # The retry-bound boundary itself (e.g. `attempts > 6` -> `attempts >
+    # 5`) is pinned by the exhaustion test below, which actually reaches it.
     it 'retries a failed sign attempt and succeeds once the command eventually succeeds' do
       task = described_class.new(params)
       allow(task).to receive(:csr_signed?).and_return(false)
