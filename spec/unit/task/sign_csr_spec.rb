@@ -50,27 +50,34 @@ describe SignCSR do
       expect { sign_csr.sign(['agent.example.com']) }.not_to raise_error
     end
 
-    # Catches a mutation that drops or inverts the `unless status.success?`
-    # guard (which would make `sign` raise nothing at all on failure).
+    # Catches a mutation that drops or inverts the `return if status.success?`
+    # guard (which would make `sign` raise on success or swallow a failure).
     # `SigningError` inherits from `StandardError` (PE-46427) so this is the
     # exception `#execute!`'s retry loop actually catches; previously it
     # inherited from nothing, `raise SigningError` raised a bare `TypeError`
     # instead, and the retry loop below could never enter its rescue clause.
     # The message carries the exit status and captured output (stdout+stderr,
     # merged via capture2e) so a final "giving up" log actually says why.
+    # Uses a distinct exit code (2, not the shared failure_status's 1) so a
+    # mutation hardcoding the exit code in the message would still be caught.
     it 'raises SigningError with the exit status and output when the sign command fails' do
-      allow(Open3).to receive(:capture2e).and_return(['some error output', failure_status])
+      distinct_exit_status = instance_double('Process::Status', success?: false, exitstatus: 2)
+      allow(Open3).to receive(:capture2e).and_return(['some error output', distinct_exit_status])
       expect { sign_csr.sign(['agent.example.com']) }
-        .to raise_error(SignCSR::SigningError, 'puppetserver ca sign exited 1: some error output')
+        .to raise_error(SignCSR::SigningError, 'puppetserver ca sign exited 2: some error output')
     end
 
     # Catches a mutation that drops the newline-collapsing before the output
     # is embedded in SigningError's message. capture2e can return multi-line
     # output (e.g. a Java stack trace); without collapsing it, the per-retry
     # and give-up log lines that embed this message would themselves become
-    # multi-line and stop being a single grep-able line per attempt.
+    # multi-line and stop being a single grep-able line per attempt. Leading
+    # and trailing newlines are included so a mutation dropping `.strip`
+    # (leaving stray leading/trailing spaces after the collapse) is also
+    # caught, not just a mutation dropping `gsub` entirely.
     it 'collapses multi-line command output to a single line in the error message' do
-      allow(Open3).to receive(:capture2e).and_return(["line one\n  line two\nline three", failure_status])
+      output = "\n  line one\n  line two\nline three\n"
+      allow(Open3).to receive(:capture2e).and_return([output, failure_status])
       expect { sign_csr.sign(['agent.example.com']) }
         .to raise_error(SignCSR::SigningError, 'puppetserver ca sign exited 1: line one line two line three')
     end
@@ -108,8 +115,8 @@ describe SignCSR do
       end
     end
 
-    # Catches a mutation to the retry bound (e.g. `attempts > 5` -> `attempts
-    # > 4`) that would cause the task to give up too early even though the
+    # Catches a mutation to the retry bound (e.g. `attempts > 6` -> `attempts
+    # > 5`) that would cause the task to give up too early even though the
     # cert eventually became signed. Exercises the real retry path now that
     # `SigningError` is a `StandardError` (PE-46427): a transient failure
     # (e.g. a CSR not yet visible due to replication lag) is retried, with a
