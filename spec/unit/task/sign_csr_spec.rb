@@ -63,6 +63,17 @@ describe SignCSR do
       expect { sign_csr.sign(['agent.example.com']) }
         .to raise_error(SignCSR::SigningError, 'puppetserver ca sign exited 1: some error output')
     end
+
+    # Catches a mutation that drops the newline-collapsing before the output
+    # is embedded in SigningError's message. capture2e can return multi-line
+    # output (e.g. a Java stack trace); without collapsing it, the per-retry
+    # and give-up log lines that embed this message would themselves become
+    # multi-line and stop being a single grep-able line per attempt.
+    it 'collapses multi-line command output to a single line in the error message' do
+      allow(Open3).to receive(:capture2e).and_return(["line one\n  line two\nline three", failure_status])
+      expect { sign_csr.sign(['agent.example.com']) }
+        .to raise_error(SignCSR::SigningError, 'puppetserver ca sign exited 1: line one line two line three')
+    end
   end
 
   describe '#execute!' do
@@ -111,6 +122,12 @@ describe SignCSR do
                                           .and_return(['failed', failure_status],
                                                        ['failed', failure_status],
                                                        ['ok', success_status])
+      # Pins the retry log line to include the failure's cause, not just an
+      # attempt number -- a mutation that drops `(#{e.message})` would
+      # otherwise go uncaught, since STDOUT.puts is stubbed unconditionally
+      # in before(:each).
+      expect(STDOUT).to receive(:puts)
+        .with('Signing attempt 1 failed (puppetserver ca sign exited 1: failed); waiting 1s and trying again')
 
       expect { task.execute! }.not_to raise_error
     end
@@ -125,7 +142,11 @@ describe SignCSR do
       allow(task).to receive(:csr_signed?).and_return(false)
       expect(task).to receive(:sleep).with(1).exactly(6).times
       expect(Open3).to receive(:capture2e).exactly(7).times.and_return(['failed', failure_status])
-      expect(task).to receive(:warn).with(%r{Signing failed after 7 attempts, giving up})
+      # Full-string match, not just an anchor-free substring, so a mutation
+      # that drops the `: #{e.message}` suffix (the actual failure cause)
+      # would still be caught here.
+      expect(task).to receive(:warn)
+        .with('Signing failed after 7 attempts, giving up: puppetserver ca sign exited 1: failed')
 
       expect { task.execute! }.to raise_error(SystemExit) do |error|
         expect(error.status).to eq(1)
