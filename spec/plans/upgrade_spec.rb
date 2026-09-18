@@ -62,6 +62,45 @@ describe 'peadm::upgrade' do
                     'version' => '2021.7.9')).to be_ok
   end
 
+  it 'fails with a targeted error if pe_installer_source has a malformed tarball name' do
+    allow_standard_non_returning_calls
+
+    result = run_plan('peadm::upgrade',
+                      'primary_host' => 'primary',
+                      'pe_installer_source' => 'https://example.com/downloads/my-custom-installer-name.tar.gz')
+
+    expect(result).not_to be_ok
+    expect(result.value.msg).to match(%r{Unable to determine a valid PE version})
+  end
+
+  it 'fails with a targeted error if pe_installer_source has too few hyphen segments to extract a version' do
+    allow_standard_non_returning_calls
+
+    result = run_plan('peadm::upgrade',
+                      'primary_host' => 'primary',
+                      'pe_installer_source' => 'https://example.com/downloads/installer.tar.gz')
+
+    expect(result).not_to be_ok
+    expect(result.value.msg).to match(%r{Unable to determine a valid PE version})
+  end
+
+  it 'proceeds normally with a well-formed pe_installer_source tarball name' do
+    allow_standard_non_returning_calls
+    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
+
+    expect_task('peadm::read_file')
+      .with_params('path' => '/opt/puppetlabs/server/pe_build')
+      .always_return({ 'content' => '2021.7.3' })
+
+    expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(1)
+    expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
+    expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
+
+    expect(run_plan('peadm::upgrade',
+                    'primary_host' => 'primary',
+                    'pe_installer_source' => 'https://s3.amazonaws.com/pe-builds/released/2021.7.9/puppet-enterprise-2021.7.9-el-8-x86_64.tar.gz')).to be_ok
+  end
+
   it 'fails if the primary uses the pcp transport' do
     allow_standard_non_returning_calls
 
