@@ -52,8 +52,11 @@ class SignCSR
 
     # Collapsed to one line so the per-retry/give-up log lines that embed
     # this message stay grep-able even when puppetserver's own output (now
-    # stdout+stderr merged via capture2e) spans multiple lines.
-    single_line_output = output.gsub(%r{\s*\n\s*}, ' ').strip
+    # stdout+stderr merged via capture2e) spans multiple lines. scrub first:
+    # gsub raises ArgumentError on invalid byte sequences, which would
+    # otherwise let a garbled subprocess output byte crash this formatting
+    # step itself and bypass the retry loop entirely.
+    single_line_output = output.scrub('?').gsub(%r{\s*\n\s*}, ' ').strip
     raise SigningError, "puppetserver ca sign exited #{status.exitstatus}: #{single_line_output}"
   end
 end

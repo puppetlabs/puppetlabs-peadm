@@ -81,6 +81,19 @@ describe SignCSR do
       expect { sign_csr.sign(['agent.example.com']) }
         .to raise_error(SignCSR::SigningError, 'puppetserver ca sign exited 1: line one line two line three')
     end
+
+    # Catches a mutation that drops the `.scrub` call before the newline
+    # collapse. gsub raises ArgumentError on an invalid byte sequence for the
+    # string's encoding, which -- unlike SigningError -- execute!'s `rescue
+    # SigningError` does not catch, so a garbled byte in the subprocess
+    # output would otherwise crash this formatting step itself and bypass
+    # the retry loop entirely, regardless of how many retries remained.
+    it 'does not raise when the command output contains an invalid byte sequence' do
+      invalid_output = "abc\xFFdef\nghi".force_encoding('UTF-8')
+      allow(Open3).to receive(:capture2e).and_return([invalid_output, failure_status])
+      expect { sign_csr.sign(['agent.example.com']) }
+        .to raise_error(SignCSR::SigningError, 'puppetserver ca sign exited 1: abc?def ghi')
+    end
   end
 
   describe '#execute!' do
