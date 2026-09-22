@@ -53,8 +53,8 @@ group :development do
   gem "rb-readline", '= 0.5.5',                  require: false, platforms: [:mswin, :mingw, :x64_mingw]
   gem "bolt", '>= 4.0.0',                        require: false
   gem "github_changelog_generator", '1.16.4',    require: false
-  gem "octokit", '4.21.0',                       require: false
-  gem "orchestrator_client", '< 0.7.1',          require: false
+  gem "octokit", '>= 4.25.1',                    require: false
+  gem "orchestrator_client", '>= 0.7.1',         require: false
 end
 group :system_tests do
   gem "puppet_litmus", '~> 2.0', require: false, platforms: [:ruby, :x64_mingw]
