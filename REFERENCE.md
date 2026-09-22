@@ -219,7 +219,7 @@ Type: Puppet Language
 
 Assert that the PE version given is supported by PEAdm
 
-#### `peadm::assert_supported_pe_version(String $version, Boolean $permit_unsafe_versions = false)`
+#### `peadm::assert_supported_pe_version(Optional[String] $version, Boolean $permit_unsafe_versions = false)`
 
 The peadm::assert_supported_pe_version function.
 
@@ -227,13 +227,15 @@ Returns: `Struct[{ 'supported' => Boolean }]` true if the version is supported, 
 
 ##### `the`
 
-Data type: `String`
+Data type: `Optional[String]`
 
-version number to check
+version number to check. May be undef or a
+malformed string when derived from a tarball filename (e.g. via
+'pe_installer_source') that didn't split into a version segment as expected.
 
 ##### `version`
 
-Data type: `String`
+Data type: `Optional[String]`
 
 
 
