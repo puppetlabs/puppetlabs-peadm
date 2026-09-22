@@ -9,9 +9,9 @@ Gemfile:
       - gem: github_changelog_generator
         version: 1.16.4  # Pinned to latest bug fix version
       - gem: octokit
-        version: '~> 4.25'  # jwt CVE-2026-45363: 4.21.0 pulled sawyer 0.8.2, which capped faraday < 2.0
+        version: ~> 4.25  # jwt CVE-2026-45363: 4.21.0 pulled sawyer 0.8.2, which capped faraday < 2.0
       - gem: orchestrator_client
-        version: '~> 0.7'  # jwt CVE-2026-45363: < 0.7.1 resolved to 0.7.0, which capped faraday < 2.0
+        version: ~> 0.7  # jwt CVE-2026-45363: < 0.7.1 resolved to 0.7.0, which capped faraday < 2.0
       - gem: simplecov-cobertura
         version: ~> 3.2
 Rakefile:
