@@ -113,7 +113,10 @@ describe IcaTaskHelper do
   describe '.pin_to_ica_group!' do
     let(:https) { instance_double('Net::HTTP') }
     let(:correct_classes) do
-      { 'puppet_enterprise::profile::master' => { 'pe_ca_ica_enabled' => true, 'enable_ca_proxy' => false } }
+      {
+        'puppet_enterprise::profile::master' => { 'pe_ca_ica_enabled' => true, 'enable_ca_proxy' => false },
+        'puppet_enterprise::profile::compiler_ica_ca' => { 'ica_enabled' => true },
+      }
     end
 
     it 'finds an existing, correctly-configured ICA group by name and pins the node to it, without reconciling' do
@@ -156,10 +159,10 @@ describe IcaTaskHelper do
 
     it "reconciles an existing group's classes when they're present but only partially correct" do
       # This is the field scenario the reconciliation exists for: a group
-      # that already has a 'classes' key, just missing or wrong on one of
-      # the two required flags -- not the "classes absent entirely" case
-      # covered above.
-      partial_classes = { 'puppet_enterprise::profile::master' => { 'pe_ca_ica_enabled' => true } }
+      # that already has a 'classes' key, just missing or wrong on some of
+      # the three required flags -- not the "classes absent entirely" case
+      # covered above. Here compiler_ica_ca::ica_enabled is missing entirely.
+      partial_classes = { 'puppet_enterprise::profile::master' => { 'pe_ca_ica_enabled' => true, 'enable_ca_proxy' => false } }
       groups_response = instance_double('Net::HTTPResponse', code: '200',
                                          body: [{ 'id' => 'group-1', 'name' => 'PE ICA Compilers', 'classes' => partial_classes }].to_json)
       expect(https).to receive(:get).with('/classifier-api/v1/groups').and_return(groups_response)
@@ -203,10 +206,15 @@ describe IcaTaskHelper do
         body = JSON.parse(req.body)
         expect(body['name']).to eq('PE ICA Compilers')
         expect(body['parent']).to eq('00000000-0000-4000-8000-000000000000')
-        params = body.dig('classes', 'puppet_enterprise::profile::master')
+        master_params = body.dig('classes', 'puppet_enterprise::profile::master')
         # Both flags, or the catalog silently takes master.pp's earlier
         # `if $enable_ca_proxy` branch and never binds intermediate-ca-service.
-        expect(params).to eq('pe_ca_ica_enabled' => true, 'enable_ca_proxy' => false)
+        expect(master_params).to eq('pe_ca_ica_enabled' => true, 'enable_ca_proxy' => false)
+        # Set in the same pin as the two above: profile::compiler_ica_ca
+        # fails the catalog if master already binds intermediate-ca-service
+        # while this is still false.
+        ica_ca_params = body.dig('classes', 'puppet_enterprise::profile::compiler_ica_ca')
+        expect(ica_ca_params).to eq('ica_enabled' => true)
         # The parameters are declared on profile::master, not the base class.
         expect(body['classes']).not_to have_key('puppet_enterprise')
         create_response

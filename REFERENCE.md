@@ -76,7 +76,7 @@
 * [`get_peadm_config`](#get_peadm_config): Run on a PE primary node to return the currently configured PEAdm parameters
 * [`get_psql_version`](#get_psql_version): Run on a PE PSQL node to return the major version of the PSQL server currently installed
 * [`infrastatus`](#infrastatus): Runs puppet infra status and returns the output
-* [`install_ica_cert`](#install_ica_cert): Install this compiler's approved, signed ICA certificate. Config and service manipulation only, no cryptography: fetches the cert from the PE
+* [`install_ica_cert`](#install_ica_cert): Pin this compiler into the shared PE ICA Compilers classifier group, which sets pe_ca_ica_enabled and clears enable_ca_proxy on profile::mast
 * [`mkdir_p_file`](#mkdir_p_file): Create a file with the specified content at the specified location
 * [`mv`](#mv): Wrapper task for mv command
 * [`node_group_unpin`](#node_group_unpin): Unpins nodes from a specified PE node group
@@ -1325,7 +1325,7 @@ The type of output to return
 
 ### <a name="install_ica_cert"></a>`install_ica_cert`
 
-Install this compiler's approved, signed ICA certificate. Config and service manipulation only, no cryptography: fetches the cert from the PE primary, pins this compiler into the shared PE ICA Compilers classifier group (which sets pe_ca_ica_enabled and clears enable_ca_proxy), clears ca.conf's ica-pool, swaps bootstrap.cfg from the CA-proxy service to IntermediateCAService, and restarts the CA service. Re-running on an already-promoted compiler is a no-op unless the installed certificate no longer matches what the primary reports as active, in which case the remaining steps are redone. Called as part of promoting a proxy compiler to an intermediate CA, after operator approval of the pending CSR.
+Pin this compiler into the shared PE ICA Compilers classifier group, which sets pe_ca_ica_enabled and clears enable_ca_proxy on profile::master and sets ica_enabled on profile::compiler_ica_ca, all in the same pin. Also clears ca.conf's ica-pool, the one setting neither of those classes manages. Does not write bootstrap.cfg or ca.conf's ica-* settings, install a certificate, or restart any service -- those happen on the compiler's next Puppet run, driven by the classes this task sets flags on. Called as part of promoting a proxy compiler to an intermediate CA, after operator approval of the pending CSR; not meant to be run directly.
 
 **Supports noop?** false
 
@@ -1335,7 +1335,7 @@ Install this compiler's approved, signed ICA certificate. Config and service man
 
 Data type: `String[1]`
 
-Certname/FQDN of the PE primary to fetch the approved ICA certificate from.
+Certname/FQDN of the PE primary hosting the classifier this task pins the compiler into.
 
 ### <a name="mkdir_p_file"></a>`mkdir_p_file`
 
@@ -1699,7 +1699,7 @@ DNS Alternative Names to request for the certificate
 
 ### <a name="submit_ica_csr"></a>`submit_ica_csr`
 
-Generate and submit this compiler's ICA CSR to the PE primary. A thin wrapper: shells out to the puppetserver ICA provisioning subcommand, which performs all cryptography (key generation, PKCS#8 encryption, CSR and initial CRL construction) and submission. Returns the pending request id. Makes no change to bootstrap.cfg and restarts no services. Called as part of promoting a proxy compiler to an intermediate CA; promotion is per-compiler and operator-driven only.
+Generate and submit this compiler's ICA CSR to the PE primary. A thin wrapper: shells out to the puppetserver ICA provisioning subcommand, which performs all cryptography (key generation, PKCS#8 encryption, CSR and initial CRL construction) and submission. Returns the pending request id. Makes no change to bootstrap.cfg and restarts no services. Called as part of promoting a proxy compiler to an intermediate CA; promotion is per-compiler and operator-driven only. Not meant to be run directly.
 
 **Supports noop?** false
 
