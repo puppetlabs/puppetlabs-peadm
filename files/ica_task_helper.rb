@@ -19,15 +19,30 @@ module IcaTaskHelper
   # The classifier's well-known "All Nodes" root group UUID, used as the
   # parent when creating the ICA compilers group.
   ALL_NODES_GROUP_ID = '00000000-0000-4000-8000-000000000000'
-  # Both parameters are declared on puppet_enterprise::profile::master, not on
-  # the base puppet_enterprise class. Both must be set together: that class's
-  # manifest picks a CA-proxy branch over an intermediate-CA branch whenever
-  # enable_ca_proxy is left at its default, so setting pe_ca_ica_enabled alone
-  # leaves the node silently unpromoted on its next catalog run.
+  # profile::master's two flags must be set together: its manifest picks a
+  # CA-proxy branch over an intermediate-CA branch whenever enable_ca_proxy
+  # is left at its default, so setting pe_ca_ica_enabled alone leaves the
+  # node silently unpromoted on its next catalog run.
+  #
+  # profile::compiler_ica_ca's ica_enabled must be set in the same pin as
+  # those two, not separately: that class fails the catalog outright if
+  # profile::master already binds intermediate-ca-service while ica_enabled
+  # is still false, since removing its settings out from under a bound
+  # service stops pe-puppetserver on this compiler. Setting all three
+  # together means a single classifier pin can never produce that
+  # combination.
+  #
+  # This is the only change this task makes to the compiler: writing
+  # bootstrap.cfg and ca.conf's ica-* settings, and restarting the service
+  # in response, are profile::master's and profile::compiler_ica_ca's own
+  # job on the next Puppet run, not this task's.
   ICA_GROUP_CLASSES = {
     'puppet_enterprise::profile::master' => {
       'pe_ca_ica_enabled' => true,
       'enable_ca_proxy' => false,
+    },
+    'puppet_enterprise::profile::compiler_ica_ca' => {
+      'ica_enabled' => true,
     },
   }.freeze
   # Read-only network calls (listing/finding classifier groups, checking
@@ -84,9 +99,11 @@ module IcaTaskHelper
   # Pins this compiler into the shared ICA-compilers classifier group,
   # creating the group if it does not yet exist. If the group already exists,
   # its classes are reconciled to ICA_GROUP_CLASSES first: an older or
-  # manually edited group could otherwise carry only one of the two required
-  # flags and silently leave every compiler pinned to it unpromoted. Pinning
-  # an already-pinned node is a no-op on PE's side.
+  # manually edited group could otherwise carry only some of the three
+  # required flags and silently leave every compiler pinned to it either
+  # unpromoted or, worse, in the combination profile::compiler_ica_ca
+  # itself refuses to apply. Pinning an already-pinned node is a no-op on
+  # PE's side.
   def pin_to_ica_group!(https, certname)
     existing = find_ica_group(https)
     group_id = existing && existing['id']
