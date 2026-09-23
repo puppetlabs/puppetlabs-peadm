@@ -137,8 +137,13 @@ describe 'peadm::subplans::configure' do
   end
 
   describe 'Standard architecture with DR' do
-    it 'provisions the replica against the primary with the legacy workaround and the given token file' do
+    it 'waits for the primary, then provisions the replica against it with the legacy workaround and the given token file' do
       allow_standard_calls!
+
+      # PE-42816: the pre-flight wait_until_service_ready call narrows the
+      # window for the provision_replica race described below; it must still
+      # run before provision_replica is attempted.
+      expect_task('peadm::wait_until_service_ready').be_called_times(1)
 
       # PE-42816: `legacy` is a workaround for a provision_replica race and
       # must stay true until that's fixed elsewhere; flipping it (or losing
@@ -160,8 +165,14 @@ describe 'peadm::subplans::configure' do
   end
 
   describe 'Extra Large architecture with DR' do
-    it 'still provisions the replica against the primary, not the postgresql hosts' do
+    it 'waits for the primary only, then still provisions the replica against the primary, not the postgresql hosts' do
       allow_standard_calls!
+
+      # PE-42816: the postgresql host never runs pe-puppetserver, so nothing
+      # listens on the port wait_until_service_ready checks there -- the
+      # pre-flight wait only ever covers the primary, on XL as elsewhere.
+      # The provision_replica retry loop is the real XL safety net.
+      expect_task('peadm::wait_until_service_ready').be_called_times(1)
 
       # Confirms adding the split-database (XL) parameters doesn't redirect
       # or skip replica provisioning -- see
@@ -180,6 +191,35 @@ describe 'peadm::subplans::configure' do
                        'replica_postgresql_host' => 'replica_postgresql',
                        'token_file'              => '/tmp/token')).to be_ok
       expect(copy_file_paths).to match_array(synced_replica_files)
+    end
+  end
+
+  describe 'Extra Large architecture with DR, provision_replica flaky' do
+    it 'retries provision_replica and still succeeds' do
+      allow_apply
+      allow_any_task
+      allow_any_plan
+      allow_any_command
+      allow_any_out_message
+
+      attempts = 0
+      expect_task('peadm::provision_replica').return { |targets:, **|
+        attempts += 1
+        results = targets.map do |target|
+          if attempts == 1
+            Bolt::Result.new(target, error: { 'msg' => 'PuppetDB not ready', 'kind' => 'puppetlabs.tasks/race' })
+          else
+            Bolt::Result.new(target, value: {})
+          end
+        end
+        Bolt::ResultSet.new(results)
+      }.be_called_times(2)
+
+      expect(run_plan('peadm::subplans::configure',
+                       'primary_host'             => 'primary',
+                       'replica_host'             => 'replica',
+                       'primary_postgresql_host'  => 'primary_postgresql',
+                       'replica_postgresql_host'  => 'replica_postgresql')).to be_ok
     end
   end
 
