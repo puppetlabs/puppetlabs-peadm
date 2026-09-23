@@ -19,6 +19,10 @@
 * [`peadm::assert_supported_architecture`](#peadm--assert_supported_architecture): Assert that the architecture given is a supported one
 * [`peadm::assert_supported_bolt_version`](#peadm--assert_supported_bolt_version): Assert that the Bolt executable running PEAdm is a supported version
 * [`peadm::assert_supported_pe_version`](#peadm--assert_supported_pe_version): Assert that the PE version given is supported by PEAdm
+* [`peadm::availability_group_for`](#peadm--availability_group_for): Determine which availability group ('A' or 'B') a node should be
+stamped with, preserving whatever value is already present on its
+certificate rather than deriving it from which plan parameter (e.g.
+primary_host vs replica_host) the node was passed as.
 * [`peadm::bolt_version`](#peadm--bolt_version)
 * [`peadm::certname`](#peadm--certname): Return the certname of the given target-like input
 * [`peadm::check_version_and_known_hosts`](#peadm--check_version_and_known_hosts): Checks PE verison and warns about setting r10k_known_hosts
@@ -77,12 +81,14 @@
 * [`get_psql_version`](#get_psql_version): Run on a PE PSQL node to return the major version of the PSQL server currently installed
 * [`infrastatus`](#infrastatus): Runs puppet infra status and returns the output
 * [`install_ica_cert`](#install_ica_cert): Pin this compiler into the shared PE ICA Compilers classifier group, which sets pe_ca_ica_enabled and clears enable_ca_proxy on profile::mast
+* [`list_compiler_icas`](#list_compiler_icas): Run on a PE primary to list all compiler ICAs and their state, including autosign fingerprint consistency across the fleet
 * [`mkdir_p_file`](#mkdir_p_file): Create a file with the specified content at the specified location
 * [`mv`](#mv): Wrapper task for mv command
 * [`node_group_unpin`](#node_group_unpin): Unpins nodes from a specified PE node group
 * [`os_identification`](#os_identification): Return the operating system runnin gon the target as a string
 * [`pe_install`](#pe_install): Install Puppet Enterprise from a tarball
 * [`pe_ldap_config`](#pe_ldap_config): Set the ldap config in the PE console
+* [`pe_reinstall`](#pe_reinstall): Re-run the Puppet Enterprise installer against an already-extracted installer directory
 * [`pe_uninstall`](#pe_uninstall): Uninstall Puppet Enterprise
 * [`precheck`](#precheck): Return pre-check information about a system
 * [`provision_replica`](#provision_replica): Execute the replica provision puppet command
@@ -219,7 +225,7 @@ Type: Puppet Language
 
 Assert that the PE version given is supported by PEAdm
 
-#### `peadm::assert_supported_pe_version(String $version, Boolean $permit_unsafe_versions = false)`
+#### `peadm::assert_supported_pe_version(Optional[String] $version, Boolean $permit_unsafe_versions = false)`
 
 The peadm::assert_supported_pe_version function.
 
@@ -227,13 +233,15 @@ Returns: `Struct[{ 'supported' => Boolean }]` true if the version is supported, 
 
 ##### `the`
 
-Data type: `String`
+Data type: `Optional[String]`
 
-version number to check
+version number to check. May be undef or a
+malformed string when derived from a tarball filename (e.g. via
+'pe_installer_source') that didn't split into a version segment as expected.
 
 ##### `version`
 
-Data type: `String`
+Data type: `Optional[String]`
 
 
 
@@ -242,6 +250,46 @@ Data type: `String`
 Data type: `Boolean`
 
 
+
+### <a name="peadm--availability_group_for"></a>`peadm::availability_group_for`
+
+Type: Puppet Language
+
+This keeps A/B a stable, topological identity across role swaps performed
+with PE's own switch_primary tooling: if a node already carries a valid A
+or B extension, that value is kept even if it no longer matches the node's
+current operational role. Only a node with no existing extension falls
+back to $default (e.g. on a fresh conversion, where there's nothing yet to
+preserve).
+
+#### `peadm::availability_group_for(Hash $cert_extensions, Optional[String] $certname, Enum['A', 'B'] $default)`
+
+This keeps A/B a stable, topological identity across role swaps performed
+with PE's own switch_primary tooling: if a node already carries a valid A
+or B extension, that value is kept even if it no longer matches the node's
+current operational role. Only a node with no existing extension falls
+back to $default (e.g. on a fresh conversion, where there's nothing yet to
+preserve).
+
+Returns: `Enum['A', 'B']`
+
+##### `cert_extensions`
+
+Data type: `Hash`
+
+Hash of certname => extensions hash, as gathered by peadm::cert_data
+
+##### `certname`
+
+Data type: `Optional[String]`
+
+The certname of the node being classified
+
+##### `default`
+
+Data type: `Enum['A', 'B']`
+
+The group to assign if the node has no existing valid group
 
 ### <a name="peadm--bolt_version"></a>`peadm::bolt_version`
 
@@ -1337,6 +1385,26 @@ Data type: `String[1]`
 
 Certname/FQDN of the PE primary hosting the classifier this task pins the compiler into.
 
+### <a name="list_compiler_icas"></a>`list_compiler_icas`
+
+Run on a PE primary to list all compiler ICAs and their state, including autosign fingerprint consistency across the fleet
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `state`
+
+Data type: `Optional[Enum[active,draining,revoked,decommissioned]]`
+
+Only return ICAs in this state. Unfiltered by default.
+
+##### `format`
+
+Data type: `Enum[table,json]`
+
+table for human-readable output (default), json to return the endpoint's response for use in another plan. Every field is passed through unmodified; if state is also set, intermediate-cas is narrowed to the matching entries but each entry's fields are still verbatim.
+
 ### <a name="mkdir_p_file"></a>`mkdir_p_file`
 
 Create a file with the specified content at the specified location
@@ -1484,6 +1552,32 @@ The PE Main server
 Data type: `String`
 
 The PE version
+
+### <a name="pe_reinstall"></a>`pe_reinstall`
+
+Re-run the Puppet Enterprise installer against an already-extracted installer directory
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `installer_dir`
+
+Data type: `String`
+
+The path to the already-extracted Puppet Enterprise installer directory
+
+##### `peconf`
+
+Data type: `String`
+
+The path to the pe.conf file
+
+##### `puppet_service_ensure`
+
+Data type: `Optional[Enum['stopped']]`
+
+If 'stopped', ensure the Puppet agent is not running when install completes
 
 ### <a name="pe_uninstall"></a>`pe_uninstall`
 
