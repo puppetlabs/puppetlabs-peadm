@@ -19,6 +19,10 @@
 * [`peadm::assert_supported_architecture`](#peadm--assert_supported_architecture): Assert that the architecture given is a supported one
 * [`peadm::assert_supported_bolt_version`](#peadm--assert_supported_bolt_version): Assert that the Bolt executable running PEAdm is a supported version
 * [`peadm::assert_supported_pe_version`](#peadm--assert_supported_pe_version): Assert that the PE version given is supported by PEAdm
+* [`peadm::availability_group_for`](#peadm--availability_group_for): Determine which availability group ('A' or 'B') a node should be
+stamped with, preserving whatever value is already present on its
+certificate rather than deriving it from which plan parameter (e.g.
+primary_host vs replica_host) the node was passed as.
 * [`peadm::bolt_version`](#peadm--bolt_version)
 * [`peadm::certname`](#peadm--certname): Return the certname of the given target-like input
 * [`peadm::check_version_and_known_hosts`](#peadm--check_version_and_known_hosts): Checks PE verison and warns about setting r10k_known_hosts
@@ -244,6 +248,46 @@ Data type: `Optional[String]`
 Data type: `Boolean`
 
 
+
+### <a name="peadm--availability_group_for"></a>`peadm::availability_group_for`
+
+Type: Puppet Language
+
+This keeps A/B a stable, topological identity across role swaps performed
+with PE's own switch_primary tooling: if a node already carries a valid A
+or B extension, that value is kept even if it no longer matches the node's
+current operational role. Only a node with no existing extension falls
+back to $default (e.g. on a fresh conversion, where there's nothing yet to
+preserve).
+
+#### `peadm::availability_group_for(Hash $cert_extensions, Optional[String] $certname, Enum['A', 'B'] $default)`
+
+This keeps A/B a stable, topological identity across role swaps performed
+with PE's own switch_primary tooling: if a node already carries a valid A
+or B extension, that value is kept even if it no longer matches the node's
+current operational role. Only a node with no existing extension falls
+back to $default (e.g. on a fresh conversion, where there's nothing yet to
+preserve).
+
+Returns: `Enum['A', 'B']`
+
+##### `cert_extensions`
+
+Data type: `Hash`
+
+Hash of certname => extensions hash, as gathered by peadm::cert_data
+
+##### `certname`
+
+Data type: `Optional[String]`
+
+The certname of the node being classified
+
+##### `default`
+
+Data type: `Enum['A', 'B']`
+
+The group to assign if the node has no existing valid group
 
 ### <a name="peadm--bolt_version"></a>`peadm::bolt_version`
 
