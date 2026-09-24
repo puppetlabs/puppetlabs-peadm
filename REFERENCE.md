@@ -80,7 +80,6 @@ primary_host vs replica_host) the node was passed as.
 * [`get_peadm_config`](#get_peadm_config): Run on a PE primary node to return the currently configured PEAdm parameters
 * [`get_psql_version`](#get_psql_version): Run on a PE PSQL node to return the major version of the PSQL server currently installed
 * [`infrastatus`](#infrastatus): Runs puppet infra status and returns the output
-* [`install_ica_cert`](#install_ica_cert): Pin this compiler into the shared PE ICA Compilers classifier group, which sets pe_ca_ica_enabled and clears enable_ca_proxy on profile::mast
 * [`list_compiler_icas`](#list_compiler_icas): Run on a PE primary to list all compiler ICAs and their state, including autosign fingerprint consistency across the fleet
 * [`mkdir_p_file`](#mkdir_p_file): Create a file with the specified content at the specified location
 * [`mv`](#mv): Wrapper task for mv command
@@ -91,6 +90,7 @@ primary_host vs replica_host) the node was passed as.
 * [`pe_reinstall`](#pe_reinstall): Re-run the Puppet Enterprise installer against an already-extracted installer directory
 * [`pe_uninstall`](#pe_uninstall): Uninstall Puppet Enterprise
 * [`precheck`](#precheck): Return pre-check information about a system
+* [`prepare_ica_promotion`](#prepare_ica_promotion): Pin this compiler into the shared PE ICA Compilers classifier group, which sets pe_ca_ica_enabled and clears enable_ca_proxy on profile::mast
 * [`provision_replica`](#provision_replica): Execute the replica provision puppet command
 * [`puppet_infra_upgrade`](#puppet_infra_upgrade): Execute the puppet infra upgrade command
 * [`puppet_runonce`](#puppet_runonce): Run the Puppet agent one time
@@ -1371,20 +1371,6 @@ Data type: `Enum[json,text]`
 
 The type of output to return
 
-### <a name="install_ica_cert"></a>`install_ica_cert`
-
-Pin this compiler into the shared PE ICA Compilers classifier group, which sets pe_ca_ica_enabled and clears enable_ca_proxy on profile::master and sets ica_enabled on profile::compiler_ica_ca, all in the same pin. Also clears ca.conf's ica-pool, the one setting neither of those classes manages. Does not write bootstrap.cfg or ca.conf's ica-* settings, install a certificate, or restart any service -- those happen on the compiler's next Puppet run, driven by the classes this task sets flags on. Called as part of promoting a proxy compiler to an intermediate CA, after operator approval of the pending CSR; not meant to be run directly.
-
-**Supports noop?** false
-
-#### Parameters
-
-##### `primary_host`
-
-Data type: `String[1]`
-
-Certname/FQDN of the PE primary hosting the classifier this task pins the compiler into.
-
 ### <a name="list_compiler_icas"></a>`list_compiler_icas`
 
 Run on a PE primary to list all compiler ICAs and their state, including autosign fingerprint consistency across the fleet
@@ -1590,6 +1576,20 @@ Uninstall Puppet Enterprise
 Return pre-check information about a system
 
 **Supports noop?** false
+
+### <a name="prepare_ica_promotion"></a>`prepare_ica_promotion`
+
+Pin this compiler into the shared PE ICA Compilers classifier group, which sets pe_ca_ica_enabled and clears enable_ca_proxy on profile::master and sets ica_enabled on profile::compiler_ica_ca, all in the same pin. Also clears ca.conf's ica-pool, the one setting neither of those classes manages. Does not write bootstrap.cfg or ca.conf's ica-* settings, install a certificate, or restart any service -- those happen on the compiler's next Puppet run, driven by the classes this task sets flags on. Called as part of promoting a proxy compiler to an intermediate CA, after operator approval of the pending CSR; not meant to be run directly.
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `primary_host`
+
+Data type: `String[1]`
+
+Certname/FQDN of the PE primary hosting the classifier this task pins the compiler into.
 
 ### <a name="provision_replica"></a>`provision_replica`
 

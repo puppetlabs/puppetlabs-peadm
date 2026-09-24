@@ -2,9 +2,9 @@
 
 require 'spec_helper'
 require 'tempfile'
-require_relative '../../../tasks/install_ica_cert'
+require_relative '../../../tasks/prepare_ica_promotion'
 
-describe InstallIcaCert do
+describe PrepareIcaPromotion do
   subject(:task) { described_class.new('primary_host' => 'primary.example.com') }
 
   let(:classifier_https) { instance_double('Net::HTTP') }
@@ -40,7 +40,7 @@ describe InstallIcaCert do
       allow(IcaTaskHelper).to receive(:pin_to_ica_group!).and_raise('classifier unavailable')
       expect(STDOUT).to receive(:puts) do |output|
         parsed = JSON.parse(output)
-        expect(parsed['_error']['kind']).to eq('peadm/install_ica_cert_failed')
+        expect(parsed['_error']['kind']).to eq('peadm/prepare_ica_promotion_failed')
         expect(parsed['_error']['msg']).to eq('classifier unavailable')
       end
 
@@ -67,7 +67,7 @@ describe InstallIcaCert do
 
       expect(STDOUT).to receive(:puts) do |output|
         parsed = JSON.parse(output)
-        expect(parsed['_error']['kind']).to eq('peadm/install_ica_cert_failed')
+        expect(parsed['_error']['kind']).to eq('peadm/prepare_ica_promotion_failed')
         expect(parsed['_error']['msg']).to include('Could not find a closing bracket for ica-pool')
       end
 
