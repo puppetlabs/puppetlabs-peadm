@@ -12,7 +12,7 @@ require_relative '../files/ica_task_helper'
 # the compiler's next Puppet run, not this task's. This task only sets the
 # flags those classes act on, and clears the one ca.conf setting neither
 # of them manages.
-class InstallIcaCert
+class PrepareIcaPromotion
   def initialize(params)
     @primary_host = params.fetch('primary_host')
   end
@@ -28,7 +28,7 @@ class InstallIcaCert
   rescue StandardError => e
     warn "#{e.class}: #{e.message}"
     warn e.backtrace.first(10).join("\n") if e.backtrace
-    IcaTaskHelper.emit_error!(e.message, 'peadm/install_ica_cert_failed')
+    IcaTaskHelper.emit_error!(e.message, 'peadm/prepare_ica_promotion_failed')
     exit 1
   end
 
@@ -98,5 +98,5 @@ end
 
 unless ENV['RSPEC_UNIT_TEST_MODE']
   Puppet.initialize_settings
-  InstallIcaCert.new(JSON.parse(STDIN.read)).execute!
+  PrepareIcaPromotion.new(JSON.parse(STDIN.read)).execute!
 end
