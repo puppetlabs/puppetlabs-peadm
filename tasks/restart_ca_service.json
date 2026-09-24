@@ -1,0 +1,5 @@
+{
+  "description": "Run on a compiler to restart pe-puppetserver so a preceding CA config change (e.g. peadm::restore_ca_proxy_bootstrap) takes effect. Fails with the service's own systemctl status output if it does not come back active.",
+  "input_method": "stdin",
+  "private": true
+}
