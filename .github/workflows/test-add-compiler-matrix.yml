@@ -27,6 +27,11 @@ on:
 jobs:
   test-add-compiler:
     name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
+    # Fork PRs don't get repo secrets, so PUPPET_FORGE_TOKEN/BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM
+    # below resolve empty and `bundle install` (bundler-cache: true) fails auth against the
+    # private puppetcore gem source with "Bad username or password" instead of skipping cleanly.
+    # Matches the same guard already used in spec.yml's setup_matrix job for this exact scenario.
+    if: ${{ github.repository_owner == 'puppetlabs' }}
     runs-on: ubuntu-latest
     env:
       BOLT_GEM: true
