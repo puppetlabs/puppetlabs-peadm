@@ -90,6 +90,7 @@ primary_host vs replica_host) the node was passed as.
 * [`pe_reinstall`](#pe_reinstall): Re-run the Puppet Enterprise installer against an already-extracted installer directory
 * [`pe_uninstall`](#pe_uninstall): Uninstall Puppet Enterprise
 * [`precheck`](#precheck): Return pre-check information about a system
+* [`prepare_ica_promotion`](#prepare_ica_promotion): Pin this compiler into the shared PE ICA Compilers classifier group, which sets pe_ca_ica_enabled and clears enable_ca_proxy on profile::mast
 * [`provision_replica`](#provision_replica): Execute the replica provision puppet command
 * [`puppet_infra_upgrade`](#puppet_infra_upgrade): Execute the puppet infra upgrade command
 * [`puppet_runonce`](#puppet_runonce): Run the Puppet agent one time
@@ -100,6 +101,7 @@ primary_host vs replica_host) the node was passed as.
 * [`sign_csr`](#sign_csr): Submit a certificate signing request
 * [`ssl_clean`](#ssl_clean): Clean an agent's certificate
 * [`submit_csr`](#submit_csr): Submit a certificate signing request
+* [`submit_ica_csr`](#submit_ica_csr): Generate and submit this compiler's ICA CSR to the PE primary. A thin wrapper: shells out to the puppetserver ICA provisioning subcommand, wh
 * [`transform_classification_groups`](#transform_classification_groups): Transform the user groups from a source backup to a list of groups on the target server
 * [`update_pe_master_rules`](#update_pe_master_rules): Updates the PE Master group rules to support 'pe_compiler_legacy' as a pp_auth_role
 * [`validate_rbac_token`](#validate_rbac_token): Check an RBAC token stored in a file is valid
@@ -1575,6 +1577,20 @@ Return pre-check information about a system
 
 **Supports noop?** false
 
+### <a name="prepare_ica_promotion"></a>`prepare_ica_promotion`
+
+Pin this compiler into the shared PE ICA Compilers classifier group, which sets pe_ca_ica_enabled and clears enable_ca_proxy on profile::master and sets ica_enabled on profile::compiler_ica_ca, all in the same pin. Also clears ca.conf's ica-pool, the one setting neither of those classes manages. Does not write bootstrap.cfg or ca.conf's ica-* settings, install a certificate, or restart any service -- those happen on the compiler's next Puppet run, driven by the classes this task sets flags on. Called as part of promoting a proxy compiler to an intermediate CA, after operator approval of the pending CSR; not meant to be run directly.
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `primary_host`
+
+Data type: `String[1]`
+
+Certname/FQDN of the PE primary hosting the classifier this task pins the compiler into.
+
 ### <a name="provision_replica"></a>`provision_replica`
 
 Execute the replica provision puppet command
@@ -1774,6 +1790,12 @@ Submit a certificate signing request
 Data type: `Optional[Array[String]]`
 
 DNS Alternative Names to request for the certificate
+
+### <a name="submit_ica_csr"></a>`submit_ica_csr`
+
+Generate and submit this compiler's ICA CSR to the PE primary. A thin wrapper: shells out to the puppetserver ICA provisioning subcommand, which performs all cryptography (key generation, PKCS#8 encryption, CSR and initial CRL construction) and submission. Returns the pending request id. Makes no change to bootstrap.cfg and restarts no services. Called as part of promoting a proxy compiler to an intermediate CA; promotion is per-compiler and operator-driven only. Not meant to be run directly.
+
+**Supports noop?** false
 
 ### <a name="transform_classification_groups"></a>`transform_classification_groups`
 
