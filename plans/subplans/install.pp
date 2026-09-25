@@ -257,7 +257,12 @@ plan peadm::subplans::install (
   }
 
   $upload_tarball_path = "${uploaddir}/${pe_tarball_name}"
-  $pe_installer_dir    = "${uploaddir}/${pe_tarball_name.regsubst('\.tar\.gz$', '')}"
+  # Internal Artifactory dev/RC builds ship as a plain .tar; only public
+  # released builds use .tar.gz (confirmed live via PE-44997). Strip either
+  # suffix so this matches tasks/pe_install.sh's own extraction directory --
+  # which it derives from the tarball's internal contents, not its filename,
+  # so this assumes (but doesn't enforce) that the two agree.
+  $pe_installer_dir    = "${uploaddir}/${pe_tarball_name.regsubst('\.tar(\.gz)?$', '')}"
 
   if $download_mode == 'bolthost' {
     # Download the PE tarball and send it to the nodes that need it
