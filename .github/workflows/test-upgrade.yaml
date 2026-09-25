@@ -108,6 +108,7 @@ jobs:
           done 
           echo "${HOME}/pause absent, continuing workflow."
       - name: Clean cache on PE nodes before upgrade
+        timeout-minutes: 15
         run: |
           bundle exec bolt command run \
             'dnf clean all || yum clean all;
