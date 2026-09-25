@@ -16,6 +16,8 @@
 
 ### Functions
 
+#### Public Functions
+
 * [`peadm::assert_supported_architecture`](#peadm--assert_supported_architecture): Assert that the architecture given is a supported one
 * [`peadm::assert_supported_bolt_version`](#peadm--assert_supported_bolt_version): Assert that the Bolt executable running PEAdm is a supported version
 * [`peadm::assert_supported_pe_version`](#peadm--assert_supported_pe_version): Assert that the PE version given is supported by PEAdm
@@ -49,6 +51,10 @@ primary_host vs replica_host) the node was passed as.
 * [`peadm::update_pe_conf`](#peadm--update_pe_conf): Update the pe.conf file on a target with the provided hash
 * [`peadm::wait_until_service_ready`](#peadm--wait_until_service_ready): A convenience function to help remember port numbers for services and handle running the wait_until_service_ready task
 
+#### Private Functions
+
+* `peadm::safe_error_kind`: Recover the kind of the task-level _error a catch_errors() block caught, or undef.
+
 ### Data types
 
 * [`Peadm::ConvertSteps`](#Peadm--ConvertSteps): type for the different steps where the peadm::convert plan can be started
@@ -69,14 +75,18 @@ primary_host vs replica_host) the node was passed as.
 * [`cert_valid_status`](#cert_valid_status): Check primary for valid state of a certificate
 * [`check_pe_master_rules`](#check_pe_master_rules): Checks if the PE Master group rules have already been updated to support 'pe_compiler_legacy' as a pp_auth_role
 * [`classify_compilers`](#classify_compilers): Classify compilers as legacy or non-legacy
+* [`cleanup_ica_key_material`](#cleanup_ica_key_material): Run on a demoted compiler to remove the local ICA passphrase file (the only ICA secret ever held on the compiler filesystem). Idempotent: a m
 * [`code_manager`](#code_manager): Perform various code manager actions
 * [`code_manager_enabled`](#code_manager_enabled): Run on a PE primary node to check if Code Manager is enabled.
 * [`code_sync_status`](#code_sync_status): A task to confirm code is in sync accross the cluster for clusters with code manager configured
+* [`decommission_compiler_ica`](#decommission_compiler_ica): Run on a PE primary to gracefully decommission a draining compiler's Intermediate CA (POST .../decommission). Performs no CRL step -- agent c
 * [`divert_code_manager`](#divert_code_manager): Divert the code manager live-dir setting
 * [`download`](#download): Download a file using curl
+* [`drain_ica_compiler`](#drain_ica_compiler): Run on a PE primary to begin graceful removal of a compiler's Intermediate CA (POST .../drain). Proxy compilers exclude it from CSR routing w
 * [`enable_replica`](#enable_replica): Execute the enable replica puppet command
 * [`filesize`](#filesize): Return the size of a file in bytes
 * [`get_group_rules`](#get_group_rules): Run on a PE primary node to return the rules currently applied to the PE Infrastructure Agent group
+* [`get_ica_state`](#get_ica_state): Query the current ICA state for a compiler from the PE primary (GET /puppet-ca/v1/intermediate-ca/:fqdn). Runs on the primary. Returns {"stat
 * [`get_peadm_config`](#get_peadm_config): Run on a PE primary node to return the currently configured PEAdm parameters
 * [`get_psql_version`](#get_psql_version): Run on a PE PSQL node to return the major version of the PSQL server currently installed
 * [`infrastatus`](#infrastatus): Runs puppet infra status and returns the output
@@ -96,7 +106,10 @@ primary_host vs replica_host) the node was passed as.
 * [`rbac_token`](#rbac_token): Get and save an rbac token for the root user, admin rbac user
 * [`read_file`](#read_file): Read the contents of a file
 * [`reinstall_pe`](#reinstall_pe): Reinstall PE, only to be used to restore PE
+* [`restart_ca_service`](#restart_ca_service): Run on a compiler to restart pe-puppetserver so a preceding CA config change (e.g. peadm::restore_ca_proxy_bootstrap) takes effect. Fails wit
+* [`restore_ca_proxy_bootstrap`](#restore_ca_proxy_bootstrap): Run on an ICA compiler to restore its CA config to proxy mode: drops bootstrap.cfg's intermediate-ca-service entry and sets certificate-autho
 * [`restore_classification`](#restore_classification): A short description of this task
+* [`revoke_compiler_ica`](#revoke_compiler_ica): Run on a PE primary to emergency-revoke a compiler's Intermediate CA (POST .../revoke), splicing its serial into the root CRL and invalidatin
 * [`sign_csr`](#sign_csr): Submit a certificate signing request
 * [`ssl_clean`](#ssl_clean): Clean an agent's certificate
 * [`submit_csr`](#submit_csr): Submit a certificate signing request
@@ -119,6 +132,7 @@ Supported use cases:
 * [`peadm::backup`](#peadm--backup): Backup puppet primary configuration
 * [`peadm::backup_ca`](#peadm--backup_ca)
 * [`peadm::convert`](#peadm--convert): Convert an existing PE cluster to a PEAdm-managed cluster
+* [`peadm::demote_ica_compilers_to_proxy`](#peadm--demote_ica_compilers_to_proxy): Demote one or more ICA compilers back to CA-proxy compilers.
 * [`peadm::install`](#peadm--install): Install a new PE cluster
 * [`peadm::migrate`](#peadm--migrate): Migrate a PE installation to new host(s)
 * [`peadm::modify_certificate`](#peadm--modify_certificate): Modify the certificate of one or more targets
@@ -1231,6 +1245,12 @@ Data type: `Array[String]`
 
 List of FQDNs of compilers
 
+### <a name="cleanup_ica_key_material"></a>`cleanup_ica_key_material`
+
+Run on a demoted compiler to remove the local ICA passphrase file (the only ICA secret ever held on the compiler filesystem). Idempotent: a missing file is success.
+
+**Supports noop?** false
+
 ### <a name="code_manager"></a>`code_manager`
 
 Perform various code manager actions
@@ -1264,6 +1284,26 @@ A task to confirm code is in sync accross the cluster for clusters with code man
 Data type: `Array`
 
 A list of environments to check, pass a single value of all for all
+
+### <a name="decommission_compiler_ica"></a>`decommission_compiler_ica`
+
+Run on a PE primary to gracefully decommission a draining compiler's Intermediate CA (POST .../decommission). Performs no CRL step -- agent certificates it signed remain valid until they naturally renew. 409s if the ICA is not currently draining. Requires an RBAC token (certificate_authority:sign_ica) since this route has no certname allowance.
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `compiler_fqdn`
+
+Data type: `String[1]`
+
+Certname/FQDN of the compiler whose Intermediate CA to decommission.
+
+##### `token_file`
+
+Data type: `Optional[String[1]]`
+
+Path to an RBAC token file granting certificate_authority:sign_ica. Defaults to ~/.puppetlabs/token (the file `puppet access login` writes).
 
 ### <a name="divert_code_manager"></a>`divert_code_manager`
 
@@ -1302,6 +1342,26 @@ Whether to check the integrity of the downloaded file
 Data type: `String`
 
 The GPG keyserver to retrieve GPG keys from
+
+### <a name="drain_ica_compiler"></a>`drain_ica_compiler`
+
+Run on a PE primary to begin graceful removal of a compiler's Intermediate CA (POST .../drain). Proxy compilers exclude it from CSR routing within one pool refresh interval; nothing is invalidated yet. 409s if the ICA is not currently active. Requires an RBAC token (certificate_authority:sign_ica) since this route has no certname allowance. Left runnable standalone (unlike its sibling tasks) since an operator may want to drain a single ICA and observe the fleet before deciding whether to decommission or revoke it.
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `compiler_fqdn`
+
+Data type: `String[1]`
+
+Certname/FQDN of the compiler whose Intermediate CA to drain.
+
+##### `token_file`
+
+Data type: `Optional[String[1]]`
+
+Path to an RBAC token file granting certificate_authority:sign_ica. Defaults to ~/.puppetlabs/token (the file `puppet access login` writes).
 
 ### <a name="enable_replica"></a>`enable_replica`
 
@@ -1342,6 +1402,20 @@ Path to the file to return the size of
 Run on a PE primary node to return the rules currently applied to the PE Infrastructure Agent group
 
 **Supports noop?** false
+
+### <a name="get_ica_state"></a>`get_ica_state`
+
+Query the current ICA state for a compiler from the PE primary (GET /puppet-ca/v1/intermediate-ca/:fqdn). Runs on the primary. Returns {"state": "none"} when no ICA was ever provisioned for the compiler, or one was but has since been revoked/decommissioned -- this endpoint only shows the live ICA, so both cases 404 the same way.
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `compiler_fqdn`
+
+Data type: `String[1]`
+
+Certname/FQDN of the compiler whose ICA state to query.
 
 ### <a name="get_peadm_config"></a>`get_peadm_config`
 
@@ -1719,6 +1793,26 @@ Data type: `Boolean`
 
 Whether we want to uninstall PE before installing
 
+### <a name="restart_ca_service"></a>`restart_ca_service`
+
+Run on a compiler to restart pe-puppetserver so a preceding CA config change (e.g. peadm::restore_ca_proxy_bootstrap) takes effect. Fails with the service's own systemctl status output if it does not come back active.
+
+**Supports noop?** false
+
+### <a name="restore_ca_proxy_bootstrap"></a>`restore_ca_proxy_bootstrap`
+
+Run on an ICA compiler to restore its CA config to proxy mode: drops bootstrap.cfg's intermediate-ca-service entry and sets certificate-authority.proxy-target in ca.conf. Takes effect only after peadm::restart_ca_service restarts pe-puppetserver.
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `proxy_target`
+
+Data type: `String[1]`
+
+Where the compiler should forward CSRs once running as a proxy again: "primary", or a URL for an ICA pool member.
+
 ### <a name="restore_classification"></a>`restore_classification`
 
 A short description of this task
@@ -1732,6 +1826,26 @@ A short description of this task
 Data type: `String`
 
 The full path to a backed up or transformed classification file
+
+### <a name="revoke_compiler_ica"></a>`revoke_compiler_ica`
+
+Run on a PE primary to emergency-revoke a compiler's Intermediate CA (POST .../revoke), splicing its serial into the root CRL and invalidating every agent certificate it signed. Fails if the response reports crl-updated: false. Requires an RBAC token (certificate_authority:sign_ica) since this route has no certname allowance.
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `compiler_fqdn`
+
+Data type: `String[1]`
+
+Certname/FQDN of the compiler whose Intermediate CA to revoke.
+
+##### `token_file`
+
+Data type: `Optional[String[1]]`
+
+Path to an RBAC token file granting certificate_authority:sign_ica. Defaults to ~/.puppetlabs/token (the file `puppet access login` writes).
 
 ### <a name="sign_csr"></a>`sign_csr`
 
@@ -2252,6 +2366,114 @@ Data type: `Array[String]`
 
 
 Default value: `[]`
+
+### <a name="peadm--demote_ica_compilers_to_proxy"></a>`peadm::demote_ica_compilers_to_proxy`
+
+Per batch: drains each compiler's ICA, waits one quiet period for proxy
+compilers to pick up the change, restores CA-proxy config and restarts
+pe-puppetserver, removes its local passphrase file, then decommissions (or,
+with $revoke, revokes) the ICA -- cleanup is ordered before the
+decommission/revoke call since it is the one step with no retry path once
+it succeeds. Batches run sequentially and are checkpoints: a failed batch
+leaves every later batch untouched.
+
+#### Parameters
+
+The following parameters are available in the `peadm::demote_ica_compilers_to_proxy` plan:
+
+* [`primary_host`](#-peadm--demote_ica_compilers_to_proxy--primary_host)
+* [`compilers`](#-peadm--demote_ica_compilers_to_proxy--compilers)
+* [`all`](#-peadm--demote_ica_compilers_to_proxy--all)
+* [`batch_size`](#-peadm--demote_ica_compilers_to_proxy--batch_size)
+* [`acknowledge_fleet_impact`](#-peadm--demote_ica_compilers_to_proxy--acknowledge_fleet_impact)
+* [`revoke`](#-peadm--demote_ica_compilers_to_proxy--revoke)
+* [`quiet_period_seconds`](#-peadm--demote_ica_compilers_to_proxy--quiet_period_seconds)
+* [`proxy_target`](#-peadm--demote_ica_compilers_to_proxy--proxy_target)
+* [`token_file`](#-peadm--demote_ica_compilers_to_proxy--token_file)
+
+##### <a name="-peadm--demote_ica_compilers_to_proxy--primary_host"></a>`primary_host`
+
+Data type: `Peadm::SingleTargetSpec`
+
+The PE primary.
+
+##### <a name="-peadm--demote_ica_compilers_to_proxy--compilers"></a>`compilers`
+
+Data type: `Optional[TargetSpec]`
+
+The ICA compiler(s) to demote. Mutually exclusive with $all.
+
+Default value: `undef`
+
+##### <a name="-peadm--demote_ica_compilers_to_proxy--all"></a>`all`
+
+Data type: `Boolean`
+
+Demote every active-or-draining ICA compiler in the fleet, resolved
+via peadm::list_compiler_icas. Mutually exclusive with $compilers.
+
+Default value: `false`
+
+##### <a name="-peadm--demote_ica_compilers_to_proxy--batch_size"></a>`batch_size`
+
+Data type: `Integer[1]`
+
+How many compilers to drain and demote per batch. Defaults to
+1 -- draining more than one at once removes them from every proxy compiler's
+pool simultaneously, and with ica-pool-fallback-to-primary enabled that can
+send the whole fleet's CA signing load to the primary.
+
+Default value: `1`
+
+##### <a name="-peadm--demote_ica_compilers_to_proxy--acknowledge_fleet_impact"></a>`acknowledge_fleet_impact`
+
+Data type: `Boolean`
+
+Required when $all resolves more compilers than
+$batch_size, since that combination demotes the fleet across multiple batches
+without a pause between them for an operator to reassess.
+
+Default value: `false`
+
+##### <a name="-peadm--demote_ica_compilers_to_proxy--revoke"></a>`revoke`
+
+Data type: `Boolean`
+
+Revoke the ICA (invalidating every agent certificate it signed)
+instead of the default graceful decommission.
+
+Default value: `false`
+
+##### <a name="-peadm--demote_ica_compilers_to_proxy--quiet_period_seconds"></a>`quiet_period_seconds`
+
+Data type: `Integer[0]`
+
+How long to wait per batch after draining, so proxy
+compilers finish excluding the draining ICA(s) from their pool before this
+plan swaps DNS/config out from under them. Defaults to 600s -- twice
+ica-pool-refresh-interval-seconds's own 300s default.
+
+Default value: `600`
+
+##### <a name="-peadm--demote_ica_compilers_to_proxy--proxy_target"></a>`proxy_target`
+
+Data type: `String[1]`
+
+Where a demoted compiler should forward CSRs once running
+as a proxy again: "primary", or a URL for an ICA pool member.
+
+Default value: `'primary'`
+
+##### <a name="-peadm--demote_ica_compilers_to_proxy--token_file"></a>`token_file`
+
+Data type: `Optional[String[1]]`
+
+Path to an RBAC token file granting
+certificate_authority:sign_ica, used for the drain/revoke/decommission
+calls. Defaults to ~/.puppetlabs/token (the file `puppet access login`
+writes).
+
+Default value: `undef`
 
 ### <a name="peadm--install"></a>`peadm::install`
 

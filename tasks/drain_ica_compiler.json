@@ -1,0 +1,15 @@
+{
+  "description": "Run on a PE primary to begin graceful removal of a compiler's Intermediate CA (POST .../drain). Proxy compilers exclude it from CSR routing within one pool refresh interval; nothing is invalidated yet. 409s if the ICA is not currently active. Requires an RBAC token (certificate_authority:sign_ica) since this route has no certname allowance. Left runnable standalone (unlike its sibling tasks) since an operator may want to drain a single ICA and observe the fleet before deciding whether to decommission or revoke it.",
+  "input_method": "stdin",
+  "files": ["peadm/files/ica_task_helper.rb"],
+  "parameters": {
+    "compiler_fqdn": {
+      "description": "Certname/FQDN of the compiler whose Intermediate CA to drain.",
+      "type": "String[1]"
+    },
+    "token_file": {
+      "description": "Path to an RBAC token file granting certificate_authority:sign_ica. Defaults to ~/.puppetlabs/token (the file `puppet access login` writes).",
+      "type": "Optional[String[1]]"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "description": "Run on a demoted compiler to remove the local ICA passphrase file (the only ICA secret ever held on the compiler filesystem). Idempotent: a missing file is success.",
+  "input_method": "stdin",
+  "private": true,
+  "files": ["peadm/files/ica_task_helper.rb"]
+}
