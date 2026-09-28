@@ -2443,7 +2443,7 @@ Data type: `Peadm::Pe_version`
 
 
 
-Default value: `'2023.8.11'`
+Default value: `'2023.8.12'`
 
 ##### <a name="-peadm--install--dns_alt_names"></a>`dns_alt_names`
 
