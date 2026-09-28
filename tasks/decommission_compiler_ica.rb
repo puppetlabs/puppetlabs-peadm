@@ -28,33 +28,29 @@ class DecommissionCompilerIca
 
   def execute!
     IcaTaskHelper.validate_fqdn!(@compiler_fqdn)
-    response = https.request(decommission_request)
+    response = https.request(request)
 
     unless response.code == '200'
-      error!("Failed to decommission Intermediate CA for #{@compiler_fqdn}: HTTP #{response.code} - #{response.body}", 'peadm/decommission_compiler_ica_failed')
+      IcaTaskHelper.fail!("Failed to decommission Intermediate CA for #{@compiler_fqdn}: HTTP #{response.code} - #{response.body}", 'peadm/decommission_compiler_ica_failed')
     end
 
     STDOUT.puts(response.body)
     exit 0
+  rescue *IcaTaskHelper::CONNECTION_ERROR_CLASSES => e
+    msg, suffix = IcaTaskHelper.classify_connection_error(e)
+    IcaTaskHelper.fail!(msg, "peadm/decommission_compiler_ica_#{suffix}")
   rescue StandardError => e
-    error!(e.message, 'peadm/decommission_compiler_ica_failed')
+    IcaTaskHelper.fail!(e.message, 'peadm/decommission_compiler_ica_failed')
   end
 
   private
 
-  def decommission_request
-    req = Net::HTTP::Post.new("/puppet-ca/v1/intermediate-ca/#{@compiler_fqdn}/decommission")
-    req['X-Authentication'] = IcaTaskHelper.rbac_token(@token_file)
-    req
+  def request
+    IcaTaskHelper.build_intermediate_ca_request(Net::HTTP::Post, @compiler_fqdn, @token_file, action: 'decommission')
   end
 
   def https
     IcaTaskHelper.primary_https_client(Puppet.settings[:certname], IcaTaskHelper::CA_SERVICE_PORT)
-  end
-
-  def error!(msg, kind)
-    STDOUT.puts({ '_error' => { 'msg' => msg, 'kind' => kind } }.to_json)
-    exit 1
   end
 end
 

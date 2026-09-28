@@ -82,7 +82,7 @@ plan peadm::demote_ica_compilers_to_proxy (
   # plan after a successful demote should be a no-op, not a failure.
   $preflight = $candidate_fqdns.map |$fqdn| {
     $state_outcome = catch_errors() || {
-      run_task('peadm::get_ica_state', $primary_target, 'compiler_fqdn' => $fqdn).first.value['state']
+      run_task('peadm::get_ica_state', $primary_target, 'compiler_fqdn' => $fqdn, 'token_file' => $token_file).first.value['state']
     }
 
     if $state_outcome =~ Error {
@@ -118,6 +118,17 @@ plan peadm::demote_ica_compilers_to_proxy (
 
   $batches = $to_demote.slice($batch_size)
 
+  # catch_errors(), not the _catch_errors => true run_task parameter this
+  # module's other plans use for a single primary-side read: the
+  # finish-phase step below chains four separate run_task calls
+  # (restore_ca_proxy_bootstrap, restart_ca_service, cleanup_ica_key_material,
+  # then decommission/revoke) that must be treated as one atomic sequence --
+  # whichever one fails should stop the rest and report that specific step,
+  # not require each call to carry its own pass/fail check threaded through
+  # by hand. peadm::safe_error_kind exists because catch_errors() gives back
+  # a wrapping Error rather than a ResultSet#error_set to read a kind from
+  # directly.
+  #
   # Each batch tracks completion per compiler, not just pass/fail for the
   # batch as a whole: with batch_size > 1, a compiler that fully completes
   # the drain, or the restore/restart/decommission/cleanup sequence, before

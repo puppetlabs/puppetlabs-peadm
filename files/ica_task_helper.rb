@@ -37,11 +37,16 @@ module IcaTaskHelper
   end
 
   # Builds an mTLS-authenticated Net::HTTP client to the given host, using
-  # this node's Puppet agent certificate. Every read and certname-allowed
-  # route peadm calls authenticates this way alone; the RBAC-only mutation
-  # routes (drain, revoke, decommission) additionally require an
-  # X-Authentication header built from rbac_token below, since no certname
-  # allowance exists for them (see puppet-enterprise-modules' tk_authz.pp).
+  # this node's Puppet agent certificate. This is only the transport layer:
+  # whether a given route also needs an X-Authentication header on top of
+  # it is per-route, not a fixed read/mutation split -- puppet-enterprise-
+  # modules' tk_authz.pp gates the single-fqdn GET, drain, revoke, and
+  # decommission routes on certificate_authority:sign_ica alone (no
+  # certname allowance), while only the fleet-wide list route also allows
+  # the primary's own certname. A 10s open/read timeout matches the same
+  # CA-service client in tasks/list_compiler_icas.rb, so a hung primary
+  # fails the task instead of stalling the batch loop for however long
+  # Ruby's own Net::HTTP defaults would otherwise allow.
   def primary_https_client(hostname, port = CA_SERVICE_PORT)
     https = Net::HTTP.new(hostname, port)
     https.use_ssl = true
@@ -49,7 +54,26 @@ module IcaTaskHelper
     https.key = OpenSSL::PKey::RSA.new(File.read(Puppet.settings[:hostprivkey]))
     https.verify_mode = OpenSSL::SSL::VERIFY_PEER
     https.ca_file = Puppet.settings[:localcacert]
+    https.open_timeout = 10
+    https.read_timeout = 10
     https
+  end
+
+  # Connection-level exceptions every ICA task rescues the same way,
+  # distinct from the HTTP-level (non-200) failures each task's own
+  # response.code check already reports with its own specific kind.
+  CONNECTION_ERROR_CLASSES = [OpenSSL::SSL::SSLError, SystemCallError, SocketError, Net::OpenTimeout, Net::ReadTimeout].freeze
+
+  # Classifies a rescued CONNECTION_ERROR_CLASSES exception into a
+  # (message, kind_suffix) pair, matching the distinction
+  # tasks/list_compiler_icas.rb already draws between a TLS handshake
+  # failure and never reaching the primary at all.
+  def classify_connection_error(e)
+    if e.is_a?(OpenSSL::SSL::SSLError)
+      ["TLS handshake with the primary failed: #{e.message}", 'tls_failed']
+    else
+      ["Failed to connect to the primary: #{e.message}", 'connection_failed']
+    end
   end
 
   # Path to the RBAC token file a caller obtained via `puppet access login`
@@ -61,6 +85,25 @@ module IcaTaskHelper
 
   def rbac_token(token_file)
     File.read(token_file || default_token_file).chomp
+  end
+
+  # Builds an RBAC-token-authenticated request to the intermediate-ca API
+  # for a single fqdn: GET for a state query (action nil), or POST for a
+  # drain/revoke/decommission action.
+  def build_intermediate_ca_request(method_class, fqdn, token_file, action: nil)
+    path = "/puppet-ca/v1/intermediate-ca/#{fqdn}"
+    path += "/#{action}" if action
+    req = method_class.new(path)
+    req['X-Authentication'] = rbac_token(token_file)
+    req
+  end
+
+  # Shared _error-contract emission, replacing what was a near-identical
+  # private method or inline STDOUT.puts/exit pair duplicated across every
+  # ICA task.
+  def fail!(msg, kind)
+    STDOUT.puts({ '_error' => { 'msg' => msg, 'kind' => kind } }.to_json)
+    exit 1
   end
 
   # Reverts bootstrap.cfg from ICA mode back to CA-proxy mode: removes any

@@ -22,10 +22,10 @@ class DrainIcaCompiler
 
   def execute!
     IcaTaskHelper.validate_fqdn!(@compiler_fqdn)
-    response = https.request(drain_request)
+    response = https.request(request)
 
     unless response.code == '200'
-      error!("Failed to drain Intermediate CA for #{@compiler_fqdn}: HTTP #{response.code} - #{response.body}", 'peadm/drain_ica_compiler_failed')
+      IcaTaskHelper.fail!("Failed to drain Intermediate CA for #{@compiler_fqdn}: HTTP #{response.code} - #{response.body}", 'peadm/drain_ica_compiler_failed')
     end
 
     STDOUT.puts(
@@ -33,25 +33,21 @@ class DrainIcaCompiler
       'refresh interval.',
     )
     exit 0
+  rescue *IcaTaskHelper::CONNECTION_ERROR_CLASSES => e
+    msg, suffix = IcaTaskHelper.classify_connection_error(e)
+    IcaTaskHelper.fail!(msg, "peadm/drain_ica_compiler_#{suffix}")
   rescue StandardError => e
-    error!(e.message, 'peadm/drain_ica_compiler_failed')
+    IcaTaskHelper.fail!(e.message, 'peadm/drain_ica_compiler_failed')
   end
 
   private
 
-  def drain_request
-    req = Net::HTTP::Post.new("/puppet-ca/v1/intermediate-ca/#{@compiler_fqdn}/drain")
-    req['X-Authentication'] = IcaTaskHelper.rbac_token(@token_file)
-    req
+  def request
+    IcaTaskHelper.build_intermediate_ca_request(Net::HTTP::Post, @compiler_fqdn, @token_file, action: 'drain')
   end
 
   def https
     IcaTaskHelper.primary_https_client(Puppet.settings[:certname], IcaTaskHelper::CA_SERVICE_PORT)
-  end
-
-  def error!(msg, kind)
-    STDOUT.puts({ '_error' => { 'msg' => msg, 'kind' => kind } }.to_json)
-    exit 1
   end
 end
 

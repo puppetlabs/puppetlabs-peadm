@@ -1,5 +1,5 @@
 {
-  "description": "Query the current ICA state for a compiler from the PE primary (GET /puppet-ca/v1/intermediate-ca/:fqdn). Runs on the primary. Returns {\"state\": \"none\"} when no ICA was ever provisioned for the compiler, or one was but has since been revoked/decommissioned -- this endpoint only shows the live ICA, so both cases 404 the same way.",
+  "description": "Query the current ICA state for a compiler from the PE primary (GET /puppet-ca/v1/intermediate-ca/:fqdn). Runs on the primary. Returns {\"state\": \"none\"} when no ICA was ever provisioned for the compiler, or one was but has since been revoked/decommissioned -- this endpoint only shows the live ICA, so both cases 404 the same way. Requires an RBAC token (certificate_authority:sign_ica) since this route has no certname allowance.",
   "input_method": "stdin",
   "private": true,
   "files": ["peadm/files/ica_task_helper.rb"],
@@ -7,6 +7,10 @@
     "compiler_fqdn": {
       "description": "Certname/FQDN of the compiler whose ICA state to query.",
       "type": "String[1]"
+    },
+    "token_file": {
+      "description": "Path to an RBAC token file granting certificate_authority:sign_ica. Defaults to ~/.puppetlabs/token (the file `puppet access login` writes).",
+      "type": "Optional[String[1]]"
     }
   }
 }

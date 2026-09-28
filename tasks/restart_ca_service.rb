@@ -4,6 +4,7 @@
 require 'json'
 require 'open3'
 require 'timeout'
+require_relative '../files/ica_task_helper'
 
 # Bolt task: restart pe-puppetserver on a compiler so a preceding
 # bootstrap.cfg/ca.conf edit (peadm::restore_ca_proxy_bootstrap) takes
@@ -24,8 +25,7 @@ class RestartCaService
     STDOUT.puts({ 'restarted' => true }.to_json)
     exit 0
   rescue StandardError => e
-    STDOUT.puts({ '_error' => { 'msg' => e.message, 'kind' => 'peadm/restart_ca_service_failed' } }.to_json)
-    exit 1
+    IcaTaskHelper.fail!(e.message, 'peadm/restart_ca_service_failed')
   end
 
   private

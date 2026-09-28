@@ -2,12 +2,15 @@
 # frozen_string_literal: true
 
 require 'json'
+require 'net/http'
 require 'puppet'
 require_relative '../files/ica_task_helper'
 
 # Bolt task: query the primary's record of a compiler's ICA state. Runs on
 # the primary, querying its own local CA service
-# (GET /puppet-ca/v1/intermediate-ca/:fqdn).
+# (GET /puppet-ca/v1/intermediate-ca/:fqdn). Requires an RBAC token
+# (certificate_authority:sign_ica): unlike the fleet-wide list route, this
+# single-fqdn route carries no certname allowance either.
 class GetIcaState
   # This endpoint only ever surfaces the *live* ICA for an fqdn, so a 200
   # body's state can only ever be one of these two -- asserted explicitly
@@ -17,12 +20,12 @@ class GetIcaState
 
   def initialize(params)
     @compiler_fqdn = params.fetch('compiler_fqdn')
+    @token_file = params['token_file']
   end
 
   def execute!
     IcaTaskHelper.validate_fqdn!(@compiler_fqdn)
-    https = IcaTaskHelper.primary_https_client(Puppet.settings[:certname], IcaTaskHelper::CA_SERVICE_PORT)
-    res = https.get("/puppet-ca/v1/intermediate-ca/#{@compiler_fqdn}")
+    res = https.request(request)
 
     case res.code
     when '200'
@@ -43,9 +46,23 @@ class GetIcaState
       raise "Failed to query ICA state for #{@compiler_fqdn}: HTTP #{res.code} - #{res.body}"
     end
     exit 0
+  rescue *IcaTaskHelper::CONNECTION_ERROR_CLASSES => e
+    msg, suffix = IcaTaskHelper.classify_connection_error(e)
+    IcaTaskHelper.fail!(msg, "peadm/get_ica_state_#{suffix}")
+  rescue JSON::ParserError => e
+    IcaTaskHelper.fail!("Invalid response body from the primary: #{e.message}", 'peadm/get_ica_state_invalid_response')
   rescue StandardError => e
-    STDOUT.puts({ '_error' => { 'msg' => e.message, 'kind' => 'peadm/get_ica_state_failed' } }.to_json)
-    exit 1
+    IcaTaskHelper.fail!(e.message, 'peadm/get_ica_state_failed')
+  end
+
+  private
+
+  def request
+    IcaTaskHelper.build_intermediate_ca_request(Net::HTTP::Get, @compiler_fqdn, @token_file)
+  end
+
+  def https
+    IcaTaskHelper.primary_https_client(Puppet.settings[:certname], IcaTaskHelper::CA_SERVICE_PORT)
   end
 end
 

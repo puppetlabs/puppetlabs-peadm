@@ -1359,7 +1359,7 @@ Run on a PE primary node to return the rules currently applied to the PE Infrast
 
 ### <a name="get_ica_state"></a>`get_ica_state`
 
-Query the current ICA state for a compiler from the PE primary (GET /puppet-ca/v1/intermediate-ca/:fqdn). Runs on the primary. Returns {"state": "none"} when no ICA was ever provisioned for the compiler, or one was but has since been revoked/decommissioned -- this endpoint only shows the live ICA, so both cases 404 the same way.
+Query the current ICA state for a compiler from the PE primary (GET /puppet-ca/v1/intermediate-ca/:fqdn). Runs on the primary. Returns {"state": "none"} when no ICA was ever provisioned for the compiler, or one was but has since been revoked/decommissioned -- this endpoint only shows the live ICA, so both cases 404 the same way. Requires an RBAC token (certificate_authority:sign_ica) since this route has no certname allowance.
 
 **Supports noop?** false
 
@@ -1370,6 +1370,12 @@ Query the current ICA state for a compiler from the PE primary (GET /puppet-ca/v
 Data type: `String[1]`
 
 Certname/FQDN of the compiler whose ICA state to query.
+
+##### `token_file`
+
+Data type: `Optional[String[1]]`
+
+Path to an RBAC token file granting certificate_authority:sign_ica. Defaults to ~/.puppetlabs/token (the file `puppet access login` writes).
 
 ### <a name="get_peadm_config"></a>`get_peadm_config`
 

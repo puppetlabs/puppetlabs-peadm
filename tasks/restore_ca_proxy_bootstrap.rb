@@ -30,7 +30,7 @@ class RestoreCaProxyBootstrap
   def execute!
     reverted = IcaTaskHelper.revert_bootstrap_to_proxy!
     unless reverted
-      error!(
+      IcaTaskHelper.fail!(
         "#{IcaTaskHelper.bootstrap_cfg_path} does not exist -- cannot confirm this compiler was reverted to " \
         'CA-proxy mode. A missing bootstrap.cfg on a promoted compiler indicates a broken or misconfigured ' \
         'puppetserver install, not an already-reverted one.',
@@ -42,14 +42,7 @@ class RestoreCaProxyBootstrap
     STDOUT.puts({ 'proxy_target' => @proxy_target }.to_json)
     exit 0
   rescue StandardError => e
-    error!(e.message, 'peadm/restore_ca_proxy_bootstrap_failed')
-  end
-
-  private
-
-  def error!(msg, kind)
-    STDOUT.puts({ '_error' => { 'msg' => msg, 'kind' => kind } }.to_json)
-    exit 1
+    IcaTaskHelper.fail!(e.message, 'peadm/restore_ca_proxy_bootstrap_failed')
   end
 end
 

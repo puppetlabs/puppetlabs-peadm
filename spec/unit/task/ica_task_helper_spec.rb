@@ -55,6 +55,70 @@ describe IcaTaskHelper do
 
       expect(https.port).to eq(4433)
     end
+
+    it 'sets a 10s open/read timeout, matching the same CA-service client in list_compiler_icas.rb' do
+      allow(Puppet).to receive(:settings).and_return(hostcert: '/dev/null', hostprivkey: '/dev/null', localcacert: '/dev/null')
+      allow(File).to receive(:read).and_call_original
+      allow(File).to receive(:read).with('/dev/null').and_return('')
+      allow(OpenSSL::X509::Certificate).to receive(:new).and_return(instance_double(OpenSSL::X509::Certificate))
+      allow(OpenSSL::PKey::RSA).to receive(:new).and_return(instance_double(OpenSSL::PKey::RSA))
+
+      https = described_class.primary_https_client('primary.example.com')
+
+      expect(https.open_timeout).to eq(10)
+      expect(https.read_timeout).to eq(10)
+    end
+  end
+
+  describe '.classify_connection_error' do
+    it 'classifies an SSL error as a TLS handshake failure' do
+      msg, suffix = described_class.classify_connection_error(OpenSSL::SSL::SSLError.new('certificate verify failed'))
+      expect(suffix).to eq('tls_failed')
+      expect(msg).to include('TLS handshake with the primary failed')
+      expect(msg).to include('certificate verify failed')
+    end
+
+    it 'classifies a connection-refused error as a connection failure' do
+      msg, suffix = described_class.classify_connection_error(Errno::ECONNREFUSED.new)
+      expect(suffix).to eq('connection_failed')
+      expect(msg).to include('Failed to connect to the primary')
+    end
+
+    it 'classifies a read timeout as a connection failure' do
+      msg, suffix = described_class.classify_connection_error(Net::ReadTimeout.new)
+      expect(suffix).to eq('connection_failed')
+      expect(msg).to include('Failed to connect to the primary')
+    end
+  end
+
+  describe '.build_intermediate_ca_request' do
+    it 'builds a GET request with no action and the RBAC token attached' do
+      allow(described_class).to receive(:rbac_token).with('/home/user/.puppetlabs/token').and_return('sekrit-token')
+
+      req = described_class.build_intermediate_ca_request(Net::HTTP::Get, 'compiler-a.example.com', '/home/user/.puppetlabs/token')
+
+      expect(req).to be_a(Net::HTTP::Get)
+      expect(req.path).to eq('/puppet-ca/v1/intermediate-ca/compiler-a.example.com')
+      expect(req['X-Authentication']).to eq('sekrit-token')
+    end
+
+    it 'appends the action to the path for a POST request' do
+      allow(described_class).to receive(:rbac_token).with(nil).and_return('sekrit-token')
+
+      req = described_class.build_intermediate_ca_request(Net::HTTP::Post, 'compiler-a.example.com', nil, action: 'drain')
+
+      expect(req).to be_a(Net::HTTP::Post)
+      expect(req.path).to eq('/puppet-ca/v1/intermediate-ca/compiler-a.example.com/drain')
+      expect(req['X-Authentication']).to eq('sekrit-token')
+    end
+  end
+
+  describe '.fail!' do
+    it 'writes the _error contract to STDOUT and exits 1' do
+      expect(STDOUT).to receive(:puts).with(JSON.generate('_error' => { 'msg' => 'boom', 'kind' => 'peadm/some_failure' }))
+
+      expect { described_class.fail!('boom', 'peadm/some_failure') }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
+    end
   end
 
   describe '.validate_fqdn!' do

@@ -72,4 +72,30 @@ describe RevokeCompilerIca do
       expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
     end
   end
+
+  context 'when the primary cannot be reached' do
+    it 'fails through the _error contract with a distinct kind, not the generic failure' do
+      allow(https).to receive(:request).and_raise(Errno::ECONNREFUSED)
+      expect(STDOUT).to receive(:puts) do |output|
+        parsed = JSON.parse(output)
+        expect(parsed['_error']['kind']).to eq('peadm/revoke_compiler_ica_connection_failed')
+        expect(parsed['_error']['msg']).to include('Failed to connect')
+      end
+
+      expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
+    end
+  end
+
+  context 'when the primary returns an unparsable response body' do
+    it 'fails through the _error contract with a distinct kind, not the generic failure' do
+      response = instance_double('Net::HTTPResponse', code: '200', body: 'not json')
+      allow(https).to receive(:request).and_return(response)
+      expect(STDOUT).to receive(:puts) do |output|
+        parsed = JSON.parse(output)
+        expect(parsed['_error']['kind']).to eq('peadm/revoke_compiler_ica_invalid_response')
+      end
+
+      expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
+    end
+  end
 end

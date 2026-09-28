@@ -138,8 +138,8 @@ describe 'peadm::demote_ica_compilers_to_proxy' do
 
     it 'demotes only the live compiler and skips only the dead one when both are requested together' do
       allow_standard_non_returning_calls
-      expect_task('peadm::get_ica_state').with_params('compiler_fqdn' => 'compiler-a').always_return('state' => 'active')
-      expect_task('peadm::get_ica_state').with_params('compiler_fqdn' => 'compiler-b').always_return('state' => 'decommissioned')
+      expect_task('peadm::get_ica_state').with_params('compiler_fqdn' => 'compiler-a', 'token_file' => nil).always_return('state' => 'active')
+      expect_task('peadm::get_ica_state').with_params('compiler_fqdn' => 'compiler-b', 'token_file' => nil).always_return('state' => 'decommissioned')
       expect_task('peadm::drain_ica_compiler').with_params('compiler_fqdn' => 'compiler-a', 'token_file' => nil).be_called_times(1)
       expect_task('peadm::drain_ica_compiler').with_params('compiler_fqdn' => 'compiler-b', 'token_file' => nil).be_called_times(0)
 
@@ -303,8 +303,8 @@ describe 'peadm::demote_ica_compilers_to_proxy' do
 
     it 'skips the drain call only for the already-draining member of a mixed batch, not the active one, and still waits out the quiet period' do
       allow_standard_non_returning_calls
-      expect_task('peadm::get_ica_state').with_params('compiler_fqdn' => 'compiler-a').always_return('state' => 'active')
-      expect_task('peadm::get_ica_state').with_params('compiler_fqdn' => 'compiler-b').always_return('state' => 'draining')
+      expect_task('peadm::get_ica_state').with_params('compiler_fqdn' => 'compiler-a', 'token_file' => nil).always_return('state' => 'active')
+      expect_task('peadm::get_ica_state').with_params('compiler_fqdn' => 'compiler-b', 'token_file' => nil).always_return('state' => 'draining')
       expect_task('peadm::drain_ica_compiler').with_params('compiler_fqdn' => 'compiler-a', 'token_file' => nil).be_called_times(1)
       expect_task('peadm::drain_ica_compiler').with_params('compiler_fqdn' => 'compiler-b', 'token_file' => nil).be_called_times(0)
       expect_task('peadm::decommission_compiler_ica').be_called_times(2)

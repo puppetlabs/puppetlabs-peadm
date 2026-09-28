@@ -23,8 +23,7 @@ class CleanupIcaKeyMaterial
     STDOUT.puts({ 'path' => path, 'removed' => removed }.to_json)
     exit 0
   rescue StandardError => e
-    STDOUT.puts({ '_error' => { 'msg' => e.message, 'kind' => 'peadm/cleanup_ica_key_material_failed' } }.to_json)
-    exit 1
+    IcaTaskHelper.fail!(e.message, 'peadm/cleanup_ica_key_material_failed')
   end
 
   private

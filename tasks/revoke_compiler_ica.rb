@@ -30,15 +30,15 @@ class RevokeCompilerIca
 
   def execute!
     IcaTaskHelper.validate_fqdn!(@compiler_fqdn)
-    response = https.request(revoke_request)
+    response = https.request(request)
 
     unless response.code == '200'
-      error!("Failed to revoke Intermediate CA for #{@compiler_fqdn}: HTTP #{response.code} - #{response.body}", 'peadm/revoke_compiler_ica_failed')
+      IcaTaskHelper.fail!("Failed to revoke Intermediate CA for #{@compiler_fqdn}: HTTP #{response.code} - #{response.body}", 'peadm/revoke_compiler_ica_failed')
     end
 
     body = JSON.parse(response.body)
     unless body['crl-updated']
-      error!(
+      IcaTaskHelper.fail!(
         "Intermediate CA for #{@compiler_fqdn} was marked revoked, but the root CRL was not updated -- " \
         'agent certificates it signed are NOT yet invalidated. Investigate the CRL before treating this ICA as revoked.',
         'peadm/revoke_compiler_ica_crl_not_updated',
@@ -47,25 +47,23 @@ class RevokeCompilerIca
 
     STDOUT.puts(body.to_json)
     exit 0
+  rescue *IcaTaskHelper::CONNECTION_ERROR_CLASSES => e
+    msg, suffix = IcaTaskHelper.classify_connection_error(e)
+    IcaTaskHelper.fail!(msg, "peadm/revoke_compiler_ica_#{suffix}")
+  rescue JSON::ParserError => e
+    IcaTaskHelper.fail!("Invalid response body from the primary: #{e.message}", 'peadm/revoke_compiler_ica_invalid_response')
   rescue StandardError => e
-    error!(e.message, 'peadm/revoke_compiler_ica_failed')
+    IcaTaskHelper.fail!(e.message, 'peadm/revoke_compiler_ica_failed')
   end
 
   private
 
-  def revoke_request
-    req = Net::HTTP::Post.new("/puppet-ca/v1/intermediate-ca/#{@compiler_fqdn}/revoke")
-    req['X-Authentication'] = IcaTaskHelper.rbac_token(@token_file)
-    req
+  def request
+    IcaTaskHelper.build_intermediate_ca_request(Net::HTTP::Post, @compiler_fqdn, @token_file, action: 'revoke')
   end
 
   def https
     IcaTaskHelper.primary_https_client(Puppet.settings[:certname], IcaTaskHelper::CA_SERVICE_PORT)
-  end
-
-  def error!(msg, kind)
-    STDOUT.puts({ '_error' => { 'msg' => msg, 'kind' => kind } }.to_json)
-    exit 1
   end
 end
 

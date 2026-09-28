@@ -59,4 +59,17 @@ describe DecommissionCompilerIca do
       expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
     end
   end
+
+  context 'when the primary cannot be reached' do
+    it 'fails through the _error contract with a distinct kind, not the generic failure' do
+      allow(https).to receive(:request).and_raise(Errno::ECONNREFUSED)
+      expect(STDOUT).to receive(:puts) do |output|
+        parsed = JSON.parse(output)
+        expect(parsed['_error']['kind']).to eq('peadm/decommission_compiler_ica_connection_failed')
+        expect(parsed['_error']['msg']).to include('Failed to connect')
+      end
+
+      expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
+    end
+  end
 end
