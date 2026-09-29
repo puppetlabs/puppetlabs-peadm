@@ -166,7 +166,15 @@ describe 'peadm::subplans::install' do
   # have caught up -- the same class of transient-unavailability window
   # restore.pp's equivalent rbac_token call already retries around
   # (PE-44867). subplans::install had no equivalent retry.
-  describe 'rbac_token retry (PE-46689)' do
+  #
+  # PE-46917: the original 5-attempt/15s margin (added for PE-46689) still
+  # wasn't enough -- nightly CI continued exhausting all 5 attempts after
+  # the pe-puppetdb bounce. Live reproduction on a dedicated test VM (idle,
+  # under induced CPU load, and under induced CPU+disk-IO load) never
+  # reproduced the underlying race, so there's no measured number to widen
+  # to; this widens the budget generously (10 attempts/20s, exactly 3x the
+  # total window) as a defensive margin rather than a precisely-measured one.
+  describe 'rbac_token retry (PE-46689, widened per PE-46917)' do
     let(:params) do
       {
         'primary_host' => 'primary',
@@ -180,14 +188,21 @@ describe 'peadm::subplans::install' do
     # every call) -- construct the Bolt::Result directly via a .return
     # block with a closure counter instead, so each successive call to
     # peadm::rbac_token can return a different result.
-    def stub_rbac_token(fail_count:)
+    # Each failing attempt gets its own distinct error text (embedding the
+    # attempt number) rather than one fixed string repeated for every
+    # failure -- otherwise an off-by-one bug that logs a stale/wrong
+    # attempt's error would produce byte-identical output to correct
+    # behavior and no assertion here could tell the difference. Callers that
+    # need specific error content (e.g. to test sanitization) can override it
+    # via error_msg: instead of duplicating this closure-counter plumbing.
+    def stub_rbac_token(fail_count:, error_msg: nil)
       attempts = 0
-      expected_calls = [fail_count + 1, 5].min
+      expected_calls = [fail_count + 1, 10].min
       expect_task('peadm::rbac_token').with_targets('primary').be_called_times(expected_calls).return do |targets:, task:, params:| # rubocop:disable Lint/UnusedBlockArgument
         attempts += 1
         results = targets.map do |target|
           if attempts <= fail_count
-            Bolt::Result.new(target, error: { 'msg' => 'User admin failed to login', 'kind' => 'puppetlabs.rbac/server-error' })
+            Bolt::Result.new(target, error: { 'msg' => error_msg || "User admin failed to login (task-attempt #{attempts})", 'kind' => 'puppetlabs.rbac/server-error' })
           else
             Bolt::Result.new(target, value: {})
           end
@@ -203,7 +218,7 @@ describe 'peadm::subplans::install' do
     # stubs above.
     # rubocop:disable RSpec/AnyInstance
     before(:each) do
-      allow_any_instance_of(Puppet::Functions::Function).to receive(:sleep)
+      allow_any_instance_of(Puppet::Functions::Function).to receive(:sleep).with(20)
     end
     # rubocop:enable RSpec/AnyInstance
 
@@ -216,15 +231,69 @@ describe 'peadm::subplans::install' do
     it 'retries and succeeds once rbac-service catches up' do
       stub_rbac_token(fail_count: 2)
 
+      expect_out_message.with_params('rbac_token not ready (User admin failed to login (task-attempt 1)); retrying (attempt 2) after 20s...')
+      expect_out_message.with_params('rbac_token not ready (User admin failed to login (task-attempt 2)); retrying (attempt 3) after 20s...')
+
+      expect(run_plan('peadm::subplans::install', params)).to be_ok
+    end
+
+    it 'retries past the old 5-attempt ceiling and succeeds within the widened 10-attempt budget' do
+      stub_rbac_token(fail_count: 7)
+
+      # Assert on the two retry messages that only exist because of this
+      # widening (attempts 7 and 8 are past the old 5-attempt ceiling) --
+      # without these, a message-threading bug reachable only past attempt 5
+      # would be invisible even though this test is specifically meant to
+      # validate that territory.
+      expect_out_message.with_params('rbac_token not ready (User admin failed to login (task-attempt 6)); retrying (attempt 7) after 20s...')
+      expect_out_message.with_params('rbac_token not ready (User admin failed to login (task-attempt 7)); retrying (attempt 8) after 20s...')
+
+      expect(run_plan('peadm::subplans::install', params)).to be_ok
+    end
+
+    # rbac-api's response body is external, network-sourced content (PE-46689's
+    # own retry loop already carries it into fail_plan on final exhaustion) --
+    # surfacing it on every retry too widens where it can end up, so it must be
+    # sanitized rather than logged verbatim: newlines could forge/obscure
+    # adjacent CI log lines, and an unexpectedly large payload shouldn't get
+    # echoed in full into every retry's log line.
+    it 'sanitizes newlines and caps the length of the prior error before logging it on retry' do
+      unsanitized_error = "line one\nline two\r\nline three#{'x' * 300}"
+      stub_rbac_token(fail_count: 1, error_msg: unsanitized_error)
+
+      sanitized_and_capped = ('line one line two line three' + ('x' * 300))[0, 200]
+      expect_out_message.with_params("rbac_token not ready (#{sanitized_and_capped}); retrying (attempt 2) after 20s...")
+
       expect(run_plan('peadm::subplans::install', params)).to be_ok
     end
 
     it 'fails the install after exhausting all retry attempts' do
-      stub_rbac_token(fail_count: 5)
+      stub_rbac_token(fail_count: 10)
 
       result = run_plan('peadm::subplans::install', params)
       expect(result).not_to be_ok
-      expect(result.value.msg).to match(%r{Failed to obtain RBAC token after 5 attempts})
+      # Asserts the full message, including the 10th (final) attempt's own
+      # error text -- not just the attempt-count prefix -- so a bug that
+      # reports a stale or wrong attempt's error in the terminal failure
+      # message would be caught here too.
+      expect(result.value.msg).to eq('Failed to obtain RBAC token after 10 attempts: User admin failed to login (task-attempt 10)')
+    end
+
+    # Bolt's JSON outputter (--format json, realistic for CI harnesses needing
+    # machine-parseable output) calls JSON.generate on plan failure messages,
+    # which raises JSON::GeneratorError on invalid UTF-8. The per-retry message
+    # is already sanitized (see above); this proves the terminal fail_plan
+    # message -- the one exhaustion actually surfaces -- goes through the same
+    # sanitizer, so a malformed final error can't crash the failure report
+    # itself in exactly the CI scenario this ticket exists to fix.
+    it 'sanitizes the final error text in the exhaustion message too' do
+      unsanitized_error = "line one\nline two#{'x' * 300}"
+      stub_rbac_token(fail_count: 10, error_msg: unsanitized_error)
+
+      result = run_plan('peadm::subplans::install', params)
+      expect(result).not_to be_ok
+      sanitized_and_capped = ('line one line two' + ('x' * 300))[0, 200]
+      expect(result.value.msg).to eq("Failed to obtain RBAC token after 10 attempts: #{sanitized_and_capped}")
     end
   end
 

@@ -419,14 +419,34 @@ plan peadm::subplans::install (
   # the same class of transient-unavailability window restore.pp's
   # equivalent rbac_token call already retries around for PE-44867).
   # Retry instead of failing the whole install on a transient error.
-  $rbac_token_max_attempts = 5
+  #
+  # The original 5-attempt/15s margin still wasn't enough in practice --
+  # nightly CI kept exhausting it after the pe-puppetdb bounce above (PE-46917).
+  # Live reproduction attempts (idle, under induced CPU load, and under induced
+  # CPU+disk-IO load) never reproduced the underlying race, so there's no
+  # measured delay to size this to; this widens the budget generously instead
+  # of picking a number the same way the original margin was picked. Only this
+  # call site is widened -- restore.pp's equivalent retry runs after a
+  # different operation, with no observed evidence it's under-provisioned, so
+  # it's left at its original margin rather than changed speculatively.
+  $rbac_token_max_attempts = 10
+  $rbac_token_retry_delay = 20
   $rbac_token_result = range(1, $rbac_token_max_attempts).reduce(undef) |$memo, $attempt| {
     if $memo =~ NotUndef and $memo.ok {
       $memo
     } else {
       if $attempt > 1 {
-        out::message("rbac_token not ready; retrying (attempt ${attempt}) after 15s...")
-        ctrl::sleep(15)
+        # rbac-api's response body is external content -- sanitize before
+        # logging it on every retry: strip newlines so it can't forge/obscure
+        # adjacent CI log lines, cap its length so an unexpectedly verbose
+        # payload isn't echoed in full each time, and fix up any invalid or
+        # non-UTF8-tagged content -- regsubst/regex can't safely process
+        # those (Bolt's stderr-capture path doesn't guarantee valid UTF-8 the
+        # way its stdout path does), so this goes through Ruby's
+        # String#encode via a custom function rather than regsubst directly.
+        $rbac_token_prior_error = peadm::sanitize_log_text($memo.first.error.message, 200)
+        out::message("rbac_token not ready (${rbac_token_prior_error}); retrying (attempt ${attempt}) after ${rbac_token_retry_delay}s...")
+        ctrl::sleep($rbac_token_retry_delay)
       }
       run_task('peadm::rbac_token', $primary_target,
         _catch_errors  => true,
@@ -436,7 +456,13 @@ plan peadm::subplans::install (
     }
   }
   unless $rbac_token_result.ok {
-    $rbac_token_error = $rbac_token_result.first.error.message
+    # Sanitize here too, not just in the per-retry message above: this is
+    # the message that actually surfaces on exhaustion, and Bolt's own
+    # --format json outputter calls JSON.generate on plan failure messages,
+    # which raises JSON::GeneratorError on invalid UTF-8 -- an unsanitized
+    # rbac-api error could crash the failure report itself, in exactly the
+    # CI scenario (machine-parseable output) this ticket exists to fix.
+    $rbac_token_error = peadm::sanitize_log_text($rbac_token_result.first.error.message, 200)
     fail_plan("Failed to obtain RBAC token after ${rbac_token_max_attempts} attempts: ${rbac_token_error}")
   }
 

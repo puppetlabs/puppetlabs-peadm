@@ -36,6 +36,7 @@ class RbacToken
     request.body = body
 
     response = https.request(request)
+    # TODO: PE-47009 - same generic error for transient (500) and permanent (e.g. wrong password) failures; callers' retry loops can't fail fast
     raise "Error requesting token, #{response.body}" unless response.is_a? Net::HTTPSuccess
     token = JSON.parse(response.body)['token']
 

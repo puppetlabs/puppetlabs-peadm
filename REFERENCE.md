@@ -46,6 +46,7 @@ primary_host vs replica_host) the node was passed as.
 * [`peadm::plan_step`](#peadm--plan_step)
 * [`peadm::recovery_opts_all`](#peadm--recovery_opts_all)
 * [`peadm::recovery_opts_default`](#peadm--recovery_opts_default)
+* [`peadm::sanitize_log_text`](#peadm--sanitize_log_text): Makes arbitrary external text safe to interpolate into a single log line.
 * [`peadm::update_pe_conf`](#peadm--update_pe_conf): Update the pe.conf file on a target with the provided hash
 * [`peadm::wait_until_service_ready`](#peadm--wait_until_service_ready): A convenience function to help remember port numbers for services and handle running the wait_until_service_ready task
 
@@ -992,6 +993,35 @@ The peadm::recovery_opts_default function.
 The peadm::recovery_opts_default function.
 
 Returns: `Any`
+
+### <a name="peadm--sanitize_log_text"></a>`peadm::sanitize_log_text`
+
+Type: Ruby 4.x API
+
+Makes arbitrary external text safe to interpolate into a single log line.
+
+#### `peadm::sanitize_log_text(String $text, Integer[0] $max_length)`
+
+The peadm::sanitize_log_text function.
+
+Returns: `String` A single-line, valid-UTF8, length-capped copy of `text`.
+
+##### `text`
+
+Data type: `String`
+
+Arbitrary text to make safe for a single log line -- may
+contain invalid byte sequences, or be tagged with a different,
+non-ASCII-compatible encoding entirely (e.g. from a captured
+subprocess's stderr), that Puppet's own regsubst/regex functions
+cannot safely operate on, since regex matching requires valid,
+ASCII-compatible encoding.
+
+##### `max_length`
+
+Data type: `Integer[0]`
+
+Maximum length of the returned string.
 
 ### <a name="peadm--update_pe_conf"></a>`peadm::update_pe_conf`
 
