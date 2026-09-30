@@ -66,6 +66,15 @@ plan peadm::convert (
     $memo + { $result.target.peadm::certname() => $result['extensions'] }
   }
 
+  # Update PE Master rules before any Puppet run below reaches compilers.
+  # Otherwise compilers can still match the PE Master group's classification
+  # (via legacy pp_auth_role/OID markers) in addition to PE Compiler,
+  # inheriting a puppetdb_hosts/puppetdb_ports count mismatch that fails
+  # catalog compilation with a pe_format_urls() error.
+  # See PE-44017.
+  peadm::wait_until_service_ready('pe-master', $primary_target)
+  run_task('peadm::update_pe_master_rules', $primary_target)
+
   # Add legacy compiler role to compilers that are missing it
   $compilers_with_legacy_compiler_flag = $cert_extensions_temp.filter |$name, $exts| {
     ($name in $compiler_targets.map |$t| { $t.name } or $name in $legacy_compiler_targets.map |$t| { $t.name }) and
@@ -133,6 +142,88 @@ plan peadm::convert (
       | EOL
 # lint:endignore
   }
+
+  $primary_certname            = $primary_target.peadm::certname()
+  $replica_certname            = $replica_target.peadm::certname()
+  $primary_postgresql_certname = $primary_postgresql_target.peadm::certname()
+  $replica_postgresql_certname = $replica_postgresql_target.peadm::certname()
+
+  $primary_group            = $cert_extensions.dig($primary_certname, peadm::oid('peadm_availability_group'))
+  $replica_group            = $cert_extensions.dig($replica_certname, peadm::oid('peadm_availability_group'))
+  $primary_postgresql_group = $cert_extensions.dig($primary_postgresql_certname, peadm::oid('peadm_availability_group'))
+  $replica_postgresql_group = $cert_extensions.dig($replica_postgresql_certname, peadm::oid('peadm_availability_group'))
+
+  # Guard against inconsistent or partially-stamped availability-group state
+  # before making any changes. A pair with no existing peadm_availability_group
+  # extensions at all is expected on a fresh conversion and is not a problem --
+  # both members will be assigned a fresh A/B pairing below. But if only one
+  # member already has a group, or both members already claim the *same*
+  # group, convert should not guess; it should fail fast so the operator can
+  # confirm the correct topology (this can happen if, for example, the wrong
+  # host was passed as primary/replica after a role swap).
+  #
+  # Only enforced on a fresh run (or one explicitly restarted at the first
+  # step). A run resumed with begin_at_step past 'modify-primary-cert' may be
+  # observing this plan's own partial progress from an earlier, interrupted
+  # invocation (e.g. the primary got stamped but the replica didn't before an
+  # orchestrator hiccup) rather than genuine operator error, and re-running
+  # this validation would permanently lock the operator out with no way to
+  # resume.
+  if ($begin_at_step == undef) or ($begin_at_step == 'modify-primary-cert') {
+    if ($replica_certname) and (($primary_group in ['A', 'B']) or ($replica_group in ['A', 'B'])) {
+      if $primary_group == $replica_group {
+# lint:ignore:strict_indent
+        fail_plan(@("EOL"/L))
+          The primary (${primary_certname}) and replica (${replica_certname}) both \
+          have availability group '${primary_group}' set on their certificates. \
+          This is invalid; please confirm these are really the correct \
+          primary/replica pair before running convert.
+          | EOL
+      }
+      if !($primary_group in ['A', 'B']) or !($replica_group in ['A', 'B']) {
+        fail_plan(@("EOL"/L))
+          The primary (${primary_certname}) and replica (${replica_certname}) have \
+          inconsistent availability group state: one has an existing \
+          peadm_availability_group certificate extension and the other does not. \
+          Please resolve this manually before running convert.
+          | EOL
+      }
+# lint:endignore
+    }
+
+    if ($replica_postgresql_certname) and (($primary_postgresql_group in ['A', 'B']) or ($replica_postgresql_group in ['A', 'B'])) {
+      if $primary_postgresql_group == $replica_postgresql_group {
+# lint:ignore:strict_indent
+        fail_plan(@("EOL"/L))
+          The primary PostgreSQL host (${primary_postgresql_certname}) and replica \
+          PostgreSQL host (${replica_postgresql_certname}) both have availability \
+          group '${primary_postgresql_group}' set on their certificates. This is \
+          invalid; please confirm these are really the correct pair before running \
+          convert.
+          | EOL
+      }
+      if !($primary_postgresql_group in ['A', 'B']) or !($replica_postgresql_group in ['A', 'B']) {
+        fail_plan(@("EOL"/L))
+          The primary PostgreSQL host (${primary_postgresql_certname}) and replica \
+          PostgreSQL host (${replica_postgresql_certname}) have inconsistent \
+          availability group state: one has an existing peadm_availability_group \
+          certificate extension and the other does not. Please resolve this \
+          manually before running convert.
+          | EOL
+      }
+# lint:endignore
+    }
+  }
+
+  # Determine the availability group each node should carry, preserving an
+  # existing extension where present instead of deriving it from which plan
+  # parameter (primary_host vs replica_host) the node was passed as. Used
+  # both to (re)stamp certificates below and to classify node groups, so the
+  # two stay in sync (mirrors the approach peadm::upgrade already uses).
+  $primary_avail_group            = peadm::availability_group_for($cert_extensions, $primary_certname, 'A')
+  $replica_avail_group            = peadm::availability_group_for($cert_extensions, $replica_certname, 'B')
+  $primary_postgresql_avail_group = peadm::availability_group_for($cert_extensions, $primary_postgresql_certname, 'A')
+  $replica_postgresql_avail_group = peadm::availability_group_for($cert_extensions, $replica_postgresql_certname, 'B')
 
   # Clusters A and B are used to divide PuppetDB availability for compilers. If
   # the compilers given already have peadm_availability_group facts designating
@@ -209,7 +300,7 @@ plan peadm::convert (
       primary_host   => $primary_target,
       add_extensions => {
         peadm::oid('peadm_role')               => 'puppet/server',
-        peadm::oid('peadm_availability_group') => 'A',
+        peadm::oid('peadm_availability_group') => $primary_avail_group,
       },
     )
   }
@@ -230,7 +321,7 @@ plan peadm::convert (
           primary_host   => $primary_target,
           add_extensions => {
             peadm::oid('peadm_role')               => 'puppet/server',
-            peadm::oid('peadm_availability_group') => 'B',
+            peadm::oid('peadm_availability_group') => $replica_avail_group,
           },
         )
       },
@@ -239,7 +330,7 @@ plan peadm::convert (
           primary_host   => $primary_target,
           add_extensions => {
             peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
-            peadm::oid('peadm_availability_group') => 'A',
+            peadm::oid('peadm_availability_group') => $primary_postgresql_avail_group,
           },
         )
       },
@@ -248,7 +339,7 @@ plan peadm::convert (
           primary_host   => $primary_target,
           add_extensions => {
             peadm::oid('peadm_role')               => 'puppet/puppetdb-database',
-            peadm::oid('peadm_availability_group') => 'B',
+            peadm::oid('peadm_availability_group') => $replica_postgresql_avail_group,
           },
         )
       },
@@ -304,6 +395,35 @@ plan peadm::convert (
       $rules_formatted = stdlib::to_json_pretty(parsejson($rules))
       out::message("WARNING: The following existing rules on the PE Infrastructure Agent group will be overwritten with default values:\n ${rules_formatted}")
 
+      # Node groups are keyed by which host actually carries the 'A'/'B'
+      # certificate extension, not by which plan parameter it was passed as,
+      # so that classification stays consistent with the certs just stamped
+      # above even when an existing availability group was preserved.
+      #
+      # Only swap when a genuine pair exists (a replica/replica-postgresql
+      # host was actually given). Without a real pair there's nothing to
+      # preserve, and swapping on a stray leftover 'B' extension on a lone
+      # primary would point server_a_host/postgresql_a_host at the
+      # nonexistent replica (undef), which peadm::setup::node_manager
+      # requires to be a String[1] and would crash inside apply().
+      $server_a_host = ($replica_certname and $primary_avail_group == 'B') ? {
+        true    => $replica_certname,
+        default => $primary_certname,
+      }
+      $server_b_host = ($replica_certname and $primary_avail_group == 'B') ? {
+        true    => $primary_certname,
+        default => $replica_certname,
+      }
+
+      $postgresql_a_host = ($replica_postgresql_certname and $primary_postgresql_avail_group == 'B') ? {
+        true    => $replica_postgresql_certname,
+        default => $primary_postgresql_certname,
+      }
+      $postgresql_b_host = ($replica_postgresql_certname and $primary_postgresql_avail_group == 'B') ? {
+        true    => $primary_postgresql_certname,
+        default => $replica_postgresql_certname,
+      }
+
       apply($primary_target) {
         class { 'peadm::setup::node_manager_yaml':
           primary_host => $primary_target.peadm::certname(),
@@ -311,10 +431,10 @@ plan peadm::convert (
 
         class { 'peadm::setup::node_manager':
           primary_host                     => $primary_target.peadm::certname(),
-          server_a_host                    => $primary_target.peadm::certname(),
-          server_b_host                    => $replica_target.peadm::certname(),
-          postgresql_a_host                => $primary_postgresql_target.peadm::certname(),
-          postgresql_b_host                => $replica_postgresql_target.peadm::certname(),
+          server_a_host                    => $server_a_host,
+          server_b_host                    => $server_b_host,
+          postgresql_a_host                => $postgresql_a_host,
+          postgresql_b_host                => $postgresql_b_host,
           compiler_pool_address            => $compiler_pool_address,
           internal_compiler_a_pool_address => $internal_compiler_a_pool_address,
           internal_compiler_b_pool_address => $internal_compiler_b_pool_address,
@@ -363,9 +483,6 @@ plan peadm::convert (
     if $compiler_targets {
       run_command('systemctl restart pe-puppetserver.service pe-puppetdb.service', $compiler_targets)
     }
-
-    # Update PE Master rules to support legacy compilers
-    run_task('peadm::update_pe_master_rules', $primary_target)
 
     # Run puppet on all targets again to ensure everything is fully up-to-date
     run_task('peadm::puppet_runonce', $all_targets)

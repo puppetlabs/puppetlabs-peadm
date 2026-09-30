@@ -154,6 +154,7 @@ jobs:
           replica=$(yq '.groups[].targets[] | select(.vars.role == "replica") | .name' spec/fixtures/litmus_inventory.yaml)
           echo -n '{ "primary_host": "'$primary'", "replica_host": "'$replica'", "compiler_hosts": ["'$compiler'", "'$legacy_compiler'"], "version": "2025.11.3"}' > upgrade_params.json
       - name: Clean cache on PE nodes before upgrade
+        timeout-minutes: 15
         run: |
           bundle exec bolt command run \
             'dnf clean all || yum clean all;
@@ -162,6 +163,7 @@ jobs:
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --targets all
       - name: Upgrade PE with legacy compilers
+        timeout-minutes: 120
         run: |
           echo ::group::upgrade_params.json
           cat upgrade_params.json

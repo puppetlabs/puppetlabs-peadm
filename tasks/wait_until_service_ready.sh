@@ -11,7 +11,9 @@ check() {
 n=0
 until [ $n -ge 20 ]
 do
-  check && break
+  check && exit 0
   n=$[$n+1]
   sleep 3
 done
+
+exit 1

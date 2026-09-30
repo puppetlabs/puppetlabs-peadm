@@ -126,6 +126,15 @@ jobs:
             version=${{ matrix.version }} \
             console_password=${{ secrets.CONSOLE_PASSWORD }} \
             code_manager_auto_configure=true
+      - name: Clean cache on PE nodes before upgrade
+        timeout-minutes: 15
+        run: |
+          bundle exec bolt command run \
+            'dnf clean all || yum clean all;
+             rm -rf /var/cache/dnf/* /var/tmp/* /tmp/*;
+             rm -rf /opt/puppetlabs/server/data/{packages/public,staging}/* || true' \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --targets all
       - name: Perform migration
         run: |
           echo ::group::prepare
