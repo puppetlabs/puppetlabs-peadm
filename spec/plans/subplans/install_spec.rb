@@ -113,7 +113,7 @@ describe 'peadm::subplans::install' do
     params = {
       'primary_host' => 'primary',
       'console_password' => 'puppetLabs123!',
-      'version' => '2023.8.12',
+      'version' => '2025.12.0',
       'legacy_compilers' => ['compiler1', 'compiler2'],
     }
     expect(run_plan('peadm::subplans::install', params)).to be_ok
@@ -128,7 +128,7 @@ describe 'peadm::subplans::install' do
       'primary_host' => 'primary',
       'compiler_hosts' => ['compiler1'],
       'console_password' => 'puppetLabs123!',
-      'version' => '2023.8.12',
+      'version' => '2025.12.0',
     }
 
     expect_task('peadm::agent_install')
@@ -146,7 +146,7 @@ describe 'peadm::subplans::install' do
       'primary_host' => 'primary',
       'compiler_hosts' => ['compiler1'],
       'console_password' => 'puppetLabs123!',
-      'version' => '2023.8.12',
+      'version' => '2025.12.0',
       'dns_alt_names' => ['puppet', 'alt.example.com'],
     }
 
@@ -237,7 +237,7 @@ describe 'peadm::subplans::install' do
       {
         'primary_host' => 'primary',
         'console_password' => 'puppetLabs123!',
-        'version' => '2023.8.12',
+        'version' => '2025.12.0',
       }
     end
     # PE-46685: probes via `bolt plan show`, which resolves through the
