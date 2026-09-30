@@ -13,6 +13,9 @@ else
   osfamily="el"
   if grep -qi amazon /etc/os-release && grep -qi 'VERSION_ID="2"' /etc/os-release; then
     version=7
+  elif grep -qi amazon /etc/os-release && grep -qi 'VERSION_ID="2023"' /etc/os-release; then
+    osfamily="amazon"
+    version=2023
   fi
 fi
 
