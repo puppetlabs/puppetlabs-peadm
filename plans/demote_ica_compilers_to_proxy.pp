@@ -68,15 +68,6 @@ plan peadm::demote_ica_compilers_to_proxy (
     peadm::get_targets($compilers).map |$target| { $target.peadm::certname() }
   }
 
-  if $all and $candidate_fqdns.length > $batch_size and !$acknowledge_fleet_impact {
-    fail_plan([
-        "peadm::demote_ica_compilers_to_proxy: \$all resolved ${candidate_fqdns.length} ICA compilers,",
-        "more than \$batch_size (${batch_size}). Demoting the whole fleet across multiple batches degrades",
-        'CA availability while each batch drains. Set $acknowledge_fleet_impact => true to proceed, or',
-        'lower $batch_size to run additional batches yourself.',
-    ].join(' '))
-  }
-
   # Preflight: a compiler with no live ICA (never promoted, or already fully
   # demoted) is skipped rather than treated as an error -- re-running this
   # plan after a successful demote should be a no-op, not a failure.
@@ -99,6 +90,20 @@ plan peadm::demote_ica_compilers_to_proxy (
   }
 
   $to_demote = $preflight.filter |$c| { $c['state'] in ['active', 'draining'] }.map |$c| { $c['fqdn'] }
+
+  # Gated on $to_demote, not $candidate_fqdns: a compiler preflight skips
+  # (already demoted, or never had an ICA) never reaches the batch loop, so
+  # it cannot be part of the multi-batch fleet impact this flag exists to
+  # gate -- counting it here would force an acknowledgement even when only
+  # one batch, or none, will actually run.
+  if $all and $to_demote.length > $batch_size and !$acknowledge_fleet_impact {
+    fail_plan([
+        "peadm::demote_ica_compilers_to_proxy: \$all resolved ${to_demote.length} ICA compilers to demote,",
+        "more than \$batch_size (${batch_size}). Demoting the whole fleet across multiple batches degrades",
+        'CA availability while each batch drains. Set $acknowledge_fleet_impact => true to proceed, or',
+        'lower $batch_size to run additional batches yourself.',
+    ].join(' '))
+  }
 
   # peadm::drain_ica_compiler's underlying endpoint requires state 'active'
   # and 409s on a compiler that is already 'draining' -- reached both by a
@@ -268,7 +273,6 @@ plan peadm::demote_ica_compilers_to_proxy (
     $drained_incomplete = $result['drained_incomplete']
     $not_attempted = $to_demote - $result['demoted'] - $drained_incomplete - $failed_compilers
     $demoted_desc = empty($result['demoted']) ? { true => 'none', default => $result['demoted'].join(', ') }
-    $drained_incomplete_desc = empty($drained_incomplete) ? { true => 'none', default => $drained_incomplete.join(', ') }
     $not_attempted_desc = empty($not_attempted) ? { true => 'none', default => $not_attempted.join(', ') }
 
     # revoke_compiler_ica's crl-updated:false failure is unlike every other
@@ -282,7 +286,23 @@ plan peadm::demote_ica_compilers_to_proxy (
     # that function's own docstring for why catch_errors()'s wrapped
     # Error.kind alone (always just the generic 'bolt/run-failure') isn't
     # enough on its own.
-    $revoke_crl_warning = if $result['failed_batch']['kind'] == 'peadm/revoke_compiler_ica_crl_not_updated' {
+    $is_crl_not_updated = $result['failed_batch']['kind'] == 'peadm/revoke_compiler_ica_crl_not_updated'
+
+    # Excluded from the generic "re-run this plan against them" list below
+    # for the same reason: naming it there too would tell an operator a
+    # re-run completes its demote, directly contradicting the CRL warning's
+    # own "do not rely on a re-run to fix this one."
+    $drained_incomplete_for_rerun = if $is_crl_not_updated {
+      $drained_incomplete - $failed_compilers
+    } else {
+      $drained_incomplete
+    }
+    $drained_incomplete_desc = empty($drained_incomplete_for_rerun) ? {
+      true => 'none',
+      default => $drained_incomplete_for_rerun.join(', '),
+    }
+
+    $revoke_crl_warning = if $is_crl_not_updated {
       [
         " ${$failed_compilers.join(', ')}'s ICA is now marked revoked at the primary even though this failed --",
         're-running this plan will skip it as already-demoted rather than retry the CRL splice. Investigate the',

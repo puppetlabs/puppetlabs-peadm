@@ -40,11 +40,36 @@ describe 'peadm::demote_ica_compilers_to_proxy' do
           { 'compiler-fqdn' => 'compiler-b', 'state' => 'active' },
         ],
       )
+      expect_task('peadm::get_ica_state').always_return('state' => 'active').be_called_times(2)
 
       result = run_plan('peadm::demote_ica_compilers_to_proxy', base_params.merge('all' => true, 'batch_size' => 1))
 
       expect(result).not_to be_ok
-      expect(result.value.msg).to match(%r{\$all resolved 2 ICA compilers, more than \$batch_size \(1\)})
+      expect(result.value.msg).to match(%r{\$all resolved 2 ICA compilers to demote, more than \$batch_size \(1\)})
+    end
+
+    it 'does not require acknowledgement when preflight skips enough candidates to bring the remainder to batch_size or fewer' do
+      allow_standard_non_returning_calls
+      expect_task('peadm::list_compiler_icas').always_return(
+        'intermediate-cas' => [
+          { 'compiler-fqdn' => 'compiler-a', 'state' => 'active' },
+          { 'compiler-fqdn' => 'compiler-b', 'state' => 'active' },
+          { 'compiler-fqdn' => 'compiler-c', 'state' => 'active' },
+        ],
+      )
+      expect_task('peadm::get_ica_state').with_params('compiler_fqdn' => 'compiler-a', 'token_file' => nil).always_return('state' => 'active')
+      expect_task('peadm::get_ica_state').with_params('compiler_fqdn' => 'compiler-b', 'token_file' => nil).always_return('state' => 'decommissioned')
+      expect_task('peadm::get_ica_state').with_params('compiler_fqdn' => 'compiler-c', 'token_file' => nil).always_return('state' => 'decommissioned')
+
+      # 3 candidates resolved by $all, more than batch_size (1) -- but
+      # preflight skips 2 of them as already-demoted, leaving only 1 to
+      # actually batch, so no multi-batch fleet impact occurs.
+      params = base_params.merge('all' => true, 'batch_size' => 1)
+      result = run_plan('peadm::demote_ica_compilers_to_proxy', params)
+
+      expect(result).to be_ok
+      expect(result.value['demoted']).to eq(['compiler-a'])
+      expect(result.value['skipped']).to eq(['compiler-b', 'compiler-c'])
     end
 
     it 'proceeds when acknowledge_fleet_impact is set' do
@@ -246,6 +271,29 @@ describe 'peadm::demote_ica_compilers_to_proxy' do
       expect(result).not_to be_ok
       expect(result.value.msg).to match(%r{compiler-a's ICA is now marked revoked at the primary})
       expect(result.value.msg).to match(%r{do not rely on a re-run to fix this one})
+      # Contradicts the CRL warning otherwise: a re-run will not retry
+      # compiler-a's CRL splice, so the generic "re-run this plan against
+      # them to complete the demote" list must not name it too.
+      expect(result.value.msg).not_to match(%r{untouched\):[^.]*compiler-a})
+    end
+
+    it 'excludes only the CRL-failed compiler from the generic re-run list, not a genuinely-incomplete batch-mate' do
+      allow_standard_non_returning_calls
+      expect_task('peadm::get_ica_state').always_return('state' => 'draining').be_called_times(2)
+      expect_task('peadm::revoke_compiler_ica')
+        .with_params('compiler_fqdn' => 'compiler-a', 'token_file' => nil)
+        .error_with('msg' => 'Intermediate CA for compiler-a was marked revoked, but the root CRL was not updated', 'kind' => 'peadm/revoke_compiler_ica_crl_not_updated')
+
+      params = base_params.merge('compilers' => 'compiler-a,compiler-b', 'batch_size' => 2, 'revoke' => true)
+      result = run_plan('peadm::demote_ica_compilers_to_proxy', params)
+
+      expect(result).not_to be_ok
+      # compiler-b never reached its own revoke call (compiler-a failed
+      # first in the same batch), so it is genuinely incomplete and a
+      # re-run really would finish it -- unlike compiler-a, it belongs in
+      # the generic re-run list.
+      expect(result.value.msg).to match(%r{untouched\):[^.]*compiler-b})
+      expect(result.value.msg).not_to match(%r{untouched\):[^.]*compiler-a})
     end
 
     it 'does not add the CRL caveat on the default (decommission) path' do
