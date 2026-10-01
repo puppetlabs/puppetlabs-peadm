@@ -22,7 +22,7 @@ on:
       version:
         description: PE version to install initially
         required: true
-        default: 2021.7.9
+        default: 2023.8.12
       upgrade_version:
         description: PE version to upgrade to
         required: true

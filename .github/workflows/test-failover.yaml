@@ -10,7 +10,7 @@ on:
       version:
         description: PE version to install
         required: true
-        default: 2021.7.9
+        default: 2023.8.12
       version_to_upgrade:
         description: PE version to upgrade to
         required: false
