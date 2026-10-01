@@ -598,4 +598,32 @@ describe 'peadm::subplans::install' do
 
     expect(run_plan('peadm::subplans::install', params)).to be_ok
   end
+
+  # See install.pp's $pe_installer_dir comment for why internal dev/RC
+  # builds ship as a plain .tar (only public released builds use .tar.gz).
+  # Before this fix, $pe_installer_dir's regsubst only stripped a literal
+  # '.tar.gz' suffix, so a bare '.tar' source (set via pe_installer_source
+  # below) left the extension attached: 'installer_dir' came out as
+  # '/tmp/puppet-enterprise-....tar' instead of the real extracted directory
+  # ('/tmp/puppet-enterprise-...', no extension). peadm::pe_reinstall then
+  # failed every time with "Puppet Enterprise installer not found", blocking
+  # every extra-large install tested against an internal dev build.
+  it 'reinstalls the primary using the correctly-stripped installer_dir for a bare .tar source' do
+    params = {
+      'primary_host' => 'primary',
+      'primary_postgresql_host' => 'postgres1',
+      'console_password' => 'puppetLabs123!',
+      'version' => '2023.8.10',
+      'pe_installer_source' => 'https://artifactory.example.com/main/ci-ready/puppet-enterprise-2023.8.10-el-7.11-x86_64.tar',
+    }
+
+    expect_task('peadm::pe_reinstall')
+      .with_targets('primary')
+      .with_params({
+                     'installer_dir' => '/tmp/puppet-enterprise-2023.8.10-el-7.11-x86_64',
+                     'peconf'        => '/tmp/pe.conf',
+                   })
+
+    expect(run_plan('peadm::subplans::install', params)).to be_ok
+  end
 end
