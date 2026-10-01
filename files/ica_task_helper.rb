@@ -62,7 +62,20 @@ module IcaTaskHelper
   # Connection-level exceptions every ICA task rescues the same way,
   # distinct from the HTTP-level (non-200) failures each task's own
   # response.code check already reports with its own specific kind.
+  #
+  # Rescued separately from, and before, LOCAL_FILE_ERROR_CLASSES below:
+  # SystemCallError is the superclass of every Errno::*, including the
+  # Errno::ENOENT/EACCES a bad token_file path or missing local hostcert
+  # raises -- without that ordering, a local file problem would be
+  # misreported as a network failure.
   CONNECTION_ERROR_CLASSES = [OpenSSL::SSL::SSLError, SystemCallError, SocketError, Net::OpenTimeout, Net::ReadTimeout].freeze
+
+  # Local file reads every ICA task performs before ever reaching the
+  # network (primary_https_client's hostcert/hostprivkey, rbac_token's
+  # token_file) -- rescued ahead of CONNECTION_ERROR_CLASSES so a missing
+  # or unreadable local file is reported as what it is, not misclassified
+  # as a connection failure.
+  LOCAL_FILE_ERROR_CLASSES = [Errno::ENOENT, Errno::EACCES].freeze
 
   # Classifies a rescued CONNECTION_ERROR_CLASSES exception into a
   # (message, kind_suffix) pair, matching the distinction

@@ -117,6 +117,19 @@ describe GetIcaState do
     end
   end
 
+  context 'when the token file does not exist' do
+    it 'fails through the _error contract with a local-file kind, not misreported as a connection failure' do
+      allow(IcaTaskHelper).to receive(:rbac_token).and_raise(Errno::ENOENT, '/home/user/.puppetlabs/token')
+      expect(STDOUT).to receive(:puts) do |output|
+        parsed = JSON.parse(output)
+        expect(parsed['_error']['kind']).to eq('peadm/get_ica_state_local_file_error')
+        expect(parsed['_error']['msg']).to include('Failed to read a required local file')
+      end
+
+      expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
+    end
+  end
+
   context 'when the primary returns an unparsable response body' do
     it 'fails through the _error contract with a distinct kind, not the generic failure' do
       response = instance_double('Net::HTTPResponse', code: '200', body: 'not json')

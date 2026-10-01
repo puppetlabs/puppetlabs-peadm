@@ -47,6 +47,8 @@ class RevokeCompilerIca
 
     STDOUT.puts(body.to_json)
     exit 0
+  rescue *IcaTaskHelper::LOCAL_FILE_ERROR_CLASSES => e
+    IcaTaskHelper.fail!("Failed to read a required local file: #{e.message}", 'peadm/revoke_compiler_ica_local_file_error')
   rescue *IcaTaskHelper::CONNECTION_ERROR_CLASSES => e
     msg, suffix = IcaTaskHelper.classify_connection_error(e)
     IcaTaskHelper.fail!(msg, "peadm/revoke_compiler_ica_#{suffix}")

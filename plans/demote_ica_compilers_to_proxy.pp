@@ -18,9 +18,10 @@
 #   1 -- draining more than one at once removes them from every proxy compiler's
 #   pool simultaneously, and with ica-pool-fallback-to-primary enabled that can
 #   send the whole fleet's CA signing load to the primary.
-# @param acknowledge_fleet_impact Required when $all resolves more compilers than
-#   $batch_size, since that combination demotes the fleet across multiple batches
-#   without a pause between them for an operator to reassess.
+# @param acknowledge_fleet_impact Required when, after preflight skips any
+#   compiler that already has no live ICA to demote, more than $batch_size
+#   compilers remain to demote -- that combination demotes the fleet across
+#   multiple batches without a pause between them for an operator to reassess.
 # @param revoke Revoke the ICA (invalidating every agent certificate it signed)
 #   instead of the default graceful decommission.
 # @param quiet_period_seconds How long to wait per batch after draining, so proxy

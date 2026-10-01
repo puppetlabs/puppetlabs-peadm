@@ -33,6 +33,8 @@ class DrainIcaCompiler
       'refresh interval.',
     )
     exit 0
+  rescue *IcaTaskHelper::LOCAL_FILE_ERROR_CLASSES => e
+    IcaTaskHelper.fail!("Failed to read a required local file: #{e.message}", 'peadm/drain_ica_compiler_local_file_error')
   rescue *IcaTaskHelper::CONNECTION_ERROR_CLASSES => e
     msg, suffix = IcaTaskHelper.classify_connection_error(e)
     IcaTaskHelper.fail!(msg, "peadm/drain_ica_compiler_#{suffix}")

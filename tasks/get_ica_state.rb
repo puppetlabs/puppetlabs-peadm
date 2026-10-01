@@ -46,6 +46,8 @@ class GetIcaState
       raise "Failed to query ICA state for #{@compiler_fqdn}: HTTP #{res.code} - #{res.body}"
     end
     exit 0
+  rescue *IcaTaskHelper::LOCAL_FILE_ERROR_CLASSES => e
+    IcaTaskHelper.fail!("Failed to read a required local file: #{e.message}", 'peadm/get_ica_state_local_file_error')
   rescue *IcaTaskHelper::CONNECTION_ERROR_CLASSES => e
     msg, suffix = IcaTaskHelper.classify_connection_error(e)
     IcaTaskHelper.fail!(msg, "peadm/get_ica_state_#{suffix}")

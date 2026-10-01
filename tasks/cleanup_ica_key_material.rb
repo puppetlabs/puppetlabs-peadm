@@ -28,9 +28,10 @@ class CleanupIcaKeyMaterial
 
   private
 
-  # Deletes unconditionally rather than checking existence first, so a
-  # symlink swapped in between a check and a delete can't redirect this at
-  # an arbitrary file the puppetserver process user can write to.
+  # Deletes unconditionally rather than checking existence first, to avoid
+  # a TOCTOU race where the file is removed by something else (e.g. a
+  # concurrent run of this same idempotent task) between the check and the
+  # delete, which a naive exists-then-delete would misreport as a failure.
   def delete_if_exists(path)
     File.delete(path)
     true

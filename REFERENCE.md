@@ -2435,9 +2435,10 @@ Default value: `1`
 
 Data type: `Boolean`
 
-Required when $all resolves more compilers than
-$batch_size, since that combination demotes the fleet across multiple batches
-without a pause between them for an operator to reassess.
+Required when, after preflight skips any
+compiler that already has no live ICA to demote, more than $batch_size
+compilers remain to demote -- that combination demotes the fleet across
+multiple batches without a pause between them for an operator to reassess.
 
 Default value: `false`
 
