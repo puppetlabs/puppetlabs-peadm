@@ -77,7 +77,7 @@ There is also a upgrade.sh script that is similar to the install.sh script.  Thi
 ## Attaching agent containers
 Because we are using containers we can start up numerous container instances and attach them all to the same PE stack.  In a matter of minutes you can easily attach hunders of new nodes to the PE stack (if resources allow). This is very useful for testing out scenarios involving different puppet versions or operating systems and even features like the orchestrator. 
 
-To attach a container to the PE stack you first must get the network name of the PE stack.  This can be done with a command like: `docker inspect pe-xl-core-0.puppet.vm`.  You need to use either the container id or the container name of the MoM when inspecting. 
+To attach a container to the PE stack you first must get the network name of the PE stack.  This can be done with a command like: `docker inspect pe-xl-core-0.puppet.vm`.  You need to use either the container id or the container name of the primary server when inspecting. 
 
 The network name we want to grab is 'extra-large-ha_default'.  (Yours will be different, but the output will be similar)
 
