@@ -1,0 +1,16 @@
+{
+  "description": "Run on a PE primary to gracefully decommission a draining compiler's Intermediate CA (POST .../decommission). Performs no CRL step -- agent certificates it signed remain valid until they naturally renew. 409s if the ICA is not currently draining. Requires an RBAC token (certificate_authority:sign_ica) since this route has no certname allowance.",
+  "input_method": "stdin",
+  "private": true,
+  "files": ["peadm/files/ica_task_helper.rb"],
+  "parameters": {
+    "compiler_fqdn": {
+      "description": "Certname/FQDN of the compiler whose Intermediate CA to decommission.",
+      "type": "String[1]"
+    },
+    "token_file": {
+      "description": "Path to an RBAC token file granting certificate_authority:sign_ica. Defaults to ~/.puppetlabs/token (the file `puppet access login` writes).",
+      "type": "Optional[String[1]]"
+    }
+  }
+}
