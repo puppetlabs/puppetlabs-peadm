@@ -3,7 +3,7 @@ name: Test replace failed PostgreSQL
 on:
   pull_request:
     paths:
-      - .github/workflows/**/*
+      - .github/workflows/test-replace-failed-postgresql.yaml
       - spec/**/*
       - lib/**/*
       - tasks/**/*

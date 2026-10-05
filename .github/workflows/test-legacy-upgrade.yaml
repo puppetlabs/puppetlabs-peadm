@@ -3,7 +3,7 @@ name: Upgrade PE with legacy compilers
 on:
   pull_request:
     paths:
-      - .github/workflows/**/*
+      - .github/workflows/test-legacy-upgrade.yaml
       - spec/**/*
       - lib/**/*
       - tasks/**/*

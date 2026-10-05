@@ -3,7 +3,7 @@ name: Add replica matrix
 on:
   pull_request:
     paths:
-      - .github/workflows/**/*
+      - .github/workflows/test-add-replica-matrix.yaml
       - spec/**/*
       - lib/**/*
       - tasks/**/*

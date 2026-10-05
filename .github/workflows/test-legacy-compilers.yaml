@@ -3,7 +3,7 @@ name: Convert compiler to legacy
 on:
   pull_request:
     paths:
-      - .github/workflows/**/*
+      - .github/workflows/test-legacy-compilers.yaml
       - spec/**/*
       - lib/**/*
       - tasks/**/*

@@ -3,7 +3,7 @@ name: Install test matrix
 on:
   pull_request:
     paths:
-      - .github/workflows/**/*
+      - .github/workflows/test-install-matrix.yaml
       - spec/**/*
       - lib/**/*
       - tasks/**/*

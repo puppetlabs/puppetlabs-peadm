@@ -3,7 +3,7 @@ name: Upgrade test matrix
 on:
   pull_request:
     paths:
-      - .github/workflows/**/*
+      - .github/workflows/test-upgrade-matrix.yaml
       - spec/**/*
       - lib/**/*
       - tasks/**/*

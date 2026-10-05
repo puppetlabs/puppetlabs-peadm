@@ -3,7 +3,7 @@ name: Test Migration
 on:
   pull_request:
     paths:
-      - .github/workflows/**/*
+      - .github/workflows/test-migration.yaml
       - spec/**/*
       - lib/**/*
       - tasks/**/*
