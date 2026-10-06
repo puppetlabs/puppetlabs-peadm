@@ -25,10 +25,13 @@ plan peadm_spec::install_test_cluster (
     }
   }
 
-  # CI jobs triggered from forks don't have access to secrets, so use randomized input instead
+  # CI jobs triggered from forks don't have access to secrets, so use randomized input instead.
+  # '$' is deliberately excluded from the charset: the PE installer interpolates the password
+  # inside a double-quoted Puppet string, so a '$' followed by word characters fails the install
+  # with "Undefined variable".
   if $console_password == '' {
     $cp = run_command(
-      'LC_ALL=C tr -dc \'A-Za-z0-9!"#$%&\'\\\'\'()*+,-./:;<=>?@[\]^_`{|}~\' </dev/urandom | head -c 30; echo', localhost
+      'LC_ALL=C tr -dc \'A-Za-z0-9!"#%&\'\\\'\'()*+,-./:;<=>?@[\]^_`{|}~\' </dev/urandom | head -c 30; echo', localhost
     ).first['stdout'].chomp
   } else {
     $cp = $console_password
