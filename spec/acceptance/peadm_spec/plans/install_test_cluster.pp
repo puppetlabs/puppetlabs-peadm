@@ -1,3 +1,11 @@
+# compiler_pool_address (PE-46918) is only forwarded for architectures with
+# compilers (large*, extra-large*); peadm::subplans::configure defaults it to
+# the primary's certname when unset, so agents would otherwise never reach a
+# compiler. The pe_acceptance_tests harness (run_peadm_install) passes it,
+# deriving it when there is a single compiler. The architectures that forward
+# it below must match the ones with a 'compiler' role in pe_acceptance_tests'
+# REQUIRED_ROLES_BY_ARCHITECTURE (lib/puppet_enterprise_acceptance/
+# peadm_install_helper.rb).
 plan peadm_spec::install_test_cluster (
   String[1]                 $architecture,
   String                    $download_mode          = 'direct',
@@ -6,6 +14,7 @@ plan peadm_spec::install_test_cluster (
   Optional[String[1]]       $pe_installer_source    = undef,
   Boolean                   $permit_unsafe_versions = false,
   Enum['enable', 'disable'] $fips                   = 'disable',
+  Optional[String[1]]       $compiler_pool_address  = undef,
   String                    $console_password
 ) {
   $t = get_targets('*')
@@ -56,18 +65,21 @@ plan peadm_spec::install_test_cluster (
         replica_host   => $t.filter |$n| { $n.vars['role'] == 'replica' },
     } }
     'large': {{
-        primary_host   => $t.filter |$n| { $n.vars['role'] == 'primary' },
-        compiler_hosts => $t.filter |$n| { $n.vars['role'] == 'compiler' },
+        primary_host          => $t.filter |$n| { $n.vars['role'] == 'primary' },
+        compiler_hosts        => $t.filter |$n| { $n.vars['role'] == 'compiler' },
+        compiler_pool_address => $compiler_pool_address,
     } }
     'large-with-dr': {{
-        primary_host   => $t.filter |$n| { $n.vars['role'] == 'primary' },
-        replica_host   => $t.filter |$n| { $n.vars['role'] == 'replica' },
-        compiler_hosts => $t.filter |$n| { $n.vars['role'] == 'compiler' },
+        primary_host          => $t.filter |$n| { $n.vars['role'] == 'primary' },
+        replica_host          => $t.filter |$n| { $n.vars['role'] == 'replica' },
+        compiler_hosts        => $t.filter |$n| { $n.vars['role'] == 'compiler' },
+        compiler_pool_address => $compiler_pool_address,
     } }
     'extra-large': {{
         primary_host            => $t.filter |$n| { $n.vars['role'] == 'primary' },
         primary_postgresql_host => $t.filter |$n| { $n.vars['role'] == 'primary-pdb-postgresql' },
         compiler_hosts          => $t.filter |$n| { $n.vars['role'] == 'compiler' },
+        compiler_pool_address   => $compiler_pool_address,
     } }
     'extra-large-with-dr': {{
         primary_host             => $t.filter |$n| { $n.vars['role'] == 'primary' },
@@ -75,6 +87,7 @@ plan peadm_spec::install_test_cluster (
         replica_host             => $t.filter |$n| { $n.vars['role'] == 'replica' },
         replica_postgresql_host  => $t.filter |$n| { $n.vars['role'] == 'replica-pdb-postgresql' },
         compiler_hosts           => $t.filter |$n| { $n.vars['role'] == 'compiler' },
+        compiler_pool_address    => $compiler_pool_address,
     } }
     default: { fail('Invalid architecture!') }
   }
