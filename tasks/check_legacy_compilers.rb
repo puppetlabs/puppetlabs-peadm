@@ -9,7 +9,7 @@ require 'puppet'
 # CheckLegacyCompilers task class
 class CheckLegacyCompilers
   def initialize(params)
-    @nodes = params['legacy_compilers'].split(',') if params['legacy_compilers'].is_a?(String)
+    @nodes = params['legacy_compilers'].is_a?(String) ? params['legacy_compilers'].split(',') : []
   end
 
   def execute!

@@ -3,17 +3,16 @@ require_relative '../../../tasks/check_legacy_compilers'
 
 describe CheckLegacyCompilers do
   describe '#initialize' do
-    # PINS A REAL BUG (not fixed here, out of scope for this ticket): there
-    # is no `else` branch, so @nodes is left nil for any non-String (or
-    # missing) legacy_compilers param, and execute!'s first line is
-    # `@nodes.each`, which raises NoMethodError on nil. The one production
-    # call site (plans/convert.pp:376) is guarded by `if $legacy_compilers`
-    # and always passes a String (`.join(',')`), so this path is dead in
-    # practice -- but the code itself is directly reachable and this is a
-    # real defect, not something this ticket fixes.
-    it 'raises NoMethodError from execute! when legacy_compilers is not a String' do
+    # Fixed under PE-46879: there was no `else` branch, so @nodes was left
+    # nil for any non-String (or missing) legacy_compilers param, and
+    # execute!'s first line, `@nodes.each`, raised NoMethodError on nil. The
+    # one production call site (plans/convert.pp:376) is guarded by `if
+    # $legacy_compilers` and always passes a String (`.join(',')`), so this
+    # path was dead in practice -- but it was directly reachable and crashed
+    # instead of handling the absence of legacy compilers gracefully.
+    it 'treats a non-String legacy_compilers as no nodes to check, instead of raising' do
       task = described_class.new('legacy_compilers' => nil)
-      expect { task.execute! }.to raise_error(NoMethodError)
+      expect { task.execute! }.not_to raise_error
     end
 
     # Catches a mutation that uses the wrong delimiter or drops .split

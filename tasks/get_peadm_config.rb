@@ -16,7 +16,7 @@ class GetPEAdmConfig
     if peadm_primary_a_group
       puts config.to_json
     else
-      puts({ 'error' => 'This is not a peadm-compatible cluster. Use peadm::convert first.' }).to_json
+      puts({ 'error' => 'This is not a peadm-compatible cluster. Use peadm::convert first.' }.to_json)
     end
   end
 
