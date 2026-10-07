@@ -256,14 +256,83 @@ describe 'peadm::restore' do
       expect(call_log.index('rbac_token')).to be < call_log.index(import_command)
     end
 
-    # restore.pp ~333-352: on a transient rbac_token failure the plan retries
-    # up to $rbac_token_max_attempts (5) times, sleeping 15s between attempts
-    # via ctrl::sleep, then fail_plan()s with the last error once attempts are
-    # exhausted. Mutation target: an off-by-one in the
-    # `range(1, $rbac_token_max_attempts)` bound (this test's
-    # be_called_times(5) pins the exact retry count), or the loop silently
+    # PE-47009: a permanent failure (wrong console_password) is tagged with
+    # the peadm/rbac-auth-failure kind by the task and must not be retried.
+    it 'fails fast without retrying on a permanent rbac auth failure', valid_cluster: true do
+      allow_any_command
+      allow_task('peadm::backup_classification')
+      allow_task('peadm::transform_classification_groups')
+      allow_task('peadm::restore_classification')
+      expect_task('peadm::rbac_token')
+        .error_with({ 'msg' => 'Error requesting token, bad password', 'kind' => 'peadm/rbac-auth-failure' })
+        .be_called_times(1)
+
+      result = run_plan('peadm::restore', migration_params)
+
+      expect(result).not_to be_ok
+      expect(result.value.kind).to eq('bolt/plan-failure')
+      expect(result.value.msg).to eq('Failed to obtain RBAC token, permanent failure (not retrying): Error requesting token, bad password')
+    end
+
+    # The permanent-failure check must also act on a later attempt, not just
+    # the first. The message goes through peadm::sanitize_log_text, so
+    # newlines are flattened in the final failure message.
+    it 'stops retrying as soon as a permanent failure follows transient ones', valid_cluster: true do
+      # rubocop:disable RSpec/AnyInstance
+      allow_any_instance_of(Object).to receive(:sleep)
+      # rubocop:enable RSpec/AnyInstance
+
+      allow_any_command
+      allow_task('peadm::backup_classification')
+      allow_task('peadm::transform_classification_groups')
+      allow_task('peadm::restore_classification')
+      attempts = 0
+      expect_task('peadm::rbac_token').be_called_times(3).return do |targets:, **|
+        attempts += 1
+        kind = (attempts < 3) ? 'puppetlabs.rbac/server-error' : 'peadm/rbac-auth-failure'
+        Bolt::ResultSet.new(targets.map { |t| Bolt::Result.new(t, error: { 'msg' => "attempt #{attempts}\nline two", 'kind' => kind }) })
+      end
+
+      result = run_plan('peadm::restore', migration_params)
+
+      expect(result).not_to be_ok
+      expect(result.value.msg).to eq('Failed to obtain RBAC token, permanent failure (not retrying): attempt 3 line two')
+    end
+
+    # A permanent failure on the very last attempt ends the loop by reduce
+    # exhaustion rather than the short-circuit, and must still be reported as
+    # permanent.
+    it 'reports a permanent failure on the final attempt as permanent', valid_cluster: true do
+      # rubocop:disable RSpec/AnyInstance
+      allow_any_instance_of(Object).to receive(:sleep)
+      # rubocop:enable RSpec/AnyInstance
+
+      allow_any_command
+      allow_task('peadm::backup_classification')
+      allow_task('peadm::transform_classification_groups')
+      allow_task('peadm::restore_classification')
+      attempts = 0
+      expect_task('peadm::rbac_token').be_called_times(5).return do |targets:, **|
+        attempts += 1
+        kind = (attempts < 5) ? 'puppetlabs.rbac/server-error' : 'peadm/rbac-auth-failure'
+        Bolt::ResultSet.new(targets.map { |t| Bolt::Result.new(t, error: { 'msg' => "attempt #{attempts}", 'kind' => kind }) })
+      end
+
+      result = run_plan('peadm::restore', migration_params)
+
+      expect(result).not_to be_ok
+      expect(result.value.msg).to eq('Failed to obtain RBAC token, permanent failure (not retrying): attempt 5')
+    end
+
+    # On a transient rbac_token failure ($rbac_token_result retry loop in
+    # restore.pp) the plan retries up to $rbac_token_max_attempts (5) times,
+    # sleeping 15s between attempts via ctrl::sleep, then fail_plan()s with the
+    # last error once attempts are exhausted. Mutation targets: an off-by-one in
+    # the `range(1, $rbac_token_max_attempts)` bound (this test's
+    # be_called_times(5) pins the exact retry count), the loop silently
     # swallowing the failure instead of calling fail_plan (this test's
-    # `.not_to be_ok` / message assertions).
+    # `.not_to be_ok` / message assertions), or dropping the sanitize_log_text
+    # call (the newline in the stubbed message must come out flattened).
     it 'gives up and fails the plan after exhausting rbac_token retries', valid_cluster: true do
       # ctrl::sleep calls Kernel#sleep for real; stub it out so the retry
       # backoff doesn't make this example take ~60 real seconds. There's no
@@ -278,7 +347,7 @@ describe 'peadm::restore' do
       allow_task('peadm::transform_classification_groups')
       allow_task('peadm::restore_classification')
       expect_task('peadm::rbac_token')
-        .error_with({ 'msg' => 'rbac-service unavailable', 'kind' => 'bolt/rbac-error' })
+        .error_with({ 'msg' => "rbac-service\nunavailable", 'kind' => 'bolt/rbac-error' })
         .be_called_times(5)
 
       result = run_plan('peadm::restore', migration_params)

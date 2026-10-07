@@ -267,6 +267,47 @@ describe 'peadm::subplans::install' do
       expect(run_plan('peadm::subplans::install', params)).to be_ok
     end
 
+    # PE-47009: a permanent failure (wrong console_password, malformed
+    # request) is tagged with the peadm/rbac-auth-failure kind by the task;
+    # retrying it for the full budget only delays reporting the misconfiguration.
+    it 'fails fast without retrying on a permanent rbac auth failure' do
+      expect_task('peadm::rbac_token').with_targets('primary').be_called_times(1)
+                                      .error_with({ 'msg' => 'Error requesting token, {"msg":"bad password"}', 'kind' => 'peadm/rbac-auth-failure' })
+
+      result = run_plan('peadm::subplans::install', params)
+      expect(result).not_to be_ok
+      expect(result.value.msg).to eq('Failed to obtain RBAC token, permanent failure (not retrying): Error requesting token, {"msg":"bad password"}')
+    end
+
+    it 'stops retrying as soon as a permanent failure follows transient ones' do
+      attempts = 0
+      expect_task('peadm::rbac_token').with_targets('primary').be_called_times(3).return do |targets:, **|
+        attempts += 1
+        kind = (attempts < 3) ? 'puppetlabs.rbac/server-error' : 'peadm/rbac-auth-failure'
+        Bolt::ResultSet.new(targets.map { |t| Bolt::Result.new(t, error: { 'msg' => "attempt #{attempts}", 'kind' => kind }) })
+      end
+
+      result = run_plan('peadm::subplans::install', params)
+      expect(result).not_to be_ok
+      expect(result.value.msg).to eq('Failed to obtain RBAC token, permanent failure (not retrying): attempt 3')
+    end
+
+    # A permanent failure on the very last attempt ends the loop by reduce
+    # exhaustion rather than the short-circuit, and must still be reported as
+    # permanent.
+    it 'reports a permanent failure on the final attempt as permanent' do
+      attempts = 0
+      expect_task('peadm::rbac_token').with_targets('primary').be_called_times(10).return do |targets:, **|
+        attempts += 1
+        kind = (attempts < 10) ? 'puppetlabs.rbac/server-error' : 'peadm/rbac-auth-failure'
+        Bolt::ResultSet.new(targets.map { |t| Bolt::Result.new(t, error: { 'msg' => "attempt #{attempts}", 'kind' => kind }) })
+      end
+
+      result = run_plan('peadm::subplans::install', params)
+      expect(result).not_to be_ok
+      expect(result.value.msg).to eq('Failed to obtain RBAC token, permanent failure (not retrying): attempt 10')
+    end
+
     it 'fails the install after exhausting all retry attempts' do
       stub_rbac_token(fail_count: 10)
 
