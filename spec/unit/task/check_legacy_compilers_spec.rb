@@ -6,12 +6,31 @@ describe CheckLegacyCompilers do
     # Fixed under PE-46879: there was no `else` branch, so @nodes was left
     # nil for any non-String (or missing) legacy_compilers param, and
     # execute!'s first line, `@nodes.each`, raised NoMethodError on nil. The
-    # one production call site (plans/convert.pp:376) is guarded by `if
+    # one production call site (plans/convert.pp:493) is guarded by `if
     # $legacy_compilers` and always passes a String (`.join(',')`), so this
     # path was dead in practice -- but it was directly reachable and crashed
     # instead of handling the absence of legacy compilers gracefully.
-    it 'treats a non-String legacy_compilers as no nodes to check, instead of raising' do
+    it 'treats a nil legacy_compilers as no nodes to check, without raising or logging' do
       task = described_class.new('legacy_compilers' => nil)
+
+      expect(task).not_to receive(:get_node_classification)
+      expect(STDOUT).not_to receive(:puts)
+      expect(STDERR).not_to receive(:puts)
+      expect { task.execute! }.not_to raise_error
+    end
+
+    # A non-nil, non-String value (e.g. a caller accidentally passing an
+    # Array instead of a joined String) is a real caller bug, distinct from
+    # the legitimate "no legacy compilers" case above -- it's treated the
+    # same way behaviorally (no nodes to check) but, unlike nil, is logged
+    # so it doesn't silently masquerade as the absent case.
+    it 'treats a non-String, non-nil legacy_compilers as no nodes to check, but logs a diagnostic to STDERR' do
+      expect(STDERR).to receive(:puts).with('legacy_compilers param was Array, expected a String or nil; treating as no legacy compilers to check')
+
+      task = described_class.new('legacy_compilers' => ['a.example.com'])
+
+      expect(task).not_to receive(:get_node_classification)
+      expect(STDOUT).not_to receive(:puts)
       expect { task.execute! }.not_to raise_error
     end
 

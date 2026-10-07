@@ -101,6 +101,27 @@ describe ClassifyCompilers do
       expect { task.execute! }.not_to raise_error
     end
 
+    # Catches a mutation that turns the rescue's `next` into a `break` or
+    # `return`, which would silently drop every host after the first
+    # malformed one instead of only skipping that one host.
+    it 'classifies the remaining hosts correctly when one host returns malformed JSON' do
+      multi_params = { 'compiler_hosts' => ['compiler-a.example.com', 'compiler-b.example.com'] }
+      multi_task = described_class.new(multi_params)
+      allow(Open3).to receive(:capture3)
+        .with('puppet', 'infra', 'status', '--host', 'compiler-a.example.com', '--format=json')
+        .and_return(['not json', '', success_status])
+      allow(Open3).to receive(:capture3)
+        .with('puppet', 'infra', 'status', '--host', 'compiler-b.example.com', '--format=json')
+        .and_return([[{ 'type' => 'puppetdb' }].to_json, '', success_status])
+
+      expect(STDERR).to receive(:puts).with(a_string_matching(%r{\AError parsing JSON output for compiler-a\.example\.com: }))
+      expect(STDOUT).to receive(:puts) do |json_str|
+        expect(JSON.parse(json_str)).to eq('legacy_compilers' => [], 'compilers' => ['compiler-b.example.com'])
+      end
+
+      multi_task.execute!
+    end
+
     # Catches a mutation that only processes the first host, or that
     # classifies every host based on the last-seen result instead of each
     # host's own command output.
