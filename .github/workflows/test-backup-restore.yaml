@@ -124,6 +124,15 @@ jobs:
         run: |
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
           bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
+      - name: Clean cache on PE nodes before reinstall
+        timeout-minutes: 15
+        run: |
+          bundle exec bolt command run \
+            'dnf clean all || yum clean all;
+             rm -rf /var/cache/dnf/* /var/tmp/* /tmp/*;
+             rm -rf /opt/puppetlabs/server/data/{packages/public,staging}/* || true' \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --targets all
       - name: Reinstall PE on the primary host
         continue-on-error: true
         run: |
