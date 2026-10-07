@@ -81,6 +81,47 @@ describe RbacToken do
     end
   end
 
+  # A 400/401 whose body rbac-service itself labels a server error is a failure
+  # on its side (e.g. warm-up), not a bad request, so it must stay retryable.
+  # Without this the permanent set would turn a warm-up 401 into an immediate
+  # install failure.
+  [400, 401].each do |code|
+    it "does not raise AuthFailure for HTTP #{code} when the body is a server-error" do
+      stub_response(code, body: '{"kind":"puppetlabs.rbac/server-error","msg":"User admin failed to login"}')
+
+      expect { rbac_token.execute! }.to raise_error(RuntimeError) { |e| expect(e).not_to be_a(RbacToken::AuthFailure) }
+    end
+  end
+
+  it 'still raises AuthFailure for a 401 whose body is a different rbac kind' do
+    stub_response(401, body: '{"kind":"puppetlabs.rbac/user-unauthenticated","msg":"bad password"}')
+
+    expect { rbac_token.execute! }.to raise_error(RbacToken::AuthFailure)
+  end
+
+  it 'still raises AuthFailure for a 401 whose body is not JSON' do
+    stub_response(401, body: 'Unauthorized')
+
+    expect { rbac_token.execute! }.to raise_error(RbacToken::AuthFailure)
+  end
+
+  # Only a JSON object can carry a kind; every other body must fall back to the
+  # status code (null/true/false once raised NoMethodError out of the helper,
+  # which hid the real error and made the failure retryable).
+  ['null', 'true', 'false', '1.5', '"a string"', '["not","an","object"]', ''].each do |body|
+    it "still raises AuthFailure, with the HTTP status in the message, for a 401 whose body is #{body.inspect}" do
+      stub_response(401, body: body)
+
+      expect { rbac_token.execute! }.to raise_error(RbacToken::AuthFailure, %r{\AError requesting token \(HTTP 401\)})
+    end
+  end
+
+  it 'only treats a kind that ends in server-error as one' do
+    stub_response(401, body: '{"kind":"puppetlabs.rbac/server-error-detail"}')
+
+    expect { rbac_token.execute! }.to raise_error(RbacToken::AuthFailure)
+  end
+
   # 403 is retried on purpose: we can't rule out that rbac-service returns it
   # transiently during warm-up (see PERMANENT_STATUS_CODES).
   [403, 404, 408, 429, 500, 502, 503].each do |code|

@@ -330,14 +330,16 @@ plan peadm::restore (
     # can briefly return a 500 ("uncaught server error") before it is fully
     # ready. Retry the token request to ride out that warm-up window instead of
     # failing the whole restore on a transient error. HTTP 400/401 are
-    # nevertheless treated as permanent and fail fast -- an unverified judgement
-    # call, see RbacToken::PERMANENT_STATUS_CODES. Keep the kind below in sync
-    # with RbacToken::AUTH_FAILURE_KIND in tasks/rbac_token.rb.
+    # nevertheless treated as permanent and fail fast, unless the body is
+    # labelled a server error -- an unverified judgement call, see
+    # RbacToken::PERMANENT_STATUS_CODES and RbacToken#permanent_failure?. Keep
+    # the kind below in sync with RbacToken::AUTH_FAILURE_KIND in
+    # tasks/rbac_token.rb.
     $rbac_auth_failure_kind = 'peadm/rbac-auth-failure'
     $rbac_token_max_attempts = 5
     $rbac_token_result = range(1, $rbac_token_max_attempts).reduce(undef) |$memo, $attempt| {
-      # Permanent failures (see RbacToken::PERMANENT_STATUS_CODES) are returned
-      # as-is instead of retried.
+      # Permanent failures (see RbacToken#permanent_failure?) are returned as-is
+      # instead of retried.
       if $memo =~ NotUndef and ($memo.ok or $memo.first.error.kind == $rbac_auth_failure_kind) {
         $memo
       } else {

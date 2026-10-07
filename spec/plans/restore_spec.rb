@@ -289,7 +289,7 @@ describe 'peadm::restore' do
       attempts = 0
       expect_task('peadm::rbac_token').be_called_times(3).return do |targets:, **|
         attempts += 1
-        kind = (attempts < 3) ? 'puppetlabs.rbac/server-error' : 'peadm/rbac-auth-failure'
+        kind = (attempts < 3) ? 'puppetlabs.tasks/task-error' : 'peadm/rbac-auth-failure'
         Bolt::ResultSet.new(targets.map { |t| Bolt::Result.new(t, error: { 'msg' => "attempt #{attempts}\nline two", 'kind' => kind }) })
       end
 
@@ -314,7 +314,7 @@ describe 'peadm::restore' do
       attempts = 0
       expect_task('peadm::rbac_token').be_called_times(5).return do |targets:, **|
         attempts += 1
-        kind = (attempts < 5) ? 'puppetlabs.rbac/server-error' : 'peadm/rbac-auth-failure'
+        kind = (attempts < 5) ? 'puppetlabs.tasks/task-error' : 'peadm/rbac-auth-failure'
         Bolt::ResultSet.new(targets.map { |t| Bolt::Result.new(t, error: { 'msg' => "attempt #{attempts}", 'kind' => kind }) })
       end
 

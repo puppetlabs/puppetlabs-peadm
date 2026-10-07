@@ -283,7 +283,7 @@ describe 'peadm::subplans::install' do
       attempts = 0
       expect_task('peadm::rbac_token').with_targets('primary').be_called_times(3).return do |targets:, **|
         attempts += 1
-        kind = (attempts < 3) ? 'puppetlabs.rbac/server-error' : 'peadm/rbac-auth-failure'
+        kind = (attempts < 3) ? 'puppetlabs.tasks/task-error' : 'peadm/rbac-auth-failure'
         Bolt::ResultSet.new(targets.map { |t| Bolt::Result.new(t, error: { 'msg' => "attempt #{attempts}", 'kind' => kind }) })
       end
 
@@ -299,7 +299,7 @@ describe 'peadm::subplans::install' do
       attempts = 0
       expect_task('peadm::rbac_token').with_targets('primary').be_called_times(10).return do |targets:, **|
         attempts += 1
-        kind = (attempts < 10) ? 'puppetlabs.rbac/server-error' : 'peadm/rbac-auth-failure'
+        kind = (attempts < 10) ? 'puppetlabs.tasks/task-error' : 'peadm/rbac-auth-failure'
         Bolt::ResultSet.new(targets.map { |t| Bolt::Result.new(t, error: { 'msg' => "attempt #{attempts}", 'kind' => kind }) })
       end
 
