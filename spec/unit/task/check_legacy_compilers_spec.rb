@@ -5,17 +5,18 @@ describe CheckLegacyCompilers do
   describe '#initialize' do
     # Fixed under PE-46879: there was no `else` branch, so @nodes was left
     # nil for any non-String (or missing) legacy_compilers param, and
-    # execute!'s first line, `@nodes.each`, raised NoMethodError on nil. The
-    # one production call site (plans/convert.pp:493) is guarded by `if
+    # execute!'s `@nodes.each` call raised NoMethodError on nil. The one
+    # production call site (plans/convert.pp:493) is guarded by `if
     # $legacy_compilers` and always passes a String (`.join(',')`), so this
     # path was dead in practice -- but it was directly reachable and crashed
     # instead of handling the absence of legacy compilers gracefully.
     it 'treats a nil legacy_compilers as no nodes to check, without raising or logging' do
+      expect(STDERR).not_to receive(:puts)
+
       task = described_class.new('legacy_compilers' => nil)
 
       expect(task).not_to receive(:get_node_classification)
       expect(STDOUT).not_to receive(:puts)
-      expect(STDERR).not_to receive(:puts)
       expect { task.execute! }.not_to raise_error
     end
 
