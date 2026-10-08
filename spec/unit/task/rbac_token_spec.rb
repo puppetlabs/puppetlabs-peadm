@@ -123,7 +123,7 @@ describe RbacToken do
   end
 
   # 403 is retried on purpose: we can't rule out that rbac-service returns it
-  # transiently during warm-up (see PERMANENT_STATUS_CODES).
+  # transiently during warm-up.
   [403, 404, 408, 429, 500, 502, 503].each do |code|
     it "does not raise AuthFailure for a retryable HTTP #{code}" do
       stub_response(code)

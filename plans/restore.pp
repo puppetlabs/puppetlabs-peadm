@@ -329,12 +329,10 @@ plan peadm::restore (
     # `puppet-infrastructure configure` run above restarts rbac-service, which
     # can briefly return a 500 ("uncaught server error") before it is fully
     # ready. Retry the token request to ride out that warm-up window instead of
-    # failing the whole restore on a transient error. HTTP 400/401 are
-    # nevertheless treated as permanent and fail fast, unless the body is
-    # labelled a server error -- an unverified judgement call, see
-    # RbacToken::PERMANENT_STATUS_CODES and RbacToken#permanent_failure?. Keep
-    # the kind below in sync with RbacToken::AUTH_FAILURE_KIND in
-    # tasks/rbac_token.rb.
+    # failing the whole restore on a transient error. Permanent failures (HTTP
+    # 400/401, unless the body is labelled a server error; see
+    # RbacToken::PERMANENT_STATUS_CODES) fail fast instead. Keep the kind below
+    # in sync with RbacToken::AUTH_FAILURE_KIND in tasks/rbac_token.rb.
     $rbac_auth_failure_kind = 'peadm/rbac-auth-failure'
     $rbac_token_max_attempts = 5
     $rbac_token_result = range(1, $rbac_token_max_attempts).reduce(undef) |$memo, $attempt| {

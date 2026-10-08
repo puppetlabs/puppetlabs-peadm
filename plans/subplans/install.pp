@@ -435,9 +435,8 @@ plan peadm::subplans::install (
   # different operation, with no observed evidence it's under-provisioned, so
   # it's left at its original margin rather than changed speculatively.
   #
-  # HTTP 400/401 are nevertheless treated as permanent and fail fast, unless
-  # the body is labelled a server error -- an unverified judgement call, see
-  # RbacToken::PERMANENT_STATUS_CODES and RbacToken#permanent_failure?. Keep the
+  # Permanent failures (HTTP 400/401, unless the body is labelled a server
+  # error; see RbacToken::PERMANENT_STATUS_CODES) fail fast instead. Keep the
   # kind below in sync with RbacToken::AUTH_FAILURE_KIND in
   # tasks/rbac_token.rb.
   $rbac_auth_failure_kind = 'peadm/rbac-auth-failure'
