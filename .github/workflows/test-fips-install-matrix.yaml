@@ -3,7 +3,7 @@ name: Install fips test matrix
 on:
   pull_request:
     paths:
-      - .github/workflows/test-fips-install-matrix.yaml
+      - .github/workflows/**/*
       - spec/**/*
       - lib/**/*
       - tasks/**/*

@@ -3,7 +3,7 @@ name: Add compiler matrix
 on:
   pull_request:
     paths:
-      - .github/workflows/test-add-compiler-matrix.yml
+      - .github/workflows/**/*
       - spec/**/*
       - lib/**/*
       - tasks/**/*
