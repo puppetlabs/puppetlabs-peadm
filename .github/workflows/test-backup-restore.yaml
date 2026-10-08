@@ -88,7 +88,7 @@ jobs:
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             architecture=${{ github.event.inputs.architecture || 'extra-large' }} \
-            version=${{ github.event.inputs.version || '2023.5.0' }} \
+            version=${{ github.event.inputs.version || '2025.11.3' }} \
             console_password=${{ secrets.CONSOLE_PASSWORD }} \
             --stream
       - name: Perform peadm backup of cluster
@@ -124,11 +124,20 @@ jobs:
         run: |
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
           bundle exec bolt command run "puppet infrastructure status" -t $primary --inventoryfile spec/fixtures/litmus_inventory.yaml
+      - name: Clean cache on PE nodes before reinstall
+        timeout-minutes: 15
+        run: |
+          bundle exec bolt command run \
+            'dnf clean all || yum clean all;
+             rm -rf /var/cache/dnf/* /var/tmp/* /tmp/*;
+             rm -rf /opt/puppetlabs/server/data/{packages/public,staging}/* || true' \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --targets all
       - name: Reinstall PE on the primary host
         continue-on-error: true
         run: |
           primary=$(yq '.groups[].targets[] | select(.vars.role == "primary") | .uri' spec/fixtures/litmus_inventory.yaml)
-          bundle exec bolt task run peadm::reinstall_pe uninstall=true version=${{ github.event.inputs.version || '2023.5.0' }} -t $primary \
+          bundle exec bolt task run peadm::reinstall_pe uninstall=true version=${{ github.event.inputs.version || '2025.11.3' }} -t $primary \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             --verbose \
