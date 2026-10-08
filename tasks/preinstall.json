@@ -1,0 +1,8 @@
+{
+  "puppet_task_version": 1,
+  "supports_noop": false,
+  "description": "Installs required packages, and configuration required before PE can be installed.",
+  "implementations": [
+    {"name": "preinstall.sh"}
+  ]
+}
