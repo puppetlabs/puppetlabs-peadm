@@ -9,7 +9,15 @@ require 'puppet'
 # CheckLegacyCompilers task class
 class CheckLegacyCompilers
   def initialize(params)
-    @nodes = params['legacy_compilers'].split(',') if params['legacy_compilers'].is_a?(String)
+    legacy_compilers = params['legacy_compilers']
+    if legacy_compilers.is_a?(String)
+      @nodes = legacy_compilers.split(',')
+    else
+      unless legacy_compilers.nil?
+        STDERR.puts "legacy_compilers param was #{legacy_compilers.class}, expected a String or nil; treating as no legacy compilers to check"
+      end
+      @nodes = []
+    end
   end
 
   def execute!

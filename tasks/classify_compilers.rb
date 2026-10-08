@@ -26,7 +26,13 @@ class ClassifyCompilers
       stdout, stderr, status = Open3.capture3('puppet', 'infra', 'status', '--host', compiler, '--format=json')
 
       if status.success?
-        services = JSON.parse(stdout)
+        begin
+          services = JSON.parse(stdout)
+        rescue JSON::ParserError => e
+          STDERR.puts "Error parsing JSON output for #{compiler}: #{e.message}"
+          next
+        end
+
         classification = classify_compiler(services)
 
         if classification == :legacy
