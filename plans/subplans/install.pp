@@ -434,10 +434,18 @@ plan peadm::subplans::install (
   # call site is widened -- restore.pp's equivalent retry runs after a
   # different operation, with no observed evidence it's under-provisioned, so
   # it's left at its original margin rather than changed speculatively.
+  #
+  # Permanent failures (HTTP 400/401, unless the body is labelled a server
+  # error; see RbacToken::PERMANENT_STATUS_CODES) fail fast instead. Keep the
+  # kind below in sync with RbacToken::AUTH_FAILURE_KIND in
+  # tasks/rbac_token.rb.
+  $rbac_auth_failure_kind = 'peadm/rbac-auth-failure'
   $rbac_token_max_attempts = 10
   $rbac_token_retry_delay = 20
   $rbac_token_result = range(1, $rbac_token_max_attempts).reduce(undef) |$memo, $attempt| {
-    if $memo =~ NotUndef and $memo.ok {
+    # Permanent failures (see RbacToken#permanent_failure?) are returned as-is
+    # instead of retried.
+    if $memo =~ NotUndef and ($memo.ok or $memo.first.error.kind == $rbac_auth_failure_kind) {
       $memo
     } else {
       if $attempt > 1 {
@@ -468,6 +476,9 @@ plan peadm::subplans::install (
     # rbac-api error could crash the failure report itself, in exactly the
     # CI scenario (machine-parseable output) this ticket exists to fix.
     $rbac_token_error = peadm::sanitize_log_text($rbac_token_result.first.error.message, 200)
+    if $rbac_token_result.first.error.kind == $rbac_auth_failure_kind {
+      fail_plan("Failed to obtain RBAC token, permanent failure (not retrying): ${rbac_token_error}")
+    }
     fail_plan("Failed to obtain RBAC token after ${rbac_token_max_attempts} attempts: ${rbac_token_error}")
   }
 
