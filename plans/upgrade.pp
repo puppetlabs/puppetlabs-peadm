@@ -310,6 +310,33 @@ plan peadm::upgrade (
     run_task('peadm::puppet_runonce', $primary_target)
   }
 
+  # Determine the correct hosts for the A and B availability groups. Computed
+  # here (outer plan scope, from $cert_extensions already fetched above) so
+  # both the upgrade-node-groups step below and the finalize step's defensive
+  # re-assertion (PE-47200) can pass identical, already-known values instead
+  # of each independently re-deriving them -- in finalize's case, from a
+  # fresh PuppetDB-backed lookup taken right after compiler/replica restarts,
+  # which could race and return incomplete data.
+  $server_a_host = $cert_extensions.dig($primary_target.peadm::certname(), peadm::oid('peadm_availability_group')) ? {
+    'A'     => $primary_target.peadm::certname(),
+    default => $replica_target.peadm::certname(),
+  }
+
+  $server_b_host = $server_a_host ? {
+    $primary_target.peadm::certname() => $replica_target.peadm::certname(),
+    default                           => $primary_target.peadm::certname(),
+  }
+
+  $postgresql_a_host = $cert_extensions.dig($primary_postgresql_target.peadm::certname(), peadm::oid('peadm_availability_group')) ? {
+    'A'     => $primary_postgresql_target.peadm::certname(),
+    default => $replica_postgresql_target.peadm::certname(),
+  }
+
+  $postgresql_b_host = $postgresql_a_host ? {
+    $primary_postgresql_target.peadm::certname() => $replica_postgresql_target.peadm::certname(),
+    default                                      => $primary_postgresql_target.peadm::certname(),
+  }
+
   peadm::plan_step('upgrade-node-groups') || {
     # The primary could restart orchestration services again, in which case we
     # would have to wait for nodes to reconnect
@@ -332,27 +359,6 @@ plan peadm::upgrade (
     # Update classification. This needs to be done now because if we don't, and
     # the PE Compiler node groups are wrong, then the compilers won't be able to
     # successfully classify and update
-
-    # First, determine the correct hosts for the A and B availability groups
-    $server_a_host = $cert_extensions.dig($primary_target.peadm::certname(), peadm::oid('peadm_availability_group')) ? {
-      'A'     => $primary_target.peadm::certname(),
-      default => $replica_target.peadm::certname(),
-    }
-
-    $server_b_host = $server_a_host ? {
-      $primary_target.peadm::certname() => $replica_target.peadm::certname(),
-      default                           => $primary_target.peadm::certname(),
-    }
-
-    $postgresql_a_host = $cert_extensions.dig($primary_postgresql_target.peadm::certname(), peadm::oid('peadm_availability_group')) ? {
-      'A'     => $primary_postgresql_target.peadm::certname(),
-      default => $replica_postgresql_target.peadm::certname(),
-    }
-
-    $postgresql_b_host = $postgresql_a_host ? {
-      $primary_postgresql_target.peadm::certname() => $replica_postgresql_target.peadm::certname(),
-      default                                      => $primary_postgresql_target.peadm::certname(),
-    }
 
     $rules = run_task('peadm::get_group_rules', $primary_target).first.value['_output']
     $rules_formatted = stdlib::to_json_pretty(parsejson($rules))
@@ -456,14 +462,33 @@ plan peadm::upgrade (
   peadm::plan_step('finalize') || {
     # PE-47200: PE core's native `puppet infrastructure configure` has been
     # observed clobbering the "PE Infrastructure Agent" node group's rule
-    # back to its own single-clause default partway through an upgrade --
-    # the same overwrite the upgrade-node-groups step above already warns
-    # about and corrects once. Re-assert classification one more time here,
-    # after every other upgrade step has run, so a later clobber doesn't
-    # survive to the end of the plan.
+    # back to its own single-clause default at some point during an upgrade.
+    # The upgrade-node-groups step above already guards against a suspected
+    # instance of this by re-applying the correct rule early on; it's
+    # unconfirmed whether a later upgrade step re-triggers the same PE-core
+    # behavior, so re-assert classification one more time here, after every
+    # other upgrade step has run, so a later clobber doesn't survive to the
+    # end of the plan.
+    #
+    # Pass the already-known role-letter/compiler-pool values computed above
+    # instead of letting update_classification fall back to a fresh
+    # peadm::get_peadm_config PuppetDB lookup -- querying PuppetDB immediately
+    # after the compiler/replica restarts above risks catching it before
+    # state has settled.
+    $finalize_rules = run_task('peadm::get_group_rules', $primary_target).first.value['_output']
+    $finalize_fmt = stdlib::to_json_pretty(parsejson($finalize_rules))
+    out::message("WARNING: The following existing rules on the PE Infrastructure Agent group will be overwritten with default values:\n ${finalize_fmt}")
+
     run_plan('peadm::util::update_classification',
-      targets                 => $primary_target,
-      node_group_environment  => $node_group_environment,
+      targets                           => $primary_target,
+      node_group_environment            => $node_group_environment,
+      server_a_host                     => $server_a_host,
+      server_b_host                     => $server_b_host,
+      postgresql_a_host                 => $postgresql_a_host,
+      postgresql_b_host                 => $postgresql_b_host,
+      compiler_pool_address             => $compiler_pool_address,
+      internal_compiler_a_pool_address  => $internal_compiler_a_pool_address,
+      internal_compiler_b_pool_address  => $internal_compiler_b_pool_address,
     )
 
     $service_state = $final_agent_state ? {

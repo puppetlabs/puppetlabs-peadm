@@ -29,7 +29,7 @@ describe 'peadm::upgrade' do
 
   it 'minimum variables to run' do
     allow_standard_non_returning_calls
-    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
+    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' }).be_called_times(2)
 
     expect_task('peadm::read_file')
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
@@ -46,7 +46,7 @@ describe 'peadm::upgrade' do
 
   it 'runs with a primary, compilers, but no replica' do
     allow_standard_non_returning_calls
-    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
+    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' }).be_called_times(2)
 
     expect_task('peadm::read_file')
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
@@ -86,7 +86,7 @@ describe 'peadm::upgrade' do
 
   it 'proceeds normally with a well-formed pe_installer_source tarball name' do
     allow_standard_non_returning_calls
-    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
+    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' }).be_called_times(2)
 
     expect_task('peadm::read_file')
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
@@ -176,7 +176,7 @@ describe 'peadm::upgrade' do
   # 'stop' action, not 'start', when final_agent_state => 'stopped'.
   it 'stops (rather than starts) the puppet agent service when final_agent_state is stopped' do
     allow_standard_non_returning_calls
-    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
+    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' }).be_called_times(2)
     expect_task('peadm::read_file')
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
       .always_return({ 'content' => '2021.7.3' })
@@ -197,17 +197,16 @@ describe 'peadm::upgrade' do
 
   # PE-47200: PE core's native `puppet infrastructure configure` has been
   # observed clobbering the "PE Infrastructure Agent" node group's rule back
-  # to its own single-clause default partway through an upgrade (see
-  # upgrade-node-groups' own out::message warning about this exact
-  # overwrite). peadm already re-asserts the correct rule once, early in the
-  # upgrade-node-groups step, but nothing re-confirms it's still correct by
-  # the time the upgrade finishes. This asserts the finalize step
-  # re-applies classification via peadm::util::update_classification as a
-  # defensive final step, so any later clobber doesn't survive to the end of
-  # the plan.
+  # to its own single-clause default at some point during an upgrade.
+  # upgrade-node-groups already guards against a suspected instance of this
+  # by re-applying the correct rule early on, but it's unconfirmed whether a
+  # later upgrade step re-triggers the same PE-core behavior. This asserts
+  # the finalize step re-applies classification via
+  # peadm::util::update_classification as a defensive final step, so any
+  # later clobber doesn't survive to the end of the plan.
   it 'reasserts classification one final time during finalize, after all other upgrade steps' do
     allow_standard_non_returning_calls
-    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
+    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' }).be_called_times(2)
     expect_task('peadm::read_file')
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
       .always_return({ 'content' => '2021.7.3' })
@@ -271,7 +270,7 @@ describe 'peadm::upgrade' do
 
     it 'upgrades group-A compilers with the primary and group-B compilers with the replica' do
       allow_standard_non_returning_calls
-      expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
+      expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' }).be_called_times(2)
       expect_task('peadm::read_file')
         .with_params('path' => '/opt/puppetlabs/server/pe_build')
         .always_return({ 'content' => '2021.7.3' })
@@ -354,7 +353,7 @@ describe 'peadm::upgrade' do
 
     before(:each) do
       allow_standard_non_returning_calls
-      expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
+      expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' }).be_called_times(2)
       expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
       expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
     end
@@ -434,7 +433,7 @@ describe 'peadm::upgrade' do
         .always_return({ 'content' => installed_version })
 
       expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(1)
-      expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
+      expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' }).be_called_times(2)
     end
 
     it 'updates pe.conf if r10k_known_hosts is set' do
