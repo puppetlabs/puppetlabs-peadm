@@ -471,13 +471,14 @@ plan peadm::upgrade (
     # end of the plan.
     #
     # Pass the already-known role-letter/compiler-pool values computed above
-    # instead of letting update_classification fall back to a fresh
-    # peadm::get_peadm_config PuppetDB lookup -- querying PuppetDB immediately
-    # after the compiler/replica restarts above risks catching it before
-    # state has settled.
-    $finalize_rules = run_task('peadm::get_group_rules', $primary_target).first.value['_output']
-    $finalize_fmt = stdlib::to_json_pretty(parsejson($finalize_rules))
-    out::message("WARNING: The following existing rules on the PE Infrastructure Agent group will be overwritten with default values:\n ${finalize_fmt}")
+    # instead of letting those specific fields fall back to whatever
+    # update_classification's own fresh peadm::get_peadm_config PuppetDB
+    # lookup returns -- querying PuppetDB immediately after the
+    # compiler/replica restarts above risks catching it before state has
+    # settled.
+    $rules = run_task('peadm::get_group_rules', $primary_target).first.value['_output']
+    $rules_formatted = stdlib::to_json_pretty(parsejson($rules))
+    out::message("WARNING: The following existing rules on the PE Infrastructure Agent group will be overwritten with default values:\n ${rules_formatted}")
 
     run_plan('peadm::util::update_classification',
       targets                           => $primary_target,

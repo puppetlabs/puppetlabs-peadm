@@ -12,6 +12,10 @@ describe 'peadm::upgrade' do
     allow_out_message
   end
 
+  def ok_plan_result
+    Bolt::PlanResult.new({}, 'success')
+  end
+
   let(:trusted_primary) do
     JSON.parse File.read(File.expand_path(File.join(fixtures, 'plans', 'trusted-primary.json')))
   end
@@ -214,12 +218,26 @@ describe 'peadm::upgrade' do
     expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(1)
     expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
 
-    expect_plan('peadm::util::update_classification')
-      .be_called_times(1)
+    # Capture the params finalize actually passes, rather than only counting
+    # the call: the point of PE-47200's fix is that finalize reuses the
+    # already-known server/postgresql/compiler-pool values instead of
+    # falling back to a fresh, potentially racy PuppetDB-derived config.
+    captured_classification = []
+    expect_plan('peadm::util::update_classification').be_called_times(1).return do |params:, **|
+      captured_classification << params
+      ok_plan_result
+    end
 
     expect(run_plan('peadm::upgrade',
                     'primary_host' => 'primary',
                     'version' => '2021.7.9')).to be_ok
+
+    classification_params = captured_classification.first
+    expect(classification_params['node_group_environment']).to eq('production')
+    expect(classification_params['server_a_host']).to eq('primary')
+    expect(classification_params['server_b_host']).to be_nil
+    expect(classification_params['postgresql_a_host']).to be_nil
+    expect(classification_params['postgresql_b_host']).to be_nil
   end
 
   # PE-45737: the compiler DR availability-group split (plan lines ~186-208)
