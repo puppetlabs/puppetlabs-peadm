@@ -360,13 +360,7 @@ plan peadm::upgrade (
     # the PE Compiler node groups are wrong, then the compilers won't be able to
     # successfully classify and update
 
-    $rules_result = run_task('peadm::get_group_rules', $primary_target, { '_catch_errors' => true }).first
-    if $rules_result.ok {
-      $rules_formatted = stdlib::to_json_pretty(parsejson($rules_result.value['_output']))
-      out::message("WARNING: The following existing rules on the PE Infrastructure Agent group will be overwritten with default values:\n ${rules_formatted}")
-    } else {
-      out::message('WARNING: Could not fetch PE Infrastructure Agent group rules for logging; continuing with reassertion.')
-    }
+    peadm::warn_group_rules_overwrite($primary_target)
 
     apply($primary_target) {
       class { 'peadm::setup::node_manager_yaml':
@@ -480,18 +474,7 @@ plan peadm::upgrade (
     # lookup returns -- querying PuppetDB immediately after the
     # compiler/replica restarts above risks catching it before state has
     # settled.
-    #
-    # The rule fetch below is diagnostic only -- it's not consumed by the
-    # reassertion that follows -- so catch its errors rather than letting a
-    # transient failure here (plausible right after the restarts above) abort
-    # this step's actual protective action.
-    $rules_result = run_task('peadm::get_group_rules', $primary_target, { '_catch_errors' => true }).first
-    if $rules_result.ok {
-      $rules_formatted = stdlib::to_json_pretty(parsejson($rules_result.value['_output']))
-      out::message("WARNING: The following existing rules on the PE Infrastructure Agent group will be overwritten with default values:\n ${rules_formatted}")
-    } else {
-      out::message('WARNING: Could not fetch PE Infrastructure Agent group rules for logging; continuing with reassertion.')
-    }
+    peadm::warn_group_rules_overwrite($primary_target)
 
     run_plan('peadm::util::update_classification',
       targets                           => $primary_target,

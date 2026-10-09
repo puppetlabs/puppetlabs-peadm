@@ -240,6 +240,30 @@ describe 'peadm::upgrade' do
     expect(classification_params['postgresql_b_host']).to be_nil
   end
 
+  # PE-47200: peadm::warn_group_rules_overwrite's rule fetch is diagnostic
+  # only, so a failure there must not prevent the classification
+  # reassertion (upgrade-node-groups' apply(), and finalize's
+  # update_classification call) from running.
+  it 'falls back to a generic warning and still reasserts classification when get_group_rules fails' do
+    allow_standard_non_returning_calls
+    expect_task('peadm::get_group_rules')
+      .error_with('msg' => 'boom', 'kind' => 'bolt/task-failure')
+      .be_called_times(2)
+    expect_task('peadm::read_file')
+      .with_params('path' => '/opt/puppetlabs/server/pe_build')
+      .always_return({ 'content' => '2021.7.3' })
+    expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
+    expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(1)
+    expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
+    expect_plan('peadm::util::update_classification').be_called_times(1).return { ok_plan_result }
+
+    expect_out_message.with_params('WARNING: Could not fetch PE Infrastructure Agent group rules for logging; continuing with reassertion.').be_called_times(2)
+
+    expect(run_plan('peadm::upgrade',
+                    'primary_host' => 'primary',
+                    'version' => '2021.7.9')).to be_ok
+  end
+
   # PE-45737: the compiler DR availability-group split (plan lines ~186-208)
   # determines which compilers get upgraded alongside the primary
   # (compiler_m1_targets, matched against the primary's availability group)
