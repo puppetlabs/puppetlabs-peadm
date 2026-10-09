@@ -195,6 +195,34 @@ describe 'peadm::upgrade' do
                     'final_agent_state' => 'stopped')).to be_ok
   end
 
+  # PE-47200: PE core's native `puppet infrastructure configure` has been
+  # observed clobbering the "PE Infrastructure Agent" node group's rule back
+  # to its own single-clause default partway through an upgrade (see
+  # upgrade-node-groups' own out::message warning about this exact
+  # overwrite). peadm already re-asserts the correct rule once, early in the
+  # upgrade-node-groups step, but nothing re-confirms it's still correct by
+  # the time the upgrade finishes. This asserts the finalize step
+  # re-applies classification via peadm::util::update_classification as a
+  # defensive final step, so any later clobber doesn't survive to the end of
+  # the plan.
+  it 'reasserts classification one final time during finalize, after all other upgrade steps' do
+    allow_standard_non_returning_calls
+    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
+    expect_task('peadm::read_file')
+      .with_params('path' => '/opt/puppetlabs/server/pe_build')
+      .always_return({ 'content' => '2021.7.3' })
+    expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
+    expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(1)
+    expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
+
+    expect_plan('peadm::util::update_classification')
+      .be_called_times(1)
+
+    expect(run_plan('peadm::upgrade',
+                    'primary_host' => 'primary',
+                    'version' => '2021.7.9')).to be_ok
+  end
+
   # PE-45737: the compiler DR availability-group split (plan lines ~186-208)
   # determines which compilers get upgraded alongside the primary
   # (compiler_m1_targets, matched against the primary's availability group)

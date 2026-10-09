@@ -454,6 +454,18 @@ plan peadm::upgrade (
   }
 
   peadm::plan_step('finalize') || {
+    # PE-47200: PE core's native `puppet infrastructure configure` has been
+    # observed clobbering the "PE Infrastructure Agent" node group's rule
+    # back to its own single-clause default partway through an upgrade --
+    # the same overwrite the upgrade-node-groups step above already warns
+    # about and corrects once. Re-assert classification one more time here,
+    # after every other upgrade step has run, so a later clobber doesn't
+    # survive to the end of the plan.
+    run_plan('peadm::util::update_classification',
+      targets                 => $primary_target,
+      node_group_environment  => $node_group_environment,
+    )
+
     $service_state = $final_agent_state ? {
       'running' => 'start',
       'stopped' => 'stop'
