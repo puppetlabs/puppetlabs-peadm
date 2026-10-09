@@ -468,12 +468,12 @@ plan peadm::upgrade (
     # other upgrade step has run, so a later clobber doesn't survive to the
     # end of the plan.
     #
-    # Pass the already-known role-letter/compiler-pool values computed above
-    # instead of letting those specific fields fall back to whatever
-    # update_classification's own fresh peadm::get_peadm_config PuppetDB
-    # lookup returns -- querying PuppetDB immediately after the
-    # compiler/replica restarts above risks catching it before state has
-    # settled.
+    # Pass the role-letter values hoisted above, plus the compiler-pool
+    # values already available as plan params, instead of letting those
+    # specific fields fall back to whatever update_classification's own
+    # fresh peadm::get_peadm_config PuppetDB lookup returns -- querying
+    # PuppetDB immediately after the compiler/replica restarts above risks
+    # catching it before state has settled.
     peadm::warn_group_rules_overwrite($primary_target)
 
     run_plan('peadm::util::update_classification',

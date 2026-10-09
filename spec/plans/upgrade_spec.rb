@@ -220,8 +220,11 @@ describe 'peadm::upgrade' do
 
     # Capture the params finalize actually passes, rather than only counting
     # the call: the point of PE-47200's fix is that finalize reuses the
-    # already-known server/postgresql/compiler-pool values instead of
-    # falling back to a fresh, potentially racy PuppetDB-derived config.
+    # already-known server/postgresql values instead of falling back to a
+    # fresh, potentially racy PuppetDB-derived config. This single-primary
+    # topology can't distinguish "server_b_host/postgresql_*_host correctly
+    # passed as nil" from "never passed at all" -- see the DR/Extra Large
+    # topology test below for that.
     captured_classification = []
     expect_plan('peadm::util::update_classification').be_called_times(1).return do |params:, **|
       captured_classification << params
@@ -290,6 +293,73 @@ describe 'peadm::upgrade' do
     expect(run_plan('peadm::upgrade',
                     'primary_host' => 'primary',
                     'version' => '2021.7.9')).to be_ok
+  end
+
+  # PE-47200: the single-primary "reasserts classification" test above can't
+  # tell "server_b_host/postgresql_a_host/postgresql_b_host were correctly
+  # passed through" apart from "they were never passed at all" -- both show
+  # up as nil in the captured params, since that topology has no replica or
+  # separate postgresql hosts. Re-run with a full DR + Extra Large topology,
+  # where the correct values are non-nil, so a regression back to finalize's
+  # original two-param call (PE-47200's original bug) would actually fail
+  # this assertion instead of coincidentally matching on nil.
+  it 'reasserts classification with non-nil server_b_host/postgresql hosts in a DR Extra Large topology' do
+    allow_standard_non_returning_calls
+    allow_any_upload
+    trusted_replica = {
+      'certname' => 'replica',
+      'extensions' => {
+        '1.3.6.1.4.1.34380.1.3.39' => 'true',
+        '1.3.6.1.4.1.34380.1.1.9812' => 'puppet/replica',
+        '1.3.6.1.4.1.34380.1.1.9813' => 'B',
+      },
+      'dns-alt-names' => ['puppet'],
+    }
+    trusted_postgresql_a = {
+      'certname' => 'postgresql-a',
+      'extensions' => { '1.3.6.1.4.1.34380.1.1.9813' => 'A' },
+      'dns-alt-names' => ['puppet'],
+    }
+    trusted_postgresql_b = {
+      'certname' => 'postgresql-b',
+      'extensions' => { '1.3.6.1.4.1.34380.1.1.9813' => 'B' },
+      'dns-alt-names' => ['puppet'],
+    }
+
+    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' }).be_called_times(2)
+    expect_task('peadm::read_file')
+      .with_params('path' => '/opt/puppetlabs/server/pe_build')
+      .always_return({ 'content' => '2021.7.3' })
+    expect_task('peadm::read_file')
+      .with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf')
+      .always_return({ 'content' => '{}' })
+      .be_called_times(3)
+    expect_task('peadm::cert_data').return_for_targets(
+      'primary'      => trusted_primary,
+      'replica'      => trusted_replica,
+      'postgresql-a' => trusted_postgresql_a,
+      'postgresql-b' => trusted_postgresql_b,
+    ).be_called_times(1)
+    expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
+
+    captured_classification = []
+    expect_plan('peadm::util::update_classification').be_called_times(1).return do |params:, **|
+      captured_classification << params
+      ok_plan_result
+    end
+
+    expect(run_plan('peadm::upgrade',
+                    'primary_host' => 'primary',
+                    'replica_host' => 'replica',
+                    'primary_postgresql_host' => 'postgresql-a',
+                    'replica_postgresql_host' => 'postgresql-b',
+                    'version' => '2021.7.9')).to be_ok
+
+    classification_params = captured_classification.first
+    expect(classification_params['server_a_host']).to eq('primary')
+    expect(classification_params['server_b_host']).to eq('replica')
+    expect(classification_params['postgresql_a_host']).to eq('postgresql-a')
+    expect(classification_params['postgresql_b_host']).to eq('postgresql-b')
   end
 
   # PE-45737: the compiler DR availability-group split (plan lines ~186-208)
