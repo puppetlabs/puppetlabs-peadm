@@ -264,6 +264,34 @@ describe 'peadm::upgrade' do
                     'version' => '2021.7.9')).to be_ok
   end
 
+  # PE-47200: get_group_rules can report success (ok: true) while still
+  # returning output that isn't valid JSON (e.g. a stray warning on
+  # stdout). parsejson's default argument must absorb that case too --
+  # not just outright task failure -- without raising and aborting the
+  # classification reassertion that follows.
+  it 'falls back to a placeholder warning and still reasserts classification when get_group_rules returns unparseable output' do
+    allow_standard_non_returning_calls
+    expect_task('peadm::get_group_rules')
+      .return_for_targets('primary' => { '_output' => 'not valid json' })
+      .be_called_times(2)
+    expect_task('peadm::read_file')
+      .with_params('path' => '/opt/puppetlabs/server/pe_build')
+      .always_return({ 'content' => '2021.7.3' })
+    expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
+    expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(1)
+    expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
+    expect_plan('peadm::util::update_classification').be_called_times(1).return { ok_plan_result }
+
+    placeholder_rules = "{\n  \"error\": \"unparseable output\"\n}\n"
+    expect_out_message.with_params(
+      "WARNING: The following existing rules on the PE Infrastructure Agent group will be overwritten with default values:\n #{placeholder_rules}",
+    ).be_called_times(2)
+
+    expect(run_plan('peadm::upgrade',
+                    'primary_host' => 'primary',
+                    'version' => '2021.7.9')).to be_ok
+  end
+
   # PE-45737: the compiler DR availability-group split (plan lines ~186-208)
   # determines which compilers get upgraded alongside the primary
   # (compiler_m1_targets, matched against the primary's availability group)
