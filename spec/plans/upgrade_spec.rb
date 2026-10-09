@@ -12,12 +12,28 @@ describe 'peadm::upgrade' do
     allow_out_message
   end
 
+  def ok_plan_result
+    Bolt::PlanResult.new({}, 'success')
+  end
+
   let(:trusted_primary) do
     JSON.parse File.read(File.expand_path(File.join(fixtures, 'plans', 'trusted-primary.json')))
   end
 
   let(:trusted_compiler) do
     JSON.parse File.read(File.expand_path(File.join(fixtures, 'plans', 'trusted-compiler.json')))
+  end
+
+  let(:trusted_replica) do
+    {
+      'certname' => 'replica',
+      'extensions' => {
+        '1.3.6.1.4.1.34380.1.3.39' => 'true',
+        '1.3.6.1.4.1.34380.1.1.9812' => 'puppet/replica',
+        '1.3.6.1.4.1.34380.1.1.9813' => 'B',
+      },
+      'dns-alt-names' => ['puppet'],
+    }
   end
 
   let(:pe_rule_check) do
@@ -29,7 +45,7 @@ describe 'peadm::upgrade' do
 
   it 'minimum variables to run' do
     allow_standard_non_returning_calls
-    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
+    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' }).be_called_times(2)
 
     expect_task('peadm::read_file')
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
@@ -46,7 +62,7 @@ describe 'peadm::upgrade' do
 
   it 'runs with a primary, compilers, but no replica' do
     allow_standard_non_returning_calls
-    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
+    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' }).be_called_times(2)
 
     expect_task('peadm::read_file')
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
@@ -86,7 +102,7 @@ describe 'peadm::upgrade' do
 
   it 'proceeds normally with a well-formed pe_installer_source tarball name' do
     allow_standard_non_returning_calls
-    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
+    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' }).be_called_times(2)
 
     expect_task('peadm::read_file')
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
@@ -176,7 +192,7 @@ describe 'peadm::upgrade' do
   # 'stop' action, not 'start', when final_agent_state => 'stopped'.
   it 'stops (rather than starts) the puppet agent service when final_agent_state is stopped' do
     allow_standard_non_returning_calls
-    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
+    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' }).be_called_times(2)
     expect_task('peadm::read_file')
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
       .always_return({ 'content' => '2021.7.3' })
@@ -195,6 +211,160 @@ describe 'peadm::upgrade' do
                     'final_agent_state' => 'stopped')).to be_ok
   end
 
+  # PE-47200: PE core's native `puppet infrastructure configure` has been
+  # observed clobbering the "PE Infrastructure Agent" node group's rule back
+  # to its own single-clause default at some point during an upgrade.
+  # upgrade-node-groups already guards against a suspected instance of this
+  # by re-applying the correct rule early on, but it's unconfirmed whether a
+  # later upgrade step re-triggers the same PE-core behavior. This asserts
+  # the finalize step re-applies classification via
+  # peadm::util::update_classification as a defensive final step, so any
+  # later clobber doesn't survive to the end of the plan.
+  it 'reasserts classification one final time during finalize, after all other upgrade steps' do
+    allow_standard_non_returning_calls
+    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' }).be_called_times(2)
+    expect_task('peadm::read_file')
+      .with_params('path' => '/opt/puppetlabs/server/pe_build')
+      .always_return({ 'content' => '2021.7.3' })
+    expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
+    expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(1)
+    expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
+
+    # Capture the params finalize actually passes, rather than only counting
+    # the call: the point of PE-47200's fix is that finalize reuses the
+    # already-known server/postgresql values instead of falling back to a
+    # fresh, potentially racy PuppetDB-derived config. This single-primary
+    # topology can't distinguish "server_b_host/postgresql_*_host correctly
+    # passed as nil" from "never passed at all" -- see the DR/Extra Large
+    # topology test below for that.
+    captured_classification = []
+    expect_plan('peadm::util::update_classification').be_called_times(1).return do |params:, **|
+      captured_classification << params
+      ok_plan_result
+    end
+
+    expect(run_plan('peadm::upgrade',
+                    'primary_host' => 'primary',
+                    'version' => '2021.7.9')).to be_ok
+
+    classification_params = captured_classification.first
+    expect(classification_params['node_group_environment']).to eq('production')
+    expect(classification_params['server_a_host']).to eq('primary')
+    expect(classification_params['server_b_host']).to be_nil
+    expect(classification_params['postgresql_a_host']).to be_nil
+    expect(classification_params['postgresql_b_host']).to be_nil
+  end
+
+  # PE-47200: peadm::warn_group_rules_overwrite's rule fetch is diagnostic
+  # only, so a failure there must not prevent the classification
+  # reassertion (upgrade-node-groups' apply(), and finalize's
+  # update_classification call) from running.
+  it 'falls back to a generic warning and still reasserts classification when get_group_rules fails' do
+    allow_standard_non_returning_calls
+    expect_task('peadm::get_group_rules')
+      .error_with('msg' => 'boom', 'kind' => 'bolt/task-failure')
+      .be_called_times(2)
+    expect_task('peadm::read_file')
+      .with_params('path' => '/opt/puppetlabs/server/pe_build')
+      .always_return({ 'content' => '2021.7.3' })
+    expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
+    expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(1)
+    expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
+    expect_plan('peadm::util::update_classification').be_called_times(1).return { ok_plan_result }
+
+    expect_out_message.with_params('WARNING: Could not fetch PE Infrastructure Agent group rules for logging; continuing with reassertion.').be_called_times(2)
+
+    expect(run_plan('peadm::upgrade',
+                    'primary_host' => 'primary',
+                    'version' => '2021.7.9')).to be_ok
+  end
+
+  # PE-47200: get_group_rules can report success (ok: true) while still
+  # returning output that isn't valid JSON (e.g. a stray warning on
+  # stdout). parsejson's default argument must absorb that case too --
+  # not just outright task failure -- without raising and aborting the
+  # classification reassertion that follows.
+  it 'falls back to a placeholder warning and still reasserts classification when get_group_rules returns unparseable output' do
+    allow_standard_non_returning_calls
+    expect_task('peadm::get_group_rules')
+      .return_for_targets('primary' => { '_output' => 'not valid json' })
+      .be_called_times(2)
+    expect_task('peadm::read_file')
+      .with_params('path' => '/opt/puppetlabs/server/pe_build')
+      .always_return({ 'content' => '2021.7.3' })
+    expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
+    expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(1)
+    expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
+    expect_plan('peadm::util::update_classification').be_called_times(1).return { ok_plan_result }
+
+    placeholder_rules = "{\n  \"error\": \"unparseable output\"\n}\n"
+    expect_out_message.with_params(
+      "WARNING: The following existing rules on the PE Infrastructure Agent group will be overwritten with default values:\n #{placeholder_rules}",
+    ).be_called_times(2)
+
+    expect(run_plan('peadm::upgrade',
+                    'primary_host' => 'primary',
+                    'version' => '2021.7.9')).to be_ok
+  end
+
+  # PE-47200: the single-primary "reasserts classification" test above can't
+  # tell "server_b_host/postgresql_a_host/postgresql_b_host were correctly
+  # passed through" apart from "they were never passed at all" -- both show
+  # up as nil in the captured params, since that topology has no replica or
+  # separate postgresql hosts. Re-run with a full DR + Extra Large topology,
+  # where the correct values are non-nil, so a regression back to finalize's
+  # original two-param call (PE-47200's original bug) would actually fail
+  # this assertion instead of coincidentally matching on nil.
+  it 'reasserts classification with non-nil server_b_host/postgresql hosts in a DR Extra Large topology' do
+    allow_standard_non_returning_calls
+    allow_any_upload
+    trusted_postgresql_a = {
+      'certname' => 'postgresql-a',
+      'extensions' => { '1.3.6.1.4.1.34380.1.1.9813' => 'A' },
+      'dns-alt-names' => ['puppet'],
+    }
+    trusted_postgresql_b = {
+      'certname' => 'postgresql-b',
+      'extensions' => { '1.3.6.1.4.1.34380.1.1.9813' => 'B' },
+      'dns-alt-names' => ['puppet'],
+    }
+
+    expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' }).be_called_times(2)
+    expect_task('peadm::read_file')
+      .with_params('path' => '/opt/puppetlabs/server/pe_build')
+      .always_return({ 'content' => '2021.7.3' })
+    expect_task('peadm::read_file')
+      .with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf')
+      .always_return({ 'content' => '{}' })
+      .be_called_times(3)
+    expect_task('peadm::cert_data').return_for_targets(
+      'primary'      => trusted_primary,
+      'replica'      => trusted_replica,
+      'postgresql-a' => trusted_postgresql_a,
+      'postgresql-b' => trusted_postgresql_b,
+    ).be_called_times(1)
+    expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
+
+    captured_classification = []
+    expect_plan('peadm::util::update_classification').be_called_times(1).return do |params:, **|
+      captured_classification << params
+      ok_plan_result
+    end
+
+    expect(run_plan('peadm::upgrade',
+                    'primary_host' => 'primary',
+                    'replica_host' => 'replica',
+                    'primary_postgresql_host' => 'postgresql-a',
+                    'replica_postgresql_host' => 'postgresql-b',
+                    'version' => '2021.7.9')).to be_ok
+
+    classification_params = captured_classification.first
+    expect(classification_params['server_a_host']).to eq('primary')
+    expect(classification_params['server_b_host']).to eq('replica')
+    expect(classification_params['postgresql_a_host']).to eq('postgresql-a')
+    expect(classification_params['postgresql_b_host']).to eq('postgresql-b')
+  end
+
   # PE-45737: the compiler DR availability-group split (plan lines ~186-208)
   # determines which compilers get upgraded alongside the primary
   # (compiler_m1_targets, matched against the primary's availability group)
@@ -205,18 +375,6 @@ describe 'peadm::upgrade' do
   # swapped for $primary_target[0], or vice versa), which would send
   # compilers to the wrong upgrade step or upgrade the same compilers twice.
   context 'DR availability-group compiler split' do
-    let(:trusted_replica) do
-      {
-        'certname' => 'replica',
-        'extensions' => {
-          '1.3.6.1.4.1.34380.1.3.39' => 'true',
-          '1.3.6.1.4.1.34380.1.1.9812' => 'puppet/replica',
-          '1.3.6.1.4.1.34380.1.1.9813' => 'B',
-        },
-        'dns-alt-names' => ['puppet'],
-      }
-    end
-
     let(:trusted_compiler_group_a) do
       {
         'certname' => 'compiler',
@@ -243,7 +401,7 @@ describe 'peadm::upgrade' do
 
     it 'upgrades group-A compilers with the primary and group-B compilers with the replica' do
       allow_standard_non_returning_calls
-      expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
+      expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' }).be_called_times(2)
       expect_task('peadm::read_file')
         .with_params('path' => '/opt/puppetlabs/server/pe_build')
         .always_return({ 'content' => '2021.7.3' })
@@ -312,21 +470,9 @@ describe 'peadm::upgrade' do
       "fi\n"
     end
 
-    let(:trusted_replica) do
-      {
-        'certname' => 'replica',
-        'extensions' => {
-          '1.3.6.1.4.1.34380.1.3.39' => 'true',
-          '1.3.6.1.4.1.34380.1.1.9812' => 'puppet/replica',
-          '1.3.6.1.4.1.34380.1.1.9813' => 'B',
-        },
-        'dns-alt-names' => ['puppet'],
-      }
-    end
-
     before(:each) do
       allow_standard_non_returning_calls
-      expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
+      expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' }).be_called_times(2)
       expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
       expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
     end
@@ -406,7 +552,7 @@ describe 'peadm::upgrade' do
         .always_return({ 'content' => installed_version })
 
       expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(1)
-      expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' })
+      expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' }).be_called_times(2)
     end
 
     it 'updates pe.conf if r10k_known_hosts is set' do
