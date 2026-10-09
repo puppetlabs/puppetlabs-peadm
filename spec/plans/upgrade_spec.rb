@@ -24,6 +24,18 @@ describe 'peadm::upgrade' do
     JSON.parse File.read(File.expand_path(File.join(fixtures, 'plans', 'trusted-compiler.json')))
   end
 
+  let(:trusted_replica) do
+    {
+      'certname' => 'replica',
+      'extensions' => {
+        '1.3.6.1.4.1.34380.1.3.39' => 'true',
+        '1.3.6.1.4.1.34380.1.1.9812' => 'puppet/replica',
+        '1.3.6.1.4.1.34380.1.1.9813' => 'B',
+      },
+      'dns-alt-names' => ['puppet'],
+    }
+  end
+
   let(:pe_rule_check) do
     {
       'updated' => 'true',
@@ -306,15 +318,6 @@ describe 'peadm::upgrade' do
   it 'reasserts classification with non-nil server_b_host/postgresql hosts in a DR Extra Large topology' do
     allow_standard_non_returning_calls
     allow_any_upload
-    trusted_replica = {
-      'certname' => 'replica',
-      'extensions' => {
-        '1.3.6.1.4.1.34380.1.3.39' => 'true',
-        '1.3.6.1.4.1.34380.1.1.9812' => 'puppet/replica',
-        '1.3.6.1.4.1.34380.1.1.9813' => 'B',
-      },
-      'dns-alt-names' => ['puppet'],
-    }
     trusted_postgresql_a = {
       'certname' => 'postgresql-a',
       'extensions' => { '1.3.6.1.4.1.34380.1.1.9813' => 'A' },
@@ -372,18 +375,6 @@ describe 'peadm::upgrade' do
   # swapped for $primary_target[0], or vice versa), which would send
   # compilers to the wrong upgrade step or upgrade the same compilers twice.
   context 'DR availability-group compiler split' do
-    let(:trusted_replica) do
-      {
-        'certname' => 'replica',
-        'extensions' => {
-          '1.3.6.1.4.1.34380.1.3.39' => 'true',
-          '1.3.6.1.4.1.34380.1.1.9812' => 'puppet/replica',
-          '1.3.6.1.4.1.34380.1.1.9813' => 'B',
-        },
-        'dns-alt-names' => ['puppet'],
-      }
-    end
-
     let(:trusted_compiler_group_a) do
       {
         'certname' => 'compiler',
@@ -477,18 +468,6 @@ describe 'peadm::upgrade' do
       "then\n" \
       "  mv #{pdbapps}/delete-reports.original #{pdbapps}/delete-reports\n" \
       "fi\n"
-    end
-
-    let(:trusted_replica) do
-      {
-        'certname' => 'replica',
-        'extensions' => {
-          '1.3.6.1.4.1.34380.1.3.39' => 'true',
-          '1.3.6.1.4.1.34380.1.1.9812' => 'puppet/replica',
-          '1.3.6.1.4.1.34380.1.1.9813' => 'B',
-        },
-        'dns-alt-names' => ['puppet'],
-      }
     end
 
     before(:each) do
