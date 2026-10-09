@@ -49,6 +49,8 @@ primary_host vs replica_host) the node was passed as.
 * [`peadm::sanitize_log_text`](#peadm--sanitize_log_text): Makes arbitrary external text safe to interpolate into a single log line.
 * [`peadm::update_pe_conf`](#peadm--update_pe_conf): Update the pe.conf file on a target with the provided hash
 * [`peadm::wait_until_service_ready`](#peadm--wait_until_service_ready): A convenience function to help remember port numbers for services and handle running the wait_until_service_ready task
+* [`peadm::warn_group_rules_overwrite`](#peadm--warn_group_rules_overwrite): Fetch and log the PE Infrastructure Agent group's current rules
+before they get overwritten by a classification reassertion
 
 ### Data types
 
@@ -1072,6 +1074,30 @@ Data type: `String`
 Data type: `TargetSpec`
 
 
+
+### <a name="peadm--warn_group_rules_overwrite"></a>`peadm::warn_group_rules_overwrite`
+
+Type: Puppet Language
+
+This is diagnostic only -- the fetched rules aren't consumed by anything
+else -- so any failure to fetch or parse them (task failure, malformed
+output) degrades to a generic warning instead of raising, to avoid
+aborting whatever protective reassertion step called this.
+
+#### `peadm::warn_group_rules_overwrite(Peadm::SingleTargetSpec $target)`
+
+This is diagnostic only -- the fetched rules aren't consumed by anything
+else -- so any failure to fetch or parse them (task failure, malformed
+output) degrades to a generic warning instead of raising, to avoid
+aborting whatever protective reassertion step called this.
+
+Returns: `Any`
+
+##### `target`
+
+Data type: `Peadm::SingleTargetSpec`
+
+the target to fetch the PE Infrastructure Agent group's rules from
 
 ## Data types
 
