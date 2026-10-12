@@ -59,10 +59,13 @@ describe GetPSQLInfo do
   end
 
   # Catches a mutation that reuses a stale/memoized version string instead
-  # of querying the installed version fresh each call.
-  it 'reflects whatever installed_server_version currently returns' do
-    allow(psql_info_dbl).to receive(:installed_server_version).and_return('16')
+  # of querying the installed version fresh each call. Calls task.task
+  # twice against a stub that returns a different value each time, so a
+  # cached/hardcoded value from the first call would fail the second.
+  it 'queries installed_server_version afresh on each call, not a cached/memoized value' do
+    allow(psql_info_dbl).to receive(:installed_server_version).and_return('15', '16')
 
+    expect(task.task).to eq('version' => '15')
     expect(task.task).to eq('version' => '16')
   end
 

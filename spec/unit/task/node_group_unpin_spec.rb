@@ -127,6 +127,7 @@ describe NodeGroupUnpin do
     # runs before the method's own begin/rescue, so it raises unwrapped.
     it 'raises when given an invalid group object' do
       expect { task.unpin_node({ 'name' => 'My Group' }, ['node1']) }.to raise_error('Invalid group object')
+      expect { task.unpin_node({ 'id' => 'g1' }, ['node1']) }.to raise_error('Invalid group object')
       expect { task.unpin_node('not-a-hash', ['node1']) }.to raise_error('Invalid group object')
     end
 

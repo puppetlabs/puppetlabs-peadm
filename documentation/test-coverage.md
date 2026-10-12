@@ -210,9 +210,9 @@ trying to make those requires actually resolve.
 **83.32% (879/1055 lines)**, up from the 55.18% (575/1042 lines) PE-46426
 baseline. `SimpleCov.minimum_coverage` in `spec/spec_helper_local.rb` is
 raised from 54 to 82, a small margin below that -- not rounded up to the
-measured number, and not forced to 90%, since the `lib/puppet/functions/
-peadm/*.rb` attribution issue documented above still applies, and
-`tasks/puppet_infra_upgrade.rb` (46.67% covered) remains a large,
+measured number, and not forced to 90%, since the
+`lib/puppet/functions/peadm/*.rb` attribution issue documented above still
+applies, and `tasks/puppet_infra_upgrade.rb` (46.67% covered) remains a large,
 untouched gap this ticket was never scoped to close.
 
 **Still open:** `tasks/puppet_infra_upgrade.rb` (46.67% covered, the
