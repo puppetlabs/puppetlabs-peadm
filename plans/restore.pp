@@ -329,10 +329,16 @@ plan peadm::restore (
     # `puppet-infrastructure configure` run above restarts rbac-service, which
     # can briefly return a 500 ("uncaught server error") before it is fully
     # ready. Retry the token request to ride out that warm-up window instead of
-    # failing the whole restore on a transient error.
+    # failing the whole restore on a transient error. Permanent failures (HTTP
+    # 400/401, unless the body is labelled a server error; see
+    # RbacToken::PERMANENT_STATUS_CODES) fail fast instead. Keep the kind below
+    # in sync with RbacToken::AUTH_FAILURE_KIND in tasks/rbac_token.rb.
+    $rbac_auth_failure_kind = 'peadm/rbac-auth-failure'
     $rbac_token_max_attempts = 5
     $rbac_token_result = range(1, $rbac_token_max_attempts).reduce(undef) |$memo, $attempt| {
-      if $memo =~ NotUndef and $memo.ok {
+      # Permanent failures (see RbacToken#permanent_failure?) are returned as-is
+      # instead of retried.
+      if $memo =~ NotUndef and ($memo.ok or $memo.first.error.kind == $rbac_auth_failure_kind) {
         $memo
       } else {
         if $attempt > 1 {
@@ -347,7 +353,12 @@ plan peadm::restore (
       }
     }
     unless $rbac_token_result.ok {
-      $rbac_token_error = $rbac_token_result.first.error.message
+      # Sanitized like subplans::install does: rbac-api's response body is
+      # external content that may contain newlines or invalid UTF-8.
+      $rbac_token_error = peadm::sanitize_log_text($rbac_token_result.first.error.message, 200)
+      if $rbac_token_result.first.error.kind == $rbac_auth_failure_kind {
+        fail_plan("Failed to obtain RBAC token, permanent failure (not retrying): ${rbac_token_error}")
+      }
       fail_plan("Failed to obtain RBAC token after ${rbac_token_max_attempts} attempts: ${rbac_token_error}")
     }
     run_command(@("CMD"/L), $primary_target)
