@@ -469,16 +469,20 @@ plan peadm::upgrade (
     # end of the plan.
     #
     # Pass the role-letter values hoisted above, plus the compiler-pool
-    # values already available as plan params, instead of letting those
-    # specific fields fall back to whatever update_classification's own
-    # fresh peadm::get_peadm_config PuppetDB lookup returns -- querying
-    # PuppetDB immediately after the compiler/replica restarts above risks
-    # catching it before state has settled.
+    # values already available as plan params. These are every field
+    # update_classification's apply() actually consumes, so pass an empty
+    # peadm_config too (rather than leaving it unset) to skip its fresh
+    # peadm::get_peadm_config PuppetDB lookup entirely -- that lookup's
+    # result would be fully overridden by the explicit values below anyway,
+    # so it serves no purpose here, and querying PuppetDB immediately after
+    # the compiler/replica restarts above risks raising and aborting this
+    # step before classification is reasserted.
     peadm::warn_group_rules_overwrite($primary_target)
 
     run_plan('peadm::util::update_classification',
       targets                           => $primary_target,
       node_group_environment            => $node_group_environment,
+      peadm_config                      => {},
       server_a_host                     => $server_a_host,
       server_b_host                     => $server_b_host,
       postgresql_a_host                 => $postgresql_a_host,

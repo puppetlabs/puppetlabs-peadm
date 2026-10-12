@@ -253,6 +253,13 @@ describe 'peadm::upgrade' do
     expect(classification_params['server_b_host']).to be_nil
     expect(classification_params['postgresql_a_host']).to be_nil
     expect(classification_params['postgresql_b_host']).to be_nil
+    # Every field update_classification's apply() consumes is passed
+    # explicitly above, so peadm_config must be passed as {} (not left
+    # unset) to skip its fresh, restart-adjacent peadm::get_peadm_config
+    # PuppetDB lookup entirely -- that lookup's result would be fully
+    # overridden anyway, so it only adds a chance to abort the upgrade for
+    # no benefit.
+    expect(classification_params['peadm_config']).to eq({})
   end
 
   # PE-47200: peadm::warn_group_rules_overwrite's rule fetch is diagnostic
