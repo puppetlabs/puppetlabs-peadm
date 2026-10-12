@@ -1,12 +1,12 @@
 #!/opt/puppetlabs/puppet/bin/ruby
 
-# Puppet Task Name: backup_classification
+# Puppet Task Name: restore_classification
 require 'net/https'
 require 'uri'
 require 'json'
 require 'puppet'
 
-# RestoreClassifiation task class
+# RestoreClassification task class
 class RestoreClassification
   def initialize(params)
     @classification_file = params['classification_file']

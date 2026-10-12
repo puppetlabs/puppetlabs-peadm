@@ -190,14 +190,34 @@ means the real achievable ceiling for this metric is permanently below
 `bolt_version.rb` (which has a real, passing, pre-existing spec), measures
 0.00%.
 
-**Still open:** running the full measurement also surfaced six task files
-never named in PE-45737 or PE-46426's scope, still completely untested and
-now the largest remaining gap: `tasks/update_pe_master_rules.rb` (90
-lines), `tasks/node_group_unpin.rb` (95 lines), `tasks/pe_ldap_config.rb`
-(56 lines), `tasks/restore_classification.rb` (34 lines),
-`tasks/transform_classification_groups.rb` (34 lines), and
-`tasks/get_psql_version.rb` (9 lines) -- 318 lines combined. A follow-on
-ticket under [PE-45224](https://perforce.atlassian.net/browse/PE-45224)
-should write specs for these next, following the same mutation-reasoning
-discipline, then raise the floor again incrementally, the same way this
-one did.
+PE-46877 closed that gap: direct unit specs were added for all six task
+files PE-46426 surfaced (`update_pe_master_rules.rb`, `node_group_unpin.rb`,
+`pe_ldap_config.rb`, `restore_classification.rb`,
+`transform_classification_groups.rb`, `get_psql_version.rb`), following the
+same mutation-reasoning discipline. Two of the six
+(`pe_ldap_config.rb`, `transform_classification_groups.rb`) executed
+unconditionally at file-load time with no class and no test-mode guard, so
+they needed the same structural-only class-wrap-and-guard commit as
+PE-46426's `classify_compilers.rb`/`cert_valid_status.rb`, preserving every
+conditional, command, and output byte-for-byte. `get_psql_version.rb`
+required a different workaround: it `require`s a sibling Bolt module file
+and a PE-only native library via paths that only resolve under a real PE
+install, never in this checkout, so its spec pre-registers both exact paths
+in `$LOADED_FEATURES` and provides minimal stand-in classes rather than
+trying to make those requires actually resolve.
+
+**Measured result:** `bundle exec rake spec:simplecov` now reports
+**83.32% (879/1055 lines)**, up from the 55.18% (575/1042 lines) PE-46426
+baseline. `SimpleCov.minimum_coverage` in `spec/spec_helper_local.rb` is
+raised from 54 to 82, a small margin below that -- not rounded up to the
+measured number, and not forced to 90%, since the `lib/puppet/functions/
+peadm/*.rb` attribution issue documented above still applies, and
+`tasks/puppet_infra_upgrade.rb` (46.67% covered) remains a large,
+untouched gap this ticket was never scoped to close.
+
+**Still open:** `tasks/puppet_infra_upgrade.rb` (46.67% covered, the
+largest remaining gap by line count) and the permanent
+`lib/puppet/functions/peadm/*.rb` attribution ceiling are the main things
+standing between the current 83.32% and 90%. Neither was in PE-46877's
+scope; closing them is follow-on work under
+[PE-45224](https://perforce.atlassian.net/browse/PE-45224).

@@ -30,15 +30,22 @@ if defined?(SimpleCov)
   # `bundle exec rake spec:simplecov` (Ruby 3.1.7): 55.18% (575/1042 lines),
   # up from the 12.83% (161/1255 lines) PE-45737 baseline. 54 leaves a
   # small margin below that, the same discipline used for the original 12.
-  # Still NOT close to 90%: every lib/puppet/functions/peadm/*.rb file
-  # (including bolt_version.rb, which has a real passing spec) measures
-  # 0.00% regardless of test effort, for the attribution reason documented
-  # above; and six task files this ticket never named
-  # (get_psql_version.rb, node_group_unpin.rb, pe_ldap_config.rb,
-  # restore_classification.rb, transform_classification_groups.rb,
-  # update_pe_master_rules.rb) remain completely untested and are real
-  # follow-on work under PE-45224, not silently absorbed into this change.
-  SimpleCov.minimum_coverage 54
+  #
+  # PE-46877 added direct unit specs for the six task files PE-46426
+  # surfaced but didn't name (update_pe_master_rules.rb, node_group_unpin.rb,
+  # pe_ldap_config.rb, restore_classification.rb,
+  # transform_classification_groups.rb, get_psql_version.rb -- see
+  # documentation/test-coverage.md). Measured via
+  # `bundle exec rake spec:simplecov`: 83.32% (879/1055 lines), up from the
+  # 55.18% (575/1042 lines) PE-46426 baseline. 82 leaves a small margin
+  # below that, same discipline as before. Still NOT 90%: every
+  # lib/puppet/functions/peadm/*.rb file (including bolt_version.rb, which
+  # has a real passing spec) measures 0.00% regardless of test effort, for
+  # the attribution reason documented above; and tasks/puppet_infra_upgrade.rb
+  # (46.67% covered) is a large, pre-existing gap neither this ticket nor
+  # PE-46426 was scoped to close. Both are real follow-on work under
+  # PE-45224, not silently absorbed into this change.
+  SimpleCov.minimum_coverage 82
 
   # Codecov upload needs a CODECOV_TOKEN this repo doesn't have configured.
   # Without dropping this formatter, every SIMPLECOV=yes run (local or CI)

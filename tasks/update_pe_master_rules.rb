@@ -78,7 +78,8 @@ class UpdatePeMasterRules
     begin
       current_rules = get_current_rules(group_id)
 
-      # Transform rules recursively to handle nested structures
+      # Replace the compiler-role clause at index 1 with an or-clause matching
+      # 'pe_compiler' or 'pe_compiler_legacy' exactly
       new_rules = modify_pe_master_rules(current_rules)
 
       # Update the group with the modified rules
