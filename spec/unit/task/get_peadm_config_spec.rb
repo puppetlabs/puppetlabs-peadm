@@ -211,20 +211,16 @@ describe GetPEAdmConfig do
       task.execute!
     end
 
-    # PINS A REAL BUG (not fixed here, out of scope for this ticket):
-    # `puts({...}).to_json` evaluates `puts({...})` first -- which prints
-    # the Hash and returns nil -- and only THEN calls `.to_json` on that
-    # nil return value, which is discarded. So this branch never actually
-    # prints JSON at all; it prints the Hash's plain `to_s` output. A
-    # consumer that tries to JSON-parse this task's stdout on a
-    # non-peadm-cluster host would fail. This test pins that real, current
-    # behavior (rather than the JSON output a naive reading of the code
-    # would expect) so it still catches a mutation that inverts the
-    # `if peadm_primary_a_group` check.
-    it 'prints the raw error Hash (not JSON) when no PE Primary A group exists' do
+    # Fixed under PE-46879: `puts({...}).to_json` evaluated `puts({...})`
+    # first -- which printed the Hash and returned nil -- and only THEN
+    # called `.to_json` on that nil return value, which was discarded. So
+    # this branch never actually printed JSON at all; it printed the Hash's
+    # plain `to_s` output. A consumer that tries to JSON-parse this task's
+    # stdout on a non-peadm-cluster host would have failed.
+    it 'prints the error Hash as JSON when no PE Primary A group exists' do
       allow(task).to receive(:groups).and_return(GetPEAdmConfig::NodeGroup.new([]))
 
-      expect(STDOUT).to receive(:puts).with({ 'error' => 'This is not a peadm-compatible cluster. Use peadm::convert first.' })
+      expect(STDOUT).to receive(:puts).with('{"error":"This is not a peadm-compatible cluster. Use peadm::convert first."}')
 
       task.execute!
     end

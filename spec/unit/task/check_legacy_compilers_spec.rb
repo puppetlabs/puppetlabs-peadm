@@ -3,17 +3,36 @@ require_relative '../../../tasks/check_legacy_compilers'
 
 describe CheckLegacyCompilers do
   describe '#initialize' do
-    # PINS A REAL BUG (not fixed here, out of scope for this ticket): there
-    # is no `else` branch, so @nodes is left nil for any non-String (or
-    # missing) legacy_compilers param, and execute!'s first line is
-    # `@nodes.each`, which raises NoMethodError on nil. The one production
-    # call site (plans/convert.pp:376) is guarded by `if $legacy_compilers`
-    # and always passes a String (`.join(',')`), so this path is dead in
-    # practice -- but the code itself is directly reachable and this is a
-    # real defect, not something this ticket fixes.
-    it 'raises NoMethodError from execute! when legacy_compilers is not a String' do
+    # Fixed under PE-46879: there was no `else` branch, so @nodes was left
+    # nil for any non-String (or missing) legacy_compilers param, and
+    # execute!'s `@nodes.each` call raised NoMethodError on nil. The one
+    # production call site (plans/convert.pp:493) is guarded by `if
+    # $legacy_compilers` and always passes a String (`.join(',')`), so this
+    # path was dead in practice -- but it was directly reachable and crashed
+    # instead of handling the absence of legacy compilers gracefully.
+    it 'treats a nil legacy_compilers as no nodes to check, without raising or logging' do
+      expect(STDERR).not_to receive(:puts)
+
       task = described_class.new('legacy_compilers' => nil)
-      expect { task.execute! }.to raise_error(NoMethodError)
+
+      expect(task).not_to receive(:get_node_classification)
+      expect(STDOUT).not_to receive(:puts)
+      expect { task.execute! }.not_to raise_error
+    end
+
+    # A non-nil, non-String value (e.g. a caller accidentally passing an
+    # Array instead of a joined String) is a real caller bug, distinct from
+    # the legitimate "no legacy compilers" case above -- it's treated the
+    # same way behaviorally (no nodes to check) but, unlike nil, is logged
+    # so it doesn't silently masquerade as the absent case.
+    it 'treats a non-String, non-nil legacy_compilers as no nodes to check, but logs a diagnostic to STDERR' do
+      expect(STDERR).to receive(:puts).with('legacy_compilers param was Array, expected a String or nil; treating as no legacy compilers to check')
+
+      task = described_class.new('legacy_compilers' => ['a.example.com'])
+
+      expect(task).not_to receive(:get_node_classification)
+      expect(STDOUT).not_to receive(:puts)
+      expect { task.execute! }.not_to raise_error
     end
 
     # Catches a mutation that uses the wrong delimiter or drops .split
