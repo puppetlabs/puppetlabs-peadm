@@ -104,6 +104,7 @@ before they get overwritten by a classification reassertion
 * [`sign_csr`](#sign_csr): Submit a certificate signing request
 * [`ssl_clean`](#ssl_clean): Clean an agent's certificate
 * [`submit_csr`](#submit_csr): Submit a certificate signing request
+* [`submit_ica_csr`](#submit_ica_csr): Generate and submit this compiler's ICA CSR to the PE primary. A thin wrapper: shells out to the puppetserver ICA provisioning subcommand, wh
 * [`transform_classification_groups`](#transform_classification_groups): Transform the user groups from a source backup to a list of groups on the target server
 * [`update_pe_master_rules`](#update_pe_master_rules): Updates the PE Master group rules to support 'pe_compiler_legacy' as a pp_auth_role
 * [`validate_rbac_token`](#validate_rbac_token): Check an RBAC token stored in a file is valid
@@ -1845,6 +1846,12 @@ Submit a certificate signing request
 Data type: `Optional[Array[String]]`
 
 DNS Alternative Names to request for the certificate
+
+### <a name="submit_ica_csr"></a>`submit_ica_csr`
+
+Generate and submit this compiler's ICA CSR to the PE primary. A thin wrapper: shells out to the puppetserver ICA provisioning subcommand, which performs all cryptography (key generation, PKCS#8 encryption, CSR and initial CRL construction) and submission. Returns the pending request id. Makes no change to bootstrap.cfg and restarts no services. Called as part of promoting a proxy compiler to an intermediate CA; promotion is per-compiler and operator-driven only. Not meant to be run directly.
+
+**Supports noop?** false
 
 ### <a name="transform_classification_groups"></a>`transform_classification_groups`
 
