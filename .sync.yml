@@ -107,8 +107,7 @@ spec/spec_helper.rb:
         end
       end
 .pdkignore:
-  paths:
-    - /CLAUDE.md
+  paths: [/CLAUDE.md]
 .gitignore:
   paths:
     - .rerun.json
