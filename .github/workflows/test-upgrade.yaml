@@ -22,11 +22,11 @@ on:
       version:
         description: PE version to install initially
         required: true
-        default: 2021.7.9
+        default: 2023.8.12
       upgrade_version:
         description: PE version to upgrade to
         required: true
-        default: 2023.8.11
+        default: 2025.12.0
       ssh-debugging:
         description: Boolean; whether or not to pause for ssh debugging
         required: true
