@@ -10,6 +10,15 @@ describe 'peadm::restore' do
   backup_dir = '/input/file'
   backup_tarball = "#{backup_dir}.tar.gz"
 
+  def recovery_secrets_command
+    copies = ['console-services', 'orchestration-services', 'infra-assistant', 'patching-service', 'workflow-service'].map do |svc|
+      src = "/input/file/recovery/secrets/#{svc}"
+      dest = "/etc/puppetlabs/#{svc}/conf.d/secrets"
+      "if [ -d #{src} ] && [ -d #{dest} ]; then cp -r --preserve=mode,timestamps #{src}/. #{dest}/ && chown -R --reference=#{dest} #{dest}; fi"
+    end
+    copies.join(' && ')
+  end
+
   let(:recovery_params) do
     {
       'targets'      => 'primary',
@@ -80,6 +89,7 @@ describe 'peadm::restore' do
     expect_command("/opt/puppetlabs/bin/puppet-backup restore   --scope=certs,code,config   --tempdir=/input/file   --force   /input/file/recovery/pe_backup-*tgz\n")
     expect_command("systemctl stop pe-console-services pe-nginx pxp-agent pe-puppetserver                pe-orchestration-services puppet pe-puppetdb\n")
     expect_command("test -f /input/file/rbac/secrets/keys.json   && cp -rp /input/file/rbac/secrets/keys.json /etc/puppetlabs/console-services/conf.d/secrets/   || echo secret ldap key doesnt exist\n")
+    expect_command(recovery_secrets_command)
     expect_command("su - pe-postgres -s /bin/bash -c   \"/opt/puppetlabs/server/bin/psql      --tuples-only      -d 'pe-puppetdb'      -c 'DROP SCHEMA IF EXISTS pglogical CASCADE;'\"\n").be_called_times(2)
     expect_command("su - pe-postgres -s /bin/bash -c   \"/opt/puppetlabs/server/bin/psql      -d 'pe-puppetdb'      -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public; ALTER SCHEMA public OWNER TO pg_database_owner; GRANT USAGE ON SCHEMA public TO PUBLIC;'\"\n")
     expect_command('su - pe-postgres -s /bin/bash -c   "/opt/puppetlabs/server/bin/psql      -d \'pe-puppetdb\'      -c \'ALTER USER \\"pe-puppetdb\\" WITH SUPERUSER;\'"' + "\n")
@@ -108,6 +118,7 @@ describe 'peadm::restore' do
       expect_command("/opt/puppetlabs/bin/puppet-backup restore   --scope=certs,code,config   --tempdir=/input/file   --force   /input/file/recovery/pe_backup-*tgz\n")
       expect_command("systemctl stop pe-console-services pe-nginx pxp-agent pe-puppetserver                pe-orchestration-services puppet pe-puppetdb\n")
       expect_command("test -f /input/file/rbac/secrets/keys.json   && cp -rp /input/file/rbac/secrets/keys.json /etc/puppetlabs/console-services/conf.d/secrets/   || echo secret ldap key doesnt exist\n")
+      expect_command(recovery_secrets_command)
       expect_command("su - pe-postgres -s /bin/bash -c   \"/opt/puppetlabs/server/bin/psql      --tuples-only      -d 'pe-puppetdb'      -c 'DROP SCHEMA IF EXISTS pglogical CASCADE;'\"\n").be_called_times(2)
       # PostgreSQL < 14: plain DROP/CREATE, with no ALTER OWNER / GRANT USAGE.
       expect_command("su - pe-postgres -s /bin/bash -c   \"/opt/puppetlabs/server/bin/psql      -d 'pe-puppetdb'      -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'\"\n")

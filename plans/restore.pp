@@ -211,6 +211,20 @@ plan peadm::restore (
   }
 # lint:endignore
 
+  # Restore the service secret keys saved by a recovery backup, if present (older backups
+  # don't have them). Ownership is taken from the existing secrets directory because the
+  # service users' uids can differ on a rebuilt primary.
+  if $restore_type == 'recovery' {
+    out::message('# Restoring service secret keys for recovery')
+    $restore_secrets = peadm::secret_key_services().map |$svc| {
+      $src = "${recovery_directory}/recovery/secrets/${svc}"
+      $dest = "/etc/puppetlabs/${svc}/conf.d/secrets"
+      $copy = "cp -r --preserve=mode,timestamps ${shellquote($src)}/. ${dest}/ && chown -R --reference=${dest} ${dest}"
+      "if [ -d ${shellquote($src)} ] && [ -d ${dest} ]; then ${copy}; fi"
+    }
+    run_command($restore_secrets.join(' && '), $primary_target)
+  }
+
   #$database_to_restore.each |Integer $index, Boolean $value | {
   $restore_databases.each |$name,$database_targets| {
     out::message("# Restoring database pe-${name}")
