@@ -147,6 +147,16 @@ jobs:
             exit 1
           fi
           echo ::endgroup::
+      - name: Collect agent diagnostics on failure
+        if: ${{ failure() && hashFiles('spec/fixtures/litmus_inventory.yaml') != '' }}
+        continue-on-error: true
+        timeout-minutes: 10
+        run: |
+          bundle exec bolt script run .github/scripts/collect-agent-diagnostics.sh \
+            --targets all \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules \
+            --no-host-key-check
       - name: Tear down test cluster
         if: ${{ always() }}
         continue-on-error: true

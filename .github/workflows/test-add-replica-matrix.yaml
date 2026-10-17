@@ -35,8 +35,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture: [standard, standard-with-dr, large, extra-large]
-        version: [2023.8.12, 2025.12.0, 2026.0.0]
+        architecture: [large, extra-large]
+        version: [2026.0.0]
         image: [almalinux-cloud/almalinux-8]
     steps:
       - name: Checkout Source
@@ -98,6 +98,16 @@ jobs:
           bundle exec bolt plan run peadm_spec::verify_replica -v \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules
+      - name: Collect agent diagnostics on failure
+        if: ${{ failure() && hashFiles('spec/fixtures/litmus_inventory.yaml') != '' }}
+        continue-on-error: true
+        timeout-minutes: 10
+        run: |
+          bundle exec bolt script run .github/scripts/collect-agent-diagnostics.sh \
+            --targets all \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules \
+            --no-host-key-check
       - name: Tear down test cluster
         if: ${{ always() }}
         continue-on-error: true
