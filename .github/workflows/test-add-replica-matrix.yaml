@@ -98,8 +98,8 @@ jobs:
           bundle exec bolt plan run peadm_spec::verify_replica -v \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules
-      - name: Collect agent diagnostics on failure
-        if: ${{ failure() && hashFiles('spec/fixtures/litmus_inventory.yaml') != '' }}
+      - name: Collect agent diagnostics
+        if: ${{ always() && hashFiles('spec/fixtures/litmus_inventory.yaml') != '' }}
         continue-on-error: true
         timeout-minutes: 10
         run: |

@@ -8,9 +8,17 @@ report="${state}/last_run_report.yaml"
 
 section() { printf '\n===== %s: %s\n' "$(hostname -f)" "$1"; }
 
-section 'uptime / free -m'
+section 'uptime / nproc / free -m / swap activity'
 uptime
+nproc
 free -m
+swapon --show
+grep -E '^pswp(in|out) ' /proc/vmstat
+echo "vm.overcommit_memory=$(cat /proc/sys/vm/overcommit_memory)"
+grep -E '^(CommitLimit|Committed_AS):' /proc/meminfo
+
+section 'df -h'
+df -h / /tmp /opt /var 2>/dev/null | awk '!seen[$0]++'
 
 section 'kernel OOM events'
 dmesg -T 2>/dev/null | grep -iE 'out of memory|oom-kill|killed process' | tail -20

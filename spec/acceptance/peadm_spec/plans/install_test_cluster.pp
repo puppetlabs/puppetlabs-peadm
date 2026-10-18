@@ -25,6 +25,18 @@ plan peadm_spec::install_test_cluster (
     $target.set_var('certname', $fqdn.first['stdout'].chomp)
   }
 
+  # The provision service always creates n1-standard-2 VMs (7.5 GB, no swap,
+  # image-default disk). On PE 2026.0.0 the primary's agent runs fail with
+  # "Cannot allocate memory - fork(2)" once the PE JVMs are up, with no OOM
+  # kills, which points at the kernel's overcommit check refusing the fork. Swap
+  # can't fix it, because a 4 GB swapfile leaves too little disk for the PE
+  # install. Always allow overcommit instead; persisted in sysctl.d so it
+  # survives the FIPS reboot below.
+  run_command(@(OVERCOMMIT), $t)
+    echo 'vm.overcommit_memory = 1' > /etc/sysctl.d/99-peadm-ci-overcommit.conf &&
+    sysctl -q -w vm.overcommit_memory=1
+    | OVERCOMMIT
+
   if $fips == 'enable' {
     run_command('/bin/fips-mode-setup --enable', $t)
     run_plan('reboot', $t)
