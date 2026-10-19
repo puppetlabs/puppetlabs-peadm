@@ -76,6 +76,14 @@ jobs:
           echo ::group::info:inventory
             sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
           echo ::endgroup::
+      - name: DEBUG - Check provisioned VM machine type
+        continue-on-error: true
+        run: |
+          bundle exec bolt command run \
+            'echo "machine-type: $(curl -s -H "Metadata-Flavor: Google" http://169.254.169.254/computeMetadata/v1/instance/machine-type)"; echo "cpu-platform: $(curl -s -H "Metadata-Flavor: Google" http://169.254.169.254/computeMetadata/v1/instance/cpu-platform)"; free -h; nproc' \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules \
+            --targets all
       - name: Install PE on test cluster
         timeout-minutes: 120
         run: |
