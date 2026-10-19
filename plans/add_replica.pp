@@ -121,16 +121,24 @@ plan peadm::add_replica(
   # occasionally fails with a transient "ConnectionClosedException" from the
   # orchestration service while it runs Puppet on the primary as part of
   # enabling the new replica -- the primary appears to bounce its own
-  # orchestration service mid-job. Retry a bounded number of times to ride
-  # out that race; any other failure (e.g. a bad token, or a genuine
-  # provisioning error) is not retried and surfaces on the first attempt.
+  # orchestration service mid-job. It can also fail with "These services are
+  # not running" (PE-42816) if the replica's Classifier/RBAC/PuppetDB haven't
+  # finished starting when provision_replica's final health check runs.
+  # Retry a bounded number of times to ride out those races; any other
+  # failure (e.g. a bad token, or a genuine provisioning error) is not
+  # retried and surfaces on the first attempt.
   $provision_replica_max_attempts = 3
   $provision_result = range(1, $provision_replica_max_attempts).reduce(undef) |$memo, $attempt| {
     $prior_output = ($memo =~ NotUndef and !$memo.ok and $memo.error_set.first.value =~ Hash) ? {
       true    => $memo.error_set.first.value['_output'],
       default => undef,
     }
-    $prior_is_transient = ($prior_output =~ String[1]) and ($prior_output =~ /ConnectionClosedException|puppetlabs\.orchestrator\/unknown-error/)
+    # "These services are not running" is the PE-42816 replica-status race:
+    # provision_replica's final service-health check can fire before the
+    # replica's just-reinitialized Classifier/RBAC/PuppetDB finish starting.
+    # Retrying rides out the same class of timing issue as the orchestrator
+    # errors below.
+    $prior_is_transient = ($prior_output =~ String[1]) and ($prior_output =~ /ConnectionClosedException|puppetlabs\.orchestrator\/unknown-error|These services are not running/)
 
     if $memo =~ NotUndef and ($memo.ok or !$prior_is_transient) {
       $memo
