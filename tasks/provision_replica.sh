@@ -7,6 +7,7 @@
 declare PT_token_file
 declare PT_legacy
 declare PT_replica
+declare PT_action
 
 export USER=$(id -un)
 export HOME=$(getent passwd "$USER" | cut -d : -f 6)
@@ -21,16 +22,44 @@ fi
 
 set -e
 
+if [ -z "$PT_action" -o "$PT_action" = "null" ]; then
+  PT_action="both"
+fi
+
 if [ "$PT_legacy" = "false" ]; then
   echo "(legacy=false) query active nodes before provision replica"
   puppet query '["from","resources",["extract",["certname"],["and",["=","type","Class"],["=","title","Puppet_enterprise::Profile::Master"]]]]'
 
-  puppet infrastructure provision replica "$PT_replica" \
-    --color false \
-    --yes --token-file "$TOKEN_FILE" \
-    --skip-agent-config \
-    --topology mono-with-compile \
-    --enable
+  case "$PT_action" in
+    provision)
+      # Provision only, without the trailing --enable. PE core's --enable
+      # path runs its own replica service-health check with a short, fixed
+      # wait that is sometimes too short in CI; callers that split
+      # provision/enable are expected to confirm service health themselves
+      # (e.g. peadm::wait_until_service_ready) before calling this task
+      # again with action=enable.
+      puppet infrastructure provision replica "$PT_replica" \
+        --color false \
+        --yes --token-file "$TOKEN_FILE" \
+        --skip-agent-config \
+        --topology mono-with-compile
+      ;;
+    enable)
+      puppet infrastructure enable replica "$PT_replica" \
+        --color false \
+        --yes --token-file "$TOKEN_FILE" \
+        --skip-agent-config \
+        --topology mono-with-compile
+      ;;
+    both|*)
+      puppet infrastructure provision replica "$PT_replica" \
+        --color false \
+        --yes --token-file "$TOKEN_FILE" \
+        --skip-agent-config \
+        --topology mono-with-compile \
+        --enable
+      ;;
+  esac
 
 elif [ "$PT_legacy" = "true" ]; then
   echo "(legacy=true) query active nodes before provision replica"
