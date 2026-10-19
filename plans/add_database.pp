@@ -213,6 +213,11 @@ plan peadm::add_database(
   # agents
   run_command('systemctl start pe-puppetserver.service pe-puppetdb.service', $compilers)
 
+  # Wait for the restarted services to be ready before relying on them to
+  # compile/serve catalogs; otherwise the puppet_runonce below can race the
+  # classifier/puppetserver warmup and fail with a Node Manager service error
+  peadm::wait_until_service_ready('pe-master', $compilers)
+
   peadm::plan_step('finalize') || {
     # Run Puppet to sweep up but no restarts should occur so do them in parallel
     run_task('peadm::puppet_runonce', peadm::flatten_compact([
