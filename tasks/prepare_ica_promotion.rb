@@ -5,19 +5,23 @@ require 'json'
 require 'puppet'
 require_relative '../files/ica_task_helper'
 
-# Bolt task: pin this compiler into the ICA classifier group and clear
-# ca.conf's ica-pool. Nothing else: writing bootstrap.cfg and ca.conf's
-# ica-* settings, and restarting the CA service in response to those
-# writes, is profile::master's and profile::compiler_ica_ca's own job on
-# the compiler's next Puppet run, not this task's. This task only sets the
-# flags those classes act on, and clears the one ca.conf setting neither
-# of them manages.
+# Bolt task: stage two of promotion. Pins this compiler into the
+# PE ICA Compilers classifier group (a child of PE Intermediate CA) and
+# clears ca.conf's ica-pool. Nothing else: writing bootstrap.cfg and
+# restarting the CA service in response is profile::master's own job on the
+# compiler's next Puppet run, not this task's. This task only sets the flags
+# that class acts on, and clears the one ca.conf setting nothing manages.
+#
+# Refuses to run unless stage one has been applied and the CSR submitted: see
+# IcaTaskHelper.assert_provisioning_ready!.
 class PrepareIcaPromotion
   def initialize(params)
     @primary_host = params.fetch('primary_host')
   end
 
   def execute!
+    IcaTaskHelper.assert_provisioning_ready!
+
     classifier_https = IcaTaskHelper.primary_https_client(@primary_host, IcaTaskHelper::CLASSIFIER_PORT)
     IcaTaskHelper.pin_to_ica_group!(classifier_https, Puppet.settings[:certname])
 

@@ -77,6 +77,7 @@ before they get overwritten by a classification reassertion
 * [`code_sync_status`](#code_sync_status): A task to confirm code is in sync accross the cluster for clusters with code manager configured
 * [`divert_code_manager`](#divert_code_manager): Divert the code manager live-dir setting
 * [`download`](#download): Download a file using curl
+* [`enable_ica_provisioning`](#enable_ica_provisioning): Pin this compiler into the PE Intermediate CA classifier group, which sets ica_enabled on profile::compiler_ica_ca so that its next Puppet ru
 * [`enable_replica`](#enable_replica): Execute the enable replica puppet command
 * [`filesize`](#filesize): Return the size of a file in bytes
 * [`get_group_rules`](#get_group_rules): Run on a PE primary node to return the rules currently applied to the PE Infrastructure Agent group
@@ -93,7 +94,7 @@ before they get overwritten by a classification reassertion
 * [`pe_reinstall`](#pe_reinstall): Re-run the Puppet Enterprise installer against an already-extracted installer directory
 * [`pe_uninstall`](#pe_uninstall): Uninstall Puppet Enterprise
 * [`precheck`](#precheck): Return pre-check information about a system
-* [`prepare_ica_promotion`](#prepare_ica_promotion): Pin this compiler into the shared PE ICA Compilers classifier group, which sets pe_ca_ica_enabled and clears enable_ca_proxy on profile::mast
+* [`prepare_ica_promotion`](#prepare_ica_promotion): Stage two of promoting a proxy compiler to an intermediate CA. Pin this compiler into the PE ICA Compilers classifier group, a child of PE In
 * [`provision_replica`](#provision_replica): Execute the replica provision puppet command
 * [`puppet_infra_upgrade`](#puppet_infra_upgrade): Execute the puppet infra upgrade command
 * [`puppet_runonce`](#puppet_runonce): Run the Puppet agent one time
@@ -1361,6 +1362,20 @@ Data type: `String`
 
 The GPG keyserver to retrieve GPG keys from
 
+### <a name="enable_ica_provisioning"></a>`enable_ica_provisioning`
+
+Pin this compiler into the PE Intermediate CA classifier group, which sets ica_enabled on profile::compiler_ica_ca so that its next Puppet run writes the ca.conf settings the ICA provisioning subcommand reads. The compiler stays a CA proxy: nothing here binds IntermediateCAService. Run before submit_ica_csr, followed by a Puppet run on the compiler. Called as part of promoting a proxy compiler to an intermediate CA; not meant to be run directly.
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `primary_host`
+
+Data type: `String[1]`
+
+Certname/FQDN of the PE primary hosting the classifier this task pins the compiler into.
+
 ### <a name="enable_replica"></a>`enable_replica`
 
 Execute the enable replica puppet command
@@ -1635,7 +1650,7 @@ Return pre-check information about a system
 
 ### <a name="prepare_ica_promotion"></a>`prepare_ica_promotion`
 
-Pin this compiler into the shared PE ICA Compilers classifier group, which sets pe_ca_ica_enabled and clears enable_ca_proxy on profile::master and sets ica_enabled on profile::compiler_ica_ca, all in the same pin. Also clears ca.conf's ica-pool, the one setting neither of those classes manages. Does not write bootstrap.cfg or ca.conf's ica-* settings, install a certificate, or restart any service -- those happen on the compiler's next Puppet run, driven by the classes this task sets flags on. Called as part of promoting a proxy compiler to an intermediate CA, after operator approval of the pending CSR; not meant to be run directly.
+Stage two of promoting a proxy compiler to an intermediate CA. Pin this compiler into the PE ICA Compilers classifier group, a child of PE Intermediate CA, which sets pe_ca_ica_enabled and clears enable_ca_proxy on profile::master (profile::compiler_ica_ca's ica_enabled is inherited from the parent group). Also clears ca.conf's ica-pool, the one setting nothing else manages. Refuses to run unless enable_ica_provisioning has been applied and a Puppet run has written the ca.conf ICA settings, and submit_ica_csr has created the ICA passphrase. Does not write bootstrap.cfg, install a certificate, or restart any service: those happen on the compiler's next Puppet run. Called after operator approval of the pending CSR; not meant to be run directly.
 
 **Supports noop?** false
 
@@ -1849,7 +1864,7 @@ DNS Alternative Names to request for the certificate
 
 ### <a name="submit_ica_csr"></a>`submit_ica_csr`
 
-Generate and submit this compiler's ICA CSR to the PE primary. A thin wrapper: shells out to the puppetserver ICA provisioning subcommand, which performs all cryptography (key generation, PKCS#8 encryption, CSR and initial CRL construction) and submission. Returns the pending request id. Makes no change to bootstrap.cfg and restarts no services. Called as part of promoting a proxy compiler to an intermediate CA; promotion is per-compiler and operator-driven only. Not meant to be run directly.
+Generate and submit this compiler's ICA CSR to the PE primary. A thin wrapper: shells out to the puppetserver ICA provisioning subcommand, which performs all cryptography (key generation, PKCS#8 encryption, CSR and initial CRL construction) and submission. Returns the pending request id. Makes no change to bootstrap.cfg and restarts no services. Requires the ca.conf ICA settings in place: run enable_ica_provisioning and then a Puppet run on the compiler first. Called as part of promoting a proxy compiler to an intermediate CA; promotion is per-compiler and operator-driven only. Not meant to be run directly.
 
 **Supports noop?** false
 
