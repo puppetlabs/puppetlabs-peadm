@@ -318,12 +318,20 @@ plan peadm::restore (
   # TEMP DEBUG (Group 6 investigation, not for merge): dump the restored
   # pe-rbac admin user's row so we can see whether is_revoked is already
   # true right here, before the token request that fails downstream.
+  # Written to a SQL file first (instead of inline -c "...") to avoid
+  # nested-quote mangling across the su -c / Bolt-over-SSH layers, which
+  # silently produced zero output on the first attempt.
   if $restore_type == 'migration' {
     run_command(@("CMD"/L), $primary_target, _catch_errors => true)
-      su - pe-postgres -s /bin/bash -c "/opt/puppetlabs/server/bin/psql -d pe-rbac -c '\\dt'" ; \
-      su - pe-postgres -s /bin/bash -c "/opt/puppetlabs/server/bin/psql -d pe-rbac -c \"SELECT table_schema, table_name, column_name FROM information_schema.columns WHERE column_name ILIKE '%revok%' OR column_name ILIKE '%login%';\"" ; \
-      su - pe-postgres -s /bin/bash -c "/opt/puppetlabs/server/bin/psql -d pe-rbac -c \"SELECT * FROM subject.users WHERE login='admin';\"" ; \
-      su - pe-postgres -s /bin/bash -c "/opt/puppetlabs/server/bin/psql -d pe-rbac -c \"SELECT * FROM users WHERE login='admin';\"" ; \
+      echo "=== writing debug SQL file ===" ; \
+      printf '%s\n' '\dt' > /tmp/dbg_rbac.sql ; \
+      printf '%s\n' "SELECT table_schema, table_name, column_name FROM information_schema.columns WHERE column_name ILIKE '%revok%' OR column_name ILIKE '%login%';" >> /tmp/dbg_rbac.sql ; \
+      printf '%s\n' "SELECT * FROM subject.users WHERE login = 'admin';" >> /tmp/dbg_rbac.sql ; \
+      chmod 644 /tmp/dbg_rbac.sql ; \
+      echo "=== sql file contents ===" ; \
+      cat /tmp/dbg_rbac.sql ; \
+      echo "=== psql output ===" ; \
+      su - pe-postgres -s /bin/bash -c '/opt/puppetlabs/server/bin/psql -d pe-rbac -f /tmp/dbg_rbac.sql' 2>&1 ; \
       true
       | CMD
   }
