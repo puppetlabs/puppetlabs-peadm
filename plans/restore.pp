@@ -315,6 +315,19 @@ plan peadm::restore (
     /opt/puppetlabs/bin/puppet-infrastructure configure --no-recover
     | CMD
 
+  # TEMP DEBUG (Group 6 investigation, not for merge): dump the restored
+  # pe-rbac admin user's row so we can see whether is_revoked is already
+  # true right here, before the token request that fails downstream.
+  if $restore_type == 'migration' {
+    run_command(@("CMD"/L), $primary_target, _catch_errors => true)
+      su - pe-postgres -s /bin/bash -c "/opt/puppetlabs/server/bin/psql -d pe-rbac -c '\\dt'" ; \
+      su - pe-postgres -s /bin/bash -c "/opt/puppetlabs/server/bin/psql -d pe-rbac -c \"SELECT table_schema, table_name, column_name FROM information_schema.columns WHERE column_name ILIKE '%revok%' OR column_name ILIKE '%login%';\"" ; \
+      su - pe-postgres -s /bin/bash -c "/opt/puppetlabs/server/bin/psql -d pe-rbac -c \"SELECT * FROM subject.users WHERE login='admin';\"" ; \
+      su - pe-postgres -s /bin/bash -c "/opt/puppetlabs/server/bin/psql -d pe-rbac -c \"SELECT * FROM users WHERE login='admin';\"" ; \
+      true
+      | CMD
+  }
+
   # If we have replicas reinitalise them
   run_command(@("CMD"/L), $replica_target)
     /opt/puppetlabs/bin/puppet-infra reinitialize replica -y
