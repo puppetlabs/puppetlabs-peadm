@@ -1,0 +1,12 @@
+{
+  "description": "Pin this compiler into the PE Intermediate CA classifier group, which sets ica_enabled on profile::compiler_ica_ca so that its next Puppet run writes the ca.conf settings the ICA provisioning subcommand reads. The compiler stays a CA proxy: nothing here binds IntermediateCAService. Run before submit_ica_csr, followed by a Puppet run on the compiler. Called as part of promoting a proxy compiler to an intermediate CA; not meant to be run directly.",
+  "input_method": "stdin",
+  "files": ["peadm/files/ica_task_helper.rb"],
+  "private": true,
+  "parameters": {
+    "primary_host": {
+      "description": "Certname/FQDN of the PE primary hosting the classifier this task pins the compiler into.",
+      "type": "String[1]"
+    }
+  }
+}
