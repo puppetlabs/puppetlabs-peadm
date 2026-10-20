@@ -140,6 +140,10 @@ jobs:
         run: |
           bundle exec bolt command run \
             'echo "=== hostname ==="; hostname; \
+             echo "=== machine-type ==="; curl -s -H "Metadata-Flavor: Google" http://169.254.169.254/computeMetadata/v1/instance/machine-type 2>/dev/null || echo "not-gcp-or-unavailable"; \
+             echo "=== nproc / free -h ==="; nproc; free -h; \
+             echo "=== dmesg OOM/memory signatures ==="; dmesg 2>/dev/null | grep -i "out of memory\|oom.kill\|cannot allocate memory" || echo "none found"; \
+             echo "=== journalctl OOM signatures (full boot) ==="; journalctl --no-pager -k | grep -i "out of memory\|oom.kill" || echo "none found"; \
              echo "=== systemctl status pe-puppetserver ==="; systemctl status pe-puppetserver --no-pager -l || true; \
              echo "=== journalctl -u pe-puppetserver (last 500) ==="; journalctl -u pe-puppetserver --no-pager -n 500 || true; \
              echo "=== puppetserver.log (last 300) ==="; tail -n 300 /var/log/puppetlabs/puppetserver/puppetserver.log 2>/dev/null || echo "not found"; \
