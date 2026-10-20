@@ -326,7 +326,7 @@ plan peadm::restore (
   # already-verified-working password keeps working post-restore.
   if $restore_type == 'migration' and getvar('recovery_opts.rbac') {
     run_command(@("CMD"/L), $primary_target, _catch_errors => true)
-      printf '%s\n' "UPDATE subject.users SET failed_login_attempts = 0, is_revoked = false WHERE login = 'admin';" > /tmp/reset_admin_lockout.sql
+      printf '%s\n' "UPDATE subjects SET failed_login_attempts = 0, is_revoked = false WHERE login = 'admin';" > /tmp/reset_admin_lockout.sql
       su - pe-postgres -s /bin/bash -c '/opt/puppetlabs/server/bin/psql -d pe-rbac -f /tmp/reset_admin_lockout.sql'
       rm -f /tmp/reset_admin_lockout.sql
       | CMD
