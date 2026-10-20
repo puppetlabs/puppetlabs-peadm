@@ -15,6 +15,7 @@ describe PrepareIcaPromotion do
     allow(Puppet).to receive(:settings).and_return(certname: 'compiler-a.example.com', confdir: '/etc/puppetlabs/puppetserver')
     allow(IcaTaskHelper).to receive(:ca_conf_path).and_return(ca_conf.path)
     allow(IcaTaskHelper).to receive(:primary_https_client).with('primary.example.com', IcaTaskHelper::CLASSIFIER_PORT).and_return(classifier_https)
+    allow(IcaTaskHelper).to receive(:assert_provisioning_ready!)
     allow(IcaTaskHelper).to receive(:pin_to_ica_group!)
   end
 
@@ -32,6 +33,31 @@ describe PrepareIcaPromotion do
       expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(0) }
 
       expect(File.read(ca_conf.path)).not_to include('ica-pool')
+    end
+
+    it 'refuses before changing anything when ICA provisioning is not ready, and leaves ca.conf untouched' do
+      ca_conf.write("certificate-authority {\n  ica-pool = [\"https://old.example.com:8140\"]\n}\n")
+      ca_conf.rewind
+      allow(IcaTaskHelper).to receive(:assert_provisioning_ready!).and_raise('ca.conf is missing ica-renewal-primary-url')
+      expect(IcaTaskHelper).not_to receive(:pin_to_ica_group!)
+      expect(STDOUT).to receive(:puts) do |output|
+        parsed = JSON.parse(output)
+        expect(parsed['_error']['kind']).to eq('peadm/prepare_ica_promotion_failed')
+        expect(parsed['_error']['msg']).to include('ca.conf is missing ica-renewal-primary-url')
+      end
+
+      expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
+
+      expect(File.read(ca_conf.path)).to include('ica-pool')
+    end
+
+    it 'checks readiness before pinning' do
+      ca_conf.write("certificate-authority {\n}\n")
+      ca_conf.rewind
+      expect(IcaTaskHelper).to receive(:assert_provisioning_ready!).ordered
+      expect(IcaTaskHelper).to receive(:pin_to_ica_group!).ordered
+
+      expect { task.execute! }.to raise_error(SystemExit)
     end
 
     it 'pins before clearing ica-pool, and leaves ica-pool in place if the pin fails' do
