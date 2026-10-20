@@ -4,7 +4,7 @@ function peadm::migration_opts_default () {
     'ca'           => true,
     'classifier'   => true,
     'code'         => false,
-    'config'       => false,
+    'config'       => true,
     'orchestrator' => true,
     'puppetdb'     => true,
     'rbac'         => true,
