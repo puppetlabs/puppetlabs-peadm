@@ -5,6 +5,15 @@ plan peadm_spec::test_replace_failed_postgres(
   Peadm::SingleTargetSpec   $failed_postgresql_host,
   Peadm::SingleTargetSpec   $replacement_postgresql_host,
 ) {
+  # Immediately after "Install PE on test cluster" finishes, the primary's
+  # classifier/Node Manager service can still be warming up. The very next
+  # puppet run below compiles on a compiler, which calls back to the
+  # primary to classify the agent node; if Node Manager isn't ready yet that
+  # call fails with "Classification of ... failed due to a Node Manager
+  # service error" (seen consistently, not just occasionally, in CI).
+  # Wait for it before issuing that run.
+  peadm::wait_until_service_ready('pe-master', $primary_host)
+
   # run puppet once on working_postgresql_host - gives some time in CI
   run_task('peadm::puppet_runonce', $working_postgresql_host)
 
