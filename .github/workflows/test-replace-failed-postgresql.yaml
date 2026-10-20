@@ -37,7 +37,11 @@ jobs:
       matrix:
         architecture: [extra-large-with-dr-and-spare-replica]
         install_architecture: [extra-large-with-dr]
-        version: [2023.8.12, 2025.12.0, 2026.0.0]
+        # TEMP: narrowed to the 2 Group 4 failing jobs to test whether PR
+        # #730's one-line database_host fix resolves them; restore
+        # [2023.8.12, 2025.12.0, 2026.0.0] before this branch is used for
+        # anything else.
+        version: [2023.8.12, 2025.12.0]
         image: [almalinux-cloud/almalinux-8]
     steps:
       - name: Checkout Source

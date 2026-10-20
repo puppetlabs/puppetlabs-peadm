@@ -202,11 +202,16 @@ plan peadm::subplans::install (
     ).map |$t| { $t.peadm::certname() },
   }
 
+  # On extra-large installs only PuppetDB's database moves to the dedicated
+  # postgresql host. Do not set the general puppet_enterprise::database_host
+  # here: it would also move the console databases (rbac, classifier,
+  # activity, ...) off the primary, but PE's replica profile always replicates
+  # those from the primary node itself, so a DR replica would sync empty
+  # databases and its console services would never start (PE-47384).
   $primary_pe_conf = peadm::generate_pe_conf({
       'console_admin_password'                                          => $console_password,
       'puppet_enterprise::puppet_master_host'                           => $primary_target.peadm::certname(),
       'pe_install::puppet_master_dnsaltnames'                           => $dns_alt_names,
-      'puppet_enterprise::database_host'                                => $primary_postgresql_target.peadm::certname(),
       'puppet_enterprise::puppetdb_database_host'                       => $primary_postgresql_target.peadm::certname(),
       'puppet_enterprise::profile::master::code_manager_auto_configure' => $_code_manager_auto_configure,
       'puppet_enterprise::profile::master::r10k_remote'                 => $r10k_remote,
