@@ -142,14 +142,34 @@ plan peadm::restore (
   } else {
     if getvar('recovery_opts.ca') {
       out::message('# Restoring ca and ssl certificates')
+      # The `puppet-infrastructure configure` run triggered by this restore
+      # can hit two known PE-core races while CA/console-services are
+      # restarting: the 'sync ca infra nodes' Exec exhausting its own ~480s
+      # retry budget, and the pe_node_group classification provider failing
+      # immediately if the CRL isn't synced yet (PE core has no retry for
+      # that one). Retry the whole restore once to give both another window.
+      $certs_restore_max_attempts = 2
+      $certs_restore_result = range(1, $certs_restore_max_attempts).reduce(undef) |$memo, $attempt| {
+        if $memo =~ NotUndef and $memo.ok {
+          $memo
+        } else {
+          if $attempt > 1 {
+            out::message("puppet-backup restore --scope=certs failed; retrying (attempt ${attempt}/${certs_restore_max_attempts})...")
+          }
   # lint:ignore:strict_indent
-      run_command(@("CMD"/L), $primary_target)
-        /opt/puppetlabs/bin/puppet-backup restore \
-          --scope=certs \
-          --tempdir=${shellquote($recovery_directory)} \
-          --force \
-          ${shellquote($recovery_directory)}/ca/pe_backup-*tgz
-        | CMD
+          run_command(@("CMD"/L), $primary_target, _catch_errors => true)
+            /opt/puppetlabs/bin/puppet-backup restore \
+              --scope=certs \
+              --tempdir=${shellquote($recovery_directory)} \
+              --force \
+              ${shellquote($recovery_directory)}/ca/pe_backup-*tgz
+            | CMD
+  # lint:endignore
+        }
+      }
+      unless $certs_restore_result.ok {
+        fail_plan("puppet-backup restore --scope=certs failed after ${certs_restore_max_attempts} attempts: ${certs_restore_result.error_set.first.error.message}")
+      }
     }
 
     if getvar('recovery_opts.code') {
@@ -311,9 +331,26 @@ plan peadm::restore (
   # Use `puppet infra` to ensure correct file permissions, restart services,
   # etc. Make sure not to try and get config data from the classifier, which
   # isn't yet up and running.
-  run_command(@("CMD"/L), $primary_target)
-    /opt/puppetlabs/bin/puppet-infrastructure configure --no-recover
-    | CMD
+  #
+  # Both known CA/console-services races noted above (sync ca infra nodes;
+  # pe_node_group classification) can also surface here, since this command
+  # triggers the same kind of catalog apply. Retry once for the same reason.
+  $configure_max_attempts = 2
+  $configure_result = range(1, $configure_max_attempts).reduce(undef) |$memo, $attempt| {
+    if $memo =~ NotUndef and $memo.ok {
+      $memo
+    } else {
+      if $attempt > 1 {
+        out::message("puppet-infrastructure configure --no-recover failed; retrying (attempt ${attempt}/${configure_max_attempts})...")
+      }
+      run_command(@("CMD"/L), $primary_target, _catch_errors => true)
+        /opt/puppetlabs/bin/puppet-infrastructure configure --no-recover
+        | CMD
+    }
+  }
+  unless $configure_result.ok {
+    fail_plan("puppet-infrastructure configure --no-recover failed after ${configure_max_attempts} attempts: ${configure_result.error_set.first.error.message}")
+  }
 
   # If we have replicas reinitalise them
   run_command(@("CMD"/L), $replica_target)
