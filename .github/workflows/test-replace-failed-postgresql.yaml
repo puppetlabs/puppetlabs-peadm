@@ -126,6 +126,18 @@ jobs:
             failed_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "primary-pdb-postgresql") | .name' spec/fixtures/litmus_inventory.yaml) \
             replacement_postgresql_host=$(yq '.groups[].targets[] | select(.vars.role == "spare-replica") | .name' spec/fixtures/litmus_inventory.yaml) \
           --no-host-key-check
+      - name: DEBUG - Dump console-services log (Group 4 investigation)
+        if: ${{ always() }}
+        continue-on-error: true
+        run: |
+          bundle exec bolt command run \
+            'echo "=== hostname ==="; hostname; \
+             echo "=== systemctl status pe-console-services ==="; systemctl status pe-console-services --no-pager -l || true; \
+             echo "=== console-services.log (last 500) ==="; tail -n 500 /var/log/puppetlabs/console-services/console-services.log 2>/dev/null || echo "not found"; \
+             echo "=== puppet infrastructure status ==="; /opt/puppetlabs/bin/puppet infrastructure status 2>&1 || true' \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules \
+            --targets all
       - name: Tear down PE XL DR test cluster
         if: ${{ always() }}
         continue-on-error: true
