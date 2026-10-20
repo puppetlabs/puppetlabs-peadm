@@ -34,7 +34,7 @@ jobs:
           files: ${{ steps.changed_yaml_files.outputs.files }}
       - name: commit-changes
         if: ${{ steps.yamlfix.outputs.changed_files == 'true' }}
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: Apply Yamlfix format changes.
           status_options: --untracked-files=no
