@@ -127,6 +127,15 @@ plan peadm::backup (
       /opt/puppetlabs/bin/puppet-backup create --dir=${shellquote($backup_directory)}/recovery --scope=certs,code,config
       | CMD
 # lint:endignore
+
+    # puppet-backup does not include the secret keys that encrypt data in the databases it
+    # backs up, and without them a restore onto a rebuilt primary can't decrypt that data
+    out::message('# Backing up service secret keys for recovery')
+    $backup_secrets = peadm::secret_key_services().map |$svc| {
+      $src = "/etc/puppetlabs/${svc}/conf.d/secrets"
+      "if [ -d ${src} ]; then cp -rp ${src} ${shellquote("${backup_directory}/recovery/secrets/${svc}")}; fi"
+    }
+    run_command("mkdir -p ${shellquote("${backup_directory}/recovery/secrets")} && ${backup_secrets.join(' && ')}", $targets)
   } else {
     if getvar('recovery_opts.ca') {
       out::message('# Backing up ca and ssl certificates')

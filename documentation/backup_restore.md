@@ -113,6 +113,8 @@ The following table shows the items you can specify and indicates what is includ
 
 **Note**: The PEADM backup and restore plans utilize the `puppet-backup` tool for backing up and restoring `ca`, `code` and `config`. For `config`, the data backed up includes the `activity`, `classifier`, `orchestrator`, and `rbac` databases.
 
+**Note**: `puppet-backup` does not include the secret keys used to encrypt sensitive data in those databases. A `recovery` backup therefore also copies the `/etc/puppetlabs/<service>/conf.d/secrets` directories of `console-services`, `orchestration-services`, `infra-assistant`, `patching-service` and `workflow-service`, and a `recovery` restore puts them back. Without them, a restore onto a rebuilt primary cannot decrypt that data. Backups taken with older PEADM versions do not contain these keys; back them up separately.
+
 **Note:** The output for the `peadm::backup` plan differs from the output that is returned when you manually run the [`puppet-backup create` command](https://puppet.com/docs/pe/latest/backing_up_and_restoring_pe.html#back_up_pe_infrastructure).
 
 ## Recovering a primary server when some or all services are not operational
