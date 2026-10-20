@@ -92,4 +92,4 @@ Please note, the optional parameters and values of the plan are as follows:
 | `dns_alt_names`           | `undef`       |                                                                                                                                |
 | `primary_postgresql_host` | `undef`       | By default, this will pre-populate to the required value depending on whether your architecture contains HA and or external databases. |
 
-For more information around adding compilers to your infrastructure [Expanding Your Deployment](expanding.md#adding-compilers-with-peadmadd_compiler)
+For more information around adding compilers to your infrastructure [Expanding Your Deployment](../expanding.md#adding-compilers-with-peadmadd_compiler)
