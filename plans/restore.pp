@@ -318,22 +318,22 @@ plan peadm::restore (
   # TEMP DEBUG (Group 6 investigation, not for merge): dump the restored
   # pe-rbac admin user's row so we can see whether is_revoked is already
   # true right here, before the token request that fails downstream.
-  # Written to a SQL file first (instead of inline -c "...") to avoid
-  # nested-quote mangling across the su -c / Bolt-over-SSH layers, which
-  # silently produced zero output on the first attempt.
+  # Two prior attempts (inline -c "...", then a SQL file via a single
+  # chained command) both silently produced zero captured output despite
+  # reporting 0 failures -- something about complex/quoted commands isn't
+  # rendering in the log. Decoupled here: run+redirect to a file first
+  # (no output expected from this command), then a second, trivially
+  # plain `cat` to retrieve it.
   if $restore_type == 'migration' {
     run_command(@("CMD"/L), $primary_target, _catch_errors => true)
-      echo "=== writing debug SQL file ===" ; \
-      printf '%s\n' '\dt' > /tmp/dbg_rbac.sql ; \
-      printf '%s\n' "SELECT table_schema, table_name, column_name FROM information_schema.columns WHERE column_name ILIKE '%revok%' OR column_name ILIKE '%login%';" >> /tmp/dbg_rbac.sql ; \
-      printf '%s\n' "SELECT * FROM subject.users WHERE login = 'admin';" >> /tmp/dbg_rbac.sql ; \
-      chmod 644 /tmp/dbg_rbac.sql ; \
-      echo "=== sql file contents ===" ; \
-      cat /tmp/dbg_rbac.sql ; \
-      echo "=== psql output ===" ; \
-      su - pe-postgres -s /bin/bash -c '/opt/puppetlabs/server/bin/psql -d pe-rbac -f /tmp/dbg_rbac.sql' 2>&1 ; \
-      true
+      printf '%s\n' '\dt' > /tmp/dbg_rbac.sql
+      printf '%s\n' "SELECT table_schema, table_name, column_name FROM information_schema.columns WHERE column_name ILIKE '%revok%' OR column_name ILIKE '%login%';" >> /tmp/dbg_rbac.sql
+      printf '%s\n' "SELECT * FROM subject.users WHERE login = 'admin';" >> /tmp/dbg_rbac.sql
+      chmod 644 /tmp/dbg_rbac.sql
+      su - pe-postgres -s /bin/bash -c '/opt/puppetlabs/server/bin/psql -d pe-rbac -f /tmp/dbg_rbac.sql' > /tmp/dbg_rbac_output.txt 2>&1
+      chmod 644 /tmp/dbg_rbac_output.txt
       | CMD
+    run_command('cat /tmp/dbg_rbac_output.txt', $primary_target, _catch_errors => true)
   }
 
   # If we have replicas reinitalise them
