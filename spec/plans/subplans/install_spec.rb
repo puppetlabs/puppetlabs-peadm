@@ -645,13 +645,13 @@ describe 'peadm::subplans::install' do
     expect(primary_pe_conf['puppet_enterprise::profile::master::code_manager_auto_configure']).to eq(true)
   end
 
-  # PE-46576: on extra-large (split-database) installs, the primary's pe.conf
-  # set puppetdb_database_host to the dedicated postgresql target but never
-  # set the general database_host, so every non-PuppetDB service (rbac,
-  # activity, classifier, etc.) fell back to a co-located Postgres on the
-  # primary instead of the dedicated host -- leaving the default admin
-  # account revoked and unable to authenticate.
-  it 'sets database_host for the primary on extra-large (split-database) installs' do
+  # PE-47384: on extra-large (split-database) installs, only PuppetDB's
+  # database belongs on the dedicated postgresql host. Setting the general
+  # database_host (as PE-46576 did) also moves the console databases off the
+  # primary, but PE's replica profile always replicates those from the
+  # primary node itself, so a DR replica syncs empty databases and its
+  # console services never start.
+  it 'sets only puppetdb_database_host, not database_host, for the primary on extra-large installs' do
     written_contents = []
     allow(mockfile).to receive(:write) { |content| written_contents << content }
 
@@ -665,8 +665,8 @@ describe 'peadm::subplans::install' do
     expect(run_plan('peadm::subplans::install', params)).to be_ok
 
     primary_pe_conf = written_contents.find { |content| content.include?('puppetdb_database_host') }
-    expect(primary_pe_conf).to include('"puppet_enterprise::database_host": "postgres1"')
     expect(primary_pe_conf).to include('"puppet_enterprise::puppetdb_database_host": "postgres1"')
+    expect(primary_pe_conf).not_to include('"puppet_enterprise::database_host"')
   end
 
   # PE-46576: on split-database installs, the primary's own install pass
