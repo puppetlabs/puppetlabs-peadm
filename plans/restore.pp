@@ -315,6 +315,23 @@ plan peadm::restore (
     /opt/puppetlabs/bin/puppet-infrastructure configure --no-recover
     | CMD
 
+  # The pg_restore above carries over the old cluster's admin account
+  # verbatim, including its failed_login_attempts counter. rbac-service's own
+  # brute-force lockout (is_revoked = failed_login_attempts >= threshold,
+  # default 10 -- see RBAC's update-failed-login! in storage.clj) can then
+  # trip on the very next login attempt if that counter was already near the
+  # threshold, leaving an otherwise-correct password unusable immediately
+  # after migration even though it worked moments earlier, pre-restore.
+  # Migrating a cluster isn't a brute-force attempt; reset the counter so the
+  # already-verified-working password keeps working post-restore.
+  if $restore_type == 'migration' and getvar('recovery_opts.rbac') {
+    run_command(@("CMD"/L), $primary_target, _catch_errors => true)
+      printf '%s\n' "UPDATE subject.users SET failed_login_attempts = 0, is_revoked = false WHERE login = 'admin';" > /tmp/reset_admin_lockout.sql
+      su - pe-postgres -s /bin/bash -c '/opt/puppetlabs/server/bin/psql -d pe-rbac -f /tmp/reset_admin_lockout.sql'
+      rm -f /tmp/reset_admin_lockout.sql
+      | CMD
+  }
+
   # If we have replicas reinitalise them
   run_command(@("CMD"/L), $replica_target)
     /opt/puppetlabs/bin/puppet-infra reinitialize replica -y
