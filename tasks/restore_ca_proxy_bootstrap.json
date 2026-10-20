@@ -1,0 +1,13 @@
+{
+  "description": "Run on an ICA compiler to restore its CA config to proxy mode: drops bootstrap.cfg's intermediate-ca-service entry and sets certificate-authority.proxy-target in ca.conf. Takes effect only after peadm::restart_ca_service restarts pe-puppetserver.",
+  "input_method": "stdin",
+  "private": true,
+  "files": ["peadm/files/ica_task_helper.rb"],
+  "parameters": {
+    "proxy_target": {
+      "description": "Where the compiler should forward CSRs once running as a proxy again: \"primary\", or a URL for an ICA pool member.",
+      "type": "String[1]",
+      "default": "primary"
+    }
+  }
+}
