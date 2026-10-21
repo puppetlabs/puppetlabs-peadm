@@ -139,7 +139,8 @@ describe 'peadm::add_replica' do
       # provision/enable are now separate calls to the same task (action:
       # 'provision' then 'enable'); only the provision call is retried here.
       provision_attempts = 0
-      expect_task('peadm::provision_replica').be_called_times(3).return do |targets:, action:, **_kwargs|
+      expect_task('peadm::provision_replica').be_called_times(3).return do |targets:, params:, **_kwargs|
+        action = params['action']
         results = targets.map do |target|
           if action == 'provision'
             provision_attempts += 1
