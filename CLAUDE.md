@@ -25,7 +25,7 @@ bundle exec rake parallel_spec
 # Running rspec (or bolt --modulepath spec/fixtures/modules) directly needs the fixtures
 # first, including after a `rake parallel_spec`/`rake spec` run, which removes them.
 # Without them every plan spec fails with "Could not find a plan named 'peadm::…'".
-bundle exec rake spec_prep                                   # symlinks peadm + peadm_spec
+bundle exec rake spec_prep                                   # installs .fixtures.yml deps + symlinks peadm/peadm_spec
 bundle exec rspec spec/plans/subplans/install_spec.rb        # one file
 bundle exec rspec spec/plans/subplans/install_spec.rb -e 'sets only puppetdb_database_host'  # one example
 ```
@@ -44,7 +44,7 @@ bundle exec bolt plan run peadm::install --params @params.json \
 ## Architecture
 
 ### Architecture is inferred from which hosts are passed
-`functions/assert_supported_architecture.pp` maps the presence of `primary_host`, `replica_host`, `primary_postgresql_host`, `replica_postgresql_host` (+ compilers) to `standard` / `large` / `extra-large`, each with or without `disaster-recovery`. Any other combination fails. Plans that take host parameters (install's subplans, upgrade, convert, migrate, backup/restore, …) call it up front and branch on the returned hash.
+`functions/assert_supported_architecture.pp` maps the presence of `primary_host`, `replica_host`, `primary_postgresql_host`, `replica_postgresql_host` (+ compilers) to `standard` / `large` / `extra-large`, each with or without `disaster-recovery`. Any other combination fails. Every plan that needs the architecture calls it and branches on the returned hash: install's subplans, `upgrade` and `convert` pass their host params directly; `backup`, `restore`, `migrate` and `convert_compiler_to_legacy` first read the hosts with `peadm::get_peadm_config`.
 
 ### Install = two subplans
 `plans/install.pp` is a thin wrapper around:
@@ -53,7 +53,7 @@ bundle exec bolt plan run peadm::install --params @params.json \
 
 ### Roles live in certificate extensions; classification keys off them
 - Each node's role and availability group are baked into its certificate as trusted extensions. OIDs are in `functions/oid.pp`: `peadm_role` (e.g. `puppet/server`, `puppet/puppetdb-database`), `peadm_availability_group` (`A`/`B`), plus `pp_auth_role` for compilers. `plans/util/insert_csr_extension_requests.pp` writes them before the CSR; `modify_cert_extensions` / `modify_certificate` change them later.
-- `manifests/setup/node_manager.pp` (applied on the primary via `apply()` with the `node_manager` module) creates/updates the console node groups. Most of them classify nodes by **rules that match those extensions** (PE Compiler, PE Database, PE Primary A/B, PE HA Replica, PE Compiler Group A/B, PE Legacy Compiler (A/B)); PE Master is PE's built-in group, which peadm only adds data and variables to. A = primary side, B = replica side. Compilers are split across A/B by index.
+- `manifests/setup/node_manager.pp` (applied on the primary via `apply()` with the `node_manager` module) creates/updates the console node groups. Most of them classify nodes by **rules that match those extensions** (PE Infrastructure Agent, PE Compiler, PE Database, PE Primary A/B, PE Compiler Group A/B, PE Legacy Compiler and its A/B groups); PE Master and PE HA Replica have no peadm rule, and peadm only adds classes, data or variables to them. A = primary side, B = replica side. Compilers are split across A/B by index.
 - Plans such as `add_replica`, `add_compilers`, `add_database`, `backup`/`restore`, `migrate` and `replace_failed_postgresql` read the cluster layout back with the `peadm::get_peadm_config` task. `upgrade` and `convert` still take every host as a parameter (`upgrade` runs `get_peadm_config` but only to log it), and `status` uses `peadm::infrastatus`.
 
 ### Plans run on the operator side, tasks run on targets
