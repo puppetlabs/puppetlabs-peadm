@@ -52,7 +52,7 @@ bundle exec bolt plan run peadm::install --params @params.json \
 ### Roles live in certificate extensions; classification keys off them
 - Each node's role and availability group are baked into its certificate as trusted extensions. OIDs are in `functions/oid.pp`: `peadm_role` (e.g. `puppet/server`, `puppet/puppetdb-database`), `peadm_availability_group` (`A`/`B`), plus `pp_auth_role` for compilers. `plans/util/insert_csr_extension_requests.pp` writes them before the CSR; `modify_cert_extensions` / `modify_certificate` change them later.
 - `manifests/setup/node_manager.pp` (applied on the primary via `apply()` with the `node_manager` module) creates/updates the console node groups whose **rules match those extensions**: PE Master, PE Compiler, PE Database, PE Primary A/B, PE HA Replica, PE Compiler Group A/B, PE Legacy Compiler (A/B). A = primary side, B = replica side. Compilers are split across A/B by index.
-- Other plans (upgrade, add_replica, add_compilers, backup/restore, status) discover the current cluster layout by reading this back with the `peadm::get_peadm_config` task instead of taking every host as a parameter.
+- `add_replica`, `add_compilers`, `add_database`, `backup` and `restore` read the cluster layout back with the `peadm::get_peadm_config` task. `upgrade` and `convert` still take every host as a parameter (`upgrade` runs `get_peadm_config` but only to log it), and `status` uses `peadm::infrastatus`.
 
 ### Plans run on the operator side, tasks run on targets
 - `tasks/` are shell/Ruby scripts executed on the PE nodes (`pe_install.sh`, `puppet_runonce`, `rbac_token`, `provision_replica`, `get_peadm_config`, …). Each has a matching `.json` metadata file.
@@ -70,7 +70,10 @@ On extra-large, only **PuppetDB's** database moves to the dedicated PostgreSQL n
 - `spec/unit/task/`: specs for task scripts.
 - `spec/functions/`, `spec/classes/`: function and `node_manager` class specs.
 - `spec/acceptance/peadm_spec/`: a **fixtures module**, not rspec. It holds Bolt plans that the GitHub Actions acceptance workflows run (`provision_test_cluster`, `install_test_cluster`, `upgrade_test_cluster`, `verify_replica`, `perform_failover`, …). It is symlinked into `spec/fixtures/modules/peadm_spec` by `spec_prep`.
-- Acceptance workflows (`.github/workflows/test-*.yaml`) provision cloud VMs per architecture (`standard`, `standard-with-dr`, `large`, `large-with-dr`, `extra-large`, `extra-large-with-dr`) and run those plans. On PRs they run **only when a review is requested**, not on every push.
+- Acceptance workflows (`.github/workflows/test-*.yaml`) provision cloud VMs per architecture (`standard`, `standard-with-dr`, `large`, `large-with-dr`, `extra-large`, `extra-large-with-dr`) and run those plans. When they run:
+  - The matrix workflows (`*-matrix`, `install-rhel-9`, `migration`, `legacy-*`, `replace-failed-postgresql`) run on every `pull_request` to `main` that touches code paths (`plans/`, `tasks/`, `spec/`, `functions/`, …). A docs-only PR triggers none of them.
+  - `test-backup-restore` runs on `ready_for_review`.
+  - The single-architecture workflows (`test-install`, `test-upgrade`, `test-failover`, …) only run via `workflow_dispatch`; the `*-nightly` ones run on a schedule.
 
 ## Conventions
 
