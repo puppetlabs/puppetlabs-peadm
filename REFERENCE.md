@@ -1657,6 +1657,12 @@ Data type: `Boolean`
 
 Set to true if provisioning a replica for PE 2019.5 or older. Defaults to false
 
+##### `action`
+
+Data type: `Optional[Enum[provision, enable, both]]`
+
+Non-legacy only. 'provision' runs provision without --enable, 'enable' runs enable replica, 'both' (default) runs the original atomic provision --enable.
+
 ### <a name="puppet_infra_upgrade"></a>`puppet_infra_upgrade`
 
 Execute the puppet infra upgrade command
