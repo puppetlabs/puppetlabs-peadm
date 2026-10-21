@@ -408,7 +408,24 @@ plan peadm::restore (
   }
 
 # Run Puppet to pick up last remaining config tweaks
-  run_task('peadm::puppet_runonce', $primary_target)
+  #
+  # This agent run can hit the same known PE-core CA/console-services races
+  # noted above (sync ca infra nodes; pe_node_group classification), since it
+  # triggers its own catalog apply. Retry once for the same reason.
+  $puppet_runonce_max_attempts = 2
+  $puppet_runonce_result = range(1, $puppet_runonce_max_attempts).reduce(undef) |$memo, $attempt| {
+    if $memo =~ NotUndef and $memo.ok {
+      $memo
+    } else {
+      if $attempt > 1 {
+        out::message("puppet_runonce failed; retrying (attempt ${attempt}/${puppet_runonce_max_attempts})...")
+      }
+      run_task('peadm::puppet_runonce', $primary_target, '_catch_errors' => true)
+    }
+  }
+  unless $puppet_runonce_result.ok {
+    fail_plan("peadm::puppet_runonce failed after ${puppet_runonce_max_attempts} attempts: ${puppet_runonce_result.error_set.first.error.message}")
+  }
 
   if $restore_type == 'recovery-db' {
     run_task('peadm::puppet_runonce', $puppetdb_postgresql_targets)
