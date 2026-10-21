@@ -140,6 +140,17 @@ plan peadm::restore (
   } elsif $restore_type == 'recovery-db' {
     out::message('# Restoring primary database for recovery')
   } else {
+    if getvar('recovery_opts.config') {
+      out::message('# Restoring config')
+      run_command(@("CMD"/L), $primary_target)
+        /opt/puppetlabs/bin/puppet-backup restore \
+          --scope=config \
+          --tempdir=${shellquote($recovery_directory)} \
+          --force \
+          ${shellquote($recovery_directory)}/config/pe_backup-*tgz
+        | CMD
+    }
+
     if getvar('recovery_opts.ca') {
       out::message('# Restoring ca and ssl certificates')
   # lint:ignore:strict_indent
@@ -160,17 +171,6 @@ plan peadm::restore (
           --tempdir=${shellquote($recovery_directory)} \
           --force \
           ${shellquote($recovery_directory)}/code/pe_backup-*tgz
-        | CMD
-    }
-
-    if getvar('recovery_opts.config') {
-      out::message('# Restoring config')
-      run_command(@("CMD"/L), $primary_target)
-        /opt/puppetlabs/bin/puppet-backup restore \
-          --scope=config \
-          --tempdir=${shellquote($recovery_directory)} \
-          --force \
-          ${shellquote($recovery_directory)}/config/pe_backup-*tgz
         | CMD
     }
   }
