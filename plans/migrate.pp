@@ -82,6 +82,21 @@ plan peadm::migrate (
 
   $old_primary_target = get_targets($old_primary_host)[0]
   $old_primary_password = peadm::get_pe_conf($old_primary_target)['console_admin_password']
+  # TEMP DEBUG (Group 6 password-mismatch investigation, not for merge): test
+  # whether the password read back from pe.conf actually authenticates
+  # against the OLD cluster's own live rbac-service, before any install/
+  # restore of the new cluster happens. Pass/fail only -- never logs the
+  # value itself.
+  $old_password_check = run_task('peadm::rbac_token', $old_primary_target,
+    password       => $old_primary_password,
+    token_lifetime => '1y',
+    '_catch_errors' => true,
+  )
+  if $old_password_check.ok {
+    out::message('DEBUG: old_primary_password successfully authenticated against the OLD cluster')
+  } else {
+    out::message("DEBUG: old_primary_password FAILED to authenticate against the OLD cluster: ${old_password_check.first.error.message}")
+  }
   $old_pe_conf = run_task('peadm::get_peadm_config', $old_primary_target).first.value
 
   run_plan('peadm::install', {
