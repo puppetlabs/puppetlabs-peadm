@@ -154,7 +154,8 @@ plan peadm::restore (
           $memo
         } else {
           if $attempt > 1 {
-            out::message("puppet-backup restore --scope=certs failed; retrying (attempt ${attempt}/${certs_restore_max_attempts})...")
+            out::message("puppet-backup restore --scope=certs failed; retrying (attempt ${attempt}/${certs_restore_max_attempts}) after 15s...")
+            ctrl::sleep(15)
           }
   # lint:ignore:strict_indent
           run_command(@("CMD"/L), $primary_target, _catch_errors => true)
@@ -341,7 +342,8 @@ plan peadm::restore (
       $memo
     } else {
       if $attempt > 1 {
-        out::message("puppet-infrastructure configure --no-recover failed; retrying (attempt ${attempt}/${configure_max_attempts})...")
+        out::message("puppet-infrastructure configure --no-recover failed; retrying (attempt ${attempt}/${configure_max_attempts}) after 15s...")
+        ctrl::sleep(15)
       }
       run_command(@("CMD"/L), $primary_target, _catch_errors => true)
         /opt/puppetlabs/bin/puppet-infrastructure configure --no-recover
@@ -411,20 +413,33 @@ plan peadm::restore (
   #
   # This agent run can hit the same known PE-core CA/console-services races
   # noted above (sync ca infra nodes; pe_node_group classification), since it
-  # triggers its own catalog apply. Retry once for the same reason.
+  # triggers its own catalog apply. Retry once for the same reason, with a
+  # short pause first -- an immediate retry can fail fast for a different
+  # reason (e.g. the prior run's lockfile/process not yet fully settled)
+  # rather than giving the transient condition time to clear.
   $puppet_runonce_max_attempts = 2
   $puppet_runonce_result = range(1, $puppet_runonce_max_attempts).reduce(undef) |$memo, $attempt| {
     if $memo =~ NotUndef and $memo.ok {
       $memo
     } else {
       if $attempt > 1 {
-        out::message("puppet_runonce failed; retrying (attempt ${attempt}/${puppet_runonce_max_attempts})...")
+        out::message("puppet_runonce failed; retrying (attempt ${attempt}/${puppet_runonce_max_attempts}) after 15s...")
+        ctrl::sleep(15)
       }
       run_task('peadm::puppet_runonce', $primary_target, '_catch_errors' => true)
     }
   }
   unless $puppet_runonce_result.ok {
-    fail_plan("peadm::puppet_runonce failed after ${puppet_runonce_max_attempts} attempts: ${puppet_runonce_result.error_set.first.error.message}")
+    # Surface the task's real captured output instead of Bolt's generic
+    # "task failed with exit code N", same pattern used elsewhere (e.g.
+    # add_replica.pp) for _catch_errors results.
+    $puppet_runonce_errors = $puppet_runonce_result.error_set.map |$result| {
+      $result_value = $result.value
+      $output = ($result_value =~ Hash) ? { true => $result_value['_output'], default => undef }
+      $detail = ($output =~ String[1]) ? { true => $output, default => $result.error.message }
+      "${result.target.name}: ${detail}"
+    }.join("\n\n")
+    fail_plan("peadm::puppet_runonce failed after ${puppet_runonce_max_attempts} attempts:\n\n${puppet_runonce_errors}")
   }
 
   if $restore_type == 'recovery-db' {
