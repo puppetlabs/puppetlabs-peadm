@@ -13,6 +13,11 @@
       "type": "Boolean",
       "description": "Set to true if provisioning a replica for PE 2019.5 or older. Defaults to false",
       "default": false
+    },
+    "action": {
+      "type": "Optional[Enum[provision, enable, both]]",
+      "description": "Non-legacy only. 'provision' runs provision without --enable, 'enable' runs enable replica, 'both' (default) runs the original atomic provision --enable.",
+      "default": "both"
     }
   },
   "input_method": "environment",
