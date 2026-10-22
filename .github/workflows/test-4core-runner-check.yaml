@@ -2,6 +2,8 @@
 name: ubuntu-latest-4-cores availability check
 on:
   workflow_dispatch: {}
+  push:
+    branches: [test/ubuntu-latest-4-cores-check]
 jobs:
   runner-check:
     name: Confirm the label resolves to a real runner
