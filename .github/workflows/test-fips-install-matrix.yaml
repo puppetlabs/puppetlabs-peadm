@@ -28,7 +28,7 @@ jobs:
   test-install:
     name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
       with fips ${{ matrix.fips }}
-    runs-on: ubuntu-latest-4-cores
+    runs-on: ubuntu-latest
     env:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
