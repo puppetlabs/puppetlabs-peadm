@@ -10,6 +10,8 @@ Use a Bolt parameters file to supply the named arguments for one plan. This refe
 
 `params.json` is an arbitrary filename, not a configuration file automatically read by PEADM. Bolt loads it with `--params @params.json`. The file contains a single JSON object whose keys match the selected plan's arguments. There is no shared parameter set accepted by every plan. Inventory credentials and transport settings belong in the Bolt inventory.
 
+The minimal examples supply required arguments and any additional value needed for the illustrated operation. They use default settings and the simplest applicable topology; include the appropriate host parameters for your existing deployment. Backup and restore minimal examples use the default `recovery` mode.
+
 The full examples include every top-level argument, including optional arguments. They illustrate a particular deployment, not defaults to copy unchanged. Alternatives that cannot be used together are shown with one set to `null`. Omit optional keys to use their defaults; JSON `null` maps to Puppet `undef` and is valid only for optional types. Use actual booleans, arrays and objects, not quoted JSON strings. JSON does not support comments.
 
 Single-target parameters use inventory target names (and, for infrastructure hosts, the intended certnames). `TargetSpec` also permits multiple targets; examples use arrays. Names must resolve as required by the deployment; inventory `uri` can provide a separate connection address. Keep real passwords and private keys out of source control.
@@ -34,6 +36,8 @@ Single-target parameters use inventory target names (and, for infrastructure hos
 - [convert_compiler_to_legacy](#convert-compiler-to-legacy)
 - [modify_cert_extensions](#modify-cert-extensions)
 - [uninstall](#uninstall)
+- [remove_secrets_local](#remove-secrets-local)
+- [remove_secrets_primary](#remove-secrets-primary)
 
 ## install
 
@@ -79,6 +83,17 @@ Use either `r10k_private_key_file` or `r10k_private_key_content`, and either `li
 | `download_mode` | `Peadm::Download_mode` | `'bolthost'` | bolthost caches and uploads media; direct downloads on target hosts. |
 | `permit_unsafe_versions` | `Boolean` | `false` | Bypass PE version safety checks when true. |
 | `token_lifetime` | `String` | `'1y'` | Lifetime of the RBAC token created during installation. |
+
+### Minimal params.json example
+
+Standard deployment; uses the default PE version.
+
+```json
+{
+  "primary_host": "primary.example.com",
+  "console_password": "REPLACE_WITH_ADMIN_PASSWORD"
+}
+```
 
 ### Full params.json example
 
@@ -191,7 +206,17 @@ Allowed `begin_at_step` values: `upgrade-primary`, `upgrade-node-groups`, `upgra
 | `permit_unsafe_versions` | `Boolean` | `false` | Bypass PE version safety checks when true. |
 | `begin_at_step` | `Optional[Peadm::UpgradeSteps]` | `undef` | Resume at a named step; null starts at the beginning. Allowed steps are listed in this section. |
 | `node_group_environment` | `String[1]` | `Detected from primary; otherwise production` | Environment for PEADM node groups; detected from primary pe.conf, falling back to production. |
-| `primary_host` | `` | **Required** | Primary Puppet server target name and certname. |
+
+### Minimal params.json example
+
+Standard deployment; `version` is needed when an installer URL is not supplied.
+
+```json
+{
+  "primary_host": "primary.example.com",
+  "version": "2023.8.11"
+}
+```
 
 ### Full params.json example
 
@@ -254,14 +279,22 @@ Allowed `begin_at_step` values: `modify-primary-certs`, `modify-infra-certs`, `c
 | `primary_postgresql_host` | `Optional[Peadm::SingleTargetSpec]` | `undef` | Separate PuppetDB PostgreSQL host for the primary/selected availability group. |
 | `replica_postgresql_host` | `Optional[Peadm::SingleTargetSpec]` | `undef` | Separate PuppetDB PostgreSQL host for the replica. |
 | `compiler_pool_address` | `String` | `$primary_host` | Agent-facing compiler/Puppet service address, usually a load balancer. |
-| `primary_host` | `` | **Required** | Primary Puppet server target name and certname. |
 | `internal_compiler_a_pool_address` | `Optional[Peadm::SingleTargetSpec] $replica_host = undef, Optional[TargetSpec] $compiler_hosts = undef, Optional[TargetSpec] $legacy_compilers = undef, Optional[Peadm::SingleTargetSpec] $primary_postgresql_host = undef, Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef, String $compiler_pool_address = $primary_host, Optional[String]` | `undef` | Internal load balancer address for availability group A. |
 | `internal_compiler_b_pool_address` | `Optional[String]` | `undef` | Internal load balancer address for availability group B. |
 | `dns_alt_names` | `Array[String]` | `[]` | Certificate DNS alternative names. |
 | `begin_at_step` | `Optional[Peadm::ConvertSteps]` | `undef` | Resume at a named step; null starts at the beginning. Allowed steps are listed in this section. |
 | `node_group_environment` | `String[1]` | `Detected from primary; otherwise production` | Environment for PEADM node groups; detected from primary pe.conf, falling back to production. |
-| `primary_host` | `` | **Required** | Primary Puppet server target name and certname. |
 | `console_password` | `Optional[String]` | `undef` | Accepted for params.json compatibility; unused. |
+
+### Minimal params.json example
+
+Existing Standard deployment. Include its other infrastructure hosts when converting a larger topology.
+
+```json
+{
+  "primary_host": "primary.example.com"
+}
+```
 
 ### Full params.json example
 
@@ -313,6 +346,15 @@ Specify new hosts for the destination topology. The plan backs up the old primar
 | `replica_postgresql_host` | `Optional[Peadm::SingleTargetSpec]` | `undef` | Separate PuppetDB PostgreSQL host for the replica. |
 | `console_password` | `Optional[String]` | `undef` | Accepted but unused. |
 
+### Minimal params.json example
+
+```json
+{
+  "old_primary_host": "primary.example.com",
+  "new_primary_host": "new-primary.example.com"
+}
+```
+
 ### Full params.json example
 
 ```json
@@ -349,6 +391,18 @@ Plan: [peadm::add_compilers](../plans/add_compilers.pp).
 | `primary_host` | `Peadm::SingleTargetSpec` | **Required** | Primary Puppet server target name and certname. |
 | `primary_postgresql_host` | `Optional[Peadm::SingleTargetSpec]` | `undef` | Separate PuppetDB PostgreSQL host for the primary/selected availability group. |
 | `console_password` | `Optional[String]` | `undef` | Accepted for params.json compatibility; unused. |
+
+### Minimal params.json example
+
+```json
+{
+  "compiler_hosts": [
+    "compiler-a.example.com",
+    "compiler-b.example.com"
+  ],
+  "primary_host": "primary.example.com"
+}
+```
 
 ### Full params.json example
 
@@ -392,6 +446,15 @@ Proxy for `add_compilers`, accepting one `compiler_host`. Here `dns_alt_names` i
 | `primary_postgresql_host` | `Optional[Peadm::SingleTargetSpec]` | `undef` | Separate PuppetDB PostgreSQL host for the primary/selected availability group. |
 | `console_password` | `Optional[String]` | `undef` | Accepted for params.json compatibility; unused. |
 
+### Minimal params.json example
+
+```json
+{
+  "compiler_host": "compiler-a.example.com",
+  "primary_host": "primary.example.com"
+}
+```
+
 ### Full params.json example
 
 ```json
@@ -426,8 +489,18 @@ Add or replace a replica. Omit `replica_postgresql_host` for Standard/Large; pro
 | `replica_postgresql_host` | `Optional[Peadm::SingleTargetSpec]` | `undef` | Separate PuppetDB PostgreSQL host for the replica. |
 | `token_file` | `Optional[String]` | `undef` | RBAC token file on the primary; unset uses the task default. |
 | `node_group_environment` | `String[1]` | `Detected from primary; otherwise production` | Environment for PEADM node groups; detected from primary pe.conf, falling back to production. |
-| `primary_host` | `` | **Required** | Primary Puppet server target name and certname. |
 | `console_password` | `Optional[String]` | `undef` | Accepted for params.json compatibility; unused. |
+
+### Minimal params.json example
+
+Standard or Large deployment with no separate replica PostgreSQL host.
+
+```json
+{
+  "primary_host": "primary.example.com",
+  "replica_host": "replica.example.com"
+}
+```
 
 ### Full params.json example
 
@@ -464,7 +537,17 @@ Allowed `begin_at_step` values: `init-db-node`, `replicate-db`, `update-classifi
 | `begin_at_step` | `Optional[Enum[ 'init-db-node', 'replicate-db', 'update-classification', 'update-db-settings', 'cleanup-db', 'finalize']]` | `undef` | Resume at a named step; null starts at the beginning. Allowed steps are listed in this section. |
 | `is_migration` | `Optional[Boolean]` | `false` | Migration-specific database setup behavior; normally leave false. |
 | `node_group_environment` | `String[1]` | `Detected from primary; otherwise production` | Environment for PEADM node groups; detected from primary pe.conf, falling back to production. |
-| `primary_host` | `` | **Required** | Primary Puppet server target name and certname. |
+
+### Minimal params.json example
+
+The existing deployment must meet the plan's Large/Extra Large prerequisites; mode is detected automatically.
+
+```json
+{
+  "targets": "database-a.example.com",
+  "primary_host": "primary.example.com"
+}
+```
 
 ### Full params.json example
 
@@ -499,6 +582,18 @@ Plan: [peadm::replace_failed_postgresql](../plans/replace_failed_postgresql.pp).
 | `failed_postgresql_host` | `Peadm::SingleTargetSpec` | **Required** | Failed PostgreSQL host being replaced. |
 | `replacement_postgresql_host` | `Peadm::SingleTargetSpec` | **Required** | New PostgreSQL host. |
 
+### Minimal params.json example
+
+```json
+{
+  "primary_host": "primary.example.com",
+  "replica_host": "replica.example.com",
+  "working_postgresql_host": "database-a.example.com",
+  "failed_postgresql_host": "database-b.example.com",
+  "replacement_postgresql_host": "new-database-b.example.com"
+}
+```
+
 ### Full params.json example
 
 ```json
@@ -529,6 +624,14 @@ The full example explicitly selects every component with `custom`. With `custom`
 | `backup_type` | `Enum['recovery', 'custom', 'migration']` | `'recovery'` | recovery, custom or migration; controls backup selection. |
 | `backup` | `Peadm::Recovery_opts` | `{}` | Custom backup component flags; effective only with backup_type custom. |
 | `output_directory` | `String` | `'/tmp'` | Backup output directory on the target host. |
+
+### Minimal params.json example
+
+```json
+{
+  "targets": "primary.example.com"
+}
+```
 
 ### Full params.json example
 
@@ -570,6 +673,15 @@ The full example uses `custom` and explicitly selects all components. Restore on
 | `input_file` | `Pattern[/.*\.tar\.gz$/]` | **Required** | Backup archive already on the target host; filename must end in .tar.gz. |
 | `console_password` | `Optional[String]` | `undef` | Admin console password. |
 
+### Minimal params.json example
+
+```json
+{
+  "targets": "primary.example.com",
+  "input_file": "/var/backups/peadm/peadm-backup.tar.gz"
+}
+```
+
 ### Full params.json example
 
 ```json
@@ -608,6 +720,14 @@ Plan: [peadm::backup_ca](../plans/backup_ca.pp).
 | `target` | `Peadm::SingleTargetSpec` | **Required** | Single target for the CA operation. |
 | `output_directory` | `Optional[String]` | `'/tmp'` | Backup output directory on the target host. |
 
+### Minimal params.json example
+
+```json
+{
+  "target": "primary.example.com"
+}
+```
+
 ### Full params.json example
 
 ```json
@@ -634,6 +754,15 @@ Plan: [peadm::restore_ca](../plans/restore_ca.pp).
 | `target` | `Peadm::SingleTargetSpec` | **Required** | Single target for the CA operation. |
 | `file_path` | `String` | **Required** | CA backup archive already on the target host. |
 | `recovery_directory` | `Optional[String]` | `'/tmp/peadm_recovery'` | Temporary CA recovery directory on the target. |
+
+### Minimal params.json example
+
+```json
+{
+  "target": "primary.example.com",
+  "file_path": "/var/backups/peadm/ca_backup.tgz"
+}
+```
 
 ### Full params.json example
 
@@ -664,6 +793,16 @@ Plan: [peadm::status](../plans/status.pp).
 | `verbose` | `Boolean` | `false` | Include detailed service status. |
 | `summarize` | `Boolean` | `true` | Summarize JSON output. |
 | `colors` | `Boolean` | `false for json; true for table` | Use colored output; defaults to false for json and true for table. |
+
+### Minimal params.json example
+
+```json
+{
+  "targets": [
+    "primary.example.com"
+  ]
+}
+```
 
 ### Full params.json example
 
@@ -700,6 +839,22 @@ Adds/removes certificate extensions and optionally changes DNS names. Omit `dns_
 | `remove_extensions` | `Array` | `[]` | Certificate extension names to remove as an array. |
 | `dns_alt_names` | `Optional[Array]` | `undef` | Certificate DNS alternative names. |
 | `force_regenerate` | `Boolean` | `false` | Regenerate the certificate even if no changes are needed. |
+
+### Minimal params.json example
+
+Includes one extension to add so the example requests a certificate change.
+
+```json
+{
+  "targets": [
+    "compiler-a.example.com"
+  ],
+  "primary_host": "primary.example.com",
+  "add_extensions": {
+    "pp_role": "compiler"
+  }
+}
+```
 
 ### Full params.json example
 
@@ -739,7 +894,17 @@ Private helper plan; converts the specified compilers to legacy compilers.
 | `legacy_hosts` | `TargetSpec` | **Required** | Compiler targets to convert to legacy compilers. |
 | `remove_pdb` | `Optional[Boolean]` | `true` | Remove PuppetDB during conversion. |
 | `node_group_environment` | `String[1]` | `Detected from primary; otherwise production` | Environment for PEADM node groups; detected from primary pe.conf, falling back to production. |
-| `primary_host` | `` | **Required** | Primary Puppet server target name and certname. |
+
+### Minimal params.json example
+
+```json
+{
+  "primary_host": "primary.example.com",
+  "legacy_hosts": [
+    "legacy-compiler.example.com"
+  ]
+}
+```
 
 ### Full params.json example
 
@@ -773,6 +938,22 @@ Private helper plan for changing certificate extensions; prefer `modify_certific
 | `add` | `Hash` | `{}` | Certificate extensions to add. |
 | `remove` | `Array` | `[]` | Certificate extension names to remove. |
 
+### Minimal params.json example
+
+Includes one extension to add so the example requests a certificate change.
+
+```json
+{
+  "targets": [
+    "compiler-a.example.com"
+  ],
+  "primary_host": "primary.example.com",
+  "add": {
+    "pp_role": "compiler"
+  }
+}
+```
+
 ### Full params.json example
 
 ```json
@@ -804,6 +985,16 @@ Private, experimental plan. Running this command uninstalls Puppet Enterprise fr
 | --- | --- | --- | --- |
 | `targets` | `TargetSpec` | **Required** | Target(s) for this operation; single-target types require exactly one host. |
 
+### Minimal params.json example
+
+```json
+{
+  "targets": [
+    "retired-primary.example.com"
+  ]
+}
+```
+
 ### Full params.json example
 
 ```json
@@ -816,6 +1007,207 @@ Private, experimental plan. Running this command uninstalls Puppet Enterprise fr
 
 ```sh
 bolt plan run peadm::uninstall --params @params.json
+```
+
+## remove_secrets_local
+
+Plan: [peadm::remove_secrets_local](../plans/remove_secrets_local.pp).
+
+Removes only top-level `console_password` and `console_admin_password` from the local `params.json` file. Running PE configuration and logs are untouched. Other credentials and license files stay in place. See [remove_secrets.md](remove_secrets.md) for the precise scope and usage.
+
+### Parameters
+
+Accepts every [install parameter](#install) with the same types and defaults, except `console_password` is optional (`Optional[String]`, default `undef`). Installer settings are accepted for parameters-file compatibility; they are not applied. `primary_host` remains required.
+
+The additional `params_file` parameter is a non-empty string defaulting to `params.json`. It selects the local JSON file to edit, relative to the Bolt working directory or as an absolute path. Set it explicitly when the file loaded by `--params` has another name or location.
+
+### Minimal params.json example
+
+Edits `params.json` in the Bolt working directory. Set `params_file` when using another filename or location.
+
+```json
+{
+  "primary_host": "primary.example.com"
+}
+```
+
+### Full params.json example
+
+```json
+{
+  "primary_host": "primary.example.com",
+  "replica_host": "replica.example.com",
+  "compiler_hosts": [
+    "compiler-a.example.com",
+    "compiler-b.example.com"
+  ],
+  "primary_postgresql_host": "database-a.example.com",
+  "replica_postgresql_host": "database-b.example.com",
+  "legacy_compilers": [
+    "legacy-compiler.example.com"
+  ],
+  "cloud_database_host": null,
+  "console_password": "REPLACE_WITH_ADMIN_PASSWORD",
+  "version": "2023.8.11",
+  "pe_installer_source": null,
+  "dns_alt_names": [
+    "puppet",
+    "puppet.example.com"
+  ],
+  "compiler_pool_address": "puppet.example.com",
+  "internal_compiler_a_pool_address": "compilers-a.example.com",
+  "internal_compiler_b_pool_address": "compilers-b.example.com",
+  "pe_conf_data": {},
+  "ldap_config": {
+    "base_dn": "dc=example,dc=com",
+    "connect_timeout": 10,
+    "disable_ldap_matching_rule_in_chain": false,
+    "display_name": "Example LDAP",
+    "group_lookup_attr": "cn",
+    "group_member_attr": "member",
+    "group_name_attr": "cn",
+    "group_object_class": "groupOfNames",
+    "group_rdn": "ou=groups",
+    "help_link": "https://help.example.com",
+    "hostname": "ldap.example.com",
+    "login": "cn=puppet,dc=example,dc=com",
+    "password": "REPLACE_WITH_LDAP_PASSWORD",
+    "port": 636,
+    "search_nested_groups": false,
+    "ssl": true,
+    "ssl_hostname_validation": true,
+    "ssl_wildcard_validation": false,
+    "start_tls": false,
+    "user_display_name_attr": "displayName",
+    "user_email_attr": "mail",
+    "user_lookup_attr": "uid",
+    "user_rdn": "ou=people"
+  },
+  "code_manager_auto_configure": true,
+  "r10k_remote": "git@git.example.com:puppet/control-repo.git",
+  "r10k_private_key_file": "/secure/control-repo-key",
+  "r10k_private_key_content": null,
+  "r10k_known_hosts": [
+    {
+      "name": "git.example.com",
+      "type": "ssh-ed25519",
+      "key": "REPLACE_WITH_REAL_HOST_PUBLIC_KEY"
+    }
+  ],
+  "deploy_environment": "production",
+  "license_key_file": "/secure/license.key",
+  "license_key_content": null,
+  "stagingdir": "/tmp",
+  "uploaddir": "/tmp",
+  "final_agent_state": "running",
+  "download_mode": "bolthost",
+  "permit_unsafe_versions": false,
+  "token_lifetime": "1y",
+  "params_file": "params.json"
+}
+```
+
+```sh
+bolt plan run peadm::remove_secrets_local --params @params.json
+```
+
+## remove_secrets_primary
+
+Plan: [peadm::remove_secrets_primary](../plans/remove_secrets_primary.pp).
+
+Removes only top-level `console_admin_password` from `/tmp/pe.conf` on `primary_host`. Running PE configuration and logs are untouched. Other credentials and license files stay in place. See [remove_secrets.md](remove_secrets.md) for the precise scope and usage.
+
+### Parameters
+
+Accepts every [install parameter](#install) with the same types and defaults, except `console_password` is optional (`Optional[String]`, default `undef`). Installer settings are accepted for parameters-file compatibility; they are not applied. `primary_host` remains required.
+
+### Minimal params.json example
+
+Targets only `/tmp/pe.conf` on the primary.
+
+```json
+{
+  "primary_host": "primary.example.com"
+}
+```
+
+### Full params.json example
+
+```json
+{
+  "primary_host": "primary.example.com",
+  "replica_host": "replica.example.com",
+  "compiler_hosts": [
+    "compiler-a.example.com",
+    "compiler-b.example.com"
+  ],
+  "primary_postgresql_host": "database-a.example.com",
+  "replica_postgresql_host": "database-b.example.com",
+  "legacy_compilers": [
+    "legacy-compiler.example.com"
+  ],
+  "cloud_database_host": null,
+  "console_password": "REPLACE_WITH_ADMIN_PASSWORD",
+  "version": "2023.8.11",
+  "pe_installer_source": null,
+  "dns_alt_names": [
+    "puppet",
+    "puppet.example.com"
+  ],
+  "compiler_pool_address": "puppet.example.com",
+  "internal_compiler_a_pool_address": "compilers-a.example.com",
+  "internal_compiler_b_pool_address": "compilers-b.example.com",
+  "pe_conf_data": {},
+  "ldap_config": {
+    "base_dn": "dc=example,dc=com",
+    "connect_timeout": 10,
+    "disable_ldap_matching_rule_in_chain": false,
+    "display_name": "Example LDAP",
+    "group_lookup_attr": "cn",
+    "group_member_attr": "member",
+    "group_name_attr": "cn",
+    "group_object_class": "groupOfNames",
+    "group_rdn": "ou=groups",
+    "help_link": "https://help.example.com",
+    "hostname": "ldap.example.com",
+    "login": "cn=puppet,dc=example,dc=com",
+    "password": "REPLACE_WITH_LDAP_PASSWORD",
+    "port": 636,
+    "search_nested_groups": false,
+    "ssl": true,
+    "ssl_hostname_validation": true,
+    "ssl_wildcard_validation": false,
+    "start_tls": false,
+    "user_display_name_attr": "displayName",
+    "user_email_attr": "mail",
+    "user_lookup_attr": "uid",
+    "user_rdn": "ou=people"
+  },
+  "code_manager_auto_configure": true,
+  "r10k_remote": "git@git.example.com:puppet/control-repo.git",
+  "r10k_private_key_file": "/secure/control-repo-key",
+  "r10k_private_key_content": null,
+  "r10k_known_hosts": [
+    {
+      "name": "git.example.com",
+      "type": "ssh-ed25519",
+      "key": "REPLACE_WITH_REAL_HOST_PUBLIC_KEY"
+    }
+  ],
+  "deploy_environment": "production",
+  "license_key_file": "/secure/license.key",
+  "license_key_content": null,
+  "stagingdir": "/tmp",
+  "uploaddir": "/tmp",
+  "final_agent_state": "running",
+  "download_mode": "bolthost",
+  "permit_unsafe_versions": false,
+  "token_lifetime": "1y"
+}
+```
+
+```sh
+bolt plan run peadm::remove_secrets_primary --params @params.json
 ```
 
 ## Backup and restore component options

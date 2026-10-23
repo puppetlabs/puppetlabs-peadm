@@ -56,6 +56,7 @@ For instructions on using PEADM plans, see the following PEADM docs (links Githu
 - [Upgrade](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/upgrade.md)
 - [Convert](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/convert.md)
 - [Status](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/status.md)
+- [Remove installation console passwords](documentation/remove_secrets.md)
 
 ## Plan Parameters Documentation
 
