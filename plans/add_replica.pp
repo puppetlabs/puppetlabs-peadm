@@ -8,6 +8,7 @@
 #   Can be a separate host in an XL architecture, or undef in Standard or Large.
 # @param token_file - (optional) the token file in a different location than the default.
 # @param node_group_environment environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
+# @param console_password Optional parameter accepted for params.json compatibility. Unused.
 plan peadm::add_replica(
   # Standard or Large
   Peadm::SingleTargetSpec           $primary_host,
@@ -19,6 +20,7 @@ plan peadm::add_replica(
   # Common Configuration
   Optional[String] $token_file = undef,
   String[1] $node_group_environment = peadm::get_node_group_environment($primary_host),
+  Optional[String] $console_password = undef,
 ) {
   $primary_target             = peadm::get_targets($primary_host, 1)
   $replica_target             = peadm::get_targets($replica_host, 1)

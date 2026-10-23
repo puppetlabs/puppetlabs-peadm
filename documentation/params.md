@@ -241,6 +241,8 @@ Convert an existing cluster to PEADM management using its existing host assignme
 
 Allowed `begin_at_step` values: `modify-primary-certs`, `modify-infra-certs`, `convert-node-groups`, `finalize`. See [convert.md](convert.md).
 
+`console_password` is optional and ignored; it does not change the existing console password. Other parameters must still match this plan's accepted arguments.
+
 ### Parameters
 
 | Parameter | Type | Default | Usage |
@@ -259,6 +261,7 @@ Allowed `begin_at_step` values: `modify-primary-certs`, `modify-infra-certs`, `c
 | `begin_at_step` | `Optional[Peadm::ConvertSteps]` | `undef` | Resume at a named step; null starts at the beginning. Allowed steps are listed in this section. |
 | `node_group_environment` | `String[1]` | `Detected from primary; otherwise production` | Environment for PEADM node groups; detected from primary pe.conf, falling back to production. |
 | `primary_host` | `` | **Required** | Primary Puppet server target name and certname. |
+| `console_password` | `Optional[String]` | `undef` | Accepted for params.json compatibility; unused. |
 
 ### Full params.json example
 
@@ -283,7 +286,8 @@ Allowed `begin_at_step` values: `modify-primary-certs`, `modify-infra-certs`, `c
     "puppet.example.com"
   ],
   "begin_at_step": null,
-  "node_group_environment": "production"
+  "node_group_environment": "production",
+  "console_password": "REPLACE_WITH_ADMIN_PASSWORD"
 }
 ```
 
@@ -333,6 +337,8 @@ Plan: [peadm::add_compilers](../plans/add_compilers.pp).
 
 `dns_alt_names` is an array aligned with `compiler_hosts`. Each entry is a comma-separated string, and the literal string `"undef"` means no aliases for that compiler. This differs from install/convert. An unset `primary_postgresql_host` is resolved from the existing configuration. See [add_compilers.md](add_compilers.md).
 
+`console_password` is optional and ignored; it does not change the existing console password. Other parameters must still match this plan's accepted arguments.
+
 ### Parameters
 
 | Parameter | Type | Default | Usage |
@@ -342,6 +348,7 @@ Plan: [peadm::add_compilers](../plans/add_compilers.pp).
 | `compiler_hosts` | `TargetSpec` | **Required** | Compiler targets; use an array for multiple hosts. |
 | `primary_host` | `Peadm::SingleTargetSpec` | **Required** | Primary Puppet server target name and certname. |
 | `primary_postgresql_host` | `Optional[Peadm::SingleTargetSpec]` | `undef` | Separate PuppetDB PostgreSQL host for the primary/selected availability group. |
+| `console_password` | `Optional[String]` | `undef` | Accepted for params.json compatibility; unused. |
 
 ### Full params.json example
 
@@ -357,7 +364,8 @@ Plan: [peadm::add_compilers](../plans/add_compilers.pp).
     "compiler-b.example.com"
   ],
   "primary_host": "primary.example.com",
-  "primary_postgresql_host": "database-a.example.com"
+  "primary_postgresql_host": "database-a.example.com",
+  "console_password": "REPLACE_WITH_ADMIN_PASSWORD"
 }
 ```
 
@@ -371,6 +379,8 @@ Plan: [peadm::add_compiler](../plans/add_compiler.pp).
 
 Proxy for `add_compilers`, accepting one `compiler_host`. Here `dns_alt_names` is a single comma-separated string rather than an array.
 
+`console_password` is optional and ignored; it does not change the existing console password. Other parameters must still match this plan's accepted arguments.
+
 ### Parameters
 
 | Parameter | Type | Default | Usage |
@@ -380,6 +390,7 @@ Proxy for `add_compilers`, accepting one `compiler_host`. Here `dns_alt_names` i
 | `compiler_host` | `Peadm::SingleTargetSpec` | **Required** | Single new compiler target. |
 | `primary_host` | `Peadm::SingleTargetSpec` | **Required** | Primary Puppet server target name and certname. |
 | `primary_postgresql_host` | `Optional[Peadm::SingleTargetSpec]` | `undef` | Separate PuppetDB PostgreSQL host for the primary/selected availability group. |
+| `console_password` | `Optional[String]` | `undef` | Accepted for params.json compatibility; unused. |
 
 ### Full params.json example
 
@@ -389,7 +400,8 @@ Proxy for `add_compilers`, accepting one `compiler_host`. Here `dns_alt_names` i
   "dns_alt_names": "puppet,puppet.example.com",
   "compiler_host": "compiler-a.example.com",
   "primary_host": "primary.example.com",
-  "primary_postgresql_host": "database-a.example.com"
+  "primary_postgresql_host": "database-a.example.com",
+  "console_password": "REPLACE_WITH_ADMIN_PASSWORD"
 }
 ```
 
@@ -403,6 +415,8 @@ Plan: [peadm::add_replica](../plans/add_replica.pp).
 
 Add or replace a replica. Omit `replica_postgresql_host` for Standard/Large; provide it for a separate Extra Large replica database. See [add_replica.md](add_replica.md).
 
+`console_password` is optional and ignored; it does not change the existing console password. Other parameters must still match this plan's accepted arguments.
+
 ### Parameters
 
 | Parameter | Type | Default | Usage |
@@ -413,6 +427,7 @@ Add or replace a replica. Omit `replica_postgresql_host` for Standard/Large; pro
 | `token_file` | `Optional[String]` | `undef` | RBAC token file on the primary; unset uses the task default. |
 | `node_group_environment` | `String[1]` | `Detected from primary; otherwise production` | Environment for PEADM node groups; detected from primary pe.conf, falling back to production. |
 | `primary_host` | `` | **Required** | Primary Puppet server target name and certname. |
+| `console_password` | `Optional[String]` | `undef` | Accepted for params.json compatibility; unused. |
 
 ### Full params.json example
 
@@ -422,7 +437,8 @@ Add or replace a replica. Omit `replica_postgresql_host` for Standard/Large; pro
   "replica_host": "replica.example.com",
   "replica_postgresql_host": "database-b.example.com",
   "token_file": "/root/.puppetlabs/token",
-  "node_group_environment": "production"
+  "node_group_environment": "production",
+  "console_password": "REPLACE_WITH_ADMIN_PASSWORD"
 }
 ```
 
