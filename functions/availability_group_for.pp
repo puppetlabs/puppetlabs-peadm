@@ -1,7 +1,4 @@
-# @summary Determine which availability group ('A' or 'B') a node should be
-#   stamped with, preserving whatever value is already present on its
-#   certificate rather than deriving it from which plan parameter (e.g.
-#   primary_host vs replica_host) the node was passed as.
+# @summary Preserve an existing certificate availability group or assign a default
 #
 # This keeps A/B a stable, topological identity across role swaps performed
 # with PE's own switch_primary tooling: if a node already carries a valid A
@@ -13,6 +10,7 @@
 # @param cert_extensions Hash of certname => extensions hash, as gathered by peadm::cert_data
 # @param certname The certname of the node being classified
 # @param default The group to assign if the node has no existing valid group
+# @return The existing valid availability group, or the supplied default.
 function peadm::availability_group_for(
   Hash             $cert_extensions,
   Optional[String] $certname,

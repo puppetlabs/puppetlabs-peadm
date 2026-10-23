@@ -1,3 +1,4 @@
+# @summary SSH known-host entries used by Code Manager and r10k
 type Peadm::Known_hosts = Array[
   Struct[
     'title'        => Optional[String[1]],

@@ -49,20 +49,6 @@ We will name the bolt project `large_ha_peadm` in this example but the project n
 4. Create a parameters file. Example included below.
 5. Run `bolt plan run peadm::install --params @params.json ` after the inventory and params files are created.
 
-### Bolt 2 usage
-
-1.  Install Bolt on a jumphost. This can be the primary or any other system.
-2.  Download or git clone the PEADM module and put it somewhere on the jumphost. e.g. ~/modules/peadm.
-3.  Download or git clone the module dependencies, and put them somewhere on the jumphost. e.g. ~/modules/stdlib, ~/modules/node_manager, etc.
-4.  Create an inventory file with connection information. Example included below.
-5.  Create a parameters file. Example included below.
-6.  Run the peadm::install plan with the inputs created. Example:
-
-        bolt plan run peadm::install \
-          --inventory inventory.yaml \
-          --modulepath ~/modules \
-          --params @params.json
-
 Example inventory.yaml Bolt inventory file:
 
 ```yaml

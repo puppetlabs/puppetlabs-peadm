@@ -7,6 +7,17 @@
 # @param begin_at_step The step where the plan should start. If not set, it will start at the beginning
 # @param node_group_environment environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
 #
+# @param console_password Optional parameter accepted for params.json compatibility. Unused.
+# @param primary_host The primary server target.
+# @param replica_host The replica primary server target, when using disaster recovery.
+# @param compiler_hosts Compiler targets in the cluster.
+# @param legacy_compilers Legacy compiler targets in the cluster.
+# @param primary_postgresql_host The dedicated PostgreSQL target for the primary availability group.
+# @param replica_postgresql_host The dedicated PostgreSQL target for the replica availability group.
+# @param compiler_pool_address The service address agents use to reach the compiler pool.
+# @param internal_compiler_a_pool_address The internal load balancer address for availability group A compilers.
+# @param internal_compiler_b_pool_address The internal load balancer address for availability group B compilers.
+# @param dns_alt_names DNS alternative names to include in infrastructure certificates.
 plan peadm::convert (
   # Standard
   Peadm::SingleTargetSpec           $primary_host,
@@ -28,6 +39,7 @@ plan peadm::convert (
 
   Optional[Peadm::ConvertSteps] $begin_at_step = undef,
   String[1] $node_group_environment = peadm::get_node_group_environment($primary_host),
+  Optional[String] $console_password = undef,
 ) {
   peadm::assert_supported_bolt_version()
 

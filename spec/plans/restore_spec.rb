@@ -233,7 +233,15 @@ describe 'peadm::restore' do
       call_log = []
       allow_any_command.return do |targets:, command:, **|
         call_log << command
-        Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+        # The PE-47558 ca-database-restore check (restore.pp) shells out to
+        # probe for a pe-ca dump and a database-backed CA; this fixture's
+        # backup has neither, so report 'skip' to keep this test's existing
+        # scope (puppetdb export/import ordering), not the ca-restore path.
+        if command.include?('pe-ca.dump.d')
+          Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: { 'stdout' => 'skip' }) })
+        else
+          Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+        end
       end
       allow_task('peadm::backup_classification')
       allow_task('peadm::transform_classification_groups')
@@ -435,6 +443,12 @@ describe 'peadm::restore' do
     end
 
     it 'restores only ca/certs when recovery_opts.ca is the only flag set', valid_cluster: true do
+      # PE-47558: with ca => true and config => false, restore.pp probes for a
+      # pe-ca dump + database-backed CA before the certs restore. This
+      # fixture's backup has neither, so report 'skip' -- this test covers the
+      # pre-existing ca/code/config isolation, not the new ca-database path.
+      expect_command("test -d /input/file/ca/pe-ca.dump.d   && grep -v '^[[:space:]]*#' /etc/puppetlabs/puppetserver/bootstrap.cfg     | grep -q '^[[:space:]]*puppetlabs.services.ca.database-storage-service/'   && echo restore || echo skip\n")
+        .always_return('stdout' => 'skip')
       expect_command(ca_command)
       expect_command(code_command).not_be_called
       expect_command(config_command).not_be_called

@@ -2,6 +2,9 @@
 # This differs from get_target() in that:
 #   - It returns an Array[Target, 1, 0], rather than a Target
 #   - It will accept undef and return [ ].
+# @param spec Target specification to resolve; undef or an empty array yields no targets.
+# @param count Set to 1 to require a single target; otherwise resolve all matching targets.
+# @return An array of resolved targets.
 function peadm::get_targets(
   Variant[TargetSpec, Undef] $spec,
   Optional[Integer[1,1]]     $count = undef,

@@ -1,3 +1,6 @@
+# @summary Look up the numeric OID for a supported certificate extension
+# @param short_name The supported short name of the certificate extension.
+# @return The numeric OID string.
 function peadm::oid (
   String $short_name,
 ) {

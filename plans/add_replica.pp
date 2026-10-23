@@ -1,5 +1,6 @@
 # @summary Add or replace a replica host.
-#   Supported use cases:
+#
+# Supported use cases:
 #   1: Adding a replica to an existing primary.
 #   2: The existing replica is broken, we have a fresh new VM we want to provision the replica to.
 # @param primary_host - The hostname and certname of the primary Puppet server
@@ -8,6 +9,7 @@
 #   Can be a separate host in an XL architecture, or undef in Standard or Large.
 # @param token_file - (optional) the token file in a different location than the default.
 # @param node_group_environment environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
+# @param console_password Optional parameter accepted for params.json compatibility. Unused.
 plan peadm::add_replica(
   # Standard or Large
   Peadm::SingleTargetSpec           $primary_host,
@@ -19,6 +21,7 @@ plan peadm::add_replica(
   # Common Configuration
   Optional[String] $token_file = undef,
   String[1] $node_group_environment = peadm::get_node_group_environment($primary_host),
+  Optional[String] $console_password = undef,
 ) {
   $primary_target             = peadm::get_targets($primary_host, 1)
   $replica_target             = peadm::get_targets($replica_host, 1)
@@ -119,11 +122,23 @@ plan peadm::add_replica(
 
   # Provision the new system as a replica. The installer's orchestrated job
   # occasionally fails with a transient "ConnectionClosedException" from the
-  # orchestration service while it runs Puppet on the primary as part of
-  # enabling the new replica -- the primary appears to bounce its own
-  # orchestration service mid-job. Retry a bounded number of times to ride
-  # out that race; any other failure (e.g. a bad token, or a genuine
-  # provisioning error) is not retried and surfaces on the first attempt.
+  # orchestration service while it runs Puppet on the primary -- the primary
+  # appears to bounce its own orchestration service mid-job. Retry a bounded
+  # number of times to ride out that race; any other failure (e.g. a bad
+  # token, or a genuine provisioning error) is not retried and surfaces on
+  # the first attempt.
+  #
+  # Provisioning and enabling are split into two separate task calls (rather
+  # than the atomic provision --enable used before) because PE core's
+  # --enable path runs its own replica service-health check with a short,
+  # fixed wait (~21s observed) after reinitializing the replica's
+  # Classifier/RBAC/PuppetDB. In CI that wait is consistently too short --
+  # confirmed by seeing the identical "These services are not running"
+  # failure on every one of 3 full re-provision attempts, not just an
+  # occasional one -- so retrying the atomic call doesn't help. Splitting
+  # the call lets peadm poll for readiness itself via
+  # peadm::wait_until_service_ready, which allows up to 60s, before telling
+  # PE core to enable the replica.
   $provision_replica_max_attempts = 3
   $provision_result = range(1, $provision_replica_max_attempts).reduce(undef) |$memo, $attempt| {
     $prior_output = ($memo =~ NotUndef and !$memo.ok and $memo.error_set.first.value =~ Hash) ? {
@@ -140,13 +155,10 @@ plan peadm::add_replica(
         ctrl::sleep(15)
       }
       run_task('peadm::provision_replica', $primary_target,
-        replica    => $replica_target.peadm::certname(),
-        token_file => $token_file,
-
-        # Race condition, where the provision command checks PuppetDB status and
-        # probably gets "starting", but fails out because that's not "running".
-        # Can remove flag when that issue is fixed.
-        legacy     => false,
+        replica       => $replica_target.peadm::certname(),
+        token_file    => $token_file,
+        legacy        => false,
+        action        => 'provision',
         _catch_errors => true,
       )
     }
@@ -183,6 +195,54 @@ plan peadm::add_replica(
 
       See the provision_replica CLI log under /var/log/puppetlabs/installer/ on the
       primary for the full output.${token_hint}
+      | MSG
+  }
+
+  # Give the replica's Classifier/RBAC/PuppetDB real time to come up before
+  # asking PE core to enable it -- see comment above the retry loop.
+  peadm::wait_until_service_ready('pe-master', $replica_target)
+
+  $enable_replica_max_attempts = 3
+  $enable_result = range(1, $enable_replica_max_attempts).reduce(undef) |$memo, $attempt| {
+    $prior_output = ($memo =~ NotUndef and !$memo.ok and $memo.error_set.first.value =~ Hash) ? {
+      true    => $memo.error_set.first.value['_output'],
+      default => undef,
+    }
+    $prior_is_transient = ($prior_output =~ String[1]) and ($prior_output =~ /ConnectionClosedException|puppetlabs\.orchestrator\/unknown-error/)
+
+    if $memo =~ NotUndef and ($memo.ok or !$prior_is_transient) {
+      $memo
+    } else {
+      if $attempt > 1 {
+        out::message("enable_replica hit a transient orchestrator error; retrying (attempt ${attempt}/${enable_replica_max_attempts}) after 15s...")
+        ctrl::sleep(15)
+      }
+      run_task('peadm::provision_replica', $primary_target,
+        replica       => $replica_target.peadm::certname(),
+        token_file    => $token_file,
+        legacy        => false,
+        action        => 'enable',
+        _catch_errors => true,
+      )
+    }
+  }
+
+  unless $enable_result.ok {
+    $enable_errors = $enable_result.error_set.map |$result| {
+      $result_value = $result.value
+      $output = ($result_value =~ Hash) ? { true => $result_value['_output'], default => undef }
+      $detail = ($output =~ String[1]) ? { true => $output, default => $result.error.message }
+      "${result.target.name}: ${detail}"
+    }.join("\n\n")
+
+    fail_plan(@("MSG")/L)
+      peadm::provision_replica (enable) failed; the replica was provisioned but not enabled. \
+      Underlying error:
+
+      ${enable_errors}
+
+      See the provision_replica CLI log under /var/log/puppetlabs/installer/ on the
+      primary for the full output.
       | MSG
   }
 

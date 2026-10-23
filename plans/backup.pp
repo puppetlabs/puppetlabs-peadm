@@ -4,7 +4,7 @@
 # @param backup_type Currently, the recovery and custom backup types are supported
 # @param backup A hash of custom backup options, see the peadm::recovery_opts_default() function for the default values
 # @param output_directory The directory to place the backup in
-# @example 
+# @example Back up the primary
 #   bolt plan run peadm::backup -t primary1.example.com
 #
 plan peadm::backup (
@@ -50,6 +50,25 @@ plan peadm::backup (
     default => getvar('cluster.params.primary_postgresql_host'),
   }
 
+  # With a database-backed CA (PE 2026.0+), `puppet-backup --scope=certs` saves
+  # only the on-disk CA files (ssl/, puppetserver/ca/ incl. the key passphrase),
+  # not the pe-ca database. Restoring that onto a new cluster leaves the old
+  # CA files next to the new cluster's own CA database. Dump pe-ca ourselves so
+  # the files and the database stay a matching pair. When the `config` scope is
+  # also backed up it already contains pe-ca, so skip it then. (PE-47558)
+  if getvar('recovery_opts.ca') and !getvar('recovery_opts.config') {
+# lint:ignore:strict_indent
+    $ca_backend = run_command(@("CMD"/L), $targets).first['stdout'].chomp
+      grep -v '^[[:space:]]*#' /etc/puppetlabs/puppetserver/bootstrap.cfg \
+        | grep -q '^[[:space:]]*puppetlabs.services.ca.database-storage-service/' \
+        && echo database || echo filesystem
+      | CMD
+# lint:endignore
+  } else {
+    $ca_backend = 'not-applicable'
+  }
+  $ca_database_backed = ($ca_backend == 'database')
+
   $backup_databases = {
     'orchestrator' => $primary_target,
     'activity'     => $primary_target,
@@ -57,7 +76,10 @@ plan peadm::backup (
     'puppetdb'     => $puppetdb_postgresql_target,
   }.filter |$key,$_| {
     $recovery_opts[$key] == true
-  }
+  } + ($ca_database_backed ? {
+    true    => { 'ca' => $primary_target },
+    default => {},
+  })
 
   # Create backup folders
   apply($targets) {

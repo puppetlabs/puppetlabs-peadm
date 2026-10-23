@@ -1,3 +1,5 @@
+# @summary Enable every supported recovery scope
+# @return A hash with every recovery scope enabled.
 function peadm::recovery_opts_all () {
   {
     'activity'     => true,

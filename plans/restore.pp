@@ -4,7 +4,7 @@
 # @param restore_type Choose from `recovery`, `recovery-db` and `custom`
 # @param restore A hash of custom backup options, see the peadm::recovery_opts_default() function for the default values
 # @param input_file The file containing the backup to restore from
-# @example 
+# @example Restore the primary
 #   bolt plan run peadm::restore -t primary1.example.com input_file=/tmp/peadm-backup.tar.gz
 #
 plan peadm::restore (
@@ -95,6 +95,25 @@ plan peadm::restore (
 
   # Map of recovery option name to array of database hosts to restore the
   # relevant .dump content to.
+  #
+  # With a database-backed CA the certs-scope restore only puts the old CA
+  # files (ssl/, puppetserver/ca/ incl. the key passphrase) on disk. If peadm::backup
+  # also dumped the pe-ca database, restore it too, so the files and database
+  # are a matching pair. Needs the dump in the backup and a database-backed CA
+  # on this primary. (PE-47558)
+  if getvar('recovery_opts.ca') and !getvar('recovery_opts.config') {
+# lint:ignore:strict_indent
+    $ca_restore_check = run_command(@("CMD"/L), $primary_target).first['stdout'].chomp
+      test -d ${shellquote($recovery_directory)}/ca/pe-ca.dump.d \
+        && grep -v '^[[:space:]]*#' /etc/puppetlabs/puppetserver/bootstrap.cfg \
+          | grep -q '^[[:space:]]*puppetlabs.services.ca.database-storage-service/' \
+        && echo restore || echo skip
+      | CMD
+# lint:endignore
+  } else {
+    $ca_restore_check = 'skip'
+  }
+
   $restore_databases = {
     'orchestrator' => [$primary_target],
     'activity'     => [$primary_target],
@@ -140,6 +159,40 @@ plan peadm::restore (
   } elsif $restore_type == 'recovery-db' {
     out::message('# Restoring primary database for recovery')
   } else {
+    if $ca_restore_check == 'restore' {
+      # Restore the pe-ca database BEFORE the certs scope. The certs restore ends
+      # with a configure run that needs the CA files on disk and the CA database
+      # to be the same CA, otherwise it fails with "The CRL issued by ... is
+      # missing" (PE-47558).
+      out::message('# Restoring database pe-ca (before certs)')
+      run_command(@("CMD"/L), $primary_target)
+        systemctl stop pe-puppetserver
+        | CMD
+# lint:ignore:140chars
+      run_command(@("CMD"/L), $primary_target)
+        su - pe-postgres -s /bin/bash -c \
+          "/opt/puppetlabs/server/bin/psql -d 'pe-ca' \
+             -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public; ALTER SCHEMA public OWNER TO pg_database_owner; GRANT USAGE ON SCHEMA public TO PUBLIC; ALTER USER \"pe-ca\" WITH SUPERUSER;'"
+        | CMD
+# lint:endignore
+      run_command(@("CMD"/L), $primary_target)
+        /opt/puppetlabs/server/bin/pg_restore \
+          -j 4 \
+          -d "sslmode=verify-ca \
+              host=${shellquote($primary_target.peadm::certname())} \
+              sslcert=/etc/puppetlabs/puppetdb/ssl/${shellquote($primary_target.peadm::certname())}.cert.pem \
+              sslkey=/etc/puppetlabs/puppetdb/ssl/${shellquote($primary_target.peadm::certname())}.private_key.pem \
+              sslrootcert=/etc/puppetlabs/puppet/ssl/certs/ca.pem \
+              dbname=pe-ca \
+              user=pe-ca" \
+          -Fd ${shellquote($recovery_directory)}/ca/pe-ca.dump.d
+        | CMD
+      run_command(@("CMD"/L), $primary_target)
+        su - pe-postgres -s /bin/bash -c \
+          "/opt/puppetlabs/server/bin/psql -d 'pe-ca' -c 'ALTER USER \"pe-ca\" WITH NOSUPERUSER;'"
+        | CMD
+    }
+
     if getvar('recovery_opts.ca') {
       out::message('# Restoring ca and ssl certificates')
   # lint:ignore:strict_indent

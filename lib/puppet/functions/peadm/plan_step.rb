@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
+# @summary Run a named plan step once the requested starting step is reached
 Puppet::Functions.create_function(:'peadm::plan_step', Puppet::Functions::InternalFunction) do
+  # @param step_name Name of this step, compared with begin_at_step in the plan scope.
+  # @param block The work to execute when this step is reached.
+  # @return The block result when the step runs, or undef when skipped.
   dispatch :plan_step do
     scope_param
     param 'String', :step_name

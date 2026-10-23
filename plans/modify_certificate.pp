@@ -2,6 +2,12 @@
 #
 # Certificates can be modified by adding extensions, removing extensions, or
 # setting DNS alternative names.
+# @param targets Targets whose certificates should be modified.
+# @param primary_host The primary server managing the certificate authority.
+# @param add_extensions Certificate extension OIDs and values to add.
+# @param remove_extensions Certificate extension OIDs to remove.
+# @param dns_alt_names Replacement DNS alternative names; undef preserves existing names.
+# @param force_regenerate Regenerate certificates even when their current settings match.
 plan peadm::modify_certificate (
   TargetSpec              $targets,
   Peadm::SingleTargetSpec $primary_host,

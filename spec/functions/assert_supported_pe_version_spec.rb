@@ -32,6 +32,10 @@ describe 'peadm::assert_supported_pe_version' do
   end
 
   context 'invalid PE versions' do
+    it 'rejects the patch immediately above the supported upper bound' do
+      is_expected.to run.with_params('2026.0.1').and_raise_error(Puppet::ParseError, %r{This\ version\ of\ the})
+    end
+
     it 'rejects PE versions that are too new' do
       is_expected.to run.with_params('2035.0.0').and_raise_error(Puppet::ParseError, %r{This\ version\ of\ the})
     end
@@ -42,12 +46,18 @@ describe 'peadm::assert_supported_pe_version' do
   end
 
   context 'valid PE versions' do
+    ['2023.8.12', '2025.12.0'].each do |version|
+      it "accepts PE #{version}" do
+        is_expected.to run.with_params(version).and_return({ 'supported' => true })
+      end
+    end
+
     it 'accepts the minimum supported version' do
       is_expected.to run.with_params('2019.7.0').and_return({ 'supported' => true })
     end
 
     it 'accepts the newest supported version' do
-      is_expected.to run.with_params('2025.1.0').and_return({ 'supported' => true })
+      is_expected.to run.with_params('2026.0.0').and_return({ 'supported' => true })
     end
 
     it 'accepts a version in the middle' do

@@ -7,6 +7,8 @@
 # be set, which determines that target's certname. Otherwise, the target's name
 # is its certname. For strings, the certname is equal to the string. Undef
 # input returns undef.
+# @param target A target, certname, single-element array, or undef to resolve.
+# @return The resolved certname, or undef for absent input.
 function peadm::certname(
   Variant[Target,
     String,

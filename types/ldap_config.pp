@@ -1,3 +1,4 @@
+# @summary LDAP directory connection and attribute settings for PE RBAC
 type Peadm::Ldap_config = Struct[{
     base_dn                             => String,
     connect_timeout                     => Integer,
