@@ -102,3 +102,9 @@ EOM
 end
 
 PuppetSyntax.exclude_paths = ["plans/**/*.pp", "spec/acceptance/**/plans/**/*.pp", "vendor/**/*"]
+
+# REFERENCE.md includes manually maintained organization and usage guidance.
+# Keep syntax and metadata validation, but skip generated-reference comparison.
+if Rake::Task.task_defined?('strings:validate:reference')
+  Rake::Task['strings:validate:reference'].clear
+end

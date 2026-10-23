@@ -1,6 +1,36 @@
 # @summary Remove installation console passwords from the primary temporary /tmp/pe.conf file
 # Accepts installer parameters for compatibility; credentials are never used or logged.
 # Running PE configuration, logs, other secrets and license files are untouched.
+# @param primary_host The primary server target.
+# @param replica_host Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param compiler_hosts Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param legacy_compilers Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param primary_postgresql_host Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param replica_postgresql_host Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param cloud_database_host Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param console_password Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param version Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param pe_installer_source Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param dns_alt_names Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param compiler_pool_address Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param internal_compiler_a_pool_address Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param internal_compiler_b_pool_address Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param pe_conf_data Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param ldap_config Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param code_manager_auto_configure Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param r10k_remote Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param r10k_private_key_file Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param r10k_private_key_content Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param r10k_known_hosts Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param deploy_environment Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param license_key_file Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param license_key_content Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param stagingdir Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param uploaddir Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param final_agent_state Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param download_mode Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param permit_unsafe_versions Accepted for installer parameter compatibility; unused by this cleanup plan.
+# @param token_lifetime Accepted for installer parameter compatibility; unused by this cleanup plan.
 plan peadm::remove_secrets_primary (
   # Standard
   Peadm::SingleTargetSpec           $primary_host,

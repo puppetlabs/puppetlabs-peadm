@@ -1,3 +1,4 @@
+# @summary Optional flags selecting the PE scopes to back up or restore
 type Peadm::Recovery_opts = Struct[{
     'activity'     => Optional[Boolean],
     'ca'           => Optional[Boolean],

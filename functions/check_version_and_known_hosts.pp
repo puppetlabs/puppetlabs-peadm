@@ -1,9 +1,10 @@
-# @summary Checks PE verison and warns about setting r10k_known_hosts
+# @summary Checks PE version and warns about setting r10k_known_hosts
 # Checks if the current PE version is less than 2023.3.0 and the target version is greater than or equal to 2023.3.0
 # If both conditions are true and the r10k_known_hosts parameter is not defined, a warning message is displayed.
-# @param $current_version [String] The current PE version
-# @param $target_version [String] The target PE version
-# @param $r10k_known_hosts [Optional[Peadm::Known_hosts]] The r10k_known_hosts parameter
+# @param current_version The current PE version
+# @param target_version The target PE version
+# @param r10k_known_hosts The r10k_known_hosts parameter
+# @return The result of logging a warning when host key configuration is required, or undef otherwise.
 function peadm::check_version_and_known_hosts(
   String $current_version,
   String $target_version,

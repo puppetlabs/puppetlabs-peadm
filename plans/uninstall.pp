@@ -3,6 +3,7 @@
 # @api private
 #
 # @summary Single-entry-point plan for uninstalling Puppet Enterprise
+# @param targets Targets from which to uninstall Puppet Enterprise.
 plan peadm::uninstall (
   TargetSpec $targets,
 ) {

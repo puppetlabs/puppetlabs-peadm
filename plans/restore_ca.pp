@@ -1,3 +1,7 @@
+# @summary Restore the certificate authority and SSL certificates
+# @param target The primary target on which to restore certificates.
+# @param file_path Path to the certificate backup archive on the target.
+# @param recovery_directory Temporary directory on the target for extracting the backup.
 plan peadm::restore_ca(
   Peadm::SingleTargetSpec $target,
   String                  $file_path,

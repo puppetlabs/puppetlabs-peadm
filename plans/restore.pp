@@ -4,7 +4,7 @@
 # @param restore_type Choose from `recovery`, `recovery-db` and `custom`
 # @param restore A hash of custom backup options, see the peadm::recovery_opts_default() function for the default values
 # @param input_file The file containing the backup to restore from
-# @example 
+# @example Restore the primary
 #   bolt plan run peadm::restore -t primary1.example.com input_file=/tmp/peadm-backup.tar.gz
 #
 plan peadm::restore (

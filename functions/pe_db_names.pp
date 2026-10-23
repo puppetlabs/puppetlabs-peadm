@@ -1,3 +1,6 @@
+# @summary List PE service databases for a given release
+# @param pe_ver The Puppet Enterprise version whose database names are required.
+# @return The database names used by the specified PE release.
 function peadm::pe_db_names (
   String $pe_ver,
 ) >> Array {

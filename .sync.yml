@@ -23,6 +23,12 @@ Rakefile:
     - manifest_whitespace_missing_newline_end_of_file
   extras:
     - |
+      # REFERENCE.md includes manually maintained organization and usage guidance.
+      # Keep syntax and metadata validation, but skip generated-reference comparison.
+      if Rake::Task.task_defined?('strings:validate:reference')
+        Rake::Task['strings:validate:reference'].clear
+      end
+    - |
       # puppetlabs_spec_helper 6 requires puppet-lint 4.x, whose Data.tokens parses
       # caller strings using the pre-Ruby-4 backtrace format. Use structured locations
       # to preserve its defensive copy for check methods on Ruby 4 as well.
