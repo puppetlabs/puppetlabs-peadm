@@ -21,7 +21,7 @@ function peadm::assert_supported_pe_version (
   }
 
   $oldest = '2019.7'
-  $newest = '2025.11'
+  $newest = '2026.0'
   $supported = ($version =~ SemVerRange(">= ${oldest} <= ${newest}"))
 
   if $permit_unsafe_versions {
