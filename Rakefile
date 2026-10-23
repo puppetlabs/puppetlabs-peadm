@@ -7,6 +7,18 @@ require 'puppet-syntax/tasks/puppet-syntax'
 require 'github_changelog_generator/task' if Gem.loaded_specs.key? 'github_changelog_generator'
 require 'puppet-strings/tasks' if Gem.loaded_specs.key? 'puppet-strings'
 
+# puppetlabs_spec_helper 6 requires puppet-lint 4.x, whose Data.tokens parses
+# caller strings using the pre-Ruby-4 backtrace format. Use structured locations
+# to preserve its defensive copy for check methods on Ruby 4 as well.
+if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('4.0') && Gem.loaded_specs.fetch('puppet-lint').version < Gem::Version.new('5.0')
+  module PuppetLintRuby4Tokens
+    def tokens
+      caller_locations(1, 1).first.base_label == 'check' ? @tokens.dup : @tokens
+    end
+  end
+  PuppetLint::Data.singleton_class.prepend(PuppetLintRuby4Tokens)
+end
+
 def changelog_user
   return unless Rake.application.top_level_tasks.include? "changelog"
   returnVal = nil || JSON.load(File.read('metadata.json'))['author']
