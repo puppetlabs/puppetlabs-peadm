@@ -28,7 +28,7 @@ jobs:
   test-migration:
     name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
       PE upgrade? ${{ matrix.new_pe_version }}
-    runs-on: ubuntu-latest
+    runs-on: PEADM_4c_ubuntu_runner
     env:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
