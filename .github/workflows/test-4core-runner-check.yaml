@@ -7,7 +7,7 @@ on:
 jobs:
   runner-check:
     name: Confirm the label resolves to a real runner
-    runs-on: ubuntu-latest-4-cores
+    runs-on: PEADM_4c_ubuntu_runner
     steps:
       - run: nproc && free -h
 
