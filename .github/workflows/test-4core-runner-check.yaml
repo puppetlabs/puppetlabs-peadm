@@ -13,7 +13,7 @@ jobs:
 
   oom-repro-standard:
     name: PE 2026.0.0 standard on almalinux-cloud/almalinux-8 (single topology, 4-core)
-    runs-on: ubuntu-latest-4-cores
+    runs-on: PEADM_4c_ubuntu_runner
     env:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
