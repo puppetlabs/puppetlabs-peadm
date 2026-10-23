@@ -32,6 +32,10 @@ jobs:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
       LANG: en_US.UTF-8
+      # PE 2026.0.0 jobs hit CI VM OOM (Cannot allocate memory - fork(2))
+      # on the default provision_service VM size. Request a bigger VM for
+      # these specifically via provision#301 (provision >= v3.1.0).
+      PROVISION_MACHINE_TYPE: n2-standard-4
     strategy:
       fail-fast: false
       matrix:

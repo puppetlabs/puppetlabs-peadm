@@ -11,7 +11,7 @@ fixtures:
     puppet_agent: https://github.com/puppetlabs/puppetlabs-puppet_agent.git
     provision:
       repo: https://github.com/puppetlabs/provision.git
-      ref: 781cb01ff199d3a73cfe4e1310bac2130c4521d6
+      ref: v3.1.0
     stdlib: https://github.com/puppetlabs/puppetlabs-stdlib.git
     apply_helpers: https://github.com/puppetlabs/puppetlabs-apply_helpers
     bolt_shim: https://github.com/puppetlabs/puppetlabs-bolt_shim
