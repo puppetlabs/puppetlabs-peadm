@@ -11,7 +11,9 @@ fixtures:
     puppet_agent: https://github.com/puppetlabs/puppetlabs-puppet_agent.git
     provision:
       repo: https://github.com/puppetlabs/provision.git
-      ref: 781cb01ff199d3a73cfe4e1310bac2130c4521d6
+      # TEMPORARY, validation-only: provision#301 (per-job-machine-type branch head).
+      # Must be reverted to the released ref before this PR could ever merge.
+      ref: b5020c91019b5160b63ba6c76a270d6cef1dad85
     stdlib: https://github.com/puppetlabs/puppetlabs-stdlib.git
     apply_helpers: https://github.com/puppetlabs/puppetlabs-apply_helpers
     bolt_shim: https://github.com/puppetlabs/puppetlabs-bolt_shim

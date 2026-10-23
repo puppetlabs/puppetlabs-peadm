@@ -32,11 +32,19 @@ jobs:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
       LANG: en_US.UTF-8
+      # TEMPORARY, validation-only (DO NOT MERGE): requests a bigger VM via the
+      # provision#301 / provision_service#445 branches to check whether that
+      # resolves the "Cannot allocate memory - fork(2)" OOM errors seen on
+      # PE 2026.0.0 jobs in #718. SERVICE_URL points at provision_service's
+      # ephemeral per-PR branch deployment, not production.
+      SERVICE_URL: "https://facade-per-job-machine-type-1079112402178.europe-west1.run.app/v1/provision"
+      PROVISION_MACHINE_TYPE: n2-standard-4
     strategy:
       fail-fast: false
       matrix:
         architecture: [standard, standard-with-dr, large, extra-large]
-        version: [2023.8.12, 2025.12.0, 2026.0.0]
+        # TEMPORARY, validation-only: narrowed to 2026.0.0, the only version that OOMs.
+        version: [2026.0.0]
         image: [almalinux-cloud/almalinux-8]
     steps:
       - name: Checkout Source
