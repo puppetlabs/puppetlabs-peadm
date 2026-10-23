@@ -19,7 +19,7 @@ plan peadm::remove_secrets_primary (
 
   # Common Configuration
   Optional[String]                  $console_password = undef,
-  Peadm::Pe_version                 $version                          = '2023.8.11',
+  Peadm::Pe_version                 $version                          = '2025.12.0',
   Optional[Stdlib::HTTPSUrl]        $pe_installer_source              = undef,
   Optional[Array[String]]           $dns_alt_names                    = undef,
   Optional[String]                  $compiler_pool_address            = undef,

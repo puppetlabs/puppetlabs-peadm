@@ -61,7 +61,7 @@ Use either `r10k_private_key_file` or `r10k_private_key_content`, and either `li
 | `replica_postgresql_host` | `Optional[Peadm::SingleTargetSpec]` | `undef` | Separate PuppetDB PostgreSQL host for the replica. |
 | `cloud_database_host` | `Optional[Stdlib::Host]` | `undef` | External cloud PostgreSQL hostname; changes classifier management. Leave unset for a PEADM-managed database topology. |
 | `console_password` | `String` | **Required** | Admin console password. |
-| `version` | `Peadm::Pe_version` | `'2023.8.11'` | PE version to install or upgrade to (major.minor.patch, optionally with a suffix). |
+| `version` | `Peadm::Pe_version` | `'2025.12.0'` | PE version to install or upgrade to (major.minor.patch, optionally with a suffix). |
 | `pe_installer_source` | `Optional[Stdlib::HTTPSUrl]` | `undef` | HTTPS URL of the PE installer tarball; replaces the standard download source. |
 | `dns_alt_names` | `Optional[Array[String]]` | `undef` | Certificate DNS alternative names. |
 | `compiler_pool_address` | `Optional[String]` | `undef` | Agent-facing compiler/Puppet service address, usually a load balancer. |

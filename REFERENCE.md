@@ -759,7 +759,7 @@ Data type: `Peadm::Pe_version`
 
 
 
-Default value: `'2023.8.11'`
+Default value: `'2025.12.0'`
 
 ##### <a name="-peadm--install--dns_alt_names"></a>`dns_alt_names`
 
@@ -2916,6 +2916,12 @@ The name of the token-file for auth
 Data type: `Boolean`
 
 Set to true if provisioning a replica for PE 2019.5 or older. Defaults to false
+
+##### `action`
+
+Data type: `Optional[Enum[provision, enable, both]]`
+
+Non-legacy only. 'provision' runs provision without --enable, 'enable' runs enable replica, 'both' (default) runs the original atomic provision --enable.
 
 ### <a name="puppet_infra_upgrade"></a>`puppet_infra_upgrade`
 
