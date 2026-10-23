@@ -178,10 +178,20 @@ jobs:
       - name: Confirm the actual GCP machine type
         timeout-minutes: 5
         run: |
-          bundle exec bolt command run \
-            'echo "machine-type: $(curl -s -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/machine-type")"' \
-            --targets all \
-            --inventoryfile spec/fixtures/litmus_inventory.yaml
+          # The provision request returns as soon as Terraform reports the VM created,
+          # not once sshd is actually reachable, so retry rather than fail on the
+          # inevitable early "Connection refused" while cloud-init is still booting.
+          for attempt in $(seq 1 15); do
+            if bundle exec bolt command run \
+              'echo "machine-type: $(curl -s -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/machine-type")"' \
+              --targets all \
+              --inventoryfile spec/fixtures/litmus_inventory.yaml; then
+              exit 0
+            fi
+            echo "SSH not ready yet (attempt ${attempt}/15), retrying in 15s..."
+            sleep 15
+          done
+          exit 1
       - name: Tear down
         if: ${{ always() }}
         continue-on-error: true
