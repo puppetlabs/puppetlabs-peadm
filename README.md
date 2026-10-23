@@ -57,6 +57,10 @@ For instructions on using PEADM plans, see the following PEADM docs (links Githu
 - [Convert](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/convert.md)
 - [Status](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/status.md)
 
+## Plan Parameters Documentation
+
+For instructions on the individual paramters in the `params.json` file please review the documentation on [GitHub](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/params.md)
+
 ### What PEADM affects
 
 - The `peadm::install` plan adds a number of custom original identifier (OID) trusted facts to the certificates of deployed PE infrastructure nodes. These trusted facts are used by PEADM plans to identify nodes that host PE infrastructure components.
