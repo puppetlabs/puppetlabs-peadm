@@ -1,8 +1,9 @@
 # @summary Assert that the PE version given is supported by PEAdm
-# @return [Boolean] true if the version is supported, raise error otherwise
-# @param [Optional[String]] the version number to check. May be undef or a
+# @return A hash containing the supported flag; raises unless unsupported versions are permitted.
+# @param version The version number to check. May be undef or a
 #   malformed string when derived from a tarball filename (e.g. via
 #   'pe_installer_source') that didn't split into a version segment as expected.
+# @param permit_unsafe_versions Allow valid version strings outside the supported release range.
 function peadm::assert_supported_pe_version (
   Optional[String] $version,
   Boolean $permit_unsafe_versions = false,

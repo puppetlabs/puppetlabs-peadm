@@ -1,3 +1,8 @@
+# @summary Initialize a dedicated PuppetDB PostgreSQL server
+# @param db_host The database server target to initialize.
+# @param install_pe Whether to install PE on the database target before configuring it.
+# @param pe_version The PE release to download for the database installation.
+# @param pe_platform The platform identifier used to select the PE installer tarball.
 plan peadm::util::init_db_server(
   String[1] $db_host,
   Boolean $install_pe = false,

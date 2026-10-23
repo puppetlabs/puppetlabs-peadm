@@ -1,3 +1,6 @@
+# @summary Back up the certificate authority and SSL certificates
+# @param target The primary target on which to create the backup.
+# @param output_directory Parent directory on the target for the timestamped backup directory.
 plan peadm::backup_ca(
   Peadm::SingleTargetSpec $target,
   Optional[String]                  $output_directory = '/tmp',

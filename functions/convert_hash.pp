@@ -6,6 +6,7 @@
 #   [
 #     { type => xl, status => running}, { type => large, status => failed }
 #   ]
+# @return An array of hashes pairing keys with each row of values.
 function peadm::convert_hash(Array $keys, Array[Array] $values) >> Array {
   $values.map |$out, $arr| {
     Hash(zip($keys,$arr))

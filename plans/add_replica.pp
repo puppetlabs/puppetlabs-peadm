@@ -1,5 +1,6 @@
 # @summary Add or replace a replica host.
-#   Supported use cases:
+#
+# Supported use cases:
 #   1: Adding a replica to an existing primary.
 #   2: The existing replica is broken, we have a fresh new VM we want to provision the replica to.
 # @param primary_host - The hostname and certname of the primary Puppet server

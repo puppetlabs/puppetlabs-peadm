@@ -4,6 +4,7 @@
 #
 # @summary Destructively (re)populates a new or existing database with the contents or a known good source
 # @param source_host _ The hostname of the database containing data
+# @param targets The destination database target whose data will be replaced.
 plan peadm::subplans::db_populate(
   Peadm::SingleTargetSpec $targets,
   Peadm::SingleTargetSpec $source_host,

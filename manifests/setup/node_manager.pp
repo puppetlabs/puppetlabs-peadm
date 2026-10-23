@@ -36,6 +36,11 @@
 #   value so compilers reach the external database. Leave unset for the
 #   default on-prem topology.
 #
+# @param primary_host The primary server target.
+# @param server_a_host The server hosting PuppetDB in availability group A.
+# @param server_b_host The server hosting PuppetDB in availability group B.
+# @param postgresql_a_host The PostgreSQL host for availability group A; defaults to server_a_host.
+# @param postgresql_b_host The PostgreSQL host for availability group B; defaults to server_b_host.
 class peadm::setup::node_manager (
   String[1] $primary_host,
 

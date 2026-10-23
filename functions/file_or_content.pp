@@ -1,3 +1,8 @@
+# @summary Resolve a value supplied as a file path or inline content
+# @param param_name The parameter prefix used in validation errors.
+# @param file Local file to read; mutually exclusive with content.
+# @param content Inline value to use; mutually exclusive with file.
+# @return The file contents or inline value, or undef when neither is supplied.
 function peadm::file_or_content(
   String                 $param_name,
   Variant[String, Undef] $file,
