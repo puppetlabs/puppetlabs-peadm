@@ -31,8 +31,8 @@
 #   Directory the installer tarball will be uploaded to or expected to be in
 #   for offline usage.
 # @param begin_at_step The step where the plan should start. If not set, it will start at the beginning
-#
 # @param node_group_environment environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
+# @param console_password - Optional parameter that is often found in the params.json file. Unused.
 #
 plan peadm::upgrade (
   # Standard
@@ -47,6 +47,7 @@ plan peadm::upgrade (
   Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
 
   # Common Configuration
+  Optional[String]             $console_password                 = undef,
   Optional[Peadm::Pe_version]  $version                          = undef,
   Optional[Stdlib::HTTPSUrl]   $pe_installer_source              = undef,
   Optional[String]             $compiler_pool_address            = undef,

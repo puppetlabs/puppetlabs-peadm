@@ -39,6 +39,7 @@
 #   that compilers can reach PuppetDB's external database. Leave unset for
 #   the default on-prem topology where Postgres runs on the primary or on a
 #   managed external Postgres target.
+# @param console_password - Required parameter used to configure the 'admin' user and its password
 #
 plan peadm::install (
   # Standard

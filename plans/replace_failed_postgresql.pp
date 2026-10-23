@@ -14,11 +14,11 @@ plan peadm::replace_failed_postgresql(
 ) {
   # Log parameters for debugging 
   peadm::log_plan_parameters({
-    'primary_host' => $primary_host,
-    'replica_host' => $replica_host,
-    'working_postgresql_host' => $working_postgresql_host,
-    'failed_postgresql_host' => $failed_postgresql_host,
-    'replacement_postgresql_host' => $replacement_postgresql_host,
+      'primary_host' => $primary_host,
+      'replica_host' => $replica_host,
+      'working_postgresql_host' => $working_postgresql_host,
+      'failed_postgresql_host' => $failed_postgresql_host,
+      'replacement_postgresql_host' => $replacement_postgresql_host,
   })
 
   $all_hosts = peadm::flatten_compact([

@@ -43,6 +43,7 @@
 # @param upgrade_pe_installer_source
 #   Optional URL of the PE installer for upgrade_version. Only used when
 #   upgrade_version is set. Defaults to the standard public source.
+# @param console_password - Optional parameter that is often found in the params.json file. Unused.
 plan peadm::migrate (
   Peadm::SingleTargetSpec $old_primary_host,
   Peadm::SingleTargetSpec $new_primary_host,
@@ -55,6 +56,7 @@ plan peadm::migrate (
   Peadm::Download_mode $download_mode = 'direct',
   Optional[Stdlib::HTTPSUrl] $pe_installer_source = undef,
   Optional[Stdlib::HTTPSUrl] $upgrade_pe_installer_source = undef,
+  Optional[String] $console_password  = undef,
 ) {
   # Log parameters for debugging. Do not add license_key_file/license_key_content
   # here: this prints values unmasked.
