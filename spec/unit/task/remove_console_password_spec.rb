@@ -5,14 +5,7 @@ require 'tmpdir'
 require_relative '../../../tasks/remove_console_password'
 
 describe RemoveConsolePassword do
-  around do |example|
-    Dir.mktmpdir('peadm-cleanup-test') do |dir|
-      @dir = dir
-      example.run
-    end
-  end
-
-  let(:path) { File.join(@dir, 'params.json') }
+  let(:dir) { Dir.mktmpdir('peadm-cleanup-test') }
   let(:keys) { ['console_password', 'console_admin_password'] }
   let(:retained) do
     { 'primary_host' => 'primary.example.com',
@@ -20,6 +13,11 @@ describe RemoveConsolePassword do
       'pe_conf_data' => { 'database_password' => 'database-password' },
       'r10k_private_key_content' => 'private-key',
       'license_key_content' => 'license' }
+  end
+  let(:path) { File.join(dir, 'params.json') }
+
+  after(:each) do
+    FileUtils.remove_entry(dir)
   end
 
   it 'removes only the local top-level console password keys and preserves mode' do
@@ -31,12 +29,12 @@ describe RemoveConsolePassword do
     expect(JSON.parse(File.read(path))).to eq(retained)
     expect(File.stat(path).mode & 0o777).to eq(0o600)
     expect(described_class.clean(path, keys)['changed']).to be(false)
-    expect(Dir.children(@dir)).to eq(['params.json'])
+    expect(Dir.children(dir)).to eq(['params.json'])
   end
 
   it 'removes the temporary pe.conf password without modifying running config or license files' do
-    running = File.join(@dir, 'running-pe.conf')
-    license = File.join(@dir, 'license.key')
+    running = File.join(dir, 'running-pe.conf')
+    license = File.join(dir, 'license.key')
     original = JSON.generate(retained.merge('console_admin_password' => 'secret'))
     [path, running].each { |file| File.write(file, original) }
     File.write(license, 'license')
@@ -59,19 +57,19 @@ describe RemoveConsolePassword do
 
   it 'rejects non-object JSON' do
     File.write(path, '[]')
-    expect { described_class.clean(path, keys) }.to raise_error(RuntimeError, /Expected a JSON object/)
+    expect { described_class.clean(path, keys) }.to raise_error(RuntimeError, %r{Expected a JSON object})
     expect(File.read(path)).to eq('[]')
   end
 
   it 'refuses symbolic links, including dangling links' do
-    File.symlink(File.join(@dir, 'missing'), path)
-    expect { described_class.clean(path, keys) }.to raise_error(RuntimeError, /not a symbolic link/)
+    File.symlink(File.join(dir, 'missing'), path)
+    expect { described_class.clean(path, keys) }.to raise_error(RuntimeError, %r{not a symbolic link})
   end
 
   it 'refuses hard links to protect other configuration paths' do
     File.write(path, '{"console_password":"secret"}')
-    File.link(path, File.join(@dir, 'another-config'))
-    expect { described_class.clean(path, keys) }.to raise_error(RuntimeError, /multiple hard links/)
+    File.link(path, File.join(dir, 'another-config'))
+    expect { described_class.clean(path, keys) }.to raise_error(RuntimeError, %r{multiple hard links})
     expect(JSON.parse(File.read(path))['console_password']).to eq('secret')
   end
 end

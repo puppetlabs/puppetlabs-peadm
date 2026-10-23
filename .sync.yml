@@ -22,6 +22,18 @@ Rakefile:
     - strict_indent
     - manifest_whitespace_missing_newline_end_of_file
   extras:
+    - |
+      # puppetlabs_spec_helper 6 requires puppet-lint 4.x, whose Data.tokens parses
+      # caller strings using the pre-Ruby-4 backtrace format. Use structured locations
+      # to preserve its defensive copy for check methods on Ruby 4 as well.
+      if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('4.0') && Gem.loaded_specs.fetch('puppet-lint').version < Gem::Version.new('5.0')
+        module PuppetLintRuby4Tokens
+          def tokens
+            caller_locations(1, 1).first.base_label == 'check' ? @tokens.dup : @tokens
+          end
+        end
+        PuppetLint::Data.singleton_class.prepend(PuppetLintRuby4Tokens)
+      end
     - PuppetSyntax.exclude_paths = ["plans/**/*.pp", "spec/acceptance/**/plans/**/*.pp",
       "vendor/**/*"]
 spec/spec_helper.rb:

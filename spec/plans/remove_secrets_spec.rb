@@ -32,13 +32,13 @@ describe 'PEADM installation console password cleanup' do
 
   it 'runs only the fixed-path cleanup task on the primary without sending installer secrets' do
     expect_task('peadm::remove_console_password').with_targets('primary').with_params({})
-      .always_return('changed' => true, 'removed_keys' => ['console_admin_password'])
+                                                 .always_return('changed' => true, 'removed_keys' => ['console_admin_password'])
     expect(run_plan('peadm::remove_secrets_primary', params)).to be_ok
   end
 
   it 'accepts params after the local console password has been removed' do
     expect_task('peadm::remove_console_password').with_targets('primary').with_params({})
-      .always_return('changed' => false, 'reason' => 'missing')
+                                                 .always_return('changed' => false, 'reason' => 'missing')
     expect(run_plan('peadm::remove_secrets_primary', params.reject { |key, _| key == 'console_password' })).to be_ok
   end
 end
