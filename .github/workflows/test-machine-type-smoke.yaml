@@ -1,0 +1,66 @@
+---
+name: Machine type smoke test
+on:
+  workflow_dispatch: {}
+jobs:
+  smoke:
+    name: Verify machine_type is honored (no PE install)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BOLT_GEM: true
+      BOLT_DISABLE_ANALYTICS: true
+      LANG: en_US.UTF-8
+      # TEMPORARY, validation-only (DO NOT MERGE): see test-add-replica-matrix.yaml
+      # for context. This job only provisions+verifies+tears down a single VM;
+      # it does not install PE, so it isolates "does machine_type work at all"
+      # from "does a bigger VM fix the PE 2026.0.0 OOM".
+      SERVICE_URL: "https://facade-per-job-machine-type-1079112402178.europe-west1.run.app/v1/provision"
+      PROVISION_MACHINE_TYPE: n2-standard-4
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+      - name: Activate Ruby 3.1
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+      - name: Prepare fixtures
+        run: |
+          mkdir -p $HOME/.ssh
+          echo 'Host *'                      >  $HOME/.ssh/config
+          echo '    ServerAliveInterval 150' >> $HOME/.ssh/config
+          echo '    ServerAliveCountMax 2'   >> $HOME/.ssh/config
+          bundle exec rake spec_prep
+      - name: Provision a single VM with machine_type set
+        timeout-minutes: 10
+        run: |
+          echo ::group::provision
+            bundle exec bolt task run provision::provision_service \
+              --targets localhost \
+              --modulepath spec/fixtures/modules \
+              action=provision \
+              platform=almalinux-cloud/almalinux-8
+          echo ::endgroup::
+          echo ::group::info:request
+            cat request.json || true; echo
+          echo ::endgroup::
+          echo ::group::info:inventory
+            sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
+          echo ::endgroup::
+      - name: Confirm the actual GCP machine type
+        timeout-minutes: 5
+        run: |
+          bundle exec bolt command run \
+            'echo "machine-type: $(curl -s -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/machine-type")"' \
+            --targets all \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml
+      - name: Tear down
+        if: ${{ always() }}
+        continue-on-error: true
+        run: |-
+          if [ -f spec/fixtures/litmus_inventory.yaml ]; then
+            echo ::group::tear_down
+              bundle exec rake 'litmus:tear_down'
+            echo ::endgroup::
+          fi
