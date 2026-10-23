@@ -1,63 +1,53 @@
 # Puppet Enterprise Administration Module (PEADM)
 
-The Puppet Enterprise Administration Module (PEADM) contains a set of Bolt plans designed for deploying and managing Puppet Enterprise (PE) infrastructure. These plans automate key PE lifecycle activities to accelerate deployment and reduce the risk of human error.
+PEADM helps you install, upgrade, and manage Puppet Enterprise (PE). It uses Bolt plans (sets of steps) that the Bolt Application runs on your servers.
 
-You can use PEADM to deploy and manage PE installations for standard, large, and extra-large architectures.
+PEADM supports Standard, Large, and Extra Large setups. The examples below show the minimum setup for one primary server, which manages the PE installation.
 
-**Important**: PEADM is compatible with PE 2019.8.1 and later versions. If your PE version is older than 2019.8.1 and you want to use PEADM, you must upgrade PE before converting your installation to a PEADM-managed installation.
-
-#### Table of contents
+## Table of contents
 
 - [Overview](#overview)
-  - [What PEADM affects](#what-peadm-affects)
-  - [What PEADM does not affect](#what-peadm-does-not-affect)
-  - [Requirements](#requirements)
+- [Requirements](#requirements)
 - [Usage](#usage)
-  - [Setup](#setup)
-    - [Project Setup](#project-setup)
-    - [Project Inventory](#project-inventory)
+  - [Project Setup](#project-setup)
+  - [Project Inventory](#project-inventory)
+  - [Optional - Use an SSH public/private key](#optional---use-an-ssh-publicprivate-key)
+  - [Optional - Encrypt the passwords](#optional---encrypt-the-passwords)
+  - [Check the connection](#check-the-connection)
   - [Using peadm::install and peadm::upgrade](#using-peadminstall-and-peadmupgrade)
     - [Install](#install)
     - [Upgrade](#upgrade)
   - [Plan Parameters](#plan-parameters)
-- [Reference](#reference)
+- [More guides](#more-guides)
+  - [Add Additional Puppet Infrastructure](#add-additional-puppet-infrastructure)
 - [Support and Getting Help](#support-and-getting-help)
 - [License](#license)
 
 ## Overview
 
-PEADM provides plans to install, upgrade and manage Puppet Enterprise infrastructure. Start with [Usage](#usage) to create a Bolt project and inventory.
+PEADM sets up PE servers and groups them by their jobs. It adds labels to their Puppet certificates so it can identify each server later. Larger setups can have extra servers to handle Puppet requests, store data, or take over after a failure.
 
-### What PEADM affects
+Once setup is done, PE runs on its own. Run PEADM again when you need to upgrade or add servers. You can still use the normal PE tools and procedures.
 
-- The `peadm::install` plan adds a number of custom original identifier (OID) trusted facts to the certificates of deployed PE infrastructure nodes. These trusted facts are used by PEADM plans to identify nodes that host PE infrastructure components.
-- Depending on the scale of your architecture, up to four node groups may be created to configure `puppet_enterprise` class parameters for the following PE infrastructure components:
-  - The primary server
-  - The primary server replica
-  - PostgreSQL nodes (database servers)
-  - Compilers (compiler hosts are designated as belonging to availability group A or B)
+PEADM has other plans for tasks such as adding servers, making backups, and restoring PE. Find them in the [Plans section of the reference guide](REFERENCE.md#plans).
 
-### What PEADM does not affect
+## Requirements
 
-- PEADM does not impact regular PE operations. After using it to deploy a new PE installation or upgrade an existing one, PEADM is not required until you want to use it to upgrade PE or expand your installation.
-- Using PEADM to install PE or upgrade PE does not prevent you from using documented PE procedures such as setting up disaster recovery or performing a manual upgrade.
+- Works with PE 2019.8.1 or newer. Upgrade older PE versions before you convert them to PEADM management.
+- Install [Bolt](https://help.puppet.com/bolt/current/topics/bolt_installing.htm) version 3.17.0 or newer on the computer that will run the plans.
+- Use a server operating system supported by the PE version you plan to install.
+- Have SSH access to each server and permission to run commands as `root` through sudo or changing your privileges.
+- For a new install, start with servers that do not have Puppet installed.
 
-### Requirements
-
-- PEADM is compatible with Puppet Enterprise 2019.8.1 and newer versions.
-- PEADM requires [Bolt](https://help.puppet.com/bolt/current/topics/bolt_installing.htm) version 3.17.0 or newer and works on operating systems supported by Bolt.
-  **Note:** You can use PEADM to install Puppet Enterprise (PE) onto any operating system platform that is supported by the specific PE version you want to install. To review operating system platforms supported by specific PE versions, refer to the PE documentation.
-- To successfully convert your current PE installation to a PEADM-managed installation, ensure that the PE setting for editing classifier configuration data is enabled. This setting is enabled by default on new PE installations, but it could be disabled if the relevant configuration was removed from your global hiera.yaml file. See the [PE docs](https://help.puppet.com/pe/current/topics/config_console.htm) for more information.
+If you are converting an existing PE setup, allow changes to classifier configuration data first. These are settings for PE node groups. See the [conversion guide](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/convert.md) for the full steps.
 
 ## Usage
 
-### Setup
+Follow these steps for a basic project and a single-server inventory. An inventory is the file that tells Bolt which servers to connect to and how to log in. For larger setups, use the [installation guide](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/install.md).
 
-This is the minimum setup to get started with PEADM and the minimum inventory for a single-primary Standard deployment. For complete requirements, other architectures and installation options, see the [PEADM installation guide on GitHub](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/install.md).
+### Project Setup
 
-#### Project Setup
-
-Install Puppet Bolt on the machine from which you will run the plans. Then create a project with the PEADM module:
+On the computer where you installed Bolt, create a project and add PEADM:
 
 ```sh
 mkdir peadm_project
@@ -65,12 +55,13 @@ cd peadm_project
 bolt project init peadm_project --modules puppetlabs-peadm
 ```
 
-Run the remaining commands from this project directory. Create `inventory.yaml` as shown below, then create the `params.json` for [install or upgrade](#using-peadminstall-and-peadmupgrade). See the [GitHub installation instructions](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/install.md#usage) for more project setup details.
+Run the rest of the commands from this folder.
 
-#### Project Inventory
+### Project Inventory
 
-Save this minimum inventory as `inventory.yaml` in the project directory. Replace the hostname, login user, SSH password and sudo password with your target's connection details:
+Save this file as `inventory.yaml` in your project folder. Replace the server name, user, and passwords with your own values:
 
+A basic example:
 ```yaml
 ---
 targets:
@@ -78,15 +69,32 @@ targets:
 config:
   transport: ssh
   ssh:
-    user: my_system_admin_user
+    user: my_admin_user
     password: "REPLACE_WITH_SSH_PASSWORD"
     run-as: root
     sudo-password: "REPLACE_WITH_SUDO_PASSWORD"
 ```
 
-Bolt connects over SSH as `my_system_admin_user`, then uses `run-as: root` to execute commands with sudo. The login user must have sudo permission on the target, and its SSH host key must already be trusted by the Bolt controller. `password` authenticates the SSH login; `sudo-password` supplies the password requested by sudo when switching to root (normally the login user's password, depending on sudo policy). Configure these separately; neither is the PE console password supplied in `params.json`. See [Bolt privilege escalation](https://help.puppet.com/bolt/current/topics/privilege_escalation.htm) for details.
+Bolt logs in as `my_admin_user`, then uses sudo to run commands as `root`. The user must have sudo access. Bolt must also trust the server's SSH host key before it connects.
 
-To encrypt both passwords with Bolt's [PKCS7 plugin](https://forge.puppet.com/modules/puppetlabs/pkcs7), add its configuration to `bolt-project.yaml`. This is the complete project file for this example, including the PEADM module:
+The two password fields have different jobs:
+
+- `password` is for the SSH login.
+- `sudo-password` is the password sudo asks for. This is usually the login user's password, though your server may use a different rule.
+
+Neither field is the PE console password. You will set that in `params.json` when you install PE.
+
+See [Bolt's sudo guide](https://help.puppet.com/bolt/current/topics/privilege_escalation.htm) for more privilege options.
+
+### Optional - Use an SSH public/private key
+
+You can also use an SSH public/private key pair to connect to servers with PEADM. Set up the public key for the login user on each server, and set Bolt's `private-key` option to the private key file on your Bolt computer. See [Bolt's SSH key settings](https://help.puppet.com/bolt/current/topics/bolt_transports_reference.htm) for details. You may still need a `sudo-password` to run commands as root.
+
+### Optional - Encrypt the passwords
+
+You can use Bolt's [PKCS7 plugin](https://forge.puppet.com/modules/puppetlabs/pkcs7) to store encrypted passwords in the inventory. Encryption uses a public key to protect a value and a private key to read it again.
+
+Update `bolt-project.yaml` to match this complete example. Keep any other modules your project already uses:
 
 ```yaml
 ---
@@ -100,7 +108,7 @@ plugins:
     private_key: keys/private_key.pkcs7.pem
 ```
 
-From the project directory, create the keys once, then encrypt the SSH and sudo passwords separately:
+Create the keys once. Then run one command for each password you want to encrypt:
 
 ```sh
 mkdir -p keys
@@ -109,7 +117,7 @@ bolt secret encrypt 'REPLACE_WITH_SSH_PASSWORD' --plugin pkcs7
 bolt secret encrypt 'REPLACE_WITH_SUDO_PASSWORD' --plugin pkcs7
 ```
 
-Copy each complete `ENC[PKCS7,...]` value returned by the encryption commands into its corresponding field in `inventory.yaml`. This is the complete encrypted inventory:
+Each encryption command returns a value that starts with `ENC[PKCS7,`. Copy each full value into the matching field below. Replace your `inventory.yaml` with this complete file, using your server name and login user:
 
 ```yaml
 ---
@@ -128,27 +136,29 @@ config:
       encrypted_value: "ENC[PKCS7,REPLACE_WITH_ENCRYPTED_SUDO_PASSWORD]"
 ```
 
-Bolt decrypts the passwords when needed.
+Bolt uses the private key to read the passwords when it needs them.
 
-> **Warning:** If you committing this Bolt project to a company/personal repository, remove `keys/private_key.pkcs7.pem` from the project and store it in a secret store. Exclude the private key from Git with `.gitignore`. Retrieve it to a protected location outside the repository when running Bolt, and update `plugins.pkcs7.private_key` in `bolt-project.yaml` to that location. If the key was already committed, removing the file does not remove it from Git history; rotate the key and re-encrypt the passwords.
+> **Warning:** Before you commit this project to GitHub or another Git repository, move `keys/private_key.pkcs7.pem` out of the project and put it in a secret store. Add the key's path to `.gitignore` to help keep it out of Git. When you run Bolt, get the key from the secret store and place it in a protected folder outside the project. Change `plugins.pkcs7.private_key` in `bolt-project.yaml` to point to that file. If you already committed the key, deleting it does not erase it from Git history. Create a new key pair and encrypt the passwords again.
 
- These commands use a placeholder password; substituting a real password directly on the command line can leave it in shell history. See the [Bolt secret command reference](https://help.puppet.com/bolt/current/topics/bolt_command_reference.htm) and [plugin configuration guide](https://help.puppet.com/bolt/current/topics/using_plugins.htm) for more details.
+A real password typed into an encryption command may stay in your shell history. See the [Bolt secret commands](https://help.puppet.com/bolt/current/topics/bolt_command_reference.htm) and [plugin guide](https://help.puppet.com/bolt/current/topics/using_plugins.htm) for more details.
 
-Check the connection before running a plan:
+### Check the connection
+
+Run this command before you run a plan:
 
 ```sh
 bolt command run 'whoami' --targets primary.example.com
 ```
 
-The command should return `root`. Use `primary.example.com` as the `primary_host` in your `params.json`. Add targets for compilers, replicas or separate PostgreSQL hosts when your architecture requires them. For inventory examples and target-name mapping, see the [PEADM installation guide on GitHub](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/install.md#usage) and [PEADM parameter guide](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/params.md)
+It should return `root`. If it does not, check the SSH and sudo settings in your inventory.
 
 ### Using peadm::install and peadm::upgrade
 
-Run these plans with Bolt from a project containing the `puppetlabs-peadm` module and an `inventory.yaml` with connection details for your PE hosts. Target names in `params.json` must match your inventory. See the [installation guide](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/install.md) for project and inventory setup.
+Choose the plan you need below. Save its settings in `params.json` in your project folder. The `primary_host` must match the server name in your inventory.
 
 #### Install
 
-To install a new Standard deployment, save this basic `params.json`, replacing the hostname and password:
+To install a new Standard setup, use this `params.json`. Replace the server name and choose a password for the PE console admin account:
 
 ```json
 {
@@ -158,17 +168,17 @@ To install a new Standard deployment, save this basic `params.json`, replacing t
 }
 ```
 
-Run:
+Run the install plan:
 
 ```sh
 bolt plan run peadm::install --params @params.json
 ```
 
-The target must not already have Puppet installed. The version above is an example; select the supported PE version you intend to install. See the [install guide](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/install.md) for different architectures, prerequisites, and media options.
+This example installs PE 2025.12.0. For other server layouts and install options, see the [install guide](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/install.md).
 
 #### Upgrade
 
-To upgrade an existing PEADM-managed Standard deployment, save this basic `params.json`, replacing the hostname and setting the destination version:
+To upgrade a Standard setup that PEADM already manages, use this `params.json`:
 
 ```json
 {
@@ -177,49 +187,45 @@ To upgrade an existing PEADM-managed Standard deployment, save this basic `param
 }
 ```
 
-Run:
+Run the upgrade plan:
 
 ```sh
 bolt plan run peadm::upgrade --params @params.json
 ```
 
-Choose a supported destination version appropriate for your current installation. For larger deployments or disaster recovery, include the existing compiler, replica and separate PostgreSQL hosts as applicable. See the [upgrade guide](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/upgrade.md) for prerequisites and upgrade options.
-
-The [parameters guide](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/params.md) documents each plan's accepted parameters with minimal and full `params.json` examples. Install and upgrade accept different arguments; prepare the file for the plan you are running.
-
-For more detailed plan instructions, see the documentation on GitHub:
-
-- [Install](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/install.md)
-- [Upgrade](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/upgrade.md)
-- [Convert](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/convert.md)
-- [Status](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/status.md)
-- [Remove installation console passwords](documentation/remove_secrets.md)
+This example upgrades to PE 2025.12.0. Check that your current PE version can upgrade to it before you start. For larger setups, include the existing compiler, replica, and separate database servers. See the [upgrade guide](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/upgrade.md) for the required checks and settings.
 
 ### Plan Parameters
 
-For individual parameters and minimal and full `params.json` examples, see the [parameters guide on GitHub](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/params.md).
+Each plan accepts its own set of settings, called parameters. Use the file for the plan you are running; a full install file may include settings that another plan does not accept.
 
-## Reference
+The [parameters guide](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/params.md) lists these settings, with minimal and full examples for each plan. After an install, see [Remove installation console passwords](documentation/remove_secrets.md) to clean the console password from local `params.json` and the primary's temporary `/tmp/pe.conf`. That cleanup leaves the running configuration and license files in place.
 
-To understand which architecture is right for you, review the [PE architectures](https://help.puppet.com/pe/current/topics/supported_architectures.htm) documentation.
+## More guides
 
-To learn more about the PEADM module and its uses, see the following PEADM docs:
-
-- [Recovery procedures](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/recovery/recovery.md)
-- [Architectures](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/architectures.md)
-- [Expanding deployment](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/expanding.md)
-- [Classification](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/classification.md)
-- [Testing](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/pre_post_checks.md)
-- [Docker based examples](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/docker_examples.md)
+- [Plan and API reference](REFERENCE.md)
+- [Convert an existing PE setup](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/convert.md)
+- [Check PE status](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/status.md)
+- [Choose a server layout](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/architectures.md)
+- [How PEADM groups servers](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/classification.md)
+- [Recover after a failure](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/recovery/recovery.md)
+- [Test before and after changes](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/pre_post_checks.md)
+- [Docker examples](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/docker_examples.md)
 - [Release process](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/release_process.md)
+
+### Guides for expanding your PE setup
+- [Overview on expanding your PE setup](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/expanding.md)
+- [Add compilers](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/add_compilers.md)
+- [Convert compilers to legacy compilers](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/convert_compiler_to_legacy.md)
+- [Add disaster recovery](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/add_replica.md)
+- [Add stand-alone database servers](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/expanding.md#adding-external-databases-with-peadmadd_database)
 
 ## Support and Getting Help
 
-PEADM is a supported PE module. If you are a PE customer with the standard or premium support service, you can [contact the Support team](https://portal.perforce.com/s/topic/0TO4X000000DbNgWAK/puppet) or your Technical Account Manager for assistance.
+PEADM is a supported PE module. PE customers with standard or premium support can [contact the Support team](https://portal.perforce.com/s/topic/0TO4X000000DbNgWAK/puppet) or their Technical Account Manager for help, including during an outage.
 
-- If you find a bug, an optional [GitHub issue](https://github.com/puppetlabs/puppetlabs-peadm/issues) exists. Feel free to create a new report.
-- For PE customers using PEADM and experiencing outages or other issues, [contact the Support team](https://portal.perforce.com/s/topic/0TO4X000000DbNgWAK/puppet).
+To report a bug, [open a GitHub issue](https://github.com/puppetlabs/puppetlabs-peadm/issues).
 
 ## License
 
-This codebase is licensed under Apache 2.0. However, the open source dependencies included in this codebase might be subject to other software licenses such as AGPL, GPL2.0, and MIT.
+PEADM uses the Apache 2.0 license. Some open source tools it depends on use other licenses, such as AGPL, GPL 2.0, and MIT.
