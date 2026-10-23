@@ -20,7 +20,7 @@ describe 'PEADM installation console password cleanup' do
     Dir.mktmpdir('peadm-plan-test') do |dir|
       path = File.join(dir, 'params.json')
       File.write(path, JSON.generate(params))
-      execute_no_task
+      # BoltSpec rejects task and command calls unless explicitly allowed.
       result = run_plan('peadm::remove_secrets_local', params.merge('params_file' => path))
       expect(result).to be_ok
       expect(result.value['changed']).to be(true)
