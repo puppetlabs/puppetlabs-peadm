@@ -12,6 +12,7 @@
 #   Optional new primary PostgreSQL server to be added to the cluster
 # @param replica_postgresql_host
 #   Optional new replica PostgreSQL server to be added to the cluster
+# @param console_password - Optional parameter that is often found in the params.json file. Unused.
 plan peadm::migrate (
   Peadm::SingleTargetSpec $old_primary_host,
   Peadm::SingleTargetSpec $new_primary_host,
@@ -19,6 +20,7 @@ plan peadm::migrate (
   Optional[Peadm::SingleTargetSpec] $replica_host = undef,
   Optional[Peadm::SingleTargetSpec] $primary_postgresql_host = undef,
   Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
+  Optional[String] $console_password  = undef,
 ) {
   # Log parameters for debugging 
   peadm::log_plan_parameters({

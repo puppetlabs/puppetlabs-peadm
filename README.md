@@ -20,15 +20,11 @@ You can use PEADM to deploy and manage PE installations for standard, large, and
   - [Getting help](#getting-help)
   - [License](#license)
 
-## Support
-
-PEADM is a supported PE module. If you are a PE customer with the standard or premium support service, you can contact [Support](https://portal.perforce.com/s/topic/0TO4X000000DbNgWAK/puppet) or your Technical Account Manager for assistance.
-
 ## Overview
 
 This is the standard workflow for installing PEADM.
 
-1. [Install Bolt](https://www.puppet.com/docs/bolt/latest/bolt_installing) on a jump host.
+1. [Install Bolt](https://help.puppet.com/bolt/current/topics/bolt_installing.htm) on a jump host.
 2. To create a Bolt project that includes the PEADM module, run:</br>`mkdir <YOUR_PROJECT> && cd <YOUR_PROJECT> && bolt project init <YOUR_PROJECT> --modules puppetlabs-peadm`
 3. In the Bolt project directory, update the `inventory.yaml` file with connection information for the servers you plan to use for hosting PE infrastructure. For example:
 
@@ -52,6 +48,14 @@ groups:
       - name: pe-xl-compiler-1.lab1.puppet.vm
         uri: 10.234.14.131
 ```
+## Usage Documentation
+
+For instructions on using PEADM plans, see the following PEADM docs (links Github Project)
+
+- [Install](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/install.md)
+- [Upgrade](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/upgrade.md)
+- [Convert](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/convert.md)
+- [Status](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/status.md)
 
 ### What PEADM affects
 
@@ -69,26 +73,14 @@ groups:
 
 ### Requirements
 
-- PEADM is compatible with Puppet Enterprise 2019.8.1 or newer versions.
+- PEADM is compatible with Puppet Enterprise 2019.8.1 and newer versions.
 - PEADM requires [Bolt](https://www.puppet.com/docs/bolt/latest/bolt_installing) version 3.17.0 or newer and works on operating systems supported by Bolt.  
   **Note:** You can use PEADM to install Puppet Enterprise (PE) onto any operating system platform that is supported by the specific PE version you want to install. To review operating system platforms supported by specific PE versions, refer to the PE documentation.
 - To successfully convert your current PE installation to a PEADM-managed installation, ensure that the PE setting for editing classifier configuration data is enabled. This setting is enabled by default on new PE installations, but it could be disabled if the relevant configuration was removed from your global hiera.yaml file. See the [PE docs](https://www.puppet.com/docs/pe/latest/config_console.html#enable_console_configuration_data) for more information.
 
-## Usage
-
-For instructions on using PEADM plans, see the following PEADM docs:
-
-- [Install](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/install.md)
-- [Upgrade](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/upgrade.md)
-- [Convert](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/convert.md)
-- [Status](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/status.md)
-
 ## Reference
 
-To understand which architecture is right for you, see the following information on the Puppet documentation site:
-
-- [PE architectures](https://puppet.com/docs/pe/latest/choosing_an_architecture.html)
-- [PE multi-region reference architectures](https://puppet.com/docs/patterns-and-tactics/latest/reference-architectures/pe-multi-region-reference-architectures.html)
+To understand which architecture is right for you, review the [PE architectures](https://help.puppet.com/pe/current/topics/supported_architectures.htm) documentation.
 
 To learn more about the PEADM module and its uses, see the following PEADM docs:
 
@@ -100,9 +92,11 @@ To learn more about the PEADM module and its uses, see the following PEADM docs:
 - [Docker based examples](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/docker_examples.md)
 - [Release process](https://github.com/puppetlabs/puppetlabs-peadm/blob/main/documentation/release_process.md)
 
-## Getting help
+## Support and Getting Help
 
-- If you find a bug, you can [create a GitHub issue](https://github.com/puppetlabs/puppetlabs-peadm/issues).
+PEADM is a supported PE module. If you are a PE customer with the standard or premium support service, you can [contact the Support team](https://portal.perforce.com/s/topic/0TO4X000000DbNgWAK/puppet) or your Technical Account Manager for assistance.
+
+- If you find a bug, an optional [GitHub issue](https://github.com/puppetlabs/puppetlabs-peadm/issues) exists. Feel free to create a new report.
 - For PE customers using PEADM and experiencing outages or other issues, [contact the Support team](https://portal.perforce.com/s/topic/0TO4X000000DbNgWAK/puppet).
 
 ## License
