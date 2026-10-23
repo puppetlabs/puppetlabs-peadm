@@ -1,0 +1,16 @@
+{
+  "puppet_task_version": 1,
+  "supports_noop": false,
+  "description": "Run on a PE primary to begin graceful removal of a compiler's ICA by moving it from active to draining. Proxy compilers exclude a draining ICA from their pool; follow with peadm::decommission_ica_compiler to complete removal",
+  "parameters": {
+    "fqdn": {
+      "type": "Stdlib::Fqdn",
+      "description": "FQDN of the compiler whose ICA should be drained"
+    },
+    "token": {
+      "type": "Sensitive[String[1]]",
+      "description": "RBAC token for a user holding the certificate_authority:sign_ica permission. The drain endpoint does not accept the primary's agent certificate alone."
+    }
+  },
+  "input_method": "stdin"
+}
