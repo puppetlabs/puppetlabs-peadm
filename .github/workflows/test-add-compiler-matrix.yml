@@ -37,6 +37,9 @@ jobs:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
       LANG: en_US.UTF-8
+      # PE 2026.0.0 needs the larger VM used by the install matrix.
+      # Keep the provision service default for other PE versions.
+      PROVISION_MACHINE_TYPE: ${{ matrix.version == '2026.0.0' && 'n2-standard-4' || '' }}
     strategy:
       fail-fast: false
       matrix:

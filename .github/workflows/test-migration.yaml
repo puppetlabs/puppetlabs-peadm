@@ -153,7 +153,9 @@ jobs:
             echo '    ServerAliveCountMax 2'   >> $HOME/.ssh/config
             bundle exec rake spec_prep
           echo ::endgroup::
+          # Preserve nested installer task errors in the CI output.
           bundle exec bolt plan run peadm_spec::test_migration \
+            --format json \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             primary_host=$(yq -r '.groups[].targets[] | select(.vars.role == "primary") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
