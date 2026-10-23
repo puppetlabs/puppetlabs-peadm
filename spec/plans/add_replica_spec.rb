@@ -47,7 +47,7 @@ describe 'peadm::add_replica' do
 
       expect_out_verbose.with_params('Current config is...')
       expect_out_verbose.with_params('Updating classification to...')
-      expect(run_plan('peadm::add_replica', params)).to be_ok
+      expect(run_plan('peadm::add_replica', params.merge('console_password' => 'existing-password'))).to be_ok
     end
 
     it 'runs successfully when the primary has alt-names' do

@@ -66,7 +66,7 @@ describe 'peadm::add_compilers' do
       expect_plan('peadm::util::copy_file').be_called_times(1)
       expect_task('peadm::puppet_runonce').with_targets(['compiler'])
       expect_task('peadm::puppet_runonce').with_targets(['server_a'])
-      result = run_plan('peadm::add_compilers', params)
+      result = run_plan('peadm::add_compilers', params.merge('console_password' => 'existing-password'))
       expect(result).to be_ok
       expect(result.value).to eq('Adding or replacing compiler(s) compiler succeeded.')
     end
