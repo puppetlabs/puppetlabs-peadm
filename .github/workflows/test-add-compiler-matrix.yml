@@ -37,6 +37,12 @@ jobs:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
       LANG: en_US.UTF-8
+      # PE 2026.0.0 jobs hit CI VM OOM (Cannot allocate memory - fork(2))
+      # on the default provision_service VM size. Request a bigger VM via
+      # provision#301 (provision >= v3.1.0), scoped to only the 2026.0.0
+      # matrix combinations -- empty string for everything else leaves the
+      # task's own default untouched (see provision_service.rb).
+      PROVISION_MACHINE_TYPE: ${{ matrix.version == '2026.0.0' && 'n2-standard-4' || '' }}
     strategy:
       fail-fast: false
       matrix:

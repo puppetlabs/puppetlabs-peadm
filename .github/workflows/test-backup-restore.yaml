@@ -38,6 +38,11 @@ jobs:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
       LANG: en_US.UTF-8
+      # Defaults to PE 2026.0.0, which hits CI VM OOM (Cannot allocate
+      # memory - fork(2)) on the default provision_service VM size.
+      # Request a bigger VM via provision#301 (provision >= v3.1.0),
+      # scoped to the effective version actually being installed.
+      PROVISION_MACHINE_TYPE: ${{ (github.event.inputs.version || '2026.0.0') == '2026.0.0' && 'n2-standard-4' || '' }}
     steps:
       - name: Start SSH session
         if: ${{ github.event.inputs.ssh-debugging == 'true' }}
