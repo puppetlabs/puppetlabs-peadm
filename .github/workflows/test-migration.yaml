@@ -42,15 +42,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TEMPORARY, test-branch-only: narrowed to the 5th known
-        # cert-revocation combo (large-with-dr at 2026.0.0, no upgrade --
-        # stale "Provision test cluster timeout" categorization, now fails
-        # with "Certificate ... is revoked" mid-purge instead). The other
-        # 4 known combos are already running in a prior dispatch. Restore
-        # the full matrix before this could ever merge.
+        # TEMPORARY, test-branch-only: narrowed to the fastest known
+        # cert-revocation combo (standard-with-dr, 2 nodes), with
+        # --log-level trace added to the migration step below to capture
+        # the actual puppetserver ca sign error (Bolt doesn't print task
+        # output at the default log level). Restore the full matrix and
+        # remove --log-level trace before this could ever merge.
         include:
-          - architecture: large-with-dr
-            version: 2026.0.0
+          - architecture: standard-with-dr
+            version: 2025.12.0
             image: almalinux-cloud/almalinux-8
     steps:
       - name: Checkout Source
@@ -137,7 +137,8 @@ jobs:
             new_primary_postgresql_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-primary-pdb-postgresql") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
             new_replica_postgresql_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-replica-pdb-postgresql") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
             upgrade_version=${{ matrix.new_pe_version }} \
-          --no-host-key-check
+          --no-host-key-check \
+          --log-level trace
       - name: Tear down PE ${{ matrix.architecture }} test cluster
         if: ${{ always() }}
         continue-on-error: true
