@@ -42,23 +42,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TEMPORARY, test-branch-only: narrowed to exactly the 4 known
-        # modify_certificate.pp:38 / sign_csr failures (new-primary cert
-        # revoked by the migrate purge), to test the fix in plans/migrate.pp.
-        # Restore the full matrix before this could ever merge.
+        # TEMPORARY, test-branch-only: narrowed to the 5th known
+        # cert-revocation combo (large-with-dr at 2026.0.0, no upgrade --
+        # stale "Provision test cluster timeout" categorization, now fails
+        # with "Certificate ... is revoked" mid-purge instead). The other
+        # 4 known combos are already running in a prior dispatch. Restore
+        # the full matrix before this could ever merge.
         include:
-          - architecture: extra-large
-            version: 2025.12.0
-            image: almalinux-cloud/almalinux-8
-            new_pe_version: 2026.0.0
-          - architecture: extra-large
-            version: 2026.0.0
-            image: almalinux-cloud/almalinux-8
           - architecture: large-with-dr
-            version: 2025.12.0
-            image: almalinux-cloud/almalinux-8
-          - architecture: standard-with-dr
-            version: 2025.12.0
+            version: 2026.0.0
             image: almalinux-cloud/almalinux-8
     steps:
       - name: Checkout Source
