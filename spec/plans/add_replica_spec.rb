@@ -167,6 +167,47 @@ describe 'peadm::add_replica' do
       expect(provision_attempts).to eq(2)
     end
 
+    it 'retries provision_replica once and succeeds after a transient orchestrator connection-refused error' do
+      allow_standard_non_returning_calls
+      expect_task('peadm::code_manager_enabled').always_return(code_manager_enabled)
+      expect_task('peadm::get_peadm_config').always_return(cfg)
+      expect_task('peadm::cert_data').always_return(certdata).be_called_times(4)
+      expect_task('peadm::cert_valid_status').always_return(certstatus)
+      expect_task('package').always_return({ 'status' => 'uninstalled' })
+      expect_plan('peadm::util::copy_file').be_called_times(5)
+
+      # PE-45867: a second transient-race variant -- the orchestration
+      # service hasn't started listening on 8143 yet when provision_replica's
+      # internal CLI call tries to reach it.
+      provision_attempts = 0
+      expect_task('peadm::provision_replica').be_called_times(3).return do |targets:, params:, **_kwargs|
+        action = params['action']
+        results = targets.map do |target|
+          if action == 'provision'
+            provision_attempts += 1
+            if provision_attempts == 1
+              Bolt::Result.new(target,
+                                error: { 'msg' => 'The task failed with exit code 1', 'kind' => 'bolt/error' },
+                                message: '[Error]: Request to https://replica.example.com:8143/orchestrator/v1/' \
+                                         'command/task failed after 0.001 seconds: Failed to open TCP connection ' \
+                                         'to replica.example.com:8143 (Connection refused - connect(2) for ' \
+                                         '"replica.example.com" port 8143)')
+            else
+              Bolt::Result.new(target, value: {})
+            end
+          else
+            Bolt::Result.new(target, value: {})
+          end
+        end
+        Bolt::ResultSet.new(results)
+      end
+
+      expect_out_verbose.with_params('Current config is...')
+      expect_out_verbose.with_params('Updating classification to...')
+      expect(run_plan('peadm::add_replica', params)).to be_ok
+      expect(provision_attempts).to eq(2)
+    end
+
     it 'gives up after exhausting retries when the transient orchestrator error persists' do
       allow_standard_non_returning_calls
       expect_task('peadm::code_manager_enabled').always_return(code_manager_enabled)
