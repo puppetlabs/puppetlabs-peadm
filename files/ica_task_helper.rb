@@ -93,8 +93,8 @@ module IcaTaskHelper
   end
 
   # Builds an mTLS-authenticated Net::HTTP client to the given host, using
-  # this compiler's Puppet agent certificate. peadm never uses RBAC tokens:
-  # every existing classifier/PuppetDB-calling task authenticates this way.
+  # this compiler's Puppet agent certificate. The classifier and CA routes the
+  # ICA tasks call accept that certificate, so these tasks need no RBAC token.
   def primary_https_client(hostname, port = CA_SERVICE_PORT)
     https = Net::HTTP.new(hostname, port)
     https.use_ssl = true
