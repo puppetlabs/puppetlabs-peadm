@@ -134,6 +134,29 @@ plan peadm::migrate (
     out::message('No nodes to purge from old configuration')
   }
 
+  # Purging a node revokes its certificate by serial number. After the restore
+  # the new primary's own certificate is not recorded in a database-backed CA
+  # (PE 2026.0+), so its serial can match one of the purged nodes' serials, and
+  # the purge then revokes the new primary's certificate too. If that happened,
+  # re-issue the certificate, otherwise every later CA operation fails with
+  # "Certificate ... is revoked".
+# lint:ignore:strict_indent
+  $new_primary_revoked = run_command(@("CMD"/L$), $new_primary_host).first['stdout'].chomp
+    serial=\$(openssl x509 -in "\$(/opt/puppetlabs/bin/puppet config print hostcert)" -noout -serial | cut -d= -f2) \
+      && openssl crl -in "\$(/opt/puppetlabs/bin/puppet config print hostcrl)" -noout -text \
+        | grep -q "Serial Number: \${serial}\$" \
+      && echo revoked || echo ok
+    |-CMD
+# lint:endignore
+
+  if $new_primary_revoked == 'revoked' {
+    out::message('The new primary certificate was revoked by the purge; re-issuing it')
+    run_plan('peadm::modify_certificate', $new_primary_host,
+      primary_host     => $new_primary_host,
+      force_regenerate => true,
+    )
+  }
+
   # provision a postgresql host if one is provided
   if $primary_postgresql_host {
     run_plan('peadm::add_database', targets => $primary_postgresql_host,
