@@ -51,18 +51,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TEMPORARY, test-branch-only: narrowed to exactly the three failing
-        # combinations from PR #718, to test the n2-standard-4 experiment
-        # cheaply. Restore the full matrix before this could ever merge.
+        # TEMPORARY, test-branch-only: narrowed to just the newest failing
+        # combination from PR #718 (2023.8.12 extra-large-with-dr and
+        # 2025.12.0 standard-with-dr are already being tested in run
+        # 40311093235, so they're left out here to avoid duplicate runs).
+        # Restore the full matrix before this could ever merge.
         include:
-          - version: 2023.8.12
-            architecture: extra-large-with-dr
-            image: rhel-8
-            fips: enable
-          - version: 2025.12.0
-            architecture: standard-with-dr
-            image: rhel-8
-            fips: enable
           - version: 2025.12.0
             architecture: extra-large-with-dr
             image: rhel-8
