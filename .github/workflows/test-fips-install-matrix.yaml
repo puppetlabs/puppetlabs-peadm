@@ -42,8 +42,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture: [standard-with-dr, large, extra-large-with-dr]
-        version: [2023.8.12, 2025.12.0, 2026.0.0]
+        # TEMPORARY, test-branch-only: narrowed to the one combination that
+        # failed on PR #718 (legacy provision_replica "services are not
+        # running" after exhausting retries), to test the service-ready-poll
+        # fix without running the full matrix. Restore the full matrix
+        # before this could ever merge.
+        architecture: [extra-large-with-dr]
+        version: [2023.8.12]
         image: [rhel-8]
         fips: [enable]
     steps:
