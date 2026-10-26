@@ -38,14 +38,31 @@ jobs:
       # provision#301 (provision >= v3.1.0), scoped to only the 2026.0.0
       # matrix combinations -- empty string for everything else leaves the
       # task's own default untouched (see provision_service.rb).
-      PROVISION_MACHINE_TYPE: ${{ matrix.version == '2026.0.0' && 'n2-standard-4' || '' }}
+      #
+      # TEMPORARY, test-branch-only experiment: also requests n2-standard-4
+      # for the two specific (version, architecture) combinations that failed
+      # with connection-level errors (SSH IOError / orchestrator SSL drop)
+      # during pg_basebackup-heavy replica provisioning on PR #718. Evidence
+      # for this being a VM-sizing issue is weak (a same-run 2026.0.0
+      # extra-large-with-dr job -- already on n2-standard-4 -- passed, while
+      # lighter combinations without it failed), so this is explicitly an
+      # experiment to see if it changes the pass rate, not a confirmed fix.
+      PROVISION_MACHINE_TYPE: ${{ (matrix.version == '2026.0.0' || (matrix.version == '2023.8.12' && matrix.architecture == 'extra-large-with-dr') || (matrix.version == '2025.12.0' && matrix.architecture == 'standard-with-dr')) && 'n2-standard-4' || '' }}
     strategy:
       fail-fast: false
       matrix:
-        architecture: [standard-with-dr, large, extra-large-with-dr]
-        version: [2023.8.12, 2025.12.0, 2026.0.0]
-        image: [rhel-8]
-        fips: [enable]
+        # TEMPORARY, test-branch-only: narrowed to exactly the two failing
+        # combinations from PR #718, to test the n2-standard-4 experiment
+        # cheaply. Restore the full matrix before this could ever merge.
+        include:
+          - version: 2023.8.12
+            architecture: extra-large-with-dr
+            image: rhel-8
+            fips: enable
+          - version: 2025.12.0
+            architecture: standard-with-dr
+            image: rhel-8
+            fips: enable
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
