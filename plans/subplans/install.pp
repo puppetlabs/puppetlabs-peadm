@@ -535,7 +535,43 @@ plan peadm::subplans::install (
   # configuration.
   run_task('peadm::puppet_runonce', $primary_target)
   peadm::wait_until_service_ready('pe-master', $primary_target)
-  run_task('peadm::puppet_runonce', $primary_target)
+
+  # The service-ready check above can pass while a scheduled/background
+  # agent run is still holding agent_catalog_run.lock (observed as "Run of
+  # Puppet configuration client already in progress; skipping"), causing
+  # this second run to fail outright with no catalog applied. Retry a
+  # bounded number of times to ride out that race; any other failure (a
+  # genuine catalog/resource error) is not retried and surfaces on the
+  # first attempt.
+  $runonce_max_attempts = 3
+  $runonce_retry_delay = 30
+  $runonce_result = range(1, $runonce_max_attempts).reduce(undef) |$memo, $attempt| {
+    $prior_output = ($memo =~ NotUndef and !$memo.ok and $memo.error_set.first.value =~ Hash) ? {
+      true    => $memo.error_set.first.value['_output'],
+      default => undef,
+    }
+    $prior_is_transient = ($prior_output =~ String[1]) and ($prior_output =~ /already in progress|agent_catalog_run\.lock/)
+
+    if $memo =~ NotUndef and ($memo.ok or !$prior_is_transient) {
+      $memo
+    } else {
+      if $attempt > 1 {
+        out::message("2nd puppet_runonce hit in-progress agent run; retry ${attempt}/${runonce_max_attempts} after ${runonce_retry_delay}s")
+        ctrl::sleep($runonce_retry_delay)
+      }
+      run_task('peadm::puppet_runonce', $primary_target, _catch_errors => true)
+    }
+  }
+
+  unless $runonce_result.ok {
+    $runonce_errors = $runonce_result.error_set.map |$result| {
+      $result_value = $result.value
+      $output = ($result_value =~ Hash) ? { true => $result_value['_output'], default => undef }
+      $detail = ($output =~ String[1]) ? { true => $output, default => $result.error.message }
+      "${result.target.name}: ${detail}"
+    }.join("\n\n")
+    fail_plan("peadm::puppet_runonce failed on ${primary_target.peadm::certname()}: ${runonce_errors}")
+  }
 
   # PE-45431 (ca-db-default epic): On Large/XL/external-Postgres topologies,
   # peadm runs peadm::pe_install on $primary_target before $database_targets
