@@ -129,8 +129,42 @@ plan peadm::add_compilers(
       path        => '/etc/puppetlabs/puppet/hiera.yaml'
     )
 
-    # On <compiler-host>, run puppet agent
-    run_task('peadm::puppet_runonce', $compiler_target)
+    # On <compiler-host>, run puppet agent. If the compiler's own
+    # puppetserver isn't up yet at this point (observed as a connection
+    # refused on :8140 while fetching pe_repo packages, or occasionally
+    # the same transient 503 seen on component_install's earlier
+    # puppet_runonce), retry a bounded number of times; any other
+    # failure (a genuine catalog/resource error) is not retried and
+    # surfaces on the first attempt.
+    $compiler_runonce_max_attempts = 3
+    $compiler_runonce_retry_delay = 30
+    $compiler_runonce_result = range(1, $compiler_runonce_max_attempts).reduce(undef) |$memo, $attempt| {
+      $prior_output = ($memo =~ NotUndef and !$memo.ok and $memo.error_set.first.value =~ Hash) ? {
+        true    => $memo.error_set.first.value['_output'],
+        default => undef,
+      }
+      $prior_is_transient = ($prior_output =~ String[1]) and ($prior_output =~ /Error 50\d on SERVER|Connection refused|Connection reset|end of file reached|Could not connect/)
+
+      if $memo =~ NotUndef and ($memo.ok or !$prior_is_transient) {
+        $memo
+      } else {
+        if $attempt > 1 {
+          out::message("compiler's puppet_runonce hit a transient 503/connection error; retrying (attempt ${attempt}/${compiler_runonce_max_attempts}) after ${compiler_runonce_retry_delay}s...")
+          ctrl::sleep($compiler_runonce_retry_delay)
+        }
+        run_task('peadm::puppet_runonce', $compiler_target, _catch_errors => true)
+      }
+    }
+
+    unless $compiler_runonce_result.ok {
+      $compiler_runonce_errors = $compiler_runonce_result.error_set.map |$result| {
+        $result_value = $result.value
+        $output = ($result_value =~ Hash) ? { true => $result_value['_output'], default => undef }
+        $detail = ($output =~ String[1]) ? { true => $output, default => $result.error.message }
+        "${result.target.name}: ${detail}"
+      }.join("\n\n")
+      fail_plan("peadm::puppet_runonce failed on ${compiler_target.peadm::certname()}: ${compiler_runonce_errors}")
+    }
   }
 
   # On <primary_postgresql_host>, run puppet agent
