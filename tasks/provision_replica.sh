@@ -62,20 +62,41 @@ if [ "$PT_legacy" = "false" ]; then
   esac
 
 elif [ "$PT_legacy" = "true" ]; then
-  echo "(legacy=true) query active nodes before provision replica"
-  puppet query '["from","resources",["extract",["certname"],["and",["=","type","Class"],["=","title","Puppet_enterprise::Profile::Master"]]]]'
+  case "$PT_action" in
+    provision)
+      echo "(legacy=true) query active nodes before provision replica"
+      puppet query '["from","resources",["extract",["certname"],["and",["=","type","Class"],["=","title","Puppet_enterprise::Profile::Master"]]]]'
 
-  puppet infrastructure provision replica "$PT_replica" \
-    --color false \
-    --token-file "$TOKEN_FILE"
+      puppet infrastructure provision replica "$PT_replica" \
+        --color false \
+        --token-file "$TOKEN_FILE"
+      ;;
+    enable)
+      echo "(legacy=true) query active nodes before enable replica"
+      puppet query '["from","resources",["extract",["certname"],["and",["=","type","Class"],["=","title","Puppet_enterprise::Profile::Master"]]]]'
+      puppet infrastructure enable replica "$PT_replica" \
+        --color false \
+        --yes --token-file "$TOKEN_FILE" \
+        --skip-agent-config \
+        --topology mono-with-compile
+      ;;
+    both|*)
+      echo "(legacy=true) query active nodes before provision replica"
+      puppet query '["from","resources",["extract",["certname"],["and",["=","type","Class"],["=","title","Puppet_enterprise::Profile::Master"]]]]'
 
-  echo "(legacy=true) query active nodes before enable replica"
-  puppet query '["from","resources",["extract",["certname"],["and",["=","type","Class"],["=","title","Puppet_enterprise::Profile::Master"]]]]'
-  puppet infrastructure enable replica "$PT_replica" \
-    --color false \
-    --yes --token-file "$TOKEN_FILE" \
-    --skip-agent-config \
-    --topology mono-with-compile
+      puppet infrastructure provision replica "$PT_replica" \
+        --color false \
+        --token-file "$TOKEN_FILE"
+
+      echo "(legacy=true) query active nodes before enable replica"
+      puppet query '["from","resources",["extract",["certname"],["and",["=","type","Class"],["=","title","Puppet_enterprise::Profile::Master"]]]]'
+      puppet infrastructure enable replica "$PT_replica" \
+        --color false \
+        --yes --token-file "$TOKEN_FILE" \
+        --skip-agent-config \
+        --topology mono-with-compile
+      ;;
+  esac
 
 else
   exit 1

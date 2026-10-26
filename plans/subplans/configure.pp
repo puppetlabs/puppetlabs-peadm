@@ -146,6 +146,7 @@ plan peadm::subplans::configure (
           replica       => $replica_target.peadm::certname(),
           token_file    => $token_file,
           legacy        => true,
+          action        => 'provision',
           _catch_errors => true,
         )
       }
@@ -154,6 +155,39 @@ plan peadm::subplans::configure (
       $provision_replica_error = $provision_replica_result.first.error.message
       out::message($provision_replica_result.to_data)
       fail_plan("Failed to provision replica after ${provision_replica_max_attempts} attempts: ${provision_replica_error}")
+    }
+
+    # Give the replica's Classifier/RBAC/PuppetDB real time to come up before
+    # asking PE core to enable it. PE core's --enable path (also used by the
+    # legacy `puppet infrastructure enable replica` command below) runs its
+    # own replica service-health check with a short, fixed wait that's
+    # sometimes too short -- the same race already fixed for the non-legacy
+    # path in add_replica.pp.
+    peadm::wait_until_service_ready('pe-master', $replica_target)
+
+    $enable_replica_max_attempts = 3
+    $enable_replica_result = range(1, $enable_replica_max_attempts).reduce(undef) |$memo, $attempt| {
+      if $memo =~ NotUndef and $memo.ok {
+        $memo
+      } else {
+        if $attempt > 1 {
+          out::message("enable_replica not ready; retrying (attempt ${attempt}) after 15s...")
+          out::message($memo.to_data)
+          ctrl::sleep(15)
+        }
+        run_task('peadm::provision_replica', $primary_target,
+          replica       => $replica_target.peadm::certname(),
+          token_file    => $token_file,
+          legacy        => true,
+          action        => 'enable',
+          _catch_errors => true,
+        )
+      }
+    }
+    unless $enable_replica_result.ok {
+      $enable_replica_error = $enable_replica_result.first.error.message
+      out::message($enable_replica_result.to_data)
+      fail_plan("Failed to enable replica after ${enable_replica_max_attempts} attempts: ${enable_replica_error}")
     }
   }
 

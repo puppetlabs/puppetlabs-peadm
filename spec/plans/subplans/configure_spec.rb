@@ -63,12 +63,15 @@ describe 'peadm::subplans::configure' do
   # assertions additionally catch the legacy/replica/token_file values
   # getting corrupted on the call that does happen.
   def expect_provision_replica_called_against_primary!
-    expect_task('peadm::provision_replica').with_targets(['primary']).return do |targets:, params:, **|
+    actions_seen = []
+    expect_task('peadm::provision_replica').with_targets(['primary']).be_called_times(2).return do |targets:, params:, **|
+      actions_seen << params['action']
       expect(params['replica']).to eq('replica')
       expect(params['token_file']).to eq('/tmp/token')
       expect(params['legacy']).to eq(true)
       Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
     end
+    actions_seen
   end
 
   # A minimal, fully-populated Peadm::Ldap_config (a Struct type -- every
@@ -142,14 +145,16 @@ describe 'peadm::subplans::configure' do
 
       # PE-42816: the pre-flight wait_until_service_ready call narrows the
       # window for the provision_replica race described below; it must still
-      # run before provision_replica is attempted.
-      expect_task('peadm::wait_until_service_ready').be_called_times(1)
+      # run before provision_replica is attempted. A second call (between the
+      # split provision/enable steps) guards the equivalent race on PE core's
+      # --enable path -- see the equivalent fix in add_replica.pp.
+      expect_task('peadm::wait_until_service_ready').be_called_times(2)
 
       # PE-42816: `legacy` is a workaround for a provision_replica race and
       # must stay true until that's fixed elsewhere; flipping it (or losing
       # the replica/token_file plumbing) would silently break DR
       # provisioning without failing this test unless asserted here.
-      expect_provision_replica_called_against_primary!
+      actions_seen = expect_provision_replica_called_against_primary!
 
       # Asserting only on provision_replica's targets/params (above) wouldn't
       # catch a refactor that silently drops or empties the copy_file target
@@ -161,6 +166,7 @@ describe 'peadm::subplans::configure' do
                        'replica_host' => 'replica',
                        'token_file'   => '/tmp/token')).to be_ok
       expect(copy_file_paths).to match_array(synced_replica_files)
+      expect(actions_seen).to eq(['provision', 'enable'])
     end
   end
 
@@ -170,15 +176,17 @@ describe 'peadm::subplans::configure' do
 
       # PE-42816: the postgresql host never runs pe-puppetserver, so nothing
       # listens on the port wait_until_service_ready checks there -- the
-      # pre-flight wait only ever covers the primary, on XL as elsewhere.
-      # The provision_replica retry loop is the real XL safety net.
-      expect_task('peadm::wait_until_service_ready').be_called_times(1)
+      # pre-flight wait only ever covers the primary, on XL as elsewhere. The
+      # second call (between the split provision/enable steps) also targets
+      # the replica, not the postgresql hosts. The provision_replica retry
+      # loop is the real XL safety net.
+      expect_task('peadm::wait_until_service_ready').be_called_times(2)
 
       # Confirms adding the split-database (XL) parameters doesn't redirect
       # or skip replica provisioning -- see
       # expect_provision_replica_called_against_primary! above for what's
       # asserted.
-      expect_provision_replica_called_against_primary!
+      actions_seen = expect_provision_replica_called_against_primary!
 
       # Same rationale as the standard-with-DR case above: the XL split-database
       # params must not redirect or drop the copy_file replica target either.
@@ -191,6 +199,7 @@ describe 'peadm::subplans::configure' do
                        'replica_postgresql_host' => 'replica_postgresql',
                        'token_file'              => '/tmp/token')).to be_ok
       expect(copy_file_paths).to match_array(synced_replica_files)
+      expect(actions_seen).to eq(['provision', 'enable'])
     end
   end
 
@@ -202,18 +211,22 @@ describe 'peadm::subplans::configure' do
       allow_any_command
       allow_any_out_message
 
-      attempts = 0
-      expect_task('peadm::provision_replica').return { |targets:, **|
-        attempts += 1
+      provision_attempts = 0
+      expect_task('peadm::provision_replica').be_called_times(3).return do |targets:, params:, **|
         results = targets.map do |target|
-          if attempts == 1
-            Bolt::Result.new(target, error: { 'msg' => 'PuppetDB not ready', 'kind' => 'puppetlabs.tasks/race' })
+          if params['action'] == 'provision'
+            provision_attempts += 1
+            if provision_attempts == 1
+              Bolt::Result.new(target, error: { 'msg' => 'PuppetDB not ready', 'kind' => 'puppetlabs.tasks/race' })
+            else
+              Bolt::Result.new(target, value: {})
+            end
           else
             Bolt::Result.new(target, value: {})
           end
         end
         Bolt::ResultSet.new(results)
-      }.be_called_times(2)
+      end
 
       expect(run_plan('peadm::subplans::configure',
                        'primary_host'             => 'primary',

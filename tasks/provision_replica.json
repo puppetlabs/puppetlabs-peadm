@@ -16,7 +16,7 @@
     },
     "action": {
       "type": "Optional[Enum[provision, enable, both]]",
-      "description": "Non-legacy only. 'provision' runs provision without --enable, 'enable' runs enable replica, 'both' (default) runs the original atomic provision --enable.",
+      "description": "'provision' runs provision without --enable (or, for legacy, just the provision command), 'enable' runs enable replica, 'both' (default) runs the original atomic provision --enable (or, for legacy, provision immediately followed by enable).",
       "default": "both"
     }
   },
