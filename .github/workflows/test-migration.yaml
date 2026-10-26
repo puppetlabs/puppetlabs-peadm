@@ -42,39 +42,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture:
-          - standard
-          - standard-with-dr
-          - large
-          - extra-large
-          - large-with-dr
-          - extra-large-with-dr
-        version: [2023.8.12, 2025.12.0, 2026.0.0]
-        image: [almalinux-cloud/almalinux-8]
+        # TEMPORARY, test-branch-only: narrowed to the exact combo (PE
+        # 2026.0.0 large) that hit the second-puppet_runonce lock
+        # collision in plans/subplans/install.pp, to test the retry fix.
+        # Restore the full matrix before this could ever merge.
         include:
-          - architecture: standard
-            version: 2025.12.0
-            image: almalinux-cloud/almalinux-8
-            new_pe_version: 2026.0.0
           - architecture: large
-            version: 2025.12.0
-            image: almalinux-cloud/almalinux-8
-            new_pe_version: 2026.0.0
-          - architecture: extra-large
-            version: 2025.12.0
-            image: almalinux-cloud/almalinux-8
-            new_pe_version: 2026.0.0
-          # excluding the following combinations as due to their long running nature they always fail due to
-          # the test nodes in GCP that litmus provisions becoming unreachable after a time. If we address PE-40902
-          # to change how we provision test nodes in CI then we will hopefully be able to include these
-        exclude:
-          - architecture: extra-large-with-dr
-            version: 2023.8.12
-            image: almalinux-cloud/almalinux-8
-          - architecture: extra-large-with-dr
-            version: 2025.12.0
-            image: almalinux-cloud/almalinux-8
-          - architecture: extra-large-with-dr
             version: 2026.0.0
             image: almalinux-cloud/almalinux-8
     steps:
