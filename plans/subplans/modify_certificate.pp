@@ -132,6 +132,14 @@ plan peadm::subplans::modify_certificate (
           --ca-client
         |-HEREDOC
       run_task('service', $primary_target, { action => 'start', name => 'pe-puppetserver' })
+
+      # Without this, downstream steps (e.g. add_replica's provision_replica
+      # call) can run before pe-puppetserver and its dependent services have
+      # fully come back up, failing with "... Service is not running" for
+      # every PE service at once. Observed live (run 40478287152, job
+      # 122101876877): sign_csr/cert regen succeeded here, but
+      # provision_replica failed ~4 minutes later for exactly this reason.
+      peadm::wait_until_service_ready('pe-master', $primary_target)
       run_task('peadm::sign_csr', $primary_target, certnames => [$certname])
     }
 # lint:endignore
