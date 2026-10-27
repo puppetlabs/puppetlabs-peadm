@@ -139,7 +139,14 @@ plan peadm::subplans::modify_certificate (
       # every PE service at once. Observed live (run 40478287152, job
       # 122101876877): sign_csr/cert regen succeeded here, but
       # provision_replica failed ~4 minutes later for exactly this reason.
-      peadm::wait_until_service_ready('pe-master', $primary_target)
+      # 'pe-master' alone only confirms puppetserver itself -- checking
+      # 'all' (confirmed via wait_until_service_ready.sh's status/v1/simple
+      # endpoint) is needed to also cover RBAC, PuppetDB, orchestrator,
+      # classifier, etc., all of which add_replica's provision_replica
+      # requires. A retest with 'pe-master' still hit the same "Service is
+      # not running" failure on the very next provision_replica call (run
+      # 40494242799, job 122155531201).
+      peadm::wait_until_service_ready('all', $primary_target)
       run_task('peadm::sign_csr', $primary_target, certnames => [$certname])
     }
 # lint:endignore
