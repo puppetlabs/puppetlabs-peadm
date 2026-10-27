@@ -42,27 +42,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TEMPORARY, test-branch-only: narrowed to the 5 known combos that
-        # hit the modify_certificate.pp sign_csr "certificate revoked"
-        # failure (new primary's own cert revoked by the migrate purge),
-        # to test the reactive re-issue fix. Restore the full matrix
-        # before this could ever merge.
+        # TEMPORARY, test-branch-only: narrowed to just standard-with-dr to
+        # re-test after adding wait_until_service_ready following the
+        # reactive cert regen's pe-puppetserver restart (job 122101876877
+        # hit "Service is not running" on add_replica's provision_replica
+        # call shortly after regen). Restore the full matrix before this
+        # could ever merge.
         include:
           - architecture: standard-with-dr
             version: 2025.12.0
-            image: almalinux-cloud/almalinux-8
-          - architecture: large-with-dr
-            version: 2025.12.0
-            image: almalinux-cloud/almalinux-8
-          - architecture: extra-large
-            version: 2025.12.0
-            image: almalinux-cloud/almalinux-8
-            new_pe_version: 2026.0.0
-          - architecture: extra-large
-            version: 2026.0.0
-            image: almalinux-cloud/almalinux-8
-          - architecture: large-with-dr
-            version: 2026.0.0
             image: almalinux-cloud/almalinux-8
     steps:
       - name: Checkout Source
