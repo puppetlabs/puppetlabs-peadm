@@ -110,7 +110,13 @@ plan peadm::subplans::modify_certificate (
         true    => $sign_result.error_set.first.value['_output'],
         default => undef,
       }
-      unless ($sign_output =~ String[1]) and ($sign_output =~ /certificate revoked/) {
+      # Match both observed phrasings: sign_csr's own SSL error says
+      # "certificate revoked" (lowercase, adjacent); PuppetDB's
+      # deactivate_node error (seen in the purge-loop variant of this
+      # bug) says "Certificate '...' is revoked" (capitalized, not
+      # adjacent) -- broadened here too for consistency even though only
+      # the lowercase form has been observed at this specific call site.
+      unless ($sign_output =~ String[1]) and ($sign_output =~ /[Cc]ertificate.*revoked/) {
         fail_plan("peadm::sign_csr failed on ${primary_target.peadm::certname()}: ${sign_output}")
       }
       out::message("${primary_certname}'s own certificate appears revoked; regenerating it before retrying sign_csr")
