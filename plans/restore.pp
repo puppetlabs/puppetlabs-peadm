@@ -430,6 +430,19 @@ plan peadm::restore (
     run_task('peadm::puppet_runonce', $puppetdb_postgresql_targets)
   }
 
+  # The services stopped earlier (pe-console-services, pe-nginx, pxp-agent,
+  # pe-puppetserver, pe-orchestration-services, puppet, pe-puppetdb) only
+  # come back up because they're Puppet-managed resources in the catalog
+  # applied by the puppet_runonce above. That task returning doesn't mean
+  # those services have finished initializing (puppetserver's JVM startup,
+  # puppetdb startup, etc. all take real time beyond "systemd reports
+  # started"). Without this wait, a caller that proceeds immediately (e.g.
+  # peadm::migrate's add_replica/provision_replica call) can hit every PE
+  # service reporting "not running" -- observed live, no cert-revocation
+  # bug involved: run 40478287152, job 122173825349 (PE 2025.12.0
+  # large-with-dr).
+  peadm::wait_until_service_ready('all', $primary_target)
+
   apply($primary_target) {
     file { $recovery_directory :
       ensure => 'absent',

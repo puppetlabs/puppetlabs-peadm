@@ -65,6 +65,7 @@ describe 'peadm::restore' do
     end
     allow_task('peadm::puppet_runonce')
     allow_task('peadm::get_psql_version').always_return({ 'version' => psql_version })
+    allow_task('peadm::wait_until_service_ready')
   end
 
   # only run for tests that have the :valid_cluster tag
