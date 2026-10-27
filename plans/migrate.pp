@@ -126,13 +126,71 @@ plan peadm::migrate (
 
   if !empty($nodes_to_purge) {
     out::message('Purging nodes from old configuration individually')
+    $new_primary_target = get_target($new_primary_host)
+    $new_primary_certname = $new_primary_target.peadm::certname()
     $nodes_to_purge.each |$node| {
       out::message("Purging node: ${node}")
-      run_command("/opt/puppetlabs/bin/puppet node purge ${node}", $new_primary_host)
+
+      # Purging a node revokes its certificate by serial number. The new
+      # primary's own certificate is not yet recorded in a database-backed
+      # CA (PE 2026.0+) at this point in a migration, so its serial can
+      # coincidentally match one of the purged nodes' serials -- revoking
+      # the new primary's own certificate too, and breaking its own
+      # PuppetDB/orchestrator connections mid-loop (surfaces as "Failed to
+      # initialize SSL: Certificate ... is revoked" on the *next* purge
+      # call, not necessarily this one). Detect that and regenerate the
+      # new primary's own cert via the same disk-level stop/rm/generate/
+      # start sequence used in peadm::subplans::modify_certificate (that
+      # path never touches the broken HTTPS/PuppetDB connections), then
+      # retry this purge call once.
+# lint:ignore:strict_indent
+      $purge_result = run_command("/opt/puppetlabs/bin/puppet node purge ${node}", $new_primary_host, _catch_errors => true).first
+      unless $purge_result.ok {
+        # Match both observed phrasings: sign_csr's SSL error says
+        # "certificate revoked" (lowercase, adjacent); PuppetDB's
+        # deactivate_node error says "Certificate '...' is revoked"
+        # (capitalized, not adjacent).
+        unless $purge_result[merged_output] =~ /[Cc]ertificate.*revoked/ {
+          fail_plan($purge_result[merged_output])
+        }
+        out::message("${new_primary_certname}'s own certificate appears revoked; regenerating it before retrying the purge")
+        $new_primary_certdata = run_task('peadm::cert_data', $new_primary_target).first.value
+        $new_primary_alt_names = [$new_primary_certname] + ($new_primary_certdata['dns-alt-names'] - $new_primary_certname)
+        run_task('service', $new_primary_target, { action => 'stop', name => 'pe-puppetserver' })
+        run_command(@("HEREDOC"/L), $new_primary_target)
+                rm -f \
+            /etc/puppetlabs/puppet/ssl/certs/${new_primary_certname}.pem \
+            /etc/puppetlabs/puppet/ssl/private_keys/${new_primary_certname}.pem \
+            /etc/puppetlabs/puppet/ssl/public_keys/${new_primary_certname}.pem \
+            /etc/puppetlabs/puppet/ssl/certificate_requests/${new_primary_certname}.pem \
+            /etc/puppetlabs/puppet/ssl/ca/signed/${new_primary_certname}.pem \
+          |-HEREDOC
+        run_command(@("HEREDOC"/L), $new_primary_target)
+            /opt/puppetlabs/bin/puppetserver ca generate \
+            --certname ${new_primary_certname} \
+            --subject-alt-names ${new_primary_alt_names.join(',')} \
+            --ca-client
+          |-HEREDOC
+        run_task('service', $new_primary_target, { action => 'start', name => 'pe-puppetserver' })
+        peadm::wait_until_service_ready('all', $new_primary_target)
+        run_command("/opt/puppetlabs/bin/puppet node purge ${node}", $new_primary_host)
+      }
+# lint:endignore
     }
   } else {
     out::message('No nodes to purge from old configuration')
   }
+
+  # peadm::restore extracts $remote_backup_path into a sibling directory and
+  # cleans that extracted directory up itself once restore completes, but it
+  # never removes the uploaded archive this plan created. Left behind, that
+  # full-cluster backup (databases, CA, code, config) sits in /tmp on the new
+  # primary for the rest of the migration, consuming disk space that the
+  # subsequent peadm::upgrade call (when upgrade_version is set) also needs
+  # for the new PE version's tarball -- a likely contributor to "No space
+  # left on device" failures seen on migrate-then-upgrade combinations
+  # (PE-47829).
+  run_command("rm -f ${remote_backup_path}", $new_primary_host)
 
   # provision a postgresql host if one is provided
   if $primary_postgresql_host {
