@@ -99,6 +99,17 @@ plan peadm::migrate (
       console_password => $old_primary_password,
   })
 
+  # peadm::restore extracts $remote_backup_path into a sibling directory and
+  # cleans that extracted directory up itself once restore completes, but it
+  # never removes the uploaded archive this plan created. Left behind, that
+  # full-cluster backup (databases, CA, code, config) sits in /tmp on the new
+  # primary for the rest of the migration, consuming disk space that the
+  # subsequent peadm::upgrade call (when upgrade_version is set) also needs
+  # for the new PE version's tarball -- a likely contributor to "No space
+  # left on device" failures seen on migrate-then-upgrade combinations
+  # (PE-47829).
+  run_command("rm -f ${remote_backup_path}", $new_primary_host)
+
   $node_types = {
     'primary_host'             => $old_pe_conf['params']['primary_host'],
     'replica_host'             => $old_pe_conf['params']['replica_host'],
