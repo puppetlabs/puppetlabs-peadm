@@ -120,10 +120,13 @@ plan peadm::add_replica(
   # Provision the new system as a replica. The installer's orchestrated job
   # occasionally fails with a transient "ConnectionClosedException" from the
   # orchestration service while it runs Puppet on the primary -- the primary
-  # appears to bounce its own orchestration service mid-job. Retry a bounded
-  # number of times to ride out that race; any other failure (e.g. a bad
-  # token, or a genuine provisioning error) is not retried and surfaces on
-  # the first attempt.
+  # appears to bounce its own orchestration service mid-job. A second
+  # variant of the same race surfaces as "Connection refused"/"Failed to
+  # open TCP connection" on port 8143 -- the orchestration service hasn't
+  # started listening yet when provision_replica's own internal CLI tries
+  # to reach it. Retry a bounded number of times to ride out either race;
+  # any other failure (e.g. a bad token, or a genuine provisioning error)
+  # is not retried and surfaces on the first attempt.
   #
   # Provisioning and enabling are split into two separate task calls (rather
   # than the atomic provision --enable used before) because PE core's
@@ -142,7 +145,7 @@ plan peadm::add_replica(
       true    => $memo.error_set.first.value['_output'],
       default => undef,
     }
-    $prior_is_transient = ($prior_output =~ String[1]) and ($prior_output =~ /ConnectionClosedException|puppetlabs\.orchestrator\/unknown-error/)
+    $prior_is_transient = ($prior_output =~ String[1]) and ($prior_output =~ /ConnectionClosedException|puppetlabs\.orchestrator\/unknown-error|Connection refused|Failed to open TCP connection/)
 
     if $memo =~ NotUndef and ($memo.ok or !$prior_is_transient) {
       $memo
@@ -205,7 +208,7 @@ plan peadm::add_replica(
       true    => $memo.error_set.first.value['_output'],
       default => undef,
     }
-    $prior_is_transient = ($prior_output =~ String[1]) and ($prior_output =~ /ConnectionClosedException|puppetlabs\.orchestrator\/unknown-error/)
+    $prior_is_transient = ($prior_output =~ String[1]) and ($prior_output =~ /ConnectionClosedException|puppetlabs\.orchestrator\/unknown-error|Connection refused|Failed to open TCP connection/)
 
     if $memo =~ NotUndef and ($memo.ok or !$prior_is_transient) {
       $memo
