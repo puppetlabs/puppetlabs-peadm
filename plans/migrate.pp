@@ -146,7 +146,13 @@ plan peadm::migrate (
 # lint:ignore:strict_indent
       $purge_result = run_command("/opt/puppetlabs/bin/puppet node purge ${node}", $new_primary_host, _catch_errors => true).first
       unless $purge_result.ok {
-        unless $purge_result[merged_output] =~ /certificate revoked/ {
+        # Match both observed phrasings: sign_csr's SSL error says
+        # "certificate revoked" (lowercase, adjacent); PuppetDB's
+        # deactivate_node error says "Certificate '...' is revoked"
+        # (capitalized, not adjacent) -- confirmed live, run 40500183161,
+        # job 122175634643: this exact combo hit the capitalized variant
+        # and the narrower regex missed it, so the fix never triggered.
+        unless $purge_result[merged_output] =~ /[Cc]ertificate.*revoked/ {
           fail_plan($purge_result[merged_output])
         }
         out::message("${new_primary_certname}'s own certificate appears revoked; regenerating it before retrying the purge")
