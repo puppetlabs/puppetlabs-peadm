@@ -136,6 +136,14 @@ plan peadm::subplans::modify_certificate (
           --ca-client
         |-HEREDOC
       run_task('service', $primary_target, { action => 'start', name => 'pe-puppetserver' })
+
+      # Without this, downstream steps (e.g. add_replica's provision_replica
+      # call) can run before pe-puppetserver and its dependent services have
+      # fully come back up, failing with "... Service is not running" for
+      # every PE service at once. 'pe-master' alone only confirms
+      # puppetserver itself -- 'all' (status/v1/simple) covers RBAC,
+      # PuppetDB, orchestrator, classifier, etc. too.
+      peadm::wait_until_service_ready('all', $primary_target)
       run_task('peadm::sign_csr', $primary_target, certnames => [$certname])
     }
 # lint:endignore
