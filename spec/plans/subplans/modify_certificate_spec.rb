@@ -82,7 +82,11 @@ describe 'peadm::subplans::modify_certificate' do
           Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
         end
         allow_any_command
-        expect_task('peadm::wait_until_service_ready')
+        wait_calls = []
+        expect_task('peadm::wait_until_service_ready').be_called_times(4).return do |targets:, params:, **_kwargs|
+          wait_calls << [params['service'], params['port']]
+          Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+        end
         expect_command('/opt/puppetlabs/bin/puppet ssl download_cert --certname foo || /opt/puppetlabs/bin/puppet certificate find --ca-location remote foo')
         allow_command('/opt/puppetlabs/bin/puppet facts upload')
         expect_command('systemctl start puppet.service')
@@ -97,6 +101,13 @@ describe 'peadm::subplans::modify_certificate' do
           ['pe-puppetdb', 'restart'],
         ]
         expect(service_calls).to eq(expected_service_calls)
+        expected_wait_calls = [
+          ['all', '8140'],
+          ['orchestrator-service', '8143'],
+          ['all', '4433'],
+          ['all', '8081'],
+        ]
+        expect(wait_calls).to eq(expected_wait_calls)
       end
     end
 
