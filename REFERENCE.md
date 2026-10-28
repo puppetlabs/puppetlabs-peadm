@@ -106,7 +106,7 @@ before they get overwritten by a classification reassertion
 * [`transform_classification_groups`](#transform_classification_groups): Transform the user groups from a source backup to a list of groups on the target server
 * [`update_pe_master_rules`](#update_pe_master_rules): Updates the PE Master group rules to support 'pe_compiler_legacy' as a pp_auth_role
 * [`validate_rbac_token`](#validate_rbac_token): Check an RBAC token stored in a file is valid
-* [`wait_until_service_ready`](#wait_until_service_ready): Return when the orchestrator service is healthy, or timeout after 15 seconds
+* [`wait_until_service_ready`](#wait_until_service_ready): Return when the specified service is healthy, or timeout after 60 seconds
 
 ### Plans
 
@@ -1879,7 +1879,7 @@ The path to the token file to use
 
 ### <a name="wait_until_service_ready"></a>`wait_until_service_ready`
 
-Return when the orchestrator service is healthy, or timeout after 15 seconds
+Return when the specified service is healthy, or timeout after 60 seconds
 
 **Supports noop?** false
 
@@ -1889,13 +1889,13 @@ Return when the orchestrator service is healthy, or timeout after 15 seconds
 
 Data type: `Enum[all, ca, pe-master, orchestrator-service]`
 
-What service to check. For example: all, pe-master, orchestrator-service
+What service to check. For example: all, pe-master, orchestrator-service. 'all' queries the simple aggregate status of whatever process is listening on the given port -- it isn't specific to puppetserver, it just means 'everything registered on this port'.
 
 ##### `port`
 
-Data type: `Enum['8140', '8143']`
+Data type: `Enum['8140', '8143', '4433', '8081']`
 
-Which port to query the status API on
+Which port to query the status API on: 8140 puppetserver, 8143 orchestration-services, 4433 console-services, 8081 puppetdb
 
 ## Plans
 
