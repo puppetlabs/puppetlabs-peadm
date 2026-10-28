@@ -182,8 +182,17 @@ plan peadm::migrate (
         # new primary's brand-new cert because PuppetDB is still working
         # from the old, now-stale trust context. Restart it too so it picks
         # up the fresh CA state.
-        run_task('service', $new_primary_target, { action => 'stop', name => 'pe-puppetdb' })
-        run_task('service', $new_primary_target, { action => 'start', name => 'pe-puppetdb' })
+        #
+        # This is NOT the same pe-puppetdb restart added for the
+        # peadm::subplans::modify_certificate / prepare_agent "Service is
+        # not running" gap -- that's a different call site (add_replica's
+        # provision_replica, hit via a different cert-regen code path) with
+        # a different symptom (a generic process-health check, not a
+        # TLS/CRL rejection). Both happen to restart pe-puppetdb because
+        # both stem from the same root cause (co-located PE services not
+        # picking up a cert change without an explicit bounce), but they're
+        # independent fixes at independent call sites, not duplicated code.
+        run_task('service', $new_primary_target, { action => 'restart', name => 'pe-puppetdb' })
         peadm::wait_until_service_ready('all', $new_primary_target)
 
         # DIAGNOSTIC ONLY (test/migrate-puppetdb-restart scratch branch) --

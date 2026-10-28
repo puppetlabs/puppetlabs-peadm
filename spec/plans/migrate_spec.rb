@@ -331,7 +331,7 @@ describe 'peadm::migrate' do
 
         expect_task('peadm::cert_data').always_return({ 'dns-alt-names' => [] })
         service_calls = []
-        expect_task('service').be_called_times(4).return do |targets:, params:, **_kwargs|
+        expect_task('service').be_called_times(3).return do |targets:, params:, **_kwargs|
           service_calls << [params['name'], params['action']]
           Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
         end
@@ -347,8 +347,7 @@ describe 'peadm::migrate' do
         expected_service_calls = [
           ['pe-puppetserver', 'stop'],
           ['pe-puppetserver', 'start'],
-          ['pe-puppetdb', 'stop'],
-          ['pe-puppetdb', 'start'],
+          ['pe-puppetdb', 'restart'],
         ]
         expect(service_calls).to eq(expected_service_calls)
       end
