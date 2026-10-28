@@ -1,13 +1,13 @@
 {
-  "description": "Return when the orchestrator service is healthy, or timeout after 15 seconds",
+  "description": "Return when the specified service is healthy, or timeout after 60 seconds",
   "parameters": {
     "service": {
       "type": "Enum[all, ca, pe-master, orchestrator-service]",
-      "description": "What service to check. For example: all, pe-master, orchestrator-service"
+      "description": "What service to check. For example: all, pe-master, orchestrator-service. 'all' queries the simple aggregate status of whatever process is listening on the given port -- it isn't specific to puppetserver, it just means 'everything registered on this port'."
     },
     "port": {
-      "type": "Enum['8140', '8143']",
-      "description": "Which port to query the status API on"
+      "type": "Enum['8140', '8143', '4433', '8081']",
+      "description": "Which port to query the status API on: 8140 puppetserver, 8143 orchestration-services, 4433 console-services, 8081 puppetdb"
     }
   },
   "implementations": [

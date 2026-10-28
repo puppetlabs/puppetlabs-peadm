@@ -159,12 +159,18 @@ plan peadm::subplans::modify_certificate (
       run_task('service', $primary_target, { action => 'restart', name => 'pe-puppetdb' })
 
       # Without this, downstream steps (e.g. add_replica's provision_replica
-      # call) can run before pe-puppetserver and its dependent services have
-      # fully come back up, failing with "... Service is not running" for
-      # every PE service at once. 'pe-master' alone only confirms
-      # puppetserver itself -- 'all' (status/v1/simple) covers RBAC,
-      # PuppetDB, orchestrator, classifier, etc. too.
+      # call) can run before pe-puppetserver has fully come back up, failing
+      # with "... Service is not running". NOTE: despite the name, 'all'
+      # here only confirms puppetserver itself (port 8140) -- confirmed via
+      # live testing that "Puppet Server" never appeared in a
+      # provision_replica "not running" list even when console-services,
+      # orchestration-services, and puppetdb all genuinely were down. Each
+      # of those is a separate JVM process with its own status endpoint, so
+      # each needs its own explicit wait below.
       peadm::wait_until_service_ready('all', $primary_target)
+      peadm::wait_until_service_ready('orchestrator-service', $primary_target)
+      peadm::wait_until_service_ready('console-services', $primary_target)
+      peadm::wait_until_service_ready('puppetdb', $primary_target)
       run_task('peadm::sign_csr', $primary_target, certnames => [$certname])
     }
 # lint:endignore
