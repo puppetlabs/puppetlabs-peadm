@@ -40,6 +40,7 @@ describe 'peadm::subplans::modify_certificate' do
       end
 
       it 'regenerates the primary cert, restarts the dependent services, and retries once when sign_csr hits "certificate revoked"' do
+        allow_any_out_message
         allow_task('peadm::cert_data').return_for_targets(
           'primary' => { 'certificate-exists' => true,
                          'certname'           => 'primary',
