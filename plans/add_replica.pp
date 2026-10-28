@@ -145,7 +145,16 @@ plan peadm::add_replica(
       true    => $memo.error_set.first.value['_output'],
       default => undef,
     }
-    $prior_is_transient = ($prior_output =~ String[1]) and ($prior_output =~ /ConnectionClosedException|puppetlabs\.orchestrator\/unknown-error|Connection refused|Failed to open TCP connection/)
+    # "Service is not running" (for RBAC, Classifier, Orchestrator, PuppetDB,
+    # PCP Broker, etc.) shows up here when the primary's own cert was just
+    # regenerated (see peadm::subplans::modify_certificate's reactive
+    # cert-reissue): only pe-puppetserver gets restarted as part of that
+    # regen, so the other co-located services can still be holding
+    # connections/trust state built against the old cert for a few more
+    # seconds even though peadm::wait_until_service_ready('all', ...)
+    # already reported puppetserver itself as ready. Treat it as transient
+    # and retry, the same as the orchestrator connection races below.
+    $prior_is_transient = ($prior_output =~ String[1]) and ($prior_output =~ /ConnectionClosedException|puppetlabs\.orchestrator\/unknown-error|Connection refused|Failed to open TCP connection|is not running/)
 
     if $memo =~ NotUndef and ($memo.ok or !$prior_is_transient) {
       $memo
