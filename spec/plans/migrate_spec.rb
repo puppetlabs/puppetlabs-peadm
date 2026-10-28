@@ -287,6 +287,71 @@ describe 'peadm::migrate' do
         expect(run_plan('peadm::migrate', base_params)).to be_ok
       end
     end
+
+    # The new primary's own cert can be collaterally revoked by purging an
+    # unrelated node (serial collision). Confirms the regen sequence
+    # restarts BOTH pe-puppetserver and pe-puppetdb before retrying --
+    # PuppetDB's own deactivate_node call (used by `puppet node purge`) can
+    # still reject the new primary's freshly-regenerated cert as "revoked"
+    # if only puppetserver is restarted, because PuppetDB's JVM doesn't
+    # reload its SSL/trust context on its own.
+    context 'when purging a node revokes the new primary\'s own certificate' do
+      let(:old_pe_conf_params) do
+        {
+          'primary_host' => old_primary_host,
+          'replica_host' => nil,
+          'primary_postgresql_host' => nil,
+          'replica_postgresql_host' => nil,
+          'compilers' => nil,
+          'legacy_compilers' => nil,
+        }
+      end
+
+      it 'regenerates the cert, restarts pe-puppetdb alongside pe-puppetserver, and retries the purge once' do
+        stub_full_flow_without_commands!
+        expect_out_message.with_params('Purging nodes from old configuration individually')
+
+        purge_attempts = 0
+        expect_command("/opt/puppetlabs/bin/puppet node purge #{old_primary_host}").be_called_times(2).return do |targets:, **_kwargs|
+          purge_attempts += 1
+          results = targets.map do |target|
+            if purge_attempts == 1
+              Bolt::Result.new(target,
+                                value: {
+                                  '_error' => { 'msg' => 'The task failed with exit code 1', 'kind' => 'bolt/error' },
+                                  'merged_output' => "Error: Failed to execute '/pdb/cmd/v1...': certificate " \
+                                                      "verify failed [certificate revoked for CN=#{new_primary_host}]",
+                                })
+            else
+              Bolt::Result.new(target, value: {})
+            end
+          end
+          Bolt::ResultSet.new(results)
+        end
+
+        expect_task('peadm::cert_data').always_return({ 'dns-alt-names' => [] })
+        service_calls = []
+        expect_task('service').be_called_times(4).return do |targets:, params:, **_kwargs|
+          service_calls << [params['name'], params['action']]
+          Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+        end
+        # The exact rm -f / puppetserver ca generate heredoc text isn't this
+        # test's concern (covered by the other regen-sequence tests already
+        # in this file for modify_certificate/prepare_agent) -- only the
+        # service restart ordering is.
+        allow_any_command
+        expect_task('peadm::wait_until_service_ready')
+
+        expect(run_plan('peadm::migrate', base_params)).to be_ok
+        expect(purge_attempts).to eq(2)
+        expect(service_calls).to eq([
+                                       ['pe-puppetserver', 'stop'],
+                                       ['pe-puppetserver', 'start'],
+                                       ['pe-puppetdb', 'stop'],
+                                       ['pe-puppetdb', 'start'],
+                                     ])
+      end
+    end
   end
 
   # --------------------------------------------------------------------

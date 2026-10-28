@@ -172,6 +172,18 @@ plan peadm::migrate (
             --ca-client
           |-HEREDOC
         run_task('service', $new_primary_target, { action => 'start', name => 'pe-puppetserver' })
+
+        # PuppetDB loads its SSL/trust context (including CRL state) once at
+        # JVM startup and doesn't reload it just because puppetserver issued
+        # a new cert elsewhere -- even after waiting for puppetserver to
+        # report ready, the retried purge below can still fail with
+        # "certificate verify failed [certificate revoked for CN=...]" from
+        # PuppetDB's own deactivate_node endpoint (port 8081), rejecting the
+        # new primary's brand-new cert because PuppetDB is still working
+        # from the old, now-stale trust context. Restart it too so it picks
+        # up the fresh CA state.
+        run_task('service', $new_primary_target, { action => 'stop', name => 'pe-puppetdb' })
+        run_task('service', $new_primary_target, { action => 'start', name => 'pe-puppetdb' })
         peadm::wait_until_service_ready('all', $new_primary_target)
         run_command("/opt/puppetlabs/bin/puppet node purge ${node}", $new_primary_host)
       }
