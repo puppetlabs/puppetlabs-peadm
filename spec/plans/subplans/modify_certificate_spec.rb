@@ -77,7 +77,7 @@ describe 'peadm::subplans::modify_certificate' do
         end
 
         service_calls = []
-        expect_task('service').be_called_times(8).return do |targets:, params:, **_kwargs|
+        expect_task('service').be_called_times(5).return do |targets:, params:, **_kwargs|
           service_calls << [params['name'], params['action']]
           Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
         end
@@ -92,12 +92,9 @@ describe 'peadm::subplans::modify_certificate' do
         expected_service_calls = [
           ['pe-puppetserver', 'stop'],
           ['pe-puppetserver', 'start'],
-          ['pe-console-services', 'stop'],
-          ['pe-orchestration-services', 'stop'],
-          ['pe-puppetdb', 'stop'],
-          ['pe-console-services', 'start'],
-          ['pe-orchestration-services', 'start'],
-          ['pe-puppetdb', 'start'],
+          ['pe-console-services', 'restart'],
+          ['pe-orchestration-services', 'restart'],
+          ['pe-puppetdb', 'restart'],
         ]
         expect(service_calls).to eq(expected_service_calls)
       end
