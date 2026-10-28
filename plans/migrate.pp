@@ -185,6 +185,35 @@ plan peadm::migrate (
         run_task('service', $new_primary_target, { action => 'stop', name => 'pe-puppetdb' })
         run_task('service', $new_primary_target, { action => 'start', name => 'pe-puppetdb' })
         peadm::wait_until_service_ready('all', $new_primary_target)
+
+        # DIAGNOSTIC ONLY (test/migrate-puppetdb-restart scratch branch) --
+        # restarting pe-puppetdb alongside pe-puppetserver did NOT resolve
+        # this failure in prior testing (job 122781321036): the identical
+        # "Certificate 'CN=...' is revoked" error recurred even after both
+        # services confirmed restarted. That disproves the "PuppetDB has a
+        # stale in-process trust context" theory. Before guessing a second
+        # fix, capture hard evidence on what's actually still wrong:
+        # - the regenerated cert's actual serial (does it genuinely differ
+        #   from whatever serial got revoked, or did the regen somehow
+        #   produce a colliding/identical serial?)
+        # - whether that serial appears in the primary's own local CRL copy
+        #   (crl.pem) right now, which is what a client-side Puppet SSL
+        #   self-check (the "Run `puppet agent -t`" phrasing in the error)
+        #   would consult.
+# lint:ignore:strict_indent
+        $diag_serial = run_command(
+          "openssl x509 -in /etc/puppetlabs/puppet/ssl/certs/${new_primary_certname}.pem -noout -serial",
+          $new_primary_target, _catch_errors => true
+        ).first
+        out::message("DIAGNOSTIC: regenerated cert serial for ${new_primary_certname}: ${diag_serial[merged_output]}")
+
+        $diag_crl = run_command(
+          'openssl crl -in /etc/puppetlabs/puppet/ssl/crl.pem -noout -text 2>&1 | grep -i "serial number" -A1',
+          $new_primary_target, _catch_errors => true
+        ).first
+        out::message("DIAGNOSTIC: local crl.pem revoked serials:\n${diag_crl[merged_output]}")
+# lint:endignore
+
         run_command("/opt/puppetlabs/bin/puppet node purge ${node}", $new_primary_host)
       }
 # lint:endignore
