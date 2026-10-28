@@ -75,7 +75,50 @@ plan peadm::subplans::prepare_agent (
   # If necessary, manually submit a CSR
   # ignoring errors to simplify logic
   unless $skip_csr {
-    run_task('peadm::submit_csr', $agent_target, { '_catch_errors' => true })
+    # submit_csr runs ON THE AGENT, connecting to the primary -- so it hits
+    # the exact same revoked-primary-cert problem as sign_csr below, just
+    # from the other end of the same broken HTTPS connection. This was
+    # previously silently swallowed by _catch_errors, so a revoked primary
+    # cert meant submit_csr quietly did nothing and the retried sign_csr
+    # below failed with "No certificate request found" -- there was nothing
+    # to sign. Detect and regenerate here too, before ever reaching sign_csr.
+# lint:ignore:strict_indent
+    $submit_result = run_task('peadm::submit_csr', $agent_target, { '_catch_errors' => true })
+    unless $submit_result.ok {
+      $submit_output = ($submit_result.error_set.first.value =~ Hash) ? {
+        true    => $submit_result.error_set.first.value['_output'],
+        default => undef,
+      }
+      if ($submit_output =~ String[1]) and ($submit_output =~ /[Cc]ertificate.*revoked/) {
+        $submit_primary_certname = $primary_target.peadm::certname()
+        out::message("${submit_primary_certname}'s own certificate appears revoked; regenerating it before retrying submit_csr")
+        $submit_primary_certdata = run_task('peadm::cert_data', $primary_target).first.value
+        $submit_primary_alt_names = [$submit_primary_certname] + ($submit_primary_certdata['dns-alt-names'] - $submit_primary_certname)
+        run_task('service', $primary_target, { action => 'stop', name => 'pe-puppetserver' })
+        run_command(@("HEREDOC"/L), $primary_target)
+                rm -f \
+            /etc/puppetlabs/puppet/ssl/certs/${submit_primary_certname}.pem \
+            /etc/puppetlabs/puppet/ssl/private_keys/${submit_primary_certname}.pem \
+            /etc/puppetlabs/puppet/ssl/public_keys/${submit_primary_certname}.pem \
+            /etc/puppetlabs/puppet/ssl/certificate_requests/${submit_primary_certname}.pem \
+            /etc/puppetlabs/puppet/ssl/ca/signed/${submit_primary_certname}.pem \
+          |-HEREDOC
+        run_command(@("HEREDOC"/L), $primary_target)
+            /opt/puppetlabs/bin/puppetserver ca generate \
+            --certname ${submit_primary_certname} \
+            --subject-alt-names ${submit_primary_alt_names.join(',')} \
+            --ca-client
+          |-HEREDOC
+        run_task('service', $primary_target, { action => 'start', name => 'pe-puppetserver' })
+        peadm::wait_until_service_ready('all', $primary_target)
+        run_task('peadm::submit_csr', $agent_target, { '_catch_errors' => true })
+      }
+      # A non-revocation submit_csr failure is deliberately NOT fail_plan'd
+      # here, same as before this fix -- preserves the pre-existing
+      # "ignoring errors to simplify logic" behavior for whatever other
+      # cases this was silently tolerating.
+    }
+# lint:endignore
 
     # On primary, if necessary, sign the certificate request. peadm::migrate's
     # purge can revoke the primary's own certificate as a side effect (its
