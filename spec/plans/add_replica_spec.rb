@@ -177,7 +177,7 @@ describe 'peadm::add_replica' do
       expect_plan('peadm::util::copy_file').be_called_times(5)
 
       attempts = 0
-      expect_task('peadm::provision_replica').be_called_times(3).return do |targets:, **_kwargs|
+      expect_task('peadm::provision_replica').be_called_times(6).return do |targets:, **_kwargs|
         attempts += 1
         results = targets.map do |target|
           Bolt::Result.new(target,
@@ -194,7 +194,7 @@ describe 'peadm::add_replica' do
       expect_out_verbose.with_params('Updating classification to...')
       result = run_plan('peadm::add_replica', params)
       expect(result).not_to be_ok
-      expect(attempts).to eq(3)
+      expect(attempts).to eq(6)
       expect(result.value.msg).to match(%r{ConnectionClosedException})
       expect(result.value.msg).not_to match(%r{RBAC token})
     end
