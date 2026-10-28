@@ -42,17 +42,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TEMPORARY, test-branch-only: narrowed to the 2 combos that have
-        # reproduced the "provision_replica fails ~25s after a successful
-        # cert regen" race this fix targets. Restore the full matrix before
-        # this could ever merge.
+        # TEMPORARY, test-branch-only: narrowed to the 3 combos confirmed
+        # hitting the disk-space failure (PE-47829), to directly measure the
+        # CI backend's default disk size and real usage via df -h. Restore
+        # the full matrix before this could ever merge.
         include:
-          - architecture: standard-with-dr
+          - architecture: standard
             version: 2025.12.0
             image: almalinux-cloud/almalinux-8
-          - architecture: large-with-dr
+            new_pe_version: 2026.0.0
+          - architecture: large
             version: 2025.12.0
             image: almalinux-cloud/almalinux-8
+            new_pe_version: 2026.0.0
+          - architecture: extra-large
+            version: 2025.12.0
+            image: almalinux-cloud/almalinux-8
+            new_pe_version: 2026.0.0
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
@@ -101,6 +107,12 @@ jobs:
       - name: Output contents of litmus_inventory.yaml
         run: |
           cat spec/fixtures/litmus_inventory.yaml
+      - name: DIAGNOSTIC - disk size/usage right after provisioning (baseline)
+        run: |
+          bundle exec bolt command run 'df -h / ; lsblk ; echo "---"; df -BG / | tail -1' \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --targets all \
+            --no-host-key-check || true
       - name: Install PE on test cluster
         timeout-minutes: 120
         run: |
@@ -111,6 +123,12 @@ jobs:
             version=${{ matrix.version }} \
             console_password=${{ secrets.CONSOLE_PASSWORD }} \
             code_manager_auto_configure=true
+      - name: DIAGNOSTIC - disk usage after PE install (before upgrade)
+        run: |
+          bundle exec bolt command run 'df -h / ; echo "---"; du -sh /opt/puppetlabs 2>/dev/null; echo "---"; du -sh /tmp 2>/dev/null' \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --targets all \
+            --no-host-key-check || true
       - name: Clean cache on PE nodes before upgrade
         timeout-minutes: 15
         run: |
@@ -120,6 +138,12 @@ jobs:
              rm -rf /opt/puppetlabs/server/data/{packages/public,staging}/* || true' \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --targets all
+      - name: DIAGNOSTIC - disk usage after cache clean (right before migrate/upgrade)
+        run: |
+          bundle exec bolt command run 'df -h / ; echo "---"; du -sh /tmp 2>/dev/null' \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --targets all \
+            --no-host-key-check || true
       - name: Perform migration
         run: |
           echo ::group::prepare
@@ -139,6 +163,14 @@ jobs:
             new_replica_postgresql_host=$(yq -r '.groups[].targets[] | select(.vars.role == "new-replica-pdb-postgresql") | .name // ""' spec/fixtures/litmus_inventory.yaml) \
             upgrade_version=${{ matrix.new_pe_version }} \
           --no-host-key-check
+      - name: DIAGNOSTIC - disk usage at point of failure/completion
+        if: ${{ always() }}
+        continue-on-error: true
+        run: |
+          bundle exec bolt command run 'df -h / ; echo "---"; du -sh /tmp/* 2>/dev/null; echo "---"; ls -la /tmp/*.tar.gz /tmp/puppet-enterprise-* 2>/dev/null' \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --targets all \
+            --no-host-key-check || true
       - name: Tear down PE ${{ matrix.architecture }} test cluster
         if: ${{ always() }}
         continue-on-error: true
