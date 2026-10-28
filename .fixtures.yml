@@ -14,7 +14,7 @@ fixtures:
     # Revert to the released tag once the fix is confirmed and #303 is merged/tagged.
     provision:
       repo: https://github.com/puppetlabs/provision.git
-      ref: per-job-disk-size
+      branch: per-job-disk-size
     stdlib: https://github.com/puppetlabs/puppetlabs-stdlib.git
     apply_helpers: https://github.com/puppetlabs/puppetlabs-apply_helpers
     bolt_shim: https://github.com/puppetlabs/puppetlabs-bolt_shim
