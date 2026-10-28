@@ -137,6 +137,26 @@ plan peadm::subplans::modify_certificate (
         |-HEREDOC
       run_task('service', $primary_target, { action => 'start', name => 'pe-puppetserver' })
 
+      # pe-puppetserver restarting is not enough on its own: console-services
+      # (RBAC, Classifier, Activity Service), orchestration-services
+      # (Orchestrator, PCP Broker, Host Action Collector, Agentless Catalog
+      # Executor, Bolt Service), and puppetdb are separate JVM processes that
+      # were holding connections/trust state built against the primary's old
+      # cert. Confirmed via live testing: even after this restart plus
+      # wait_until_service_ready('all', ...) reporting success, add_replica's
+      # provision_replica call still hit "... Service is not running" for
+      # every one of these processes, and retrying for several minutes
+      # (6 attempts, 20s apart) did not resolve it on its own -- the
+      # processes needed restarting, not more time. Restart them explicitly
+      # here, at the point where the cert that broke their trust state gets
+      # fixed, rather than trying to compensate for it downstream.
+      run_task('service', $primary_target, { action => 'stop', name => 'pe-console-services' })
+      run_task('service', $primary_target, { action => 'stop', name => 'pe-orchestration-services' })
+      run_task('service', $primary_target, { action => 'stop', name => 'pe-puppetdb' })
+      run_task('service', $primary_target, { action => 'start', name => 'pe-console-services' })
+      run_task('service', $primary_target, { action => 'start', name => 'pe-orchestration-services' })
+      run_task('service', $primary_target, { action => 'start', name => 'pe-puppetdb' })
+
       # Without this, downstream steps (e.g. add_replica's provision_replica
       # call) can run before pe-puppetserver and its dependent services have
       # fully come back up, failing with "... Service is not running" for
