@@ -344,12 +344,13 @@ describe 'peadm::migrate' do
 
         expect(run_plan('peadm::migrate', base_params)).to be_ok
         expect(purge_attempts).to eq(2)
-        expect(service_calls).to eq([
-                                       ['pe-puppetserver', 'stop'],
-                                       ['pe-puppetserver', 'start'],
-                                       ['pe-puppetdb', 'stop'],
-                                       ['pe-puppetdb', 'start'],
-                                     ])
+        expected_service_calls = [
+          ['pe-puppetserver', 'stop'],
+          ['pe-puppetserver', 'start'],
+          ['pe-puppetdb', 'stop'],
+          ['pe-puppetdb', 'start'],
+        ]
+        expect(service_calls).to eq(expected_service_calls)
       end
     end
   end
