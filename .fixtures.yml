@@ -9,9 +9,12 @@ fixtures:
   repositories:
     facts: https://github.com/puppetlabs/puppetlabs-facts.git
     puppet_agent: https://github.com/puppetlabs/puppetlabs-puppet_agent.git
+    # TEMPORARY, validation only (CAT-2538): pinned to the unreleased per-job-disk-size
+    # branch (puppetlabs/provision#303) to validate disk_size_gb before it's tagged.
+    # Revert to the released tag once the fix is confirmed and #303 is merged/tagged.
     provision:
       repo: https://github.com/puppetlabs/provision.git
-      ref: v3.1.0
+      ref: per-job-disk-size
     stdlib: https://github.com/puppetlabs/puppetlabs-stdlib.git
     apply_helpers: https://github.com/puppetlabs/puppetlabs-apply_helpers
     bolt_shim: https://github.com/puppetlabs/puppetlabs-bolt_shim
