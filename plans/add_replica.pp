@@ -139,7 +139,14 @@ plan peadm::add_replica(
   # the call lets peadm poll for readiness itself via
   # peadm::wait_until_service_ready, which allows up to 60s, before telling
   # PE core to enable the replica.
-  $provision_replica_max_attempts = 3
+  # Confirmed via live testing (jobs on test/add-replica-retry-not-running):
+  # the "is not running" race below genuinely retries, but 3 attempts at 15s
+  # apart (under a minute total) wasn't enough -- it exhausted every attempt
+  # and still failed in 2/2 test runs. Widened to 6 attempts at 20s apart
+  # (~2 minutes of sleep alone) to give the other co-located services (which
+  # can take 30+ seconds each to restart, per observed pe-puppetdb/
+  # pe-puppetserver startup times elsewhere) more realistic time to recover.
+  $provision_replica_max_attempts = 6
   $provision_result = range(1, $provision_replica_max_attempts).reduce(undef) |$memo, $attempt| {
     $prior_output = ($memo =~ NotUndef and !$memo.ok and $memo.error_set.first.value =~ Hash) ? {
       true    => $memo.error_set.first.value['_output'],
@@ -160,8 +167,8 @@ plan peadm::add_replica(
       $memo
     } else {
       if $attempt > 1 {
-        out::message("provision_replica hit a transient orchestrator error; retrying (attempt ${attempt}/${provision_replica_max_attempts}) after 15s...")
-        ctrl::sleep(15)
+        out::message("provision_replica hit a transient orchestrator error; retrying (attempt ${attempt}/${provision_replica_max_attempts}) after 20s...")
+        ctrl::sleep(20)
       }
       run_task('peadm::provision_replica', $primary_target,
         replica       => $replica_target.peadm::certname(),
