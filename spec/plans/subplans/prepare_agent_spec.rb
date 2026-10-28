@@ -50,17 +50,19 @@ describe 'peadm::subplans::prepare_agent' do
       sign_attempts = 0
       expect_task('peadm::sign_csr').be_called_times(2).return do |targets:, **_kwargs|
         sign_attempts += 1
-        if sign_attempts == 1
-          Bolt::Result.new(targets.first,
-                            value: {
-                              '_error' => { 'msg' => 'The task failed with exit code 1', 'kind' => 'bolt/error' },
-                              '_output' => 'Fatal error when running action \'sign\' Error: Failed connecting to ' \
-                                           'https://primary:8140/status/v1/services Root cause: SSL_connect ' \
-                                           'returned=1 errno=0 state=error: certificate verify failed (certificate revoked)',
-                            })
-        else
-          Bolt::Result.new(targets.first, value: {})
-        end
+        result = if sign_attempts == 1
+                   Bolt::Result.new(targets.first,
+                                     value: {
+                                       '_error' => { 'msg' => 'The task failed with exit code 1', 'kind' => 'bolt/error' },
+                                       '_output' => 'Fatal error when running action \'sign\' Error: Failed ' \
+                                                    'connecting to https://primary:8140/status/v1/services Root ' \
+                                                    'cause: SSL_connect returned=1 errno=0 state=error: ' \
+                                                    'certificate verify failed (certificate revoked)',
+                                     })
+                 else
+                   Bolt::Result.new(targets.first, value: {})
+                 end
+        Bolt::ResultSet.new([result])
       end
 
       expect_task('service').be_called_times(2)
@@ -77,12 +79,12 @@ describe 'peadm::subplans::prepare_agent' do
       stub_common!
       expect_task('peadm::cert_data').always_return(certdata).be_called_times(1)
       expect_task('peadm::sign_csr').be_called_times(1).return do |targets:, **_kwargs|
-        Bolt::Result.new(targets.first,
-                          value: {
-                            '_error' => { 'msg' => 'The provided token has expired.',
-                                          'kind' => 'puppetlabs.rbac/token-expired' },
-                            '_output' => 'The provided token has expired.',
-                          })
+        Bolt::ResultSet.new([Bolt::Result.new(targets.first,
+                                               value: {
+                                                 '_error' => { 'msg' => 'The provided token has expired.',
+                                                               'kind' => 'puppetlabs.rbac/token-expired' },
+                                                 '_output' => 'The provided token has expired.',
+                                               })])
       end
 
       result = run_plan('peadm::subplans::prepare_agent', params)
