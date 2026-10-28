@@ -149,13 +149,14 @@ plan peadm::subplans::modify_certificate (
       # (6 attempts, 20s apart) did not resolve it on its own -- the
       # processes needed restarting, not more time. Restart them explicitly
       # here, at the point where the cert that broke their trust state gets
-      # fixed, rather than trying to compensate for it downstream.
-      run_task('service', $primary_target, { action => 'stop', name => 'pe-console-services' })
-      run_task('service', $primary_target, { action => 'stop', name => 'pe-orchestration-services' })
-      run_task('service', $primary_target, { action => 'stop', name => 'pe-puppetdb' })
-      run_task('service', $primary_target, { action => 'start', name => 'pe-console-services' })
-      run_task('service', $primary_target, { action => 'start', name => 'pe-orchestration-services' })
-      run_task('service', $primary_target, { action => 'start', name => 'pe-puppetdb' })
+      # fixed, rather than trying to compensate for it downstream. A single
+      # 'restart' (rather than separate stop/start calls) is enough here --
+      # unlike pe-puppetserver above, there's no file surgery that needs the
+      # service down in between, so there's no reason to pay for tearing the
+      # JVM all the way down and back up as two separate steps.
+      run_task('service', $primary_target, { action => 'restart', name => 'pe-console-services' })
+      run_task('service', $primary_target, { action => 'restart', name => 'pe-orchestration-services' })
+      run_task('service', $primary_target, { action => 'restart', name => 'pe-puppetdb' })
 
       # Without this, downstream steps (e.g. add_replica's provision_replica
       # call) can run before pe-puppetserver and its dependent services have
