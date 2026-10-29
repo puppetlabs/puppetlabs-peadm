@@ -217,6 +217,13 @@ jobs:
       - name: Output contents of litmus_inventory.yaml
         run: |
           sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml
+      - name: Wait for SSH to become available
+        timeout-minutes: 5
+        run: |
+          until bundle exec bolt command run 'true' --inventoryfile spec/fixtures/litmus_inventory.yaml --targets all --no-host-key-check; do
+            echo "SSH not ready yet, retrying in 10s..."
+            sleep 10
+          done
       - name: Inspect disk and filesystem size
         run: |
           bundle exec bolt command run '
