@@ -736,4 +736,68 @@ describe 'peadm::subplans::install' do
 
     expect(run_plan('peadm::subplans::install', params)).to be_ok
   end
+
+  # PE-47523: Bolt writes every task's arguments to bolt-debug.log and masks
+  # only the parameters a task's metadata flags "sensitive", so the calls
+  # that carry secrets must go through those parameters, which BoltSpec then
+  # sees wrapped as Sensitive. console_password stays a plain String: these
+  # examples pass one, as pecdm and peadm::migrate do.
+  describe 'secrets in task arguments and on disk (PE-47523)' do
+    let(:params) do
+      {
+        'primary_host'             => 'primary',
+        'console_password'         => 'puppetLabs123!',
+        'version'                  => '2023.8.10',
+        'r10k_remote'              => 'git@github.com:puppetlabs/nothing',
+        'r10k_private_key_content' => '-----BEGIN r10k-key-canary',
+        'license_key_content'      => 'license-canary',
+      }
+    end
+
+    it 'passes the console password to rbac_token as Sensitive' do
+      expect_task('peadm::rbac_token').with_targets('primary').return do |targets:, params:, **|
+        expect(params['password']).to be_a(Puppet::Pops::Types::PSensitiveType::Sensitive)
+        expect(params['password'].unwrap).to eq('puppetLabs123!')
+        Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+      end
+
+      expect(run_plan('peadm::subplans::install', params)).to be_ok
+    end
+
+    it 'writes pe.conf, the r10k key and the license to the primary as Sensitive content' do
+      writes = []
+      allow_task('peadm::mkdir_p_file').return do |targets:, params:, **|
+        writes << [targets.map(&:name), params]
+        Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+      end
+
+      expect(run_plan('peadm::subplans::install', params)).to be_ok
+
+      {
+        '/etc/puppetlabs/enterprise/conf.d/pe.conf'            => '"console_admin_password": "puppetLabs123!"',
+        '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa' => 'r10k-key-canary',
+        '/etc/puppetlabs/license.key'                          => 'license-canary',
+      }.each do |path, secret|
+        _names, write = writes.find { |names, task_params| names == ['primary'] && task_params['path'] == path }
+        expect(write).not_to be_nil, "no mkdir_p_file call wrote #{path} on the primary"
+        expect(write['content']).to be_a(Puppet::Pops::Types::PSensitiveType::Sensitive), "#{path} content is not Sensitive"
+        expect(write['content'].unwrap).to include(secret)
+      end
+    end
+
+    # The uploaded bootstrap pe.conf carries the console password, and
+    # nothing reads it once the installer has run.
+    it 'removes the bootstrap /tmp/pe.conf from the primary at the end' do
+      expect_command('rm -f /tmp/pe.conf').with_targets('primary')
+
+      expect(run_plan('peadm::subplans::install', params)).to be_ok
+    end
+
+    it 'removes /tmp/pe.conf from the PostgreSQL node too on extra-large installs' do
+      expect_command('rm -f /tmp/pe.conf').with_targets('primary')
+      expect_command('rm -f /tmp/pe.conf').with_targets('postgres1')
+
+      expect(run_plan('peadm::subplans::install', params.merge('primary_postgresql_host' => 'postgres1'))).to be_ok
+    end
+  end
 end

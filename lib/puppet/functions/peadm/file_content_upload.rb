@@ -17,9 +17,11 @@ Puppet::Functions.create_function(:'peadm::file_content_upload') do
     file = Tempfile.new('peadm')
     file.write(content)
     file.flush
-    result = call_function('upload_file', file.path, destination, *targets)
-    file.close
-    file.unlink
-    result
+    call_function('upload_file', file.path, destination, *targets)
+  ensure
+    # The content is usually a pe.conf with the console password in it, so
+    # don't leave it on the Bolt host when the upload fails (PE-47523).
+    file&.close
+    file&.unlink
   end
 end

@@ -39,8 +39,23 @@ verify-file() {
   fi
 }
 
+# Describe a URL by its file name and host only. Pre-signed URLs carry
+# credentials in the query string, and a URL can carry user:password@
+# (PE-47523).
+describe-url() {
+  local url="${1%%[?#]*}"
+  local host="${url#*://}"
+  host="${host%%/*}"
+  host="${host##*@}"
+  if [[ -n "$host" ]]; then
+    printf '%s from %s' "${url##*/}" "$host"
+  else
+    printf '%s' "${url##*/}"
+  fi
+}
+
 download() {
-  printf '%s\n' "Downloading: ${1}"
+  printf '%s\n' "Downloading: $(describe-url "$1")"
   tmp_file=$(mktemp)
   echo "Downloading to temporary file ${tmp_file}"
 
@@ -86,7 +101,7 @@ download-signature-verify() {
   local path="$2"
 
   if ! download "${source}.asc" "${path}.asc" ; then
-    echo "Unable to download ${source}.asc. Skipping verification."
+    echo "Unable to download the .asc signature for $(describe-url "$source"). Skipping verification."
     download-size-verify "$source" "$path"
     return "$?"
   fi

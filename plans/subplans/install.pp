@@ -639,6 +639,10 @@ plan peadm::subplans::install (
       path    => '/etc/puppetlabs/enterprise/conf.d/pe.conf',
       content => stdlib::to_json_pretty($pe_conf.parsejson() - $puppetdb_database_temp_config),
     )
+
+    # The uploaded bootstrap copy holds the console password, and nothing
+    # reads it once the installer has run (PE-47523).
+    run_command('rm -f /tmp/pe.conf', $target)
   }
 
   return("Installation of Puppet Enterprise ${arch['architecture']} succeeded.")

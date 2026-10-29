@@ -76,15 +76,47 @@ jobs:
           echo ::group::info:inventory
             sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
           echo ::endgroup::
+      # PE-47523: a unique console password per run, so the step after the
+      # install can search Bolt's output and debug log for it.
+      - name: Generate a canary console password
+        run: |
+          canary="Canary-$(openssl rand -hex 12)-Pw1!"
+          echo "::add-mask::${canary}"
+          echo "CONSOLE_PASSWORD_CANARY=${canary}" >> "$GITHUB_ENV"
       - name: Install PE on test cluster
         timeout-minutes: 120
         run: |
+          set -o pipefail
           bundle exec bolt plan run peadm_spec::install_test_cluster \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             architecture=${{ matrix.architecture }} \
             version=${{ matrix.version }} \
-            console_password=${{ secrets.CONSOLE_PASSWORD }}
+            console_password="$CONSOLE_PASSWORD_CANARY" 2>&1 | tee bolt-install-output.log
+      - name: Check the console password didn't leak
+        run: |
+          # With no bolt-project.yaml in the checkout, Bolt uses its default
+          # project, and each run overwrites its debug log. Check it before
+          # the next Bolt run below.
+          debug_log="$HOME/.puppetlabs/bolt/bolt-debug.log"
+          if [ ! -s "$debug_log" ]; then
+            echo "::error::Bolt's debug log isn't at ${debug_log}"
+            exit 1
+          fi
+          # Positive control: the log records task arguments, with
+          # rbac_token's password masked.
+          if ! grep -F 'Running task peadm::rbac_token with' "$debug_log" | grep -qF '"password":"Sensitive [value redacted]"'; then
+            echo "::error::bolt-debug.log has no masked password argument for peadm::rbac_token"
+            exit 1
+          fi
+          leaked=$(grep -lF -- "$CONSOLE_PASSWORD_CANARY" "$debug_log" bolt-install-output.log || true)
+          if [ -n "$leaked" ]; then
+            echo "::error::The console password appears in: ${leaked}"
+            exit 1
+          fi
+          bundle exec bolt plan run peadm_spec::verify_no_bootstrap_pe_conf \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules
       - name: Tear down test cluster
         if: ${{ always() }}
         continue-on-error: true
