@@ -39,6 +39,14 @@ jobs:
       # install or upgrade to 2026.0.0 -- empty string for everything else
       # leaves the task's own default untouched (see provision_service.rb).
       PROVISION_MACHINE_TYPE: ${{ (matrix.version == '2026.0.0' || matrix.new_pe_version == '2026.0.0') && 'n2-standard-4' || '' }}
+      # standard/large/extra-large -> 2026.0.0 migrations run out of boot
+      # disk space extracting the PE 2026.0.0 tarball (tar: ... No space
+      # left on device -- PE-47829). Request a bigger boot disk via
+      # provision_service's disk_size_gb support (provision#303, provision
+      # >= v3.2.0), scoped the same way as PROVISION_MACHINE_TYPE above --
+      # empty string for everything else leaves the task's own default
+      # (10G) untouched. 100G confirmed sufficient in validation (PR #740).
+      PROVISION_DISK_SIZE_GB: ${{ (matrix.version == '2026.0.0' || matrix.new_pe_version == '2026.0.0') && '100' || '' }}
     strategy:
       fail-fast: false
       matrix:
