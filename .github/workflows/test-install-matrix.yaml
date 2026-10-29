@@ -131,6 +131,13 @@ jobs:
             echo "::error::grep failed with exit code ${rc}"
             exit 1
           fi
+      # Also after a failed install, which removes the file before it fails
+      - name: Check the bootstrap pe.conf was removed
+        if: ${{ !cancelled() && steps.install.outcome != 'skipped' }}
+        run: |
+          bundle exec bolt plan run peadm_spec::verify_no_bootstrap_pe_conf \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --modulepath spec/fixtures/modules
       - name: Tear down test cluster
         if: ${{ always() }}
         continue-on-error: true

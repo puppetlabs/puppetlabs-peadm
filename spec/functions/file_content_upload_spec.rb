@@ -2,11 +2,12 @@
 
 require 'spec_helper'
 
-# peadm::file_content_upload has no conditional branches - it just writes
-# `content` to a Tempfile and forwards it to Bolt's upload_file, so the
-# only interesting failure modes are plumbing bugs: wrong/dropped
-# arguments, content not actually written before upload, or the return
-# value getting transformed instead of passed straight through.
+# peadm::file_content_upload writes `content` to a Tempfile, forwards it to
+# Bolt's upload_file and always deletes the Tempfile afterwards, so the
+# interesting failure modes are wrong/dropped arguments, content not
+# actually written before upload, the return value getting transformed
+# instead of passed straight through, and the Tempfile outliving the call,
+# on success or failure.
 #
 # Rather than pulling in the full BoltSpec::Plans plan-executor machinery
 # (which would require mocking upload_file's own Tempfile/Pathname/
@@ -15,10 +16,6 @@ require 'spec_helper'
 # call_function directly. This lets us assert exactly what was forwarded to
 # upload_file without needing upload_file's own argument types (a single
 # Boltlib::TargetSpec) to validate against our splatted target list.
-#
-# Note: file_content_upload has no `ensure` around file.close/file.unlink,
-# so if upload_file raises, the tempfile leaks. That is pre-existing
-# behavior, not something these tests assert on or something we changed.
 describe 'peadm::file_content_upload' do
   # rubocop:disable RSpec/NamedSubject
   it 'passes destination and a single target through to upload_file unchanged' do
@@ -76,6 +73,36 @@ describe 'peadm::file_content_upload' do
     # that wraps, duplicates, or coerces the upload_file result (e.g.
     # `[result]` or `result.to_s`) instead of returning it as-is.
     expect(result).to equal(fake_result)
+  end
+
+  # PE-47523: every caller uploads a pe.conf, and the primary's holds the
+  # console password, so the tempfile on the Bolt host must not outlive the
+  # upload, whether it succeeds or fails.
+  it 'deletes the tempfile after a successful upload' do
+    tempfile_path = nil
+    allow(subject.func).to receive(:call_function) do |_function_name, path, *_rest|
+      tempfile_path = path
+      'irrelevant-result'
+    end
+
+    subject.func.file_content_upload('secret payload', 'destination/path', 'target1')
+
+    expect(tempfile_path).not_to be_nil
+    expect(File.exist?(tempfile_path)).to be(false)
+  end
+
+  it 'deletes the tempfile even when upload_file raises' do
+    tempfile_path = nil
+    allow(subject.func).to receive(:call_function) do |_function_name, path, *_rest|
+      tempfile_path = path
+      raise 'upload failed'
+    end
+
+    expect {
+      subject.func.file_content_upload('secret payload', 'destination/path', 'target1')
+    }.to raise_error(RuntimeError, 'upload failed')
+    expect(tempfile_path).not_to be_nil
+    expect(File.exist?(tempfile_path)).to be(false)
   end
   # rubocop:enable RSpec/NamedSubject
 end

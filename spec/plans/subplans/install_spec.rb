@@ -476,8 +476,8 @@ describe 'peadm::subplans::install' do
     # No _catch_errors on the migration run_command itself (unlike the
     # probe): a failure here raises Bolt's own uncaught PlanFailure and
     # halts the whole peadm::install run, matching the file's dominant
-    # convention (pe_install, rbac_token, code_manager, etc. all fail the
-    # same way). Bolt's own generated diagnostic names the exact command
+    # convention (rbac_token, code_manager, etc. all fail the same way, and
+    # so does pe_install, once it has removed the bootstrap pe.conf). Bolt's own generated diagnostic names the exact command
     # and target that failed -- there is no additional message to surface
     # on top of that, per this plan's established style for uncaught
     # run_command calls.
@@ -760,6 +760,12 @@ describe 'peadm::subplans::install' do
     expect(run_plan('peadm::subplans::install', params)).to be_ok
   end
 
+  # PE-47523: Bolt writes every task's arguments to bolt-debug.log and masks
+  # only the parameters a task's metadata flags "sensitive", so the calls
+  # that carry secrets must go through those parameters, which BoltSpec then
+  # sees wrapped as Sensitive. The plans take console_password as a plain
+  # String (peadm::migrate passes one); the wrapping comes from the task
+  # metadata.
   describe 'secrets in task arguments and on disk (PE-47523)' do
     let(:install_params) do
       {
@@ -776,6 +782,30 @@ describe 'peadm::subplans::install' do
       Bolt::ResultSet.new(targets.map do |target|
         Bolt::Result.for_command(target, { 'stdout' => stdout, 'stderr' => stderr, 'exit_code' => exit_code }, 'command', command, [])
       end)
+    end
+
+    # Records every task, command, plan and upload, in order, as
+    # "<task or command>@<target>", "<plan>" or "upload <destination>@<target>",
+    # and returns the log.
+    def record_calls
+      call_log = []
+      allow_any_task.return do |targets:, task:, **|
+        targets.each { |target| call_log << "#{task}@#{target.name}" }
+        ok_results(targets)
+      end
+      allow_any_command.return do |targets:, command:, **|
+        targets.each { |target| call_log << "#{command}@#{target.name}" }
+        command_results(targets, command)
+      end
+      allow_any_plan.return do |plan:, **|
+        call_log << plan.closure_name
+        Bolt::PlanResult.new({}, 'success')
+      end
+      allow_upload('/mock').return do |targets:, destination:, **|
+        targets.each { |target| call_log << "upload #{destination}@#{target.name}" }
+        Bolt::ResultSet.new(targets.map { |target| Bolt::Result.for_upload(target, '/mock', destination) })
+      end
+      call_log
     end
 
     it 'passes the console password to rbac_token as Sensitive' do
@@ -831,6 +861,250 @@ describe 'peadm::subplans::install' do
         leaks = logged.grep(%r{puppetLabs123!|r10k-key-canary|license-canary})
         expect(leaks).to be_empty, "secrets in logged task arguments or commands:\n#{leaks.join("\n")}"
       end
+    end
+
+    # Only the installer runs read the bootstrap pe.conf, and the primary's
+    # copy holds the console password, so it's on the nodes only while they
+    # run: uploaded after the download and CSR steps, and removed right after
+    # the installer runs, before the steps a failed install most often stops at.
+    it 'uploads /tmp/pe.conf after the download and CSR steps and before the installers, and removes it after the last one' do
+      call_log = record_calls
+      allow_task('peadm::precheck').return_for_targets(
+        'primary'      => { 'hostname' => 'primary', 'platform' => 'el-7.11-x86_64' },
+        'replica'      => { 'hostname' => 'replica', 'platform' => 'el-7.11-x86_64' },
+        'postgres1'    => { 'hostname' => 'postgres1', 'platform' => 'el-7.11-x86_64' },
+        'postgres2'    => { 'hostname' => 'postgres2', 'platform' => 'el-7.11-x86_64' },
+      )
+
+      params = install_params.merge('replica_host' => 'replica', 'primary_postgresql_host' => 'postgres1', 'replica_postgresql_host' => 'postgres2')
+      expect(run_plan('peadm::subplans::install', params)).to be_ok
+
+      first_reader = call_log.index { |call| call.start_with?('peadm::pe_install@') }
+      last_reader = call_log.rindex { |call| call.start_with?('peadm::pe_install@', 'peadm::pe_reinstall@') }
+      ['primary', 'postgres1', 'postgres2'].each do |node|
+        uploaded = call_log.index("upload /tmp/pe.conf@#{node}")
+        removed = call_log.index("rm -f /tmp/pe.conf@#{node}")
+        expect(uploaded).not_to be_nil, "/tmp/pe.conf was not uploaded to #{node}"
+        expect(uploaded).to be > call_log.index('peadm::util::retrieve_and_upload')
+        expect(uploaded).to be > call_log.rindex('peadm::util::insert_csr_extension_requests')
+        expect(uploaded).to be < first_reader
+        expect(removed).not_to be_nil, "/tmp/pe.conf was not removed on #{node}"
+        expect(removed).to be > last_reader
+        expect(removed).to be < call_log.index('peadm::rbac_token@primary')
+      end
+    end
+
+    # The primary's upload can have worked when another node's didn't, and the
+    # file must still be removed then. BoltSpec's executor hands back the
+    # failed results of a parallelize block instead of raising the
+    # ParallelFailure real Bolt raises, so that failure can't be played out
+    # here. This deliberate source-order guard checks that the upload comes
+    # after the catch_errors line, and so inside its block, and before the
+    # installers and the cleanup.
+    it 'uploads the bootstrap pe.conf after the catch_errors line and before the cleanup' do
+      source = File.read(File.expand_path('../../../plans/subplans/install.pp', __dir__))
+      block_start = source.index('$installer_error = catch_errors()')
+      upload = source.index('peadm::file_content_upload($pe_conf, $bootstrap_pe_conf, $target)')
+      installer = source.index("run_task('peadm::pe_install'")
+      cleanup = source.index('rm -f ${bootstrap_pe_conf}')
+
+      expect([block_start, upload, installer, cleanup]).to all(be_a(Integer))
+      expect(block_start).to be < upload
+      expect(upload).to be < installer
+      expect(installer).to be < cleanup
+    end
+
+    it 'uploads no /tmp/pe.conf when the download fails' do
+      call_log = record_calls
+      expect_plan('peadm::util::retrieve_and_upload').error_with('kind' => 'peadm/download-error', 'msg' => 'Download failed')
+
+      result = run_plan('peadm::subplans::install', install_params)
+
+      expect(result).not_to be_ok
+      expect(result.value.kind).to eq('peadm/download-error')
+      expect(call_log.grep(%r{\Aupload /tmp/pe\.conf@})).to be_empty
+    end
+
+    # The removal has to follow every step in the catch_errors block, not only
+    # the first installer run: moving a step out of the block, before the removal,
+    # would leave /tmp/pe.conf behind when that step fails. (The upload and the
+    # r10k key and license writes are in parallelize blocks, and BoltSpec doesn't
+    # raise a failure from one.)
+    context 'when a later step in the block fails' do
+      let(:call_log) { record_calls }
+      let(:split_params) { install_params.merge('primary_postgresql_host' => 'postgres1') }
+
+      def failed_task_results(targets, task)
+        Bolt::ResultSet.new(targets.map { |target| Bolt::Result.for_task(target, "#{task} failed\n", '', 1, task, []) })
+      end
+
+      def expect_removal_after(step)
+        result = run_plan('peadm::subplans::install', split_params)
+
+        expect(result).not_to be_ok
+        expect(call_log).to include(step)
+        expect(call_log).to include('rm -f /tmp/pe.conf@primary')
+        expect(call_log.index('rm -f /tmp/pe.conf@primary')).to be > call_log.index(step)
+      end
+
+      it 'removes /tmp/pe.conf when the autosign write fails' do
+        log = call_log
+        allow_task('peadm::mkdir_p_file').return do |targets:, params:, **|
+          targets.each { |target| log << "peadm::mkdir_p_file #{File.basename(params['path'])}@#{target.name}" }
+          params['path'].end_with?('autosign.conf') ? failed_task_results(targets, 'peadm::mkdir_p_file') : ok_results(targets)
+        end
+
+        expect_removal_after('peadm::mkdir_p_file autosign.conf@primary')
+      end
+
+      it 'removes /tmp/pe.conf when the installer run on the PostgreSQL host fails' do
+        log = call_log
+        allow_task('peadm::pe_install').return do |targets:, **|
+          targets.each { |target| log << "peadm::pe_install@#{target.name}" }
+          targets.map(&:name).include?('postgres1') ? failed_task_results(targets, 'peadm::pe_install') : ok_results(targets)
+        end
+
+        expect_removal_after('peadm::pe_install@postgres1')
+      end
+
+      it 'removes /tmp/pe.conf when stopping PuppetDB fails' do
+        log = call_log
+        allow_command('systemctl stop pe-puppetdb').return do |targets:, command:, **|
+          targets.each { |target| log << "#{command}@#{target.name}" }
+          command_results(targets, command, exit_code: 1)
+        end
+
+        expect_removal_after('systemctl stop pe-puppetdb@primary')
+      end
+
+      it 'removes /tmp/pe.conf when the primary reinstall on a split-database install fails' do
+        log = call_log
+        allow_task('peadm::pe_reinstall').return do |targets:, **|
+          targets.each { |target| log << "peadm::pe_reinstall@#{target.name}" }
+          failed_task_results(targets, 'peadm::pe_reinstall')
+        end
+
+        expect_removal_after('peadm::pe_reinstall@primary')
+      end
+    end
+
+    # PE rejects a weak console_password late in the installer run, and the
+    # file with the password must not stay behind then.
+    context 'when an installer run fails' do
+      let(:call_log) { record_calls }
+
+      before(:each) do
+        log = call_log
+        allow_task('peadm::pe_install').return do |targets:, **|
+          targets.each { |target| log << "peadm::pe_install@#{target.name}" }
+          # shaped like a real failed task: what it printed is under _output
+          Bolt::ResultSet.new(targets.map { |target| Bolt::Result.for_task(target, "Installer: password is too weak\n", '', 1, 'peadm::pe_install', []) })
+        end
+      end
+
+      it 'removes /tmp/pe.conf, prints the failed node and its output, and fails with the installer error' do
+        expect_out_message.with_params("Failed on primary: The task failed with exit code 1\nInstaller: password is too weak\n")
+
+        result = run_plan('peadm::subplans::install', install_params)
+
+        expect(result).not_to be_ok
+        expect(result.value.msg).to include('peadm::pe_install')
+        expect(call_log).to include('rm -f /tmp/pe.conf@primary')
+        expect(call_log.index('rm -f /tmp/pe.conf@primary')).to be > call_log.index('peadm::pe_install@primary')
+        expect(call_log).not_to include('peadm::rbac_token@primary')
+      end
+
+      # The block also runs commands (restarting PuppetDB), whose results have
+      # stdout and stderr where a task's has _output
+      it 'prints the output of a failed command too' do
+        expect_out_message.with_params("Failed on primary: The command failed with exit code 5\ncommand-out-canary\n\ncommand-err-canary\n")
+        allow_command('systemctl start pe-puppetdb').return do |targets:, command:, **|
+          command_results(targets, command, exit_code: 5, stdout: "command-out-canary\n", stderr: "command-err-canary\n")
+        end
+        allow_task('peadm::pe_install').always_return({})
+
+        result = run_plan('peadm::subplans::install', install_params)
+
+        expect(result).not_to be_ok
+        expect(result.value.msg).to include('systemctl start pe-puppetdb')
+      end
+
+      # rm's stderr can be in any encoding (a localized message, say); it must
+      # not make the warning raise and replace the installer's error
+      it 'still fails with the installer error when rm fails with stderr that is not UTF-8' do
+        expect_command('rm -f /tmp/pe.conf').with_targets(['primary']).return do |targets:, command:, **|
+          # tagged UTF-8 but not valid, which is what makes a regex on it raise
+          command_results(targets, command, exit_code: 1, stderr: "rm: Op\xE9ration non permise\n".dup.force_encoding('UTF-8'))
+        end
+        expect_out_message.with_params(
+          'WARNING: /tmp/pe.conf may still be on primary (rm: Op?ration non permise). ' \
+          'Delete it by hand; on the primary it holds the console password.',
+        )
+
+        result = run_plan('peadm::subplans::install', install_params)
+
+        expect(result).not_to be_ok
+        expect(result.value.msg).to include('peadm::pe_install')
+      end
+
+      # The warning falls back to the error's message when rm printed nothing
+      it 'warns with the error message when rm fails without stderr' do
+        expect_command('rm -f /tmp/pe.conf').with_targets(['primary']).return do |targets:, command:, **|
+          command_results(targets, command, exit_code: 1)
+        end
+        expect_out_message.with_params(
+          'WARNING: /tmp/pe.conf may still be on primary (The command failed with exit code 1). ' \
+          'Delete it by hand; on the primary it holds the console password.',
+        )
+
+        result = run_plan('peadm::subplans::install', install_params)
+
+        expect(result).not_to be_ok
+        expect(result.value.msg).to include('peadm::pe_install')
+      end
+
+      # A node rm can't reach has no stderr at all
+      it 'warns with the error message when the node cannot be reached' do
+        expect_command('rm -f /tmp/pe.conf').with_targets(['primary'])
+                                            .error_with('kind' => 'puppetlabs.tasks/command-error', 'msg' => 'Connection refused')
+        expect_out_message.with_params(
+          'WARNING: /tmp/pe.conf may still be on primary (Connection refused). ' \
+          'Delete it by hand; on the primary it holds the console password.',
+        )
+
+        result = run_plan('peadm::subplans::install', install_params)
+
+        expect(result).not_to be_ok
+        expect(result.value.msg).to include('peadm::pe_install')
+      end
+
+      # The removal's own failure is a warning and doesn't replace the error
+      it "still fails with the installer error when /tmp/pe.conf can't be removed either" do
+        expect_command('rm -f /tmp/pe.conf').with_targets(['primary']).return do |targets:, command:, **|
+          command_results(targets, command, exit_code: 1, stderr: "rm: cannot remove '/tmp/pe.conf': Operation not permitted\n")
+        end
+        expect_out_message.with_params(
+          "WARNING: /tmp/pe.conf may still be on primary (rm: cannot remove '/tmp/pe.conf': Operation not permitted). " \
+          'Delete it by hand; on the primary it holds the console password.',
+        )
+
+        result = run_plan('peadm::subplans::install', install_params)
+
+        expect(result).not_to be_ok
+        expect(result.value.msg).to include('peadm::pe_install')
+      end
+    end
+
+    it "warns with rm's error, but finishes the install, when /tmp/pe.conf can't be removed" do
+      expect_command('rm -f /tmp/pe.conf').with_targets(['primary']).return do |targets:, command:, **|
+        command_results(targets, command, exit_code: 1, stderr: "rm: cannot remove '/tmp/pe.conf': Operation not permitted\n")
+      end
+      expect_out_message.with_params(
+        "WARNING: /tmp/pe.conf may still be on primary (rm: cannot remove '/tmp/pe.conf': Operation not permitted). " \
+        'Delete it by hand; on the primary it holds the console password.',
+      )
+
+      expect(run_plan('peadm::subplans::install', install_params)).to be_ok
     end
   end
 end
