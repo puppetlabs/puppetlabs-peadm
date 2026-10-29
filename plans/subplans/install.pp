@@ -11,6 +11,10 @@
 #   over to the primary at /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa
 #   If the file does not exist the value will simply be supplied to the primary
 #
+# @param r10k_private_key_content
+#   The text of the private key to use for r10k, as an alternative to
+#   r10k_private_key_file. One of its lines must start with `-----BEGIN`.
+#
 # @param r10k_known_hosts
 #   Puppet Enterprise 2023.3+ requires host key verification for the
 #   r10k_remote host when using ssh. When setting \$r10k_private_key, you must
@@ -63,7 +67,7 @@ plan peadm::subplans::install (
   Optional[Boolean]    $code_manager_auto_configure = undef,
   Optional[String]     $r10k_remote              = undef,
   Optional[String]     $r10k_private_key_file    = undef,
-  Optional[Peadm::Pem] $r10k_private_key_content = undef,
+  Optional[String]     $r10k_private_key_content = undef,
   Optional[Peadm::Known_hosts] $r10k_known_hosts = undef,
 
   # License key
@@ -77,6 +81,12 @@ plan peadm::subplans::install (
   Boolean               $permit_unsafe_versions = false,
   String                $token_lifetime         = '1y',
 ) {
+  # A parameter type would quote a key that doesn't match it in its error, and
+  # print the key. Check it here, and name only the parameter (PE-47523).
+  if $r10k_private_key_content =~ String and $r10k_private_key_content !~ Peadm::Pem {
+    fail_plan('r10k_private_key_content must be a PEM private key: a line of it must start with -----BEGIN')
+  }
+
   peadm::assert_supported_pe_version($version, $permit_unsafe_versions)
 
   # Convert inputs into targets.

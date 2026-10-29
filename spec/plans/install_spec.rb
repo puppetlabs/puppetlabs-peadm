@@ -12,6 +12,17 @@ describe 'peadm::install' do
     end
   end
 
+  # PE-47523: the parameter's type would quote a key that doesn't match it, so
+  # install leaves the check to the subplan, which names only the parameter
+  # (see spec/plans/subplans/install_spec.rb)
+  it 'passes r10k_private_key_content on to the subplan unchecked' do
+    allow_out_message
+    expect_plan('peadm::subplans::install')
+    expect_plan('peadm::subplans::configure')
+    expect(run_plan('peadm::install', 'primary_host' => 'primary', 'console_password' => 'puppetLabs123!',
+                    'version' => '2021.7.9', 'r10k_private_key_content' => 'not a key')).to be_ok
+  end
+
   describe 'cloud_database_host plumbing' do
     # bolt-spec's `with_params` compares for strict equality and does not
     # honour rspec matchers like hash_including, so fine-grained param

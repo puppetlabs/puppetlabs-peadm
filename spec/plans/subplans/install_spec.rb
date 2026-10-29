@@ -89,6 +89,28 @@ describe 'peadm::subplans::install' do
     expect(run_plan('peadm::subplans::install', params)).to be_ok
   end
 
+  # PE-47523: a Pattern type quotes a value that doesn't match it in the
+  # error, so a key pasted with a leading space or without its header would
+  # print in full on the console and in a CI log. The plan checks the key
+  # itself and names only the parameter.
+  ['  -----BEGIN OPENSSH PRIVATE KEY-----', 'key-canary', "\uFEFF-----BEGIN KEY"].each do |bad_key|
+    it "rejects r10k_private_key_content #{bad_key.inspect} without quoting it" do
+      params = {
+        'primary_host' => 'primary',
+        'console_password' => 'puppetLabs123!',
+        'version' => '2023.4.0',
+        'r10k_remote' => 'git@github.com:puppetlabs/nothing',
+        'r10k_private_key_content' => "#{bad_key}\nSECRET-canary\n-----END KEY-----",
+      }
+
+      result = run_plan('peadm::subplans::install', params)
+
+      expect(result).not_to be_ok
+      expect(result.value.message).to include('r10k_private_key_content must be a PEM private key')
+      expect(result.value.message).not_to include('canary')
+    end
+  end
+
   it 'installs 2023.4+ with r10k_private_key and r10k_known_hosts' do
     params = {
       'primary_host' => 'primary',

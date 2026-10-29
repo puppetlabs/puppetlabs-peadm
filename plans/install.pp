@@ -76,7 +76,7 @@ plan peadm::install (
   Optional[Boolean]                 $code_manager_auto_configure = undef,
   Optional[String]                  $r10k_remote              = undef,
   Optional[String]                  $r10k_private_key_file    = undef,
-  Optional[Peadm::Pem]              $r10k_private_key_content = undef,
+  Optional[String]                  $r10k_private_key_content = undef,
   Optional[Peadm::Known_hosts]      $r10k_known_hosts         = undef,
   Optional[String]                  $deploy_environment       = undef,
 

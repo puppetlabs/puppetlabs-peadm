@@ -61,6 +61,18 @@ describe 'tasks/mkdir_p_file.sh' do
     expect(File.read(path, encoding: 'UTF-8')).to eq("#{content}\n")
   end
 
+  # Real callers pass content that ends in a newline (autosign.conf, the CSR
+  # YAML, site.pp). The file gets the content as given, then one more newline,
+  # as the heredoc this replaced did; command substitution would drop them.
+  it 'keeps the newlines the content ends with, and adds one' do
+    path = File.join(workdir, 'autosign.conf')
+
+    output, status = run_mkdir_p_file('path' => path, 'content' => "a\n\n")
+
+    expect(status).to be_success, output
+    expect(File.read(path)).to eq("a\n\n\n")
+  end
+
   it 'replaces the content of an existing file' do
     path = File.join(workdir, 'license.key')
     File.write(path, "old content that is longer than the new one\n")

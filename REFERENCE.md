@@ -2552,7 +2552,7 @@ Default value: `undef`
 
 ##### <a name="-peadm--install--r10k_private_key_content"></a>`r10k_private_key_content`
 
-Data type: `Optional[Peadm::Pem]`
+Data type: `Optional[String]`
 
 
 
