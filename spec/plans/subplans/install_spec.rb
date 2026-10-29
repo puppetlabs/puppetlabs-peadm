@@ -777,6 +777,12 @@ describe 'peadm::subplans::install' do
         'license_key_content'      => 'license-canary',
       }
     end
+    # A raw / inside the query, as in an AWS credential scope
+    let(:signed_source) do
+      'https://bucket.s3.amazonaws.com/released/puppet-enterprise-2023.8.10-el-7.11-x86_64.tar.gz' \
+        '?X-Amz-Credential=AKIA-canary/20261029/us-east-1/s3/aws4_request&X-Amz-Signature=signature-canary'
+    end
+    let(:tarball) { '/tmp/puppet-enterprise-2023.8.10-el-7.11-x86_64.tar.gz' }
 
     def command_results(targets, command, exit_code: 0, stdout: '', stderr: '')
       Bolt::ResultSet.new(targets.map do |target|
@@ -861,6 +867,103 @@ describe 'peadm::subplans::install' do
         leaks = logged.grep(%r{puppetLabs123!|r10k-key-canary|license-canary})
         expect(leaks).to be_empty, "secrets in logged task arguments or commands:\n#{leaks.join("\n")}"
       end
+    end
+
+    # A pre-signed URL carries its credentials in the query string, so the
+    # tarball is named from the URL's path alone. The name becomes the tarball
+    # path (a task argument, and part of download.sh's output) and the
+    # installer directory.
+    it 'keeps a pre-signed URL query string out of the tarball path and installer directory' do
+      expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
+        expect(params['source']).to eq(signed_source)
+        expect(params['local_path']).to eq(tarball)
+        expect(params['upload_path']).to eq(tarball)
+        Bolt::PlanResult.new({}, 'success')
+      end
+      expect_task('peadm::pe_install').with_targets('primary').with_params(
+        'tarball'               => tarball,
+        'peconf'                => '/tmp/pe.conf',
+        'puppet_service_ensure' => 'stopped',
+        'install_extra_large'   => true,
+      )
+      expect_task('peadm::pe_install').with_targets('postgres1').with_params(
+        'tarball'               => tarball,
+        'peconf'                => '/tmp/pe.conf',
+        'puppet_service_ensure' => 'stopped',
+      )
+      expect_task('peadm::pe_reinstall').with_targets('primary').with_params(
+        'installer_dir' => '/tmp/puppet-enterprise-2023.8.10-el-7.11-x86_64',
+        'peconf'        => '/tmp/pe.conf',
+      )
+
+      expect(run_plan('peadm::subplans::install',
+                      install_params.merge('primary_postgresql_host' => 'postgres1', 'pe_installer_source' => signed_source))).to be_ok
+    end
+
+    # Where the user info ends can't be told when the password holds a raw /
+    # and there's no path: what's left of it must not become the file name
+    it 'keeps user info out of the tarball path even when the password has a raw /' do
+      expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
+        expect(params['local_path']).to eq(tarball)
+        expect(params['upload_path']).to eq(tarball)
+        Bolt::PlanResult.new({}, 'success')
+      end
+
+      source = 'https://ci:Pa55/word-canary@artifacts.example.com'
+      expect(run_plan('peadm::subplans::install', install_params.merge('pe_installer_source' => source))).to be_ok
+    end
+
+    # Every version's download.cgi?...&ver= link has the same file name, so a
+    # tarball of another version, cached on the Bolt host, would be installed.
+    it 'names the tarball after version and platform when the URL has no tarball file name' do
+      expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
+        expect(params['local_path']).to eq(tarball)
+        expect(params['upload_path']).to eq(tarball)
+        Bolt::PlanResult.new({}, 'success')
+      end
+
+      source = 'https://pm.puppet.com/cgi-bin/download.cgi?dist=el&rel=7&arch=x86_64&ver=2023.8.10'
+      expect(run_plan('peadm::subplans::install', install_params.merge('pe_installer_source' => source))).to be_ok
+    end
+
+    # Artifactory dev/RC builds ship as a plain .tar
+    it "keeps the URL's own name for a plain .tar source" do
+      expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
+        expect(params['local_path']).to eq('/tmp/puppet-enterprise-2026.0.0-el-7.11-x86_64.tar')
+        Bolt::PlanResult.new({}, 'success')
+      end
+      expect_task('peadm::pe_install').with_targets('primary').with_params(
+        'tarball'               => '/tmp/puppet-enterprise-2026.0.0-el-7.11-x86_64.tar',
+        'peconf'                => '/tmp/pe.conf',
+        'puppet_service_ensure' => 'stopped',
+        'install_extra_large'   => false,
+      )
+
+      source = 'https://artifacts.example.com/ci/puppet-enterprise-2026.0.0-el-7.11-x86_64.tar'
+      expect(run_plan('peadm::subplans::install', install_params.merge('pe_installer_source' => source))).to be_ok
+    end
+
+    # The name comes from the path, not from a tarball-looking name in the query
+    it 'ignores a tarball-looking name in the query string' do
+      expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
+        expect(params['local_path']).to eq(tarball)
+        Bolt::PlanResult.new({}, 'success')
+      end
+
+      source = 'https://artifacts.example.com/download?file=pe-other-1.0.0-el-7-x86_64.tar.gz'
+      expect(run_plan('peadm::subplans::install', install_params.merge('pe_installer_source' => source))).to be_ok
+    end
+
+    it 'downloads a pre-signed URL directly through the masked source parameter' do
+      expect_task('peadm::download').with_targets('primary').return do |targets:, params:, **|
+        expect(params['source']).to be_a(Puppet::Pops::Types::PSensitiveType::Sensitive)
+        expect(params['source'].unwrap).to eq(signed_source)
+        expect(params['path']).to eq(tarball)
+        ok_results(targets)
+      end
+
+      expect(run_plan('peadm::subplans::install',
+                      install_params.merge('download_mode' => 'direct', 'pe_installer_source' => signed_source))).to be_ok
     end
 
     # Only the installer runs read the bootstrap pe.conf, and the primary's
