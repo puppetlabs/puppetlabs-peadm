@@ -2,6 +2,8 @@
 
 set -e
 
+# Needs a Python interpreter on the target, as read_file does.
+#
 # Parameters arrive as JSON on stdin. With environment input, Bolt puts them
 # on the remote command line (`env PT_content=...`), where sudo logs them, ps
 # shows them and Bolt's trace log records them, and the content is often a

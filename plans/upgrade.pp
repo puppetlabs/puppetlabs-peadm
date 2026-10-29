@@ -15,7 +15,13 @@
 #   The URL to download the Puppet Enterprise installer media from. If not
 #   specified, PEAdm will attempt to download PE installation media from its
 #   standard public source. When specified, PEAdm will download directly from the
-#   URL given.
+#   URL given. The PE version is taken from the URL's tarball file name, which
+#   must be a standard puppet-enterprise-<version>-<platform>.tar[.gz] name.
+#   For a URL without one, set version too, and the tarball is saved under the
+#   standard name for that version.
+# @param version
+#   The PE version to upgrade to. Required unless pe_installer_source has a
+#   standard tarball file name to take it from.
 # @param final_agent_state
 #   Configures the state the puppet agent should be in on infrastructure nodes
 #   after PE is upgraded successfully.
@@ -79,7 +85,10 @@ plan peadm::upgrade (
     # shouldn't land in Bolt output or centralized logs (PE-47523).
     'pe_installer_source' => $pe_installer_source ? {
       undef   => undef,
-      default => peadm::url_file_name($pe_installer_source),
+      default => peadm::url_file_name($pe_installer_source) ? {
+        /\.tar(\.gz)?\z/ => peadm::url_file_name($pe_installer_source),
+        default           => undef,
+      },
     },
   })
 
@@ -141,12 +150,11 @@ plan peadm::upgrade (
   $platform = run_task('peadm::precheck', $primary_target).first['platform']
 
   if $pe_installer_source {
-    # The URL's file name, without the query string or user info, which can
-    # hold credentials (PE-47523). A URL whose file name isn't a tarball's,
-    # such as a download.cgi?...&ver= link, names no version, so the tarball
-    # is named after the version parameter instead.
+    # A URL whose file name isn't a tarball's (or has none) names no
+    # version, so the tarball is named after the version parameter instead.
+    # See peadm::url_file_name for what the name leaves out (PE-47523).
     $url_file_name = peadm::url_file_name($pe_installer_source)
-    if $url_file_name =~ /\.tar(\.gz)?\z/ {
+    if $url_file_name and $url_file_name =~ /\.tar(\.gz)?\z/ {
       $pe_tarball_name = $url_file_name
       $_version        = $url_file_name.split('-')[2]
     } elsif $version {

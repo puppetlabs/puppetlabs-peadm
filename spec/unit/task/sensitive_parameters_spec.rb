@@ -9,7 +9,7 @@ require 'json'
 # "sensitive": true, so a secret passed through any other parameter lands in
 # that file in plaintext. These examples fail as soon as a task gains a
 # parameter whose name looks like a secret without flagging it, or takes a
-# flagged parameter as environment input.
+# flagged parameter as any input other than stdin.
 #
 # Limits: when every target uses the pcp transport, Bolt ignores task
 # metadata, so the flag has no effect there. Task results are logged too;
@@ -37,9 +37,12 @@ describe 'task metadata' do
     'download.source',
   ]
 
-  # Tasks that take a flagged parameter as command-line input anyway.
-  command_line_input_allowed = {
-    'download' => 'PE-47901: download.sh takes environment input, download.ps1 powershell input',
+  # Implementations that take a flagged parameter as input other than stdin
+  # anyway. Each one is listed on its own, so fixing one doesn't hide a
+  # regression in the other.
+  non_stdin_input_allowed = {
+    'download.sh'  => 'PE-47901: environment input',
+    'download.ps1' => 'PE-47901: powershell input',
   }
 
   metadata = Dir[File.expand_path('../../../tasks/*.json', __dir__)].sort.to_h do |path|
@@ -68,17 +71,19 @@ describe 'task metadata' do
     end
   end
 
-  # Only stdin keeps a value off the command line. Bolt passes environment
-  # input as `env PT_name=<value> ... sh -c ...` on the remote command line,
-  # unmasked even for a flagged parameter, where sudo logs it, ps shows it and
-  # Bolt's own trace log records it. PowerShell input is embedded in the
-  # command it runs too, except over WinRM.
+  # For the shell tasks peadm runs, only stdin keeps a value off the remote
+  # command line. Bolt passes environment input as `env PT_name=<value> ...
+  # sh -c ...`, unmasked even for a flagged parameter, where sudo logs it, ps
+  # shows it and Bolt's own trace log records it. On PowerShell targets every
+  # input method ends up in the command it runs, so powershell input isn't
+  # allowed either; stdin is the one method with nothing to keep off it.
   metadata.each do |task, meta|
     next unless (meta['parameters'] || {}).values.any? { |spec| spec['sensitive'] }
-    next if command_line_input_allowed.key?(task)
 
-    it "gives #{task}, which takes a sensitive parameter, its input on stdin" do
-      input_methods.call(task).each do |name, input_method|
+    input_methods.call(task).each do |name, input_method|
+      next if non_stdin_input_allowed.key?(name)
+
+      it "gives #{name}, which takes a sensitive parameter, its input on stdin" do
         expect(input_method).to eq('stdin'), "#{name} takes #{input_method} input"
       end
     end
@@ -92,7 +97,7 @@ describe 'task metadata' do
 
   it 'lists only existing tasks and parameters as exceptions' do
     expect(not_secret.keys + always_sensitive - specs_by_key.keys).to be_empty
-    expect(command_line_input_allowed.keys - metadata.keys).to be_empty
+    expect(non_stdin_input_allowed.keys - metadata.flat_map { |task, _| input_methods.call(task).map(&:first) }).to be_empty
   end
 
   it 'lists only secret-looking names in not_secret' do
@@ -100,9 +105,10 @@ describe 'task metadata' do
   end
 
   # So an exception doesn't outlive its fix and hide a later regression
-  it 'lists only tasks that still take command-line input in command_line_input_allowed' do
-    command_line_input_allowed.each_key do |task|
-      expect(input_methods.call(task).map(&:last) - ['stdin']).not_to be_empty, "#{task} no longer needs its exception"
+  it 'lists only implementations that still take non-stdin input in non_stdin_input_allowed' do
+    input_by_implementation = metadata.keys.flat_map { |task| input_methods.call(task) }.to_h
+    non_stdin_input_allowed.each_key do |name|
+      expect(input_by_implementation[name]).not_to eq('stdin'), "#{name} no longer needs its exception"
     end
   end
 

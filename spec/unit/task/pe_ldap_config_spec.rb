@@ -99,9 +99,9 @@ describe PeLdapConfig do
   end
 
   # PE-47523: Bolt logs the task's output and error, so neither carries the
-  # response body. RBAC's error bodies can echo the submitted request (bind
-  # password included, on PE versions from before rbac-service redacted it),
-  # and the legacy ds endpoint returns the settings it saved.
+  # response body. RBAC's error bodies may echo the submitted request, bind
+  # password included, and the legacy ds endpoint returns the settings it
+  # saved.
   #
   # Catches a mutation that drops the non-200 check, silently accepting
   # any response code as success.
@@ -114,7 +114,7 @@ describe PeLdapConfig do
     }.not_to output.to_stdout
   end
 
-  ['<html>boom</html>', 'null', '{"kind":{"submitted":{"password":"bind-canary"}}}'].each do |body|
+  ['<html>boom</html>', 'null', '{"kind":{"submitted":{"password":"bind-canary"}}}', '{"kind":"bind-canary has spaces"}'].each do |body|
     it "raises with just the code for the error body #{body}" do
       allow(https_dbl).to receive(:request).with(request_dbl).and_return(instance_double(Net::HTTPServerError, body: body, code: '500'))
 

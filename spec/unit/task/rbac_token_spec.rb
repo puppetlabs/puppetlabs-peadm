@@ -74,6 +74,17 @@ describe RbacToken do
     expect { rbac_token.execute! }.to raise_error(RbacToken::AuthFailure, 'Error requesting token (HTTP 400): schema-violation')
   end
 
+  # Only a plain kind goes into the message; free text could hold anything
+  ['password-canary has spaces', 'quote"canary', "new\nline-canary", ''].each do |kind|
+    it "leaves a kind of #{kind.inspect} out of the error" do
+      failure_response = instance_double(Net::HTTPBadRequest, code: '400', body: { 'kind' => kind }.to_json)
+      allow(failure_response).to receive(:is_a?).with(Net::HTTPSuccess).and_return(false)
+      allow(https_dbl).to receive(:request).with(request_dbl).and_return(failure_response)
+
+      expect { rbac_token.execute! }.to raise_error(RbacToken::AuthFailure, 'Error requesting token (HTTP 400)')
+    end
+  end
+
   def stub_response(code, body: "{\"msg\":\"http #{code}\"}")
     response = instance_double(Net::HTTPResponse, code: code.to_s, body: body)
     allow(response).to receive(:is_a?).with(Net::HTTPSuccess).and_return(false)
@@ -153,8 +164,8 @@ describe RbacToken do
     end
 
     # Net::HTTP returns bodies binary-tagged, so the body here is binary too,
-    # not force_encoded to UTF-8. Invalid UTF-8 in the message once made
-    # to_json raise, which masked the permanent failure as a retryable one.
+    # not force_encoded to UTF-8. Whatever the body holds, the message stays
+    # valid for to_json, or the permanent failure would read as a retryable one.
     it 'still reports a permanent failure as such when the body is not valid UTF-8' do
       stub_response(401, body: "bad \xFF password".b)
 

@@ -32,7 +32,9 @@
 #   The URL to download the Puppet Enterprise installer media from. If not
 #   specified, PEAdm will attempt to download PE installation media from its
 #   standard public source. When specified, PEAdm will download directly from the
-#   URL given.
+#   URL given. If the URL's file name isn't a standard .tar or .tar.gz one, such
+#   as a download.cgi?...&ver= link, the tarball is saved under the standard
+#   puppet-enterprise-<version>-<platform>.tar.gz name for the version.
 #
 plan peadm::subplans::install (
   # Standard
@@ -363,90 +365,96 @@ plan peadm::subplans::install (
 
   wait($csr_yaml_jobs)
 
-  # Upload the pe.conf files the PE installer runs below read. The primary's
-  # holds the console password, so they go up only now, after the download
-  # and CSR steps, and are removed as soon as those runs are done (PE-47523).
+  # The PE installer runs below read a bootstrap pe.conf on each node. The
+  # primary's holds the console password, so it goes up only now, after the
+  # download and CSR steps. A failed run must not leave it behind, so errors
+  # are caught here, the file is removed, and the plan then fails with the
+  # original error (PE-47523).
   $bootstrap_pe_conf = '/tmp/pe.conf'
-  parallelize(['primary', 'primary_postgresql', 'replica_postgresql']) |$var| {
-    $target  = getvar("${var}_target", [])
-    $pe_conf = getvar("${var}_pe_conf")
+  $installer_error = catch_errors() || {
+    parallelize(['primary', 'primary_postgresql', 'replica_postgresql']) |$var| {
+      $target  = getvar("${var}_target", [])
+      $pe_conf = getvar("${var}_pe_conf")
 
-    peadm::file_content_upload($pe_conf, $bootstrap_pe_conf, $target)
-  }
-
-  # Get the master installation up and running. The installer will "fail"
-  # because PuppetDB can't start, if primary_postgresql_target is set. That's
-  # expected, and handled by the task's install_extra_large parameter.
-  run_task('peadm::pe_install', $primary_target,
-    tarball               => $upload_tarball_path,
-    peconf                => $bootstrap_pe_conf,
-    puppet_service_ensure => 'stopped',
-    install_extra_large   => ($arch['architecture'] == 'extra-large'),
-  )
-
-  parallelize($primary_targets) |$target| {
-    if $r10k_private_key {
-      run_task('peadm::mkdir_p_file', $target,
-        path    => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
-        mode    => '0600',
-        content => $r10k_private_key,
-      )
+      peadm::file_content_upload($pe_conf, $bootstrap_pe_conf, $target)
     }
 
-    if $license_key {
-      run_task('peadm::mkdir_p_file', $target,
-        path    => '/etc/puppetlabs/license.key',
-        mode    => '0644',
-        content => $license_key,
-      )
-    }
-  }
-
-  # Configure autosigning for the puppetdb database hosts 'cause they need it
-  $autosign_conf = $database_targets.reduce('') |$memo,$target| { "${target.peadm::certname}\n${memo}" }
-  run_task('peadm::mkdir_p_file', $primary_target,
-    path    => '/etc/puppetlabs/puppet/autosign.conf',
-    owner   => 'pe-puppet',
-    group   => 'pe-puppet',
-    mode    => '0644',
-    content => $autosign_conf,
-  )
-
-  # Run the PE installer on the puppetdb database hosts
-  run_task('peadm::pe_install', $database_targets,
-    tarball               => $upload_tarball_path,
-    peconf                => $bootstrap_pe_conf,
-    puppet_service_ensure => 'stopped',
-  )
-
-  # Now that the main PuppetDB database node is ready, finish priming the
-  # master. Explicitly stop puppetdb first to avoid any systemd interference.
-  run_command('systemctl stop pe-puppetdb', $primary_target)
-  run_command('systemctl start pe-puppetdb', $primary_target)
-
-  if $primary_postgresql_host {
-    # On split-database installs, the primary's own install pass runs before
-    # the dedicated Postgres host is up. Every one-time bootstrap step in
-    # that pass which depends on a database-backed service -- rbac's admin
-    # account activation, classifier's default node groups, and potentially
-    # others -- fails silently when it calls that service's local API,
-    # because the service can't reach its now-remote database yet. Those
-    # steps only exist in the installer's one-shot catalog apply, so nothing
-    # later in a normal install (including an ordinary Puppet run) ever
-    # retries them. Re-run the installer against the already-extracted
-    # installer directory now that the database host is up, so it can finish
-    # what it couldn't the first time.
-    run_task('peadm::pe_reinstall', $primary_target,
-      installer_dir => $pe_installer_dir,
-      peconf        => $bootstrap_pe_conf,
+    # Get the master installation up and running. The installer will "fail"
+    # because PuppetDB can't start, if primary_postgresql_target is set. That's
+    # expected, and handled by the task's install_extra_large parameter.
+    run_task('peadm::pe_install', $primary_target,
+      tarball               => $upload_tarball_path,
+      peconf                => $bootstrap_pe_conf,
+      puppet_service_ensure => 'stopped',
+      install_extra_large   => ($arch['architecture'] == 'extra-large'),
     )
+
+    parallelize($primary_targets) |$target| {
+      if $r10k_private_key {
+        run_task('peadm::mkdir_p_file', $target,
+          path    => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
+          mode    => '0600',
+          content => $r10k_private_key,
+        )
+      }
+
+      if $license_key {
+        run_task('peadm::mkdir_p_file', $target,
+          path    => '/etc/puppetlabs/license.key',
+          mode    => '0644',
+          content => $license_key,
+        )
+      }
+    }
+
+    # Configure autosigning for the puppetdb database hosts 'cause they need it
+    $autosign_conf = $database_targets.reduce('') |$memo,$target| { "${target.peadm::certname}\n${memo}" }
+    run_task('peadm::mkdir_p_file', $primary_target,
+      path    => '/etc/puppetlabs/puppet/autosign.conf',
+      owner   => 'pe-puppet',
+      group   => 'pe-puppet',
+      mode    => '0644',
+      content => $autosign_conf,
+    )
+
+    # Run the PE installer on the puppetdb database hosts
+    run_task('peadm::pe_install', $database_targets,
+      tarball               => $upload_tarball_path,
+      peconf                => $bootstrap_pe_conf,
+      puppet_service_ensure => 'stopped',
+    )
+
+    # Now that the main PuppetDB database node is ready, finish priming the
+    # master. Explicitly stop puppetdb first to avoid any systemd interference.
+    run_command('systemctl stop pe-puppetdb', $primary_target)
+    run_command('systemctl start pe-puppetdb', $primary_target)
+
+    if $primary_postgresql_host {
+      # On split-database installs, the primary's own install pass runs before
+      # the dedicated Postgres host is up. Every one-time bootstrap step in
+      # that pass which depends on a database-backed service -- rbac's admin
+      # account activation, classifier's default node groups, and potentially
+      # others -- fails silently when it calls that service's local API,
+      # because the service can't reach its now-remote database yet. Those
+      # steps only exist in the installer's one-shot catalog apply, so nothing
+      # later in a normal install (including an ordinary Puppet run) ever
+      # retries them. Re-run the installer against the already-extracted
+      # installer directory now that the database host is up, so it can finish
+      # what it couldn't the first time.
+      run_task('peadm::pe_reinstall', $primary_target,
+        installer_dir => $pe_installer_dir,
+        peconf        => $bootstrap_pe_conf,
+      )
+    }
+
+    undef
   }
 
   # Only the installer runs above read the bootstrap pe.conf. The primary's
   # copy holds the console password and every copy holds pe_conf_data, so
-  # remove it now, before the steps a failed install most often stops at
-  # (PE-47523). PE is installed by this point, so a failed removal is a
-  # warning, not a failed install.
+  # remove it now, whether or not they succeeded, and before the steps below.
+  # A failed removal is a warning: it mustn't replace the installer's error,
+  # or fail an install that otherwise worked.
   $pe_conf_cleanup = run_command("rm -f ${bootstrap_pe_conf}", $pe_installer_targets, '_catch_errors' => true)
   $pe_conf_cleanup.error_set.each |$result| {
     # A failed command's message is only its exit code; rm's reason is in stderr
@@ -455,6 +463,10 @@ plan peadm::subplans::install (
       default => $result.error.message,
     }
     out::message("WARNING: could not delete ${bootstrap_pe_conf} on ${result.target.name}: ${reason}. Delete it by hand; the primary's copy holds the console password.") # lint:ignore:140chars
+  }
+
+  if $installer_error =~ Error {
+    fail_plan($installer_error)
   }
 
   # rbac-service can briefly 500/reject auth immediately after this
@@ -487,8 +499,9 @@ plan peadm::subplans::install (
       $memo
     } else {
       if $attempt > 1 {
-        # rbac-api's response body is external content -- sanitize before
-        # logging it on every retry: strip newlines so it can't forge/obscure
+        # The task's error message can carry external content (a connection
+        # error's text, or Bolt's "stderr contained: ..." output) -- sanitize
+        # before logging it on every retry: strip newlines so it can't forge/obscure
         # adjacent CI log lines, cap its length so an unexpectedly verbose
         # payload isn't echoed in full each time, and fix up any invalid or
         # non-UTF8-tagged content -- regsubst/regex can't safely process
@@ -511,7 +524,7 @@ plan peadm::subplans::install (
     # the message that actually surfaces on exhaustion, and Bolt's own
     # --format json outputter calls JSON.generate on plan failure messages,
     # which raises JSON::GeneratorError on invalid UTF-8 -- an unsanitized
-    # rbac-api error could crash the failure report itself, in exactly the
+    # task error could crash the failure report itself, in exactly the
     # CI scenario (machine-parseable output) this ticket exists to fix.
     $rbac_token_error = peadm::sanitize_log_text($rbac_token_result.first.error.message, 200)
     if $rbac_token_result.first.error.kind == $rbac_auth_failure_kind {

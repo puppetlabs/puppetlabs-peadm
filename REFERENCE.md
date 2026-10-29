@@ -37,7 +37,6 @@ primary_host vs replica_host) the node was passed as.
 * [`peadm::flatten_compact`](#peadm--flatten_compact)
 * [`peadm::generate_pe_conf`](#peadm--generate_pe_conf): Generate a pe.conf file in JSON format
 * [`peadm::get_node_group_environment`](#peadm--get_node_group_environment): check if a custom PE environment is set in pe.conf
-* [`peadm::get_pe_conf`](#peadm--get_pe_conf)
 * [`peadm::get_targets`](#peadm--get_targets): Accept undef or a SingleTargetSpec, and return an Array[Target, 1, 0]. This differs from get_target() in that:   - It returns an Array[Target
 * [`peadm::log_plan_parameters`](#peadm--log_plan_parameters): Print the PEADM version and a plan's parameters, for debugging
 * [`peadm::migration_opts_default`](#peadm--migration_opts_default)
@@ -57,6 +56,7 @@ before they get overwritten by a classification reassertion
 
 #### Private Functions
 
+* `peadm::get_pe_conf`: Read a node's pe.conf as a Hash
 * `peadm::url_file_name`: The file name a URL's path ends in, without its query string, fragment or user info
 
 ### Data types
@@ -91,7 +91,7 @@ before they get overwritten by a classification reassertion
 * [`get_psql_version`](#get_psql_version): Run on a PE PSQL node to return the major version of the PSQL server currently installed
 * [`infrastatus`](#infrastatus): Runs puppet infra status and returns the output
 * [`list_compiler_icas`](#list_compiler_icas): Run on a PE primary to list all compiler ICAs and their state, including autosign fingerprint consistency across the fleet
-* [`mkdir_p_file`](#mkdir_p_file): Create a file with the specified content at the specified location
+* [`mkdir_p_file`](#mkdir_p_file): Create a file with the specified content at the specified location. Needs a Python interpreter on the target.
 * [`mv`](#mv): Wrapper task for mv command
 * [`node_group_unpin`](#node_group_unpin): Unpins nodes from a specified PE node group
 * [`os_identification`](#os_identification): Return the operating system runnin gon the target as a string
@@ -817,24 +817,6 @@ Data type: `Peadm::SingleTargetSpec`
 
 the FQDN for the primary, here we will read the pe.conf from
 
-### <a name="peadm--get_pe_conf"></a>`peadm::get_pe_conf`
-
-Type: Puppet Language
-
-The peadm::get_pe_conf function.
-
-#### `peadm::get_pe_conf(Target $target)`
-
-The peadm::get_pe_conf function.
-
-Returns: `Any`
-
-##### `target`
-
-Data type: `Target`
-
-
-
 ### <a name="peadm--get_targets"></a>`peadm::get_targets`
 
 Type: Puppet Language
@@ -1494,7 +1476,7 @@ table for human-readable output (default), json to return the endpoint's respons
 
 ### <a name="mkdir_p_file"></a>`mkdir_p_file`
 
-Create a file with the specified content at the specified location
+Create a file with the specified content at the specified location. Needs a Python interpreter on the target.
 
 **Supports noop?** false
 
@@ -2437,7 +2419,9 @@ Data type: `Optional[Stdlib::HTTPSUrl]`
 The URL to download the Puppet Enterprise installer media from. If not
 specified, PEAdm will attempt to download PE installation media from its
 standard public source. When specified, PEAdm will download directly from the
-URL given.
+URL given. If the URL's file name isn't a standard .tar or .tar.gz one, such
+as a download.cgi?...&ver= link, the tarball is saved under the standard
+puppet-enterprise-<version>-<platform>.tar.gz name for the version.
 
 Default value: `undef`
 
@@ -2983,6 +2967,7 @@ The following parameters are available in the `peadm::upgrade` plan:
 * [`internal_compiler_a_pool_address`](#-peadm--upgrade--internal_compiler_a_pool_address)
 * [`internal_compiler_b_pool_address`](#-peadm--upgrade--internal_compiler_b_pool_address)
 * [`pe_installer_source`](#-peadm--upgrade--pe_installer_source)
+* [`version`](#-peadm--upgrade--version)
 * [`final_agent_state`](#-peadm--upgrade--final_agent_state)
 * [`r10k_known_hosts`](#-peadm--upgrade--r10k_known_hosts)
 * [`stagingdir`](#-peadm--upgrade--stagingdir)
@@ -2994,7 +2979,6 @@ The following parameters are available in the `peadm::upgrade` plan:
 * [`compiler_hosts`](#-peadm--upgrade--compiler_hosts)
 * [`primary_postgresql_host`](#-peadm--upgrade--primary_postgresql_host)
 * [`replica_postgresql_host`](#-peadm--upgrade--replica_postgresql_host)
-* [`version`](#-peadm--upgrade--version)
 * [`token_file`](#-peadm--upgrade--token_file)
 * [`download_mode`](#-peadm--upgrade--download_mode)
 * [`permit_unsafe_versions`](#-peadm--upgrade--permit_unsafe_versions)
@@ -3035,7 +3019,19 @@ Data type: `Optional[Stdlib::HTTPSUrl]`
 The URL to download the Puppet Enterprise installer media from. If not
 specified, PEAdm will attempt to download PE installation media from its
 standard public source. When specified, PEAdm will download directly from the
-URL given.
+URL given. The PE version is taken from the URL's tarball file name, which
+must be a standard puppet-enterprise-<version>-<platform>.tar[.gz] name.
+For a URL without one, set version too, and the tarball is saved under the
+standard name for that version.
+
+Default value: `undef`
+
+##### <a name="-peadm--upgrade--version"></a>`version`
+
+Data type: `Optional[Peadm::Pe_version]`
+
+The PE version to upgrade to. Required unless pe_installer_source has a
+standard tarball file name to take it from.
 
 Default value: `undef`
 
@@ -3126,14 +3122,6 @@ Default value: `undef`
 ##### <a name="-peadm--upgrade--replica_postgresql_host"></a>`replica_postgresql_host`
 
 Data type: `Optional[Peadm::SingleTargetSpec]`
-
-
-
-Default value: `undef`
-
-##### <a name="-peadm--upgrade--version"></a>`version`
-
-Data type: `Optional[Peadm::Pe_version]`
 
 
 

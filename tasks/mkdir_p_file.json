@@ -1,5 +1,5 @@
 {
-  "description": "Create a file with the specified content at the specified location",
+  "description": "Create a file with the specified content at the specified location. Needs a Python interpreter on the target.",
   "parameters": {
     "path": {
       "type": "String",

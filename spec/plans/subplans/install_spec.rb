@@ -251,8 +251,9 @@ describe 'peadm::subplans::install' do
       expect(run_plan('peadm::subplans::install', params)).to be_ok
     end
 
-    # rbac-api's response body is external, network-sourced content (PE-46689's
-    # own retry loop already carries it into fail_plan on final exhaustion) --
+    # The task's error message can carry external content (a connection error's
+    # text, or Bolt's "stderr contained: ..." output), and PE-46689's own retry
+    # loop already carries it into fail_plan on final exhaustion --
     # surfacing it on every retry too widens where it can end up, so it must be
     # sanitized rather than logged verbatim: newlines could forge/obscure
     # adjacent CI log lines, and an unexpectedly large payload shouldn't get
@@ -901,6 +902,34 @@ describe 'peadm::subplans::install' do
       expect(run_plan('peadm::subplans::install', install_params.merge('pe_installer_source' => source))).to be_ok
     end
 
+    # Artifactory dev/RC builds ship as a plain .tar
+    it "keeps the URL's own name for a plain .tar source" do
+      expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
+        expect(params['local_path']).to eq('/tmp/puppet-enterprise-2026.0.0-el-7.11-x86_64.tar')
+        Bolt::PlanResult.new({}, 'success')
+      end
+      expect_task('peadm::pe_install').with_targets('primary').with_params(
+        'tarball'               => '/tmp/puppet-enterprise-2026.0.0-el-7.11-x86_64.tar',
+        'peconf'                => '/tmp/pe.conf',
+        'puppet_service_ensure' => 'stopped',
+        'install_extra_large'   => false,
+      )
+
+      source = 'https://artifacts.example.com/ci/puppet-enterprise-2026.0.0-el-7.11-x86_64.tar'
+      expect(run_plan('peadm::subplans::install', install_params.merge('pe_installer_source' => source))).to be_ok
+    end
+
+    # The name comes from the path, not from a tarball-looking name in the query
+    it 'ignores a tarball-looking name in the query string' do
+      expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
+        expect(params['local_path']).to eq(tarball)
+        Bolt::PlanResult.new({}, 'success')
+      end
+
+      source = 'https://artifacts.example.com/download?file=pe-other-1.0.0-el-7-x86_64.tar.gz'
+      expect(run_plan('peadm::subplans::install', install_params.merge('pe_installer_source' => source))).to be_ok
+    end
+
     it 'downloads a pre-signed URL directly through the masked source parameter' do
       expect_task('peadm::download').with_targets('primary').return do |targets:, params:, **|
         expect(params['source']).to be_a(Puppet::Pops::Types::PSensitiveType::Sensitive)
@@ -915,16 +944,23 @@ describe 'peadm::subplans::install' do
 
     # Only the installer runs read the bootstrap pe.conf, and the primary's
     # copy holds the console password, so it's on the nodes only while they
-    # run: uploaded after the download and CSR steps, and removed before the
-    # steps a failed install most often stops at.
-    it 'uploads /tmp/pe.conf just before the installer runs and removes it right after them' do
+    # run: uploaded after the download and CSR steps, and removed right after
+    # the installer runs, before the steps a failed install most often stops at.
+    it 'uploads /tmp/pe.conf just before the installer runs and removes it right after the installer runs' do
       call_log = record_calls
+      allow_task('peadm::precheck').return_for_targets(
+        'primary'      => { 'hostname' => 'primary', 'platform' => 'el-7.11-x86_64' },
+        'replica'      => { 'hostname' => 'replica', 'platform' => 'el-7.11-x86_64' },
+        'postgres1'    => { 'hostname' => 'postgres1', 'platform' => 'el-7.11-x86_64' },
+        'postgres2'    => { 'hostname' => 'postgres2', 'platform' => 'el-7.11-x86_64' },
+      )
 
-      expect(run_plan('peadm::subplans::install', install_params.merge('primary_postgresql_host' => 'postgres1'))).to be_ok
+      params = install_params.merge('replica_host' => 'replica', 'primary_postgresql_host' => 'postgres1', 'replica_postgresql_host' => 'postgres2')
+      expect(run_plan('peadm::subplans::install', params)).to be_ok
 
       first_reader = call_log.index { |call| call.start_with?('peadm::pe_install@') }
       last_reader = call_log.rindex { |call| call.start_with?('peadm::pe_install@', 'peadm::pe_reinstall@') }
-      ['primary', 'postgres1'].each do |node|
+      ['primary', 'postgres1', 'postgres2'].each do |node|
         uploaded = call_log.index("upload /tmp/pe.conf@#{node}")
         removed = call_log.index("rm -f /tmp/pe.conf@#{node}")
         expect(uploaded).not_to be_nil, "/tmp/pe.conf was not uploaded to #{node}"
@@ -939,10 +975,30 @@ describe 'peadm::subplans::install' do
 
     it 'uploads no /tmp/pe.conf when the download fails' do
       call_log = record_calls
-      allow_plan('peadm::util::retrieve_and_upload').error_with('kind' => 'peadm/download-error', 'msg' => 'Download failed')
+      expect_plan('peadm::util::retrieve_and_upload').error_with('kind' => 'peadm/download-error', 'msg' => 'Download failed')
 
-      expect(run_plan('peadm::subplans::install', install_params)).not_to be_ok
+      result = run_plan('peadm::subplans::install', install_params)
+
+      expect(result).not_to be_ok
+      expect(result.value.kind).to eq('peadm/download-error')
       expect(call_log.grep(%r{\Aupload /tmp/pe\.conf@})).to be_empty
+    end
+
+    # PE rejects a weak console_password late in the installer run, and the
+    # file with the password must not stay behind then.
+    it 'removes /tmp/pe.conf, then fails with the installer error, when an installer run fails' do
+      call_log = record_calls
+      allow_task('peadm::pe_install').return do |targets:, **|
+        targets.each { |target| call_log << "peadm::pe_install@#{target.name}" }
+        Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, error: { 'msg' => 'Password is too weak', 'kind' => 'peadm/installer-failed' }) })
+      end
+
+      result = run_plan('peadm::subplans::install', install_params)
+
+      expect(result).not_to be_ok
+      expect(call_log).to include('rm -f /tmp/pe.conf@primary')
+      expect(call_log.index('rm -f /tmp/pe.conf@primary')).to be > call_log.index('peadm::pe_install@primary')
+      expect(call_log).not_to include('peadm::rbac_token@primary')
     end
 
     it "warns with rm's error, but finishes the install, when /tmp/pe.conf can't be removed" do

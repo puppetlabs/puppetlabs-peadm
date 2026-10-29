@@ -99,9 +99,11 @@ describe 'peadm::upgrade' do
       expect(run_plan('peadm::upgrade', 'primary_host' => 'primary', 'pe_installer_source' => signed_source)).to be_ok
     end
 
-    it 'keeps user info out of the logged parameters even when the password has a raw #' do
+    # What the file name of a URL like this one would be can't be told, so
+    # there is none: nothing of the URL is logged, and version is needed.
+    it 'logs nothing of the URL, and needs version, when the password has a raw #' do
       allow_upgrade_from_url
-      expect_out_message.with_params("Parameter 'pe_installer_source': [puppet-enterprise-2023.8.10-el-7.11-x86_64.tar.gz]")
+      expect_out_message.with_params("Parameter 'pe_installer_source': []")
       expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
         expect(params['local_path']).to eq(tarball)
         ok_plan_result
@@ -109,7 +111,37 @@ describe 'peadm::upgrade' do
 
       expect(run_plan('peadm::upgrade',
                       'primary_host'        => 'primary',
+                      'version'             => '2023.8.10',
                       'pe_installer_source' => 'https://ci:Pa55#word-canary@artifacts.example.com/puppet-enterprise-2023.8.10-el-7.11-x86_64.tar.gz')).to be_ok
+    end
+
+    # A last path segment that isn't a tarball's can be a token
+    it 'logs nothing of a URL whose last path segment is not a tarball name' do
+      allow_upgrade_from_url
+      expect_out_message.with_params("Parameter 'pe_installer_source': []")
+      expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
+        expect(params['local_path']).to eq(tarball)
+        ok_plan_result
+      end
+
+      expect(run_plan('peadm::upgrade',
+                      'primary_host'        => 'primary',
+                      'version'             => '2023.8.10',
+                      'pe_installer_source' => 'https://artifacts.example.com/dl/token-canary')).to be_ok
+    end
+
+    # Artifactory dev/RC builds ship as a plain .tar
+    it 'takes the version from a plain .tar file name' do
+      allow_upgrade_from_url
+      expect_out_message.with_params("Parameter 'pe_installer_source': [puppet-enterprise-2023.8.10-el-7.11-x86_64.tar]")
+      expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
+        expect(params['local_path']).to eq('/tmp/puppet-enterprise-2023.8.10-el-7.11-x86_64.tar')
+        ok_plan_result
+      end
+
+      expect(run_plan('peadm::upgrade',
+                      'primary_host'        => 'primary',
+                      'pe_installer_source' => 'https://artifacts.example.com/ci/puppet-enterprise-2023.8.10-el-7.11-x86_64.tar')).to be_ok
     end
 
     # The file name of a download.cgi?...&ver= link says nothing about the
@@ -125,6 +157,28 @@ describe 'peadm::upgrade' do
                       'primary_host'        => 'primary',
                       'version'             => '2023.8.10',
                       'pe_installer_source' => 'https://pm.puppet.com/cgi-bin/download.cgi?dist=el&rel=7&arch=x86_64&ver=2023.8.10')).to be_ok
+    end
+
+    # No file name at all: peadm::url_file_name returns undef
+    ['https://pm.puppet.com/download/', 'https://pm.puppet.com', 'https://pm.puppet.com/?ver=2023.8.10'].each do |source|
+      it "names the tarball after version for #{source}" do
+        allow_upgrade_from_url
+        expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
+          expect(params['local_path']).to eq(tarball)
+          ok_plan_result
+        end
+
+        expect(run_plan('peadm::upgrade', 'primary_host' => 'primary', 'version' => '2023.8.10', 'pe_installer_source' => source)).to be_ok
+      end
+
+      it "fails for #{source} when version is not given" do
+        allow_upgrade_from_url
+
+        result = run_plan('peadm::upgrade', 'primary_host' => 'primary', 'pe_installer_source' => source)
+
+        expect(result).not_to be_ok
+        expect(result.value.msg).to eq('pe_installer_source has no .tar or .tar.gz file name to take the PE version from. Set the version parameter as well.')
+      end
     end
 
     it 'fails when the URL has no tarball file name and version is not given' do

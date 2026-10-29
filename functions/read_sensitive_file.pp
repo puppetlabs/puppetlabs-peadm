@@ -22,9 +22,9 @@ function peadm::read_sensitive_file(
     as_sensitive => true,
   ).first
 
-  # The pcp transport leaves _sensitive unwrapped, and can run a read_file
-  # from before as_sensitive (from the PE environment), which returns the
-  # content at the top level.
+  # The pcp transport leaves _sensitive unwrapped, and runs the task from the
+  # primary's deployed code, which can be an older peadm whose read_file
+  # ignores as_sensitive and returns the content at the top level.
   $read = $result['_sensitive'] ? {
     Sensitive => $result['_sensitive'].unwrap,
     Hash      => $result['_sensitive'],

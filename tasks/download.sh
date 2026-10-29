@@ -58,6 +58,8 @@ describe-url() {
   [[ "$host" =~ $valid_host ]] || host=''
   local path="${after%%[?#]*}"           # drop ?query and #fragment
   local name="${path##*/}"               # the last path segment
+  # Only a tarball's name is safe to print: another last segment can be a token
+  [[ "$name" =~ \.tar(\.gz)?$ ]] || name=''
 
   if [[ -n "$name" && -n "$host" ]]; then
     printf '%s from %s' "$name" "$host"
@@ -80,8 +82,11 @@ download() {
   echo "Downloading to temporary file ${tmp_file}"
 
   # curl's error goes to stdout with the rest: Bolt drops a task's stderr when
-  # there's stdout. It names the host at most, never the URL.
-  if curl_error=$(curl -sS -f -L -o "${tmp_file}" "$1" 2>&1); then
+  # there's stdout. -g keeps curl from globbing a URL with [ ] { } in it. In
+  # practice curl's first line names a host at most, but some errors (a bad
+  # URL) print the URL, on that line or the next, so only the first line
+  # is kept, with any URL in it replaced.
+  if curl_error=$(curl -sS -g -f -L -o "${tmp_file}" "$1" 2>&1); then
     echo "Moving ${tmp_file} to target path ${2}"
 
     # Perform the move. If it doesn't work, clean up and return an error
@@ -91,7 +96,10 @@ download() {
       return 1
     fi
   else
-    echo "Error: curl exited with $? downloading ${description}${curl_error:+: ${curl_error}}"
+    local curl_status=$?
+    curl_error="${curl_error%%$'\n'*}"
+    curl_error="${curl_error//"$1"/<url>}"
+    echo "Error: curl exited with ${curl_status} downloading ${description}${curl_error:+: ${curl_error}}"
     echo "Removing temporary file ${tmp_file}"
     rm "${tmp_file}"
     return 1
@@ -102,7 +110,7 @@ download-size-verify() {
   local source="$1"
   local path="$2"
 
-  urisize=$(curl -s -L --head "$source" | sed -rn 's/Content-Length: ([0-9]+)/\1/p' | tr -d '\012\015')
+  urisize=$(curl -s -g -L --head "$source" | sed -rn 's/Content-Length: ([0-9]+)/\1/p' | tr -d '\012\015')
   filesize=$(stat -c%s "$path" 2>/dev/null || stat -f%z "$path" 2>/dev/null)
 
   echo "Filesize: ${filesize}"

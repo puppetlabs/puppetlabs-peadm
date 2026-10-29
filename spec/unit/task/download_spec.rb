@@ -27,24 +27,37 @@ describe 'tasks/download.sh' do
   # Writes a stand-in for the downloaded file and prints no headers for
   # --head, so the size check never matches. Fails for the .asc signature,
   # the way a pre-signed URL with ".asc" appended does, and for everything,
-  # with curl's own error text, when FAKE_CURL_FAIL is set.
+  # with curl's own error text, when FAKE_CURL_FAIL is set: a 403 for '1', or
+  # for 'glob' the two-line error real curl gives a URL it can't take, which
+  # names the whole URL. The error text only appears when curl is given -S, as
+  # real curl does with -s, and a URL with [ ] { } is only taken with -g.
   let(:fake_curl) do
     <<~CURL
       #!/bin/bash
-      if [ -n "$FAKE_CURL_FAIL" ]; then
-        echo 'curl: (22) The requested URL returned error: 403' >&2
-        exit 22
-      fi
+      show_error='' globoff=''
       out=''
       url=''
       while [ $# -gt 0 ]; do
         case "$1" in
           -o) out="$2"; shift 2 ;;
           --head) exit 0 ;;
+          -*g*) globoff=1; [[ "$1" == *S* ]] && show_error=1; shift ;;
+          -*S*) show_error=1; shift ;;
           -*) shift ;;
           *) url="$1"; shift ;;
         esac
       done
+      if [[ "$url" == *[\\[\\]{}]* && -z "$globoff" ]]; then
+        [ -n "$show_error" ] && printf 'curl: (3) unmatched brace in URL position 16:\\n%s\\n' "$url" >&2
+        exit 3
+      fi
+      if [ "$FAKE_CURL_FAIL" = glob ]; then
+        [ -n "$show_error" ] && printf 'curl: (3) unmatched brace in URL position 16:\\n%s\\n' "$url" >&2
+        exit 3
+      elif [ -n "$FAKE_CURL_FAIL" ]; then
+        [ -n "$show_error" ] && echo 'curl: (22) The requested URL returned error: 403' >&2
+        exit 22
+      fi
       case "$url" in *.asc) exit 22 ;; esac
       echo payload > "$out"
     CURL
@@ -68,7 +81,7 @@ describe 'tasks/download.sh' do
       'PT_verify_download' => verify_download.to_s,
       'PT_key_server'      => 'hkp://keyserver.example.com:80',
     }
-    env['FAKE_CURL_FAIL'] = '1' if curl_fails
+    env['FAKE_CURL_FAIL'] = curl_fails.to_s if curl_fails
     Open3.capture2e(env, 'bash', script)
   end
 
@@ -94,7 +107,7 @@ describe 'tasks/download.sh' do
   end
 
   it "reports curl's exit code and error, but not the query string, when the download fails" do
-    output, status = run_download(verify_download: false, curl_fails: true)
+    output, status = run_download(verify_download: false, curl_fails: '1')
 
     expect(status).not_to be_success
     expect(output).to include('Error: curl exited with 22 downloading puppet-enterprise-2023.8.10-el-8-x86_64.tar.gz from bucket.s3.amazonaws.com: ' \
@@ -102,7 +115,30 @@ describe 'tasks/download.sh' do
     expect(output).not_to include('canary')
   end
 
+  # curl prints the whole URL for some errors, on a line of its own after the
+  # first one; only the first line is kept, and a URL in it is replaced
+  it 'keeps the URL out of the output when curl prints it in its error' do
+    source = 'https://user-canary:Pw{1-canary@artifacts.example.com/pe/puppet-enterprise.tar.gz?sig=sig-canary'
+    output, status = run_download(verify_download: false, source: source, curl_fails: 'glob')
+
+    expect(status).not_to be_success
+    expect(output).to include('Error: curl exited with 3 downloading puppet-enterprise.tar.gz from artifacts.example.com: ' \
+                              'curl: (3) unmatched brace in URL position 16:')
+    expect(output).not_to include('canary')
+  end
+
+  # Without -g curl takes [ ] { } in a URL as a glob and rejects it
+  it 'downloads a URL with [ ] { } in its query string' do
+    source = 'https://artifacts.example.com/pe/puppet-enterprise.tar.gz?filter[a]={b}&sig=sig-canary'
+    output, status = run_download(verify_download: false, source: source)
+
+    expect(status).to be_success, output
+    expect(File.read(download_path)).to eq("payload\n")
+  end
+
   {
+    'https://host-canary:pw-canary/pe/puppet-enterprise.tar.gz'                                => 'puppet-enterprise.tar.gz',
+    'https://artifacts.example.com/dl/token-canary'                                            => 'artifacts.example.com',
     'https://user-canary:password-canary@artifacts.example.com/pe/puppet-enterprise.tar.gz' => 'puppet-enterprise.tar.gz from artifacts.example.com',
     'https://user-canary:password-canary@artifacts.example.com?id=1-canary'                 => 'artifacts.example.com',
     'https://artifacts.example.com/pe/puppet-enterprise.tar.gz#fragment-canary'             => 'puppet-enterprise.tar.gz from artifacts.example.com',

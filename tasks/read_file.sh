@@ -15,9 +15,10 @@ main() {
 
 	local content error_field=''
 	if [ -f "$PT_path" ] && [ -r "$PT_path" ]; then
-		# The path goes in as an argument, not into the Python source. A failed
-		# read fails the task (Python's traceback is the error) rather than
-		# printing JSON Bolt can't parse, which callers took for a missing file.
+		# The path goes in as an argument, so a ' in it can't break the Python
+		# source. A failed read fails the task (Python's traceback is the error)
+		# instead of printing JSON Bolt can't parse, which a caller would read
+		# as a missing file.
 		content=$("$python_exec" -c 'import io, json, sys; print(json.dumps(io.open(sys.argv[1], encoding="utf-8").read()))' "$PT_path") || exit 1
 	else
 		content=null

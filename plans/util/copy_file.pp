@@ -7,9 +7,9 @@ plan peadm::util::copy_file(
   $source_target   = peadm::get_targets($source_host, 1)
   $replica_target  = $targets
 
-  # Callers copy the orchestrator's keys.json and
-  # orchestrator-encryption-keys.json and console-services' keys.json, so
-  # read as Sensitive (PE-47523)
+  # Callers copy secrets such as the orchestrator's keys.json and
+  # orchestrator-encryption-keys.json and console-services' keys.json (and
+  # also hiera.yaml), so read as Sensitive (PE-47523)
   $source_content = peadm::read_sensitive_file($source_target, $path)
 
   if $source_content {

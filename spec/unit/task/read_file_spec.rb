@@ -8,9 +8,9 @@ require 'tmpdir'
 
 # PE-47523: Bolt logs every task's result in bolt-debug.log at INFO. With
 # as_sensitive, read_file returns the content under _sensitive, which Bolt
-# wraps in Sensitive and masks in that log. A read that fails must fail the
-# task, not print JSON that Bolt can't parse, which callers took for a
-# missing file. The script runs for real.
+# wraps in Sensitive and masks in that log. A read that fails fails the task
+# instead of printing JSON that Bolt can't parse, which a caller would read as
+# a missing file. The script runs for real.
 describe 'tasks/read_file.sh' do
   let(:script) { File.expand_path('../../../tasks/read_file.sh', __dir__) }
   let(:workdir) { Dir.mktmpdir }
@@ -61,12 +61,19 @@ describe 'tasks/read_file.sh' do
     expect(read_file('PT_path' => workdir)).to eq(missing_file)
   end
 
-  # The path used to be pasted into the Python source.
+  # The path is passed to Python as an argument, not as part of its source
   it "reads a file whose path holds a '" do
     quoted = File.join(workdir, "it's.json")
     File.write(quoted, "{}\n")
 
     expect(read_file('PT_path' => quoted)).to eq('content' => "{}\n")
+  end
+
+  it 'treats a file it cannot read as no file', unless: Process.uid.zero? do
+    File.write(file, "{}\n")
+    File.chmod(0o000, file)
+
+    expect(read_file('PT_path' => file)).to eq(missing_file)
   end
 
   it 'fails, printing no JSON, when the file is not UTF-8' do

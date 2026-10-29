@@ -34,8 +34,8 @@ plan peadm_spec::install_test_cluster (
     }
   }
 
-  # TODO PE-47903: this password reaches bolt-debug.log via the command result; workflows template secrets.CONSOLE_PASSWORD into scripts.
   # CI jobs triggered from forks don't have access to secrets, so use randomized input instead.
+  # TODO PE-47903: that password reaches bolt-debug.log via the command's result; workflows template secrets.CONSOLE_PASSWORD into scripts.
   # '$' is deliberately excluded from the charset: the PE installer interpolates the password
   # inside a double-quoted Puppet string, so a '$' followed by word characters fails the install
   # with "Undefined variable".
