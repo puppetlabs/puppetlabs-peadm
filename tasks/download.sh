@@ -44,7 +44,7 @@ verify-file() {
 # logs (PE-47523). Anything that doesn't look like a plain host is left out.
 describe-url() {
   local fallback='the source URL'
-  # Same scheme rule as peadm::url_file_name
+  # Keep in sync with peadm::url_file_name (the scheme and @ rules)
   local scheme='^[A-Za-z][A-Za-z0-9+.-]*://'
   # Without a scheme there's no telling where the host starts
   if ! [[ "$1" =~ $scheme ]]; then
@@ -68,7 +68,7 @@ describe-url() {
   local path="${after%%[?#]*}"           # drop ?query and #fragment
   local name="${path##*/}"               # the last path segment
   # Only a tarball's name is safe to print: another last segment can be a
-  # token. Same rule as peadm::url_tarball_name.
+  # token. Keep in sync with peadm::url_tarball_name.
   local tarball_name='^[A-Za-z0-9][A-Za-z0-9._+-]*\.tar(\.gz)?$'
   [[ "$name" =~ $tarball_name ]] || name=''
 

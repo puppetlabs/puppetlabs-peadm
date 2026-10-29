@@ -762,9 +762,9 @@ describe 'peadm::subplans::install' do
     end
     let(:tarball) { '/tmp/puppet-enterprise-2023.8.10-el-7.11-x86_64.tar.gz' }
 
-    def command_results(targets, command, exit_code: 0, stderr: '')
+    def command_results(targets, command, exit_code: 0, stdout: '', stderr: '')
       Bolt::ResultSet.new(targets.map do |target|
-        Bolt::Result.for_command(target, { 'stdout' => '', 'stderr' => stderr, 'exit_code' => exit_code }, 'command', command, [])
+        Bolt::Result.for_command(target, { 'stdout' => stdout, 'stderr' => stderr, 'exit_code' => exit_code }, 'command', command, [])
       end)
     end
 
@@ -879,7 +879,7 @@ describe 'peadm::subplans::install' do
     end
 
     # Where the user info ends can't be told when the password holds a raw /
-    # and there's no path: what's left of it used to become the file name
+    # and there's no path: what's left of it must not become the file name
     it 'keeps user info out of the tarball path even when the password has a raw /' do
       expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
         expect(params['local_path']).to eq(tarball)
@@ -1035,9 +1035,9 @@ describe 'peadm::subplans::install' do
       # The block also runs commands (restarting PuppetDB), whose results have
       # stdout and stderr where a task's has _output
       it 'prints the output of a failed command too' do
-        expect_out_message.with_params("Failed on primary: The command failed with exit code 5\ncommand-err-canary\n")
+        expect_out_message.with_params("Failed on primary: The command failed with exit code 5\ncommand-out-canary\n\ncommand-err-canary\n")
         allow_command('systemctl start pe-puppetdb').return do |targets:, command:, **|
-          command_results(targets, command, exit_code: 5, stderr: "command-err-canary\n")
+          command_results(targets, command, exit_code: 5, stdout: "command-out-canary\n", stderr: "command-err-canary\n")
         end
         allow_task('peadm::pe_install').always_return({})
 

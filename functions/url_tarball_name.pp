@@ -1,12 +1,11 @@
 # @summary The tarball file name a URL ends in, or undef if it doesn't end in one
 #
 # This is peadm::url_file_name, kept only when the name ends in .tar or
-# .tar.gz and is made of letters, digits and . _ + - , starting with a letter
-# or digit (keep this in sync with describe-url in tasks/download.sh). The
-# plans use it for
-# the PE tarball's name, which ends up in file paths and shell commands, and
-# for what they log of pe_installer_source, so any other file name, which can
-# be a token, is neither used nor printed.
+# .tar.gz and is made of letters, digits and `. _ + -`, starting with a letter
+# or digit. The plans use it for the PE tarball's name, which ends up in file
+# paths and shell commands, and for what they log of pe_installer_source, so
+# any other file name, which can be a token, is neither used nor printed.
+# Keep the rule in sync with describe-url in tasks/download.sh.
 #
 # @api private
 #

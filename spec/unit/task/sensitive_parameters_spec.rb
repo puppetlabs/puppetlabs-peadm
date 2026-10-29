@@ -13,7 +13,7 @@ require 'json'
 #
 # Limits: when every target uses the pcp transport, Bolt ignores task
 # metadata, so the flag has no effect there. Task results are logged too;
-# peadm::read_sensitive_file covers the reads that return secrets.
+# peadm::read_sensitive_file covers the reads the plans make through it.
 describe 'task metadata' do
   # Keep in sync with functions/log_plan_parameters.pp; the last example
   # checks that.
@@ -79,8 +79,8 @@ describe 'task metadata' do
   # shows it and Bolt's own trace log records it. On PowerShell targets every
   # input method, stdin included (as a here-string), puts the value in the
   # command Bolt runs, so none keeps it off. An implementation with a
-  # sensitive parameter is held to the stdin rule anyway; download.ps1 is
-  # exempt until PE-47901.
+  # sensitive parameter is held to the stdin rule anyway; download.sh and
+  # download.ps1 are exempt until PE-47901.
   metadata.each do |task, meta|
     next unless (meta['parameters'] || {}).values.any? { |spec| spec['sensitive'] }
 

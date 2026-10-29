@@ -1,4 +1,4 @@
-# @summary Read a file that can hold secrets, with Bolt masking its content in its logs where it can
+# @summary Read a file that can hold secrets as Sensitive, so Bolt masks it in its log and results
 #
 # Bolt logs every task's result in bolt-debug.log. With as_sensitive,
 # peadm::read_file returns the content under _sensitive, which Bolt masks in

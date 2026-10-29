@@ -75,7 +75,7 @@ describe RbacToken do
   end
 
   # Only a plain kind goes into the message; free text could hold anything
-  ['password-canary has spaces', 'quote"canary', "new\nline-canary", '', "ab\xFFc-canary", 'a' * 129].each do |kind|
+  ['password-canary has spaces', 'quote"canary', "new\nline-canary", '', "ab\xFFc-canary", 'a' * 129, "abc\n"].each do |kind|
     it "leaves a kind of #{kind.inspect} out of the error" do
       # JSON generation refuses invalid UTF-8, so the body is built by hand
       body = kind.valid_encoding? ? { 'kind' => kind }.to_json : %({"kind":"#{kind}"}).b

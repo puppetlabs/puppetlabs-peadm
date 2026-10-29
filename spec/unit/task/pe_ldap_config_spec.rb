@@ -114,8 +114,16 @@ describe PeLdapConfig do
     }.not_to output.to_stdout
   end
 
-  ['<html>boom</html>', 'null', '{"kind":{"submitted":{"password":"bind-canary"}}}', '{"kind":"bind-canary has spaces"}', %({"kind":"#{'a' * 129}"}),
-   %({"kind":"ab\xFFc-canary"}).b].each do |body|
+  [
+    '<html>boom</html>',
+    'null',
+    '{"kind":{"submitted":{"password":"bind-canary"}}}',
+    '{"kind":"bind-canary has spaces"}',
+    %({"kind":"#{'a' * 129}"}),
+    %({"kind":"x\\nbind-canary"}),
+    %({"kind":"abc\\n"}),
+    %({"kind":"ab\xFFc-canary"}).b,
+  ].each do |body|
     it "raises with just the code for the error body #{body}" do
       allow(https_dbl).to receive(:request).with(request_dbl).and_return(instance_double(Net::HTTPServerError, body: body, code: '500'))
 
@@ -131,7 +139,8 @@ describe PeLdapConfig do
     expect { task.execute! }.to raise_error(RuntimeError, "API response code 400 (#{kind})")
   end
 
-  # The ds endpoint, before 2023.8.0, returns the settings it saved
+  # Both endpoints print only the status; the legacy ds endpoint (before
+  # 2023.8.0) returns the settings it saved
   ['2023.7.1', '2025.11.3'].each do |version|
     context "when pe_version is #{version}" do
       let(:pe_version) { version }

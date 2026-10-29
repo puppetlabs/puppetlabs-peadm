@@ -19,7 +19,7 @@
 #   file name, which must then be a standard
 #   `puppet-enterprise-<version>-<platform>.tar.gz` (or `.tar`) name. A URL
 #   whose file name doesn't end in `.tar` or `.tar.gz`, or has characters other
-#   than letters, digits and `. _ + -`, needs version too, and the tarball is
+#   than letters, digits and `. _ + -` (starting with a letter or digit), needs version too, and the tarball is
 #   saved under the standard name for that version. A URL with an @ after its
 #   host counts as having no file name.
 # @param version
@@ -157,21 +157,34 @@ plan peadm::upgrade (
     # names no version, so the tarball is named after the version parameter
     # instead. When version is given it is the version, whatever the file is
     # called, unless the name carries a different version.
+    #
+    # The version checked and used below is its x.y.z, as the one read from a
+    # file name always was: a suffix (2025.11.0-rc1, a dev build's -23-gabcdef0)
+    # is in no supported version range, and would skip the version-gated steps.
     $url_tarball_name = peadm::url_tarball_name($pe_installer_source)
     if $url_tarball_name {
-      $name_version = $url_tarball_name.split('-')[2]
-      # A version can carry a suffix (2025.11.0-rc1) that the name's version,
-      # read up to its first dash, doesn't, so only its x.y.z is compared
+      # Only a puppet-enterprise-<version>-... name carries a version
+      $name_version = $url_tarball_name ? {
+        /\Apuppet-enterprise-/ => $url_tarball_name.regsubst(/\.tar(\.gz)?\z/, '').split('-')[2],
+        default                => undef,
+      }
       if $version and $name_version =~ Peadm::Pe_version and $version.split('-')[0] != $name_version {
         fail_plan("pe_installer_source is the tarball for PE ${name_version}, but version is ${version}")
       }
       $pe_tarball_name = $url_tarball_name
-      $_version        = $version.lest || { $name_version }
+      $_version        = $version ? {
+        undef   => $name_version,
+        default => $version.split('-')[0],
+      }
     } elsif $version {
       $pe_tarball_name = "puppet-enterprise-${version}-${platform}.tar.gz"
-      $_version        = $version
+      $_version        = $version.split('-')[0]
     } else {
-      fail_plan('pe_installer_source has no recognizable .tar or .tar.gz file name (a URL with an @ after its host is treated as having none). Set the version parameter as well.')
+      $at_note = $pe_installer_source ? {
+        /@/     => ' (a URL with an @ after its host is treated as having none)',
+        default => '',
+      }
+      fail_plan("pe_installer_source has no recognizable .tar or .tar.gz file name${at_note}. Set the version parameter as well.")
     }
     $pe_tarball_source = $pe_installer_source
   } else {

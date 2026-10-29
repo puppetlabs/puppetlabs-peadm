@@ -24,13 +24,14 @@ describe 'tasks/download.sh' do
   let(:bin_dir) { File.join(workdir, 'bin') }
   let(:download_path) { File.join(workdir, 'pe.tar.gz') }
 
-  # Writes a stand-in for the downloaded file and prints no headers for
-  # --head, so the size check never matches. Fails for the .asc signature,
-  # the way a pre-signed URL with ".asc" appended does. With FAKE_CURL_FAIL it
-  # fails for everything, printing on stderr what real curl can print: a 403,
-  # or text holding the URL, a fragment of it, or both lines of curl's error for
-  # a URL it can't take. A URL with [ ] { } is only taken with -g, as with
-  # real curl.
+  # Writes a stand-in for the downloaded file. Answers --head with
+  # Content-Length: 8, the size of the 'payload' it writes, so the size check
+  # matches a file holding that. Fails for the .asc signature, the way a
+  # pre-signed URL with ".asc" appended does. A URL with [ ] { } is only taken
+  # with -g, as with real curl; without it curl prints a two-line error that
+  # names the whole URL. With FAKE_CURL_FAIL it fails for everything, printing
+  # on stderr what real curl can print: a 403, text holding the URL, or a
+  # fragment of it, for a HEAD request as well.
   let(:fake_curl) do
     <<~CURL
       #!/bin/bash
@@ -50,7 +51,7 @@ describe 'tasks/download.sh' do
         printf 'curl: (3) unmatched brace in URL position 16:\\n%s\\n' "$url" >&2
         exit 3
       fi
-      if [ -n "$head" ]; then
+      if [ -n "$head" ] && [ -z "$FAKE_CURL_FAIL" ]; then
         printf 'HTTP/1.1 200 OK\\r\\nContent-Length: 8\\r\\n\\r\\n'
         exit 0
       fi
@@ -125,6 +126,17 @@ describe 'tasks/download.sh' do
     end
   end
 
+  # The size check's HEAD request can fail with text that holds the URL too
+  [:url, :fragment].each do |mode|
+    it "prints none of curl's text when the size check's HEAD request fails (#{mode})" do
+      source = 'https://user-canary:P4ss@W0rd-canary@artifacts.example.com/pe/puppet-enterprise.tar.gz?sig=sig-canary'
+      output, _status = run_download(verify_download: false, source: source, curl_fails: mode)
+
+      expect(output).not_to include('canary')
+      expect(output).not_to include('curl: (')
+    end
+  end
+
   # Without -g curl takes [ ] { } in a URL as a glob and rejects it, in the
   # download and in the size check's HEAD request
   [true, false].each do |verify_download|
@@ -150,6 +162,8 @@ describe 'tasks/download.sh' do
     'https://host-canary:pw-canary/pe/puppet-enterprise.tar.gz'                                => 'puppet-enterprise.tar.gz',
     'https://artifacts.example.com/dl/token-canary'                                            => 'artifacts.example.com',
     "https://artifacts.example.com/pe/it's.tar.gz"                                             => 'artifacts.example.com',
+    'https://artifacts.example.com/ci/puppet-enterprise-2025.4.0+build5-el-8-x86_64.tar'       => 'puppet-enterprise-2025.4.0+build5-el-8-x86_64.tar from artifacts.example.com',
+    'https://artifacts.example.com/pe/x.tar.gz-token-canary'                                   => 'artifacts.example.com',
     'https://artifacts.example.com/pe/-rf.tar'                                                 => 'artifacts.example.com',
     # No scheme: the :// in the query isn't one
     'localhost:1/p?next=https://token-canary/x'                                                => 'the source URL',
