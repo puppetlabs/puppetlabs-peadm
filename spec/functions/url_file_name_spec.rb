@@ -31,6 +31,10 @@ describe 'peadm::url_file_name' do
     'https://pe-user:pass#word-canary@artifacts.example.com/pe/puppet-enterprise.tar.gz',
     'https://pe-user:tok-canary/rest-canary@artifacts.example.com/pe/puppet-enterprise.tar.gz',
     'https://pe-user:tok/rest-canary@artifacts.example.com',
+    # An @ after the authority gives undef, even when it is really in the path
+    # or query: there is no telling it from user info
+    'https://artifacts.example.com/pe@2023.8.10/puppet-enterprise.tar.gz',
+    'https://artifacts.example.com/pe/puppet-enterprise.tar.gz?owner=a@b.example.com',
     # No path, and a query: its tail must not become the name, even holding a /
     'https://pe-user:password-canary@artifacts.example.com?id=1-canary',
     'https://bucket.s3.amazonaws.com?X-Amz-Credential=AKIA-canary/20261029/us-east-1/s3/aws4_request&X-Amz-Signature=sig-canary',

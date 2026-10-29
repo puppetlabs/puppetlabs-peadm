@@ -21,6 +21,8 @@ describe 'peadm::url_tarball_name' do
     'https://pm.puppet.com/cgi-bin/download.cgi?dist=el&ver=2023.8.10',
     'https://artifacts.example.com/dl/token-canary',
     'https://artifacts.example.com/pe/x.tar.gz.asc',
+    'https://artifacts.example.com/pe@2023.8.10/puppet-enterprise.tar.gz',
+    'https://artifacts.example.com/pe/puppet-enterprise.tar.gz?owner=a@b.example.com',
     'https://artifacts.example.com/pe/..tar',
     'https://artifacts.example.com/pe/-rf.tar',
     "https://artifacts.example.com/pe/it's.tar.gz",

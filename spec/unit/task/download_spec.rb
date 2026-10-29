@@ -28,8 +28,9 @@ describe 'tasks/download.sh' do
   # Content-Length: 8, the size of the 'payload' it writes, so the size check
   # matches a file holding that. Fails for the .asc signature, the way a
   # pre-signed URL with ".asc" appended does. A URL with [ ] { } is only taken
-  # with -g, as with real curl; without it curl prints a two-line error that
-  # names the whole URL. With FAKE_CURL_FAIL it fails for everything, printing
+  # with -g, as with real curl; without it the fake prints a two-line error
+  # that names the whole URL, as some curl versions do for a URL they can't
+  # parse. With FAKE_CURL_FAIL it fails for everything, printing
   # on stderr what real curl can print: a 403, text holding the URL, or a
   # fragment of it, for a HEAD request as well.
   let(:fake_curl) do
@@ -176,6 +177,8 @@ describe 'tasks/download.sh' do
     # user info ends, so nothing of the URL may print.
     'https://user-canary:tok-canary/rest-canary@artifacts.example.com/pe.tar.gz'            => 'the source URL',
     'https://user-canary:tok-canary/rest-canary@artifacts.example.com'                      => 'the source URL',
+    'https://artifacts.example.com/pe@2023.8.10/puppet-enterprise.tar.gz'                   => 'the source URL',
+    'https://artifacts.example.com/pe/puppet-enterprise.tar.gz?owner=a@b.example.com'       => 'the source URL',
     'https://user-canary:2024/secret-canary@artifacts.example.com/pe.tar.gz'                => 'the source URL',
     'https://user-canary:pass?word-canary@artifacts.example.com/pe.tar.gz'                  => 'the source URL',
     'https://user-canary:123456?abc-canary@artifacts.example.com/pe.tar.gz'                 => 'the source URL',

@@ -11,6 +11,10 @@
 #   A load balancer address directing traffic to any of the "B" pool
 #   compilers. This is used for DR configuration in large and extra large
 #   architectures.
+# @param r10k_private_key_content
+#   The text of the private key to use for r10k, as an alternative to
+#   r10k_private_key_file. One of its lines must start with `-----BEGIN`;
+#   otherwise the plan fails naming this parameter, without quoting the value.
 # @param pe_installer_source
 #   The URL to download the Puppet Enterprise installer media from. If not
 #   specified, PEAdm will attempt to download PE installation media from its

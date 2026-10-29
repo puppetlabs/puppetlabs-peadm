@@ -2324,6 +2324,7 @@ The following parameters are available in the `peadm::install` plan:
 * [`compiler_pool_address`](#-peadm--install--compiler_pool_address)
 * [`internal_compiler_a_pool_address`](#-peadm--install--internal_compiler_a_pool_address)
 * [`internal_compiler_b_pool_address`](#-peadm--install--internal_compiler_b_pool_address)
+* [`r10k_private_key_content`](#-peadm--install--r10k_private_key_content)
 * [`pe_installer_source`](#-peadm--install--pe_installer_source)
 * [`ldap_config`](#-peadm--install--ldap_config)
 * [`final_agent_state`](#-peadm--install--final_agent_state)
@@ -2343,7 +2344,6 @@ The following parameters are available in the `peadm::install` plan:
 * [`code_manager_auto_configure`](#-peadm--install--code_manager_auto_configure)
 * [`r10k_remote`](#-peadm--install--r10k_remote)
 * [`r10k_private_key_file`](#-peadm--install--r10k_private_key_file)
-* [`r10k_private_key_content`](#-peadm--install--r10k_private_key_content)
 * [`r10k_known_hosts`](#-peadm--install--r10k_known_hosts)
 * [`deploy_environment`](#-peadm--install--deploy_environment)
 * [`license_key_file`](#-peadm--install--license_key_file)
@@ -2378,6 +2378,16 @@ Data type: `Optional[String]`
 A load balancer address directing traffic to any of the "B" pool
 compilers. This is used for DR configuration in large and extra large
 architectures.
+
+Default value: `undef`
+
+##### <a name="-peadm--install--r10k_private_key_content"></a>`r10k_private_key_content`
+
+Data type: `Optional[String]`
+
+The text of the private key to use for r10k, as an alternative to
+r10k_private_key_file. One of its lines must start with `-----BEGIN`;
+otherwise the plan fails naming this parameter, without quoting the value.
 
 Default value: `undef`
 
@@ -2543,14 +2553,6 @@ Data type: `Optional[String]`
 Default value: `undef`
 
 ##### <a name="-peadm--install--r10k_private_key_file"></a>`r10k_private_key_file`
-
-Data type: `Optional[String]`
-
-
-
-Default value: `undef`
-
-##### <a name="-peadm--install--r10k_private_key_content"></a>`r10k_private_key_content`
 
 Data type: `Optional[String]`
 

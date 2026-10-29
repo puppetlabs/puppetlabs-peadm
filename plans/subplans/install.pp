@@ -496,7 +496,8 @@ plan peadm::subplans::install (
       $failed_results.error_set.each |$result| {
         # A task result keeps what the task printed under _output (its stderr
         # is in the error message when there was no stdout); a command result
-        # has stdout and stderr. The block runs both, and an absent key is empty.
+        # has stdout and stderr. This handles both kinds of result, and a key a
+        # result lacks counts as empty.
         $output = [$result['_output'], $result['stdout'], $result['stderr']].filter |$text| { $text =~ String[1] }.join("\n")
         out::message("Failed on ${result.target.name}: ${result.error.message}\n${output}")
       }
@@ -560,7 +561,7 @@ plan peadm::subplans::install (
     # --format json outputter calls JSON.generate on plan failure messages,
     # which raises JSON::GeneratorError on invalid UTF-8 -- an unsanitized
     # task error could crash the failure report itself, in exactly the
-    # CI scenario (machine-parseable output) this ticket exists to fix.
+    # CI scenario (machine-parseable output) PE-46917 exists to fix.
     $rbac_token_error = peadm::sanitize_log_text($rbac_token_result.first.error.message, 200)
     if $rbac_token_result.first.error.kind == $rbac_auth_failure_kind {
       fail_plan("Failed to obtain RBAC token, permanent failure (not retrying): ${rbac_token_error}")

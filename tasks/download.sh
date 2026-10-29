@@ -91,10 +91,12 @@ download() {
   tmp_file=$(mktemp)
   echo "Downloading to temporary file ${tmp_file}"
 
-  # curl's own output is discarded and only its exit status reported, because
-  # its error text can hold part of the URL: some curl versions print what
-  # follows the first @ of a password, or the whole URL for one they can't
-  # parse. -g keeps curl from globbing a URL with [ ] { } in it.
+  # curl's own output is discarded and only its exit status reported, as
+  # defense in depth: -s already silences most of its error text, but some
+  # versions and error paths still print part of the URL (what follows the
+  # first @ of a password, or the whole URL for one they can't parse; RHEL's
+  # curl 7.61 and 7.76 did). -g keeps curl from globbing a URL with [ ] { } in
+  # it.
   if curl -s -g -f -L -o "${tmp_file}" "$1" >/dev/null 2>&1; then
     echo "Moving ${tmp_file} to target path ${2}"
 
