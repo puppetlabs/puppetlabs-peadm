@@ -1,5 +1,7 @@
 # @summary Print the PEADM version and a plan's parameters, for debugging
 #
+# Prints the PEADM module version, then one line per parameter.
+#
 # A value whose key looks like it holds a secret prints as [redacted]. This
 # goes by top-level key name only: it can't catch a secret under an innocuous
 # key, or nested inside another value.

@@ -852,11 +852,15 @@ Data type: `Optional[Integer[1,1]]`
 
 Type: Puppet Language
 
+Prints the PEADM module version, then one line per parameter.
+
 A value whose key looks like it holds a secret prints as [redacted]. This
 goes by top-level key name only: it can't catch a secret under an innocuous
 key, or nested inside another value.
 
 #### `peadm::log_plan_parameters(Hash[String, Any] $params)`
+
+Prints the PEADM module version, then one line per parameter.
 
 A value whose key looks like it holds a secret prints as [redacted]. This
 goes by top-level key name only: it can't catch a secret under an innocuous
@@ -2385,8 +2389,8 @@ The URL to download the Puppet Enterprise installer media from. If not
 specified, PEAdm will attempt to download PE installation media from its
 standard public source. When specified, PEAdm will download directly from the
 URL given. If the URL doesn't end in a `.tar` or `.tar.gz` file name made of
-letters, digits and `. _ + -`, starting with a letter or digit, such as a download.cgi?...&ver= link, the
-tarball is saved under the standard
+letters, digits and `. _ + -`, starting with a letter or digit, such as a
+download.cgi?...&ver= link, the tarball is saved under the standard
 `puppet-enterprise-<version>-<platform>.tar.gz` name for the version, which
 must be the version of the media. A URL with an @ after its host counts as
 having no file name.
@@ -2991,9 +2995,9 @@ URL given. Unless version is set, the PE version is taken from the URL's
 file name, which must then be a standard
 `puppet-enterprise-<version>-<platform>.tar.gz` (or `.tar`) name. A URL
 whose file name doesn't end in `.tar` or `.tar.gz`, or has characters other
-than letters, digits and `. _ + -` (starting with a letter or digit), needs version too, and the tarball is
-saved under the standard name for that version. A URL with an @ after its
-host counts as having no file name.
+than letters, digits and `. _ + -` (starting with a letter or digit), needs
+version too, and the tarball is saved under the standard name for that
+version. A URL with an @ after its host counts as having no file name.
 
 Default value: `undef`
 

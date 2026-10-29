@@ -19,9 +19,9 @@
 #   file name, which must then be a standard
 #   `puppet-enterprise-<version>-<platform>.tar.gz` (or `.tar`) name. A URL
 #   whose file name doesn't end in `.tar` or `.tar.gz`, or has characters other
-#   than letters, digits and `. _ + -` (starting with a letter or digit), needs version too, and the tarball is
-#   saved under the standard name for that version. A URL with an @ after its
-#   host counts as having no file name.
+#   than letters, digits and `. _ + -` (starting with a letter or digit), needs
+#   version too, and the tarball is saved under the standard name for that
+#   version. A URL with an @ after its host counts as having no file name.
 # @param version
 #   The PE version to upgrade to. Required when pe_installer_source is not
 #   set, and when the version can't be read from its file name: when it has
