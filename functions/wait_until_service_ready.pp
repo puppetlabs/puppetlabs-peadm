@@ -36,6 +36,30 @@ function peadm::wait_until_service_ready(
     { service => $task_service, port => $port, '_catch_errors' => true },
   )
   unless $result.ok {
+    # DIAGNOSTIC ONLY (test/wait-retry-validation scratch branch) -- the
+    # first attempt above already burned the task's own 60s budget without
+    # the port ever responding. Capture what the target itself thinks is
+    # going on with the relevant systemd unit before retrying, since a
+    # second identical ~60s wait that fails the same way tells us "it's
+    # stuck", not "it just needed more time".
+    $unit_name = $service ? {
+      'orchestrator-service' => 'pe-orchestration-services',
+      'console-services'     => 'pe-console-services',
+      'puppetdb'             => 'pe-puppetdb',
+      default                => 'pe-puppetserver',
+    }
+    $diag = run_command(@("HEREDOC"/L), $target, '_catch_errors' => true)
+      echo "=== systemctl status ${unit_name} ==="; \
+      systemctl status ${unit_name} --no-pager -l 2>&1; \
+      echo "=== listening on port ${port} ==="; \
+      (ss -ltnp 2>&1 || netstat -ltnp 2>&1) | grep -E "LISTEN|${port}" || echo "nothing found"; \
+      echo "=== curl against the status endpoint ==="; \
+      curl -vk --max-time 10 https://localhost:${port}/status/v1/simple 2>&1; \
+      echo "=== last 100 journal lines for ${unit_name} ==="; \
+      journalctl -u ${unit_name} --no-pager -n 100 2>&1
+      |-HEREDOC
+    out::message("wait_until_service_ready diagnostics for ${unit_name} on ${target.peadm::certname()}:\n${diag.first.value['merged_output']}")
+
     run_task('peadm::wait_until_service_ready', $target,
       service => $task_service,
       port    => $port,
