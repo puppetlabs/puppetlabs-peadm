@@ -42,6 +42,14 @@ jobs:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
       LANG: en_US.UTF-8
+      # TEMPORARY, validation only (CAT-2538): provision_service#448 (the
+      # disk_size_gb backend support) is only merged into its PR branch so
+      # far, not main/release -- facade-release (the task's default) silently
+      # ignores disk_size_gb since it predates that PR, which is why earlier
+      # attempts saw the disk stay at its unchanged default size with no
+      # error. Point at the PR's own test-deploy facade instead, created
+      # automatically per docs/testing.md. Remove before merge.
+      SERVICE_URL: https://facade-per-job-disk-size-1079112402178.europe-west1.run.app/v1/provision
       # PE 2026.0.0 jobs hit CI VM OOM (Cannot allocate memory - fork(2))
       # on the default provision_service VM size. Request a bigger VM via
       # provision#301 (provision >= v3.1.0), scoped to combinations that
@@ -182,11 +190,12 @@ jobs:
           fi
 
   # TEMPORARY, validation only (CAT-2538) -- not for merge. Provisions a
-  # single VM with a requested disk_size_gb and inspects whether the guest OS
-  # actually grew its filesystem into the larger disk, since the migration
-  # jobs above still hit "No space left on device" at the identical tar
-  # file/byte offset even with disk_size_gb set -- suggesting GCP resized the
-  # disk but the guest OS never grew its root filesystem into the extra space.
+  # single VM with a requested disk_size_gb and inspects lsblk/df to confirm
+  # the boot disk is actually created at the requested size. An earlier run
+  # against facade-release (production) showed the disk silently staying at
+  # its default 10G even with disk_size_gb set -- because #448 isn't merged
+  # into main/release yet, so production doesn't know the field at all. Uses
+  # the PR's own test-deploy facade (SERVICE_URL below) instead.
   diagnose-disk-resize:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.diagnose_only }}
     runs-on: ubuntu-latest
@@ -195,6 +204,10 @@ jobs:
       BOLT_DISABLE_ANALYTICS: true
       LANG: en_US.UTF-8
       PROVISION_DISK_SIZE_GB: '100'
+      # TEMPORARY, validation only (CAT-2538): see the comment on the
+      # test-migration job's SERVICE_URL for why this points at the PR's own
+      # test-deploy facade instead of the task's production default.
+      SERVICE_URL: https://facade-per-job-disk-size-1079112402178.europe-west1.run.app/v1/provision
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
