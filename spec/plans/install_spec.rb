@@ -12,6 +12,17 @@ describe 'peadm::install' do
     end
   end
 
+  # PE-47523: the parameter's type would quote a key that doesn't match it, so
+  # install leaves the check to the subplan, which names only the parameter
+  # (see spec/plans/subplans/install_spec.rb)
+  it 'passes r10k_private_key_content on to the subplan unchecked' do
+    allow_out_message
+    expect_plan('peadm::subplans::install')
+    expect_plan('peadm::subplans::configure')
+    expect(run_plan('peadm::install', 'primary_host' => 'primary', 'console_password' => 'puppetLabs123!',
+                    'version' => '2021.7.9', 'r10k_private_key_content' => 'not a key')).to be_ok
+  end
+
   describe 'cloud_database_host plumbing' do
     # bolt-spec's `with_params` compares for strict equality and does not
     # honour rspec matchers like hash_including, so fine-grained param
@@ -30,6 +41,28 @@ describe 'peadm::install' do
         'console_password'    => 'puppetLabs123!',
         'version'             => '2021.7.9',
         'cloud_database_host' => 'cloud-sql.example.com')).to be_ok
+    end
+  end
+
+  # PE-47523: console_password is a plain String on purpose, not Sensitive.
+  # BoltSpec's run_plan wraps Sensitive-typed parameters the way the CLI
+  # does, so only a call through the run_plan() function, as pecdm,
+  # peadm::migrate and peadm_spec::install_test_cluster make, would fail if
+  # the signature changed to Sensitive.
+  describe 'console_password passed by another plan' do
+    let(:inventory_data) { { 'targets' => [{ 'name' => 'primary', 'vars' => { 'role' => 'primary' } }] } }
+
+    it 'accepts a plain String' do
+      allow_any_command
+      allow_any_task
+      allow_out_message
+      expect_plan('peadm::subplans::install')
+      expect_plan('peadm::subplans::configure')
+
+      expect(run_plan('peadm_spec::install_test_cluster',
+                      'architecture'     => 'standard',
+                      'console_password' => 'puppetLabs123!',
+                      'version'          => '2023.8.10')).to be_ok
     end
   end
 end

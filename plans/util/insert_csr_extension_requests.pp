@@ -5,11 +5,12 @@ plan peadm::util::insert_csr_extension_requests (
   Boolean    $merge = true,
 ) {
   get_targets($targets).each |$target| {
-    $csr_attributes_data = ($csr_file = run_task('peadm::read_file', $target,
-        path => '/etc/puppetlabs/puppet/csr_attributes.yaml',
-    ).first['content']) ? {
+    # csr_attributes.yaml can hold custom_attributes such as a
+    # challengePassword, so read it as Sensitive (PE-47523)
+    $csr_file = peadm::read_sensitive_file($target, '/etc/puppetlabs/puppet/csr_attributes.yaml')
+    $csr_attributes_data = $csr_file ? {
       undef   => {},
-      default => $csr_file.parseyaml,
+      default => $csr_file.unwrap.parseyaml,
     }
 
     # If we're merging extension requests, existing requests will be preserved.

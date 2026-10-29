@@ -250,14 +250,9 @@ plan peadm::upgrade (
         $primary_postgresql_target,
         $replica_postgresql_target,
     ]).each |$target| {
-      $current_pe_conf = run_task('peadm::read_file', $target,
-        path => '/etc/puppetlabs/enterprise/conf.d/pe.conf',
-      ).first['content']
-
-      $pe_conf = stdlib::to_json_pretty($current_pe_conf ? {
-          undef   => {},
-          default => stdlib::parsehocon($current_pe_conf),
-        } + {
+      # Read as Sensitive: it holds pe_conf_data, and on a converted cluster
+      # whatever the operator gave the installer (PE-47523)
+      $pe_conf = stdlib::to_json_pretty(peadm::get_pe_conf($target) + {
           'console_admin_password'                => 'not used',
           'puppet_enterprise::puppet_master_host' => $primary_target.peadm::certname(),
           'puppet_enterprise::database_host'      => $target.peadm::certname(),
