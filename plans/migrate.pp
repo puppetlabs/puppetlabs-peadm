@@ -184,6 +184,33 @@ plan peadm::migrate (
           |-HEREDOC
         run_task('service', $new_primary_target, { action => 'start', name => 'pe-puppetserver' })
         peadm::wait_until_service_ready('all', $new_primary_target)
+
+        # DIAGNOSTIC ONLY (test/wait-retry-validation scratch branch) --
+        # the retried purge below still fails live with the identical
+        # "certificate revoked for CN=<primary>" error even after this
+        # regen (job 123388181374). Capture hard evidence instead of
+        # guessing further:
+        # - the regenerated cert's actual serial (did the regen produce a
+        #   genuinely new serial, or did it coincidentally/deterministically
+        #   reuse the one that's already revoked?)
+        # - whether that serial is listed in the primary's own local CRL
+        #   copy right now, which is what PuppetDB's deactivate_node call
+        #   (the thing actually erroring here, per the live log) would
+        #   consult when it validates the primary's client cert.
+# lint:ignore:strict_indent
+        $diag_serial = run_command(
+          "openssl x509 -in /etc/puppetlabs/puppet/ssl/certs/${new_primary_certname}.pem -noout -serial",
+          $new_primary_target, _catch_errors => true
+        ).first
+        out::message("DIAGNOSTIC: regenerated cert serial for ${new_primary_certname}: ${diag_serial[merged_output]}")
+
+        $diag_crl = run_command(
+          'openssl crl -in /etc/puppetlabs/puppet/ssl/crl.pem -noout -text 2>&1 | grep -i "serial number" -A1',
+          $new_primary_target, _catch_errors => true
+        ).first
+        out::message("DIAGNOSTIC: local crl.pem revoked serials:\n${diag_crl[merged_output]}")
+# lint:endignore
+
         run_command("/opt/puppetlabs/bin/puppet node purge ${node}", $new_primary_host)
       }
 # lint:endignore
