@@ -56,3 +56,52 @@ if defined?(SimpleCov)
   # not part of this change.
   SimpleCov.formatters = [SimpleCov::Formatter::HTMLFormatter, SimpleCov::Formatter::Console]
 end
+
+# Helpers for stubbing peadm::read_sensitive_file, which asks peadm::read_file
+# for the content under _sensitive so Bolt masks it in bolt-debug.log
+# (PE-47523).
+module PeadmSpecHelpers
+  PE_CONF = '/etc/puppetlabs/enterprise/conf.d/pe.conf'
+
+  # Real Bolt wraps a task's _sensitive output in Sensitive when it parses the
+  # result (Bolt::Result.for_task); BoltSpec's always_return doesn't, so build
+  # the result the way Bolt does. A nil content means the file wasn't there.
+  def sensitive_read_file_result(targets, content)
+    Bolt::ResultSet.new(targets.map do |target|
+      Bolt::Result.for_task(target, { '_sensitive' => { 'content' => content } }.to_json, '', 0, 'peadm::read_file', [])
+    end)
+  end
+
+  # Expects one read of pe.conf through peadm::read_sensitive_file
+  # (peadm::get_pe_conf). Returns the stub, so callers can chain
+  # be_called_times. Any plain read of pe.conf is then an unexpected call:
+  # BoltSpec doesn't fall back to allow_any_task for a task with its own stub.
+  def expect_pe_conf_reads(content = '{}')
+    expect_task('peadm::read_file')
+      .with_params('path' => PE_CONF, 'as_sensitive' => true)
+      .return { |targets:, **| sensitive_read_file_result(targets, content) }
+  end
+
+  # Allows any number of reads of path through peadm::read_sensitive_file,
+  # for specs whose plans read it but aren't about it. A nil content means
+  # the file isn't there.
+  def allow_sensitive_reads(path, content)
+    allow_task('peadm::read_file')
+      .with_params('path' => path, 'as_sensitive' => true)
+      .return { |targets:, **| sensitive_read_file_result(targets, content) }
+  end
+
+  # The same for pe.conf, which the node_group_environment default reads
+  def allow_pe_conf_reads(content = '{}')
+    allow_sensitive_reads(PE_CONF, content)
+  end
+
+  # A successful, empty result on each target
+  def ok_results(targets)
+    Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+  end
+end
+
+RSpec.configure do |config|
+  config.include PeadmSpecHelpers
+end

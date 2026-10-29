@@ -14,6 +14,8 @@ describe 'peadm::add_database' do
     allow_apply
     allow_any_command
     allow_any_task
+    # The node_group_environment default reads pe.conf as Sensitive (PE-47523)
+    allow_pe_conf_reads
     # Force every run_plan() call made by add_database.pp to be explicitly
     # mocked. This means that if a mutation causes cleanup-db to call
     # db_purge/db_disable_pglogical when it shouldn't (or vice versa), the

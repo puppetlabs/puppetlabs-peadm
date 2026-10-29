@@ -76,15 +76,61 @@ jobs:
           echo ::group::info:inventory
             sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
           echo ::endgroup::
+      # PE-47523: a unique console password per run, so the step after the
+      # install can search Bolt's output and debug log for it. It uses only
+      # letters, digits and - . @, which Bolt never shell-escapes, so a leak
+      # can't hide in an escaped form; PE's complexity rules want the special
+      # characters, and the PE installer can't take a $.
+      - name: Generate a canary console password
+        run: |
+          canary="Canary-$(openssl rand -hex 12).Pw1@"
+          echo "::add-mask::${canary}"
+          echo "CONSOLE_PASSWORD_CANARY=${canary}" >> "$GITHUB_ENV"
       - name: Install PE on test cluster
+        id: install
         timeout-minutes: 120
         run: |
+          set -o pipefail
           bundle exec bolt plan run peadm_spec::install_test_cluster \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             architecture=${{ matrix.architecture }} \
             version=${{ matrix.version }} \
-            console_password=${{ secrets.CONSOLE_PASSWORD }}
+            console_password="$CONSOLE_PASSWORD_CANARY" 2>&1 | tee bolt-install-output.log
+      # Also runs after a failed install: error paths are where a secret is
+      # most likely to surface.
+      - name: Check the console password didn't leak
+        if: ${{ !cancelled() && steps.install.outcome != 'skipped' }}
+        run: |
+          : "${CONSOLE_PASSWORD_CANARY:?is not set}"
+          # Bolt finds no Boltdir or bolt-project.yaml in the checkout root or
+          # its parents, so it uses its default project, and each run
+          # overwrites that project's debug log: check it before any other
+          # Bolt run.
+          debug_log="$HOME/.puppetlabs/bolt/bolt-debug.log"
+          for log in "$debug_log" bolt-install-output.log; do
+            if [ ! -s "$log" ]; then
+              echo "::error::${log} is missing or empty"
+              exit 1
+            fi
+          done
+          # Positive control, after a successful install only: the log
+          # records task arguments, with rbac_token's password masked.
+          if [ "${{ steps.install.outcome }}" = success ] &&
+            ! grep -F 'Running task peadm::rbac_token with' "$debug_log" | grep -qF '"password":"Sensitive [value redacted]"'; then
+            echo "::error::bolt-debug.log has no masked password argument for peadm::rbac_token"
+            exit 1
+          fi
+          rc=0
+          leaks=$(grep -nF -- "$CONSOLE_PASSWORD_CANARY" "$debug_log" bolt-install-output.log) || rc=$?
+          if [ "$rc" -eq 0 ]; then
+            echo "::error::The console password appears in Bolt's output or debug log:"
+            printf '%s\n' "${leaks//"$CONSOLE_PASSWORD_CANARY"/<console password>}" | cut -c1-400
+            exit 1
+          elif [ "$rc" -ne 1 ]; then
+            echo "::error::grep failed with exit code ${rc}"
+            exit 1
+          fi
       - name: Tear down test cluster
         if: ${{ always() }}
         continue-on-error: true

@@ -16,6 +16,8 @@
 
 ### Functions
 
+#### Public Functions
+
 * [`peadm::assert_supported_architecture`](#peadm--assert_supported_architecture): Assert that the architecture given is a supported one
 * [`peadm::assert_supported_bolt_version`](#peadm--assert_supported_bolt_version): Assert that the Bolt executable running PEAdm is a supported version
 * [`peadm::assert_supported_pe_version`](#peadm--assert_supported_pe_version): Assert that the PE version given is supported by PEAdm
@@ -35,9 +37,8 @@ primary_host vs replica_host) the node was passed as.
 * [`peadm::flatten_compact`](#peadm--flatten_compact)
 * [`peadm::generate_pe_conf`](#peadm--generate_pe_conf): Generate a pe.conf file in JSON format
 * [`peadm::get_node_group_environment`](#peadm--get_node_group_environment): check if a custom PE environment is set in pe.conf
-* [`peadm::get_pe_conf`](#peadm--get_pe_conf)
 * [`peadm::get_targets`](#peadm--get_targets): Accept undef or a SingleTargetSpec, and return an Array[Target, 1, 0]. This differs from get_target() in that:   - It returns an Array[Target
-* [`peadm::log_plan_parameters`](#peadm--log_plan_parameters)
+* [`peadm::log_plan_parameters`](#peadm--log_plan_parameters): Print the PEADM version and a plan's parameters, for debugging
 * [`peadm::migration_opts_default`](#peadm--migration_opts_default)
 * [`peadm::module_version`](#peadm--module_version)
 * [`peadm::node_manager_yaml_location`](#peadm--node_manager_yaml_location)
@@ -51,6 +52,11 @@ primary_host vs replica_host) the node was passed as.
 * [`peadm::wait_until_service_ready`](#peadm--wait_until_service_ready): A convenience function to help remember port numbers for services and handle running the wait_until_service_ready task
 * [`peadm::warn_group_rules_overwrite`](#peadm--warn_group_rules_overwrite): Fetch and log the PE Infrastructure Agent group's current rules
 before they get overwritten by a classification reassertion
+
+#### Private Functions
+
+* `peadm::get_pe_conf`: Read a node's pe.conf as a Hash
+* `peadm::read_sensitive_file`: Read a file that can hold secrets as Sensitive, so Bolt masks it in its log and results
 
 ### Data types
 
@@ -84,7 +90,7 @@ before they get overwritten by a classification reassertion
 * [`get_psql_version`](#get_psql_version): Run on a PE PSQL node to return the major version of the PSQL server currently installed
 * [`infrastatus`](#infrastatus): Runs puppet infra status and returns the output
 * [`list_compiler_icas`](#list_compiler_icas): Run on a PE primary to list all compiler ICAs and their state, including autosign fingerprint consistency across the fleet
-* [`mkdir_p_file`](#mkdir_p_file): Create a file with the specified content at the specified location
+* [`mkdir_p_file`](#mkdir_p_file): Create a file with the specified content at the specified location. Needs a Python interpreter on the target.
 * [`mv`](#mv): Wrapper task for mv command
 * [`node_group_unpin`](#node_group_unpin): Unpins nodes from a specified PE node group
 * [`os_identification`](#os_identification): Return the operating system runnin gon the target as a string
@@ -810,24 +816,6 @@ Data type: `Peadm::SingleTargetSpec`
 
 the FQDN for the primary, here we will read the pe.conf from
 
-### <a name="peadm--get_pe_conf"></a>`peadm::get_pe_conf`
-
-Type: Puppet Language
-
-The peadm::get_pe_conf function.
-
-#### `peadm::get_pe_conf(Target $target)`
-
-The peadm::get_pe_conf function.
-
-Returns: `Any`
-
-##### `target`
-
-Data type: `Target`
-
-
-
 ### <a name="peadm--get_targets"></a>`peadm::get_targets`
 
 Type: Puppet Language
@@ -862,19 +850,27 @@ Data type: `Optional[Integer[1,1]]`
 
 Type: Puppet Language
 
-The peadm::log_plan_parameters function.
+Prints the PEADM module version, then one line per parameter.
 
-#### `peadm::log_plan_parameters(Hash $params)`
+A value whose key looks like it holds a secret prints as [redacted]. This
+goes by top-level key name only: it can't catch a secret under an innocuous
+key, or nested inside another value.
 
-The peadm::log_plan_parameters function.
+#### `peadm::log_plan_parameters(Hash[String, Any] $params)`
+
+Prints the PEADM module version, then one line per parameter.
+
+A value whose key looks like it holds a secret prints as [redacted]. This
+goes by top-level key name only: it can't catch a secret under an innocuous
+key, or nested inside another value.
 
 Returns: `Any`
 
 ##### `params`
 
-Data type: `Hash`
+Data type: `Hash[String, Any]`
 
-
+The parameter names and values to print
 
 ### <a name="peadm--migration_opts_default"></a>`peadm::migration_opts_default`
 
@@ -1447,7 +1443,7 @@ table for human-readable output (default), json to return the endpoint's respons
 
 ### <a name="mkdir_p_file"></a>`mkdir_p_file`
 
-Create a file with the specified content at the specified location
+Create a file with the specified content at the specified location. Needs a Python interpreter on the target.
 
 **Supports noop?** false
 
@@ -1748,6 +1744,12 @@ Read the contents of a file
 Data type: `String`
 
 Path to the file to read
+
+##### `as_sensitive`
+
+Data type: `Optional[Boolean]`
+
+Return the content under _sensitive, so Bolt masks it in bolt-debug.log and the task's result (--stream still prints the raw output, and the pcp transport doesn't mask it)
 
 ### <a name="reinstall_pe"></a>`reinstall_pe`
 
@@ -2320,6 +2322,7 @@ The following parameters are available in the `peadm::install` plan:
 * [`compiler_pool_address`](#-peadm--install--compiler_pool_address)
 * [`internal_compiler_a_pool_address`](#-peadm--install--internal_compiler_a_pool_address)
 * [`internal_compiler_b_pool_address`](#-peadm--install--internal_compiler_b_pool_address)
+* [`r10k_private_key_content`](#-peadm--install--r10k_private_key_content)
 * [`pe_installer_source`](#-peadm--install--pe_installer_source)
 * [`ldap_config`](#-peadm--install--ldap_config)
 * [`final_agent_state`](#-peadm--install--final_agent_state)
@@ -2339,7 +2342,6 @@ The following parameters are available in the `peadm::install` plan:
 * [`code_manager_auto_configure`](#-peadm--install--code_manager_auto_configure)
 * [`r10k_remote`](#-peadm--install--r10k_remote)
 * [`r10k_private_key_file`](#-peadm--install--r10k_private_key_file)
-* [`r10k_private_key_content`](#-peadm--install--r10k_private_key_content)
 * [`r10k_known_hosts`](#-peadm--install--r10k_known_hosts)
 * [`deploy_environment`](#-peadm--install--deploy_environment)
 * [`license_key_file`](#-peadm--install--license_key_file)
@@ -2374,6 +2376,16 @@ Data type: `Optional[String]`
 A load balancer address directing traffic to any of the "B" pool
 compilers. This is used for DR configuration in large and extra large
 architectures.
+
+Default value: `undef`
+
+##### <a name="-peadm--install--r10k_private_key_content"></a>`r10k_private_key_content`
+
+Data type: `Optional[String]`
+
+The text of the private key to use for r10k, as an alternative to
+r10k_private_key_file. One of its lines must start with `-----BEGIN`;
+otherwise the plan fails naming this parameter, without quoting the value.
 
 Default value: `undef`
 
@@ -2536,14 +2548,6 @@ Default value: `undef`
 ##### <a name="-peadm--install--r10k_private_key_file"></a>`r10k_private_key_file`
 
 Data type: `Optional[String]`
-
-
-
-Default value: `undef`
-
-##### <a name="-peadm--install--r10k_private_key_content"></a>`r10k_private_key_content`
-
-Data type: `Optional[Peadm::Pem]`
 
 
 

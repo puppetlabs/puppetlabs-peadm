@@ -353,8 +353,9 @@ plan peadm::restore (
       }
     }
     unless $rbac_token_result.ok {
-      # Sanitized like subplans::install does: rbac-api's response body is
-      # external content that may contain newlines or invalid UTF-8.
+      # Sanitized like subplans::install does: the task's error message can
+      # carry external content (a connection error's text, or Bolt's "stderr
+      # contained: ..." output) with newlines or invalid UTF-8.
       $rbac_token_error = peadm::sanitize_log_text($rbac_token_result.first.error.message, 200)
       if $rbac_token_result.first.error.kind == $rbac_auth_failure_kind {
         fail_plan("Failed to obtain RBAC token, permanent failure (not retrying): ${rbac_token_error}")

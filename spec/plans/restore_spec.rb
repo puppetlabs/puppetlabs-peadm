@@ -256,6 +256,23 @@ describe 'peadm::restore' do
       expect(call_log.index('rbac_token')).to be < call_log.index(import_command)
     end
 
+    # PE-47523: Bolt masks a task argument in bolt-debug.log only when the
+    # task's metadata flags it sensitive, so the console password must reach
+    # rbac_token through that flagged parameter.
+    it 'passes the console password to rbac_token as Sensitive', valid_cluster: true do
+      allow_any_command
+      allow_task('peadm::backup_classification')
+      allow_task('peadm::transform_classification_groups')
+      allow_task('peadm::restore_classification')
+      expect_task('peadm::rbac_token').return do |targets:, params:, **|
+        expect(params['password']).to be_a(Puppet::Pops::Types::PSensitiveType::Sensitive)
+        expect(params['password'].unwrap).to eq('Password1')
+        Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+      end
+
+      expect(run_plan('peadm::restore', migration_params)).to be_ok
+    end
+
     # PE-47009: a permanent failure (wrong console_password) is tagged with
     # the peadm/rbac-auth-failure kind by the task and must not be retried.
     it 'fails fast without retrying on a permanent rbac auth failure', valid_cluster: true do
