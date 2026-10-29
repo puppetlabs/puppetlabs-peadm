@@ -137,13 +137,40 @@ plan peadm::subplans::modify_certificate (
         |-HEREDOC
       run_task('service', $primary_target, { action => 'start', name => 'pe-puppetserver' })
 
+      # pe-puppetserver restarting is not enough on its own: console-services
+      # (RBAC, Classifier, Activity Service), orchestration-services
+      # (Orchestrator, PCP Broker, Host Action Collector, Agentless Catalog
+      # Executor, Bolt Service), and puppetdb are separate JVM processes that
+      # were holding connections/trust state built against the primary's old
+      # cert. Confirmed via live testing: even after this restart plus
+      # wait_until_service_ready('all', ...) reporting success, add_replica's
+      # provision_replica call still hit "... Service is not running" for
+      # every one of these processes, and retrying for several minutes
+      # (6 attempts, 20s apart) did not resolve it on its own -- the
+      # processes needed restarting, not more time. Restart them explicitly
+      # here, at the point where the cert that broke their trust state gets
+      # fixed, rather than trying to compensate for it downstream. A single
+      # 'restart' (rather than separate stop/start calls) is enough here --
+      # unlike pe-puppetserver above, there's no file surgery that needs the
+      # service down in between, so there's no reason to pay for tearing the
+      # JVM all the way down and back up as two separate steps.
+      run_task('service', $primary_target, { action => 'restart', name => 'pe-console-services' })
+      run_task('service', $primary_target, { action => 'restart', name => 'pe-orchestration-services' })
+      run_task('service', $primary_target, { action => 'restart', name => 'pe-puppetdb' })
+
       # Without this, downstream steps (e.g. add_replica's provision_replica
-      # call) can run before pe-puppetserver and its dependent services have
-      # fully come back up, failing with "... Service is not running" for
-      # every PE service at once. 'pe-master' alone only confirms
-      # puppetserver itself -- 'all' (status/v1/simple) covers RBAC,
-      # PuppetDB, orchestrator, classifier, etc. too.
+      # call) can run before pe-puppetserver has fully come back up, failing
+      # with "... Service is not running". NOTE: despite the name, 'all'
+      # here only confirms puppetserver itself (port 8140) -- confirmed via
+      # live testing that "Puppet Server" never appeared in a
+      # provision_replica "not running" list even when console-services,
+      # orchestration-services, and puppetdb all genuinely were down. Each
+      # of those is a separate JVM process with its own status endpoint, so
+      # each needs its own explicit wait below.
       peadm::wait_until_service_ready('all', $primary_target)
+      peadm::wait_until_service_ready('orchestrator-service', $primary_target)
+      peadm::wait_until_service_ready('console-services', $primary_target)
+      peadm::wait_until_service_ready('puppetdb', $primary_target)
       run_task('peadm::sign_csr', $primary_target, certnames => [$certname])
     }
 # lint:endignore

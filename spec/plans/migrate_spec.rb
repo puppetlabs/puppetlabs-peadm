@@ -106,6 +106,7 @@ describe 'peadm::migrate' do
     allow_out_message
     allow_command('hostname')
     allow_command('puppet agent --enable')
+    allow_command("rm -f #{backup_path}")
     stub_precheck!
     stub_pe_conf_read!
     stub_backup_download_upload!
