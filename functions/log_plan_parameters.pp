@@ -1,7 +1,13 @@
+# @summary Print the PEADM version and a plan's parameters, for debugging
+#
+# A value whose key looks like it holds a secret prints as [redacted]
+# (PE-47523). This goes by top-level key name only: it can't catch a secret
+# under an innocuous key, or nested inside another value.
+#
+# @param params The parameter names and values to print
 function peadm::log_plan_parameters(Hash[String, Any] $params) {
   out::message("PEADM Module version: ${peadm::module_version()}")
   $params.each |$key, $value| {
-    # Never print a value whose key looks like it holds a secret (PE-47523).
     # Keep the pattern in sync with spec/unit/task/sensitive_parameters_spec.rb.
     $shown = ($key =~ /(?i:password|passwd|passphrase|private_key|license|token|secret|credential|api_key|ldap_config)/) ? {
       true    => '[redacted]',

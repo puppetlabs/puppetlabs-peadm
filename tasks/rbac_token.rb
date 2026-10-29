@@ -61,7 +61,11 @@ class RbacToken
     response = https.request(request)
     unless response.is_a? Net::HTTPSuccess
       error_class = permanent_failure?(response) ? AuthFailure : RuntimeError
-      raise error_class, "Error requesting token (HTTP #{response.code}), #{response.body}"
+      # Only the status and RBAC's error kind: plans print this error and Bolt
+      # logs it, and the body can echo the submitted request, password
+      # included (PE-47523).
+      kind = error_kind(response.body)
+      raise error_class, "Error requesting token (HTTP #{response.code})#{kind ? ": #{kind}" : ''}"
     end
     token = JSON.parse(response.body)['token']
 
@@ -75,12 +79,9 @@ class RbacToken
   def run!
     execute!
   rescue AuthFailure => e
-    # The message embeds an external response body, which Net::HTTP returns
-    # binary-tagged; invalid UTF-8 would make to_json raise and mask this as a
-    # retryable generic error. scrub is a no-op on binary strings, so re-tag
-    # as UTF-8 first.
-    msg = e.message.dup.force_encoding('UTF-8').scrub
-    puts({ '_error' => { 'msg' => msg, 'kind' => AUTH_FAILURE_KIND } }.to_json)
+    # The message holds only the status code and a plain kind (error_kind),
+    # never the response body, so it is always valid for to_json.
+    puts({ '_error' => { 'msg' => e.message, 'kind' => AUTH_FAILURE_KIND } }.to_json)
     exit 1
   end
 
@@ -94,10 +95,16 @@ class RbacToken
   # true/false, numbers, arrays, strings) is not a server-error label, so the
   # status code decides.
   def server_error_body?(body)
+    error_kind(body).to_s.end_with?(SERVER_ERROR_KIND_SUFFIX)
+  end
+
+  # RBAC's error kind, if the body is a JSON object with a plain one
+  def error_kind(body)
     parsed = JSON.parse(body.to_s)
-    parsed.is_a?(Hash) && parsed['kind'].to_s.end_with?(SERVER_ERROR_KIND_SUFFIX)
+    kind = parsed['kind'] if parsed.is_a?(Hash)
+    kind if kind.is_a?(String) && kind.match?(%r{\A[\w./-]+\z})
   rescue JSON::ParserError, EncodingError
-    false
+    nil
   end
 end
 

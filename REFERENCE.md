@@ -16,6 +16,8 @@
 
 ### Functions
 
+#### Public Functions
+
 * [`peadm::assert_supported_architecture`](#peadm--assert_supported_architecture): Assert that the architecture given is a supported one
 * [`peadm::assert_supported_bolt_version`](#peadm--assert_supported_bolt_version): Assert that the Bolt executable running PEAdm is a supported version
 * [`peadm::assert_supported_pe_version`](#peadm--assert_supported_pe_version): Assert that the PE version given is supported by PEAdm
@@ -37,14 +39,14 @@ primary_host vs replica_host) the node was passed as.
 * [`peadm::get_node_group_environment`](#peadm--get_node_group_environment): check if a custom PE environment is set in pe.conf
 * [`peadm::get_pe_conf`](#peadm--get_pe_conf)
 * [`peadm::get_targets`](#peadm--get_targets): Accept undef or a SingleTargetSpec, and return an Array[Target, 1, 0]. This differs from get_target() in that:   - It returns an Array[Target
-* [`peadm::log_plan_parameters`](#peadm--log_plan_parameters)
+* [`peadm::log_plan_parameters`](#peadm--log_plan_parameters): Print the PEADM version and a plan's parameters, for debugging
 * [`peadm::migration_opts_default`](#peadm--migration_opts_default)
 * [`peadm::module_version`](#peadm--module_version)
 * [`peadm::node_manager_yaml_location`](#peadm--node_manager_yaml_location)
 * [`peadm::oid`](#peadm--oid)
 * [`peadm::pe_db_names`](#peadm--pe_db_names)
 * [`peadm::plan_step`](#peadm--plan_step)
-* [`peadm::read_sensitive_file`](#peadm--read_sensitive_file): Read a file that can hold secrets, without Bolt logging its content
+* [`peadm::read_sensitive_file`](#peadm--read_sensitive_file): Read a file that can hold secrets, keeping its content out of bolt-debug.log
 * [`peadm::recovery_opts_all`](#peadm--recovery_opts_all)
 * [`peadm::recovery_opts_default`](#peadm--recovery_opts_default)
 * [`peadm::sanitize_log_text`](#peadm--sanitize_log_text): Makes arbitrary external text safe to interpolate into a single log line.
@@ -52,6 +54,10 @@ primary_host vs replica_host) the node was passed as.
 * [`peadm::wait_until_service_ready`](#peadm--wait_until_service_ready): A convenience function to help remember port numbers for services and handle running the wait_until_service_ready task
 * [`peadm::warn_group_rules_overwrite`](#peadm--warn_group_rules_overwrite): Fetch and log the PE Infrastructure Agent group's current rules
 before they get overwritten by a classification reassertion
+
+#### Private Functions
+
+* `peadm::url_file_name`: The file name a URL's path ends in, without its query string, fragment or user info
 
 ### Data types
 
@@ -863,11 +869,15 @@ Data type: `Optional[Integer[1,1]]`
 
 Type: Puppet Language
 
-The peadm::log_plan_parameters function.
+A value whose key looks like it holds a secret prints as [redacted]
+(PE-47523). This goes by top-level key name only: it can't catch a secret
+under an innocuous key, or nested inside another value.
 
 #### `peadm::log_plan_parameters(Hash[String, Any] $params)`
 
-The peadm::log_plan_parameters function.
+A value whose key looks like it holds a secret prints as [redacted]
+(PE-47523). This goes by top-level key name only: it can't catch a secret
+under an innocuous key, or nested inside another value.
 
 Returns: `Any`
 
@@ -875,7 +885,7 @@ Returns: `Any`
 
 Data type: `Hash[String, Any]`
 
-
+The parameter names and values to print
 
 ### <a name="peadm--migration_opts_default"></a>`peadm::migration_opts_default`
 
@@ -977,20 +987,25 @@ Data type: `Callable`
 
 Type: Puppet Language
 
-Bolt logs every task's result in bolt-debug.log. peadm::read_file returns
-the content under _sensitive when asked, which Bolt masks there and in its
-output, and the content stays wrapped in Sensitive on the plan side
-(PE-47523).
+Bolt logs every task's result in bolt-debug.log. With as_sensitive,
+peadm::read_file returns the content under _sensitive, which Bolt masks in
+that log and in the task's result, and this function keeps it wrapped in
+Sensitive (PE-47523). Bolt's --stream option still prints the task's raw
+output, content included, and over the pcp transport Bolt doesn't mask
+_sensitive at all.
 
 #### `peadm::read_sensitive_file(Peadm::SingleTargetSpec $target, String[1] $path)`
 
-Bolt logs every task's result in bolt-debug.log. peadm::read_file returns
-the content under _sensitive when asked, which Bolt masks there and in its
-output, and the content stays wrapped in Sensitive on the plan side
-(PE-47523).
+Bolt logs every task's result in bolt-debug.log. With as_sensitive,
+peadm::read_file returns the content under _sensitive, which Bolt masks in
+that log and in the task's result, and this function keeps it wrapped in
+Sensitive (PE-47523). Bolt's --stream option still prints the task's raw
+output, content included, and over the pcp transport Bolt doesn't mask
+_sensitive at all.
 
 Returns: `Optional[Sensitive[String]]` The file's content, or undef if it
-doesn't exist or isn't readable
+doesn't exist or isn't readable. Fails if the read itself failed, so
+callers never rewrite a file from content they didn't get.
 
 ##### `target`
 
@@ -1785,7 +1800,7 @@ Path to the file to read
 
 Data type: `Optional[Boolean]`
 
-Return the content under _sensitive, so Bolt masks it in its logs and output
+Return the content under _sensitive, so Bolt masks it in bolt-debug.log and the task's result (--stream still prints the raw output)
 
 ### <a name="reinstall_pe"></a>`reinstall_pe`
 

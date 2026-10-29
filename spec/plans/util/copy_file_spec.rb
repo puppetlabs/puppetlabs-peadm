@@ -2,10 +2,11 @@
 
 require 'spec_helper'
 
-# PE-47523: copy_file moves the orchestrator and console-services keys.json
-# files to the replica. Bolt logs both the read's result and the write's
-# arguments, so the content is read as Sensitive and written through
-# mkdir_p_file's sensitive content parameter.
+# PE-47523: copy_file copies the orchestrator's keys.json and
+# orchestrator-encryption-keys.json and console-services' keys.json to the
+# replica. Bolt logs both the read's result and the write's arguments, so the
+# content is read as Sensitive and written through mkdir_p_file's sensitive
+# content parameter.
 describe 'peadm::util::copy_file' do
   include BoltSpec::Plans
 
@@ -24,7 +25,7 @@ describe 'peadm::util::copy_file' do
       expect(params['path']).to eq(path)
       expect(params['content']).to be_a(Puppet::Pops::Types::PSensitiveType::Sensitive)
       expect(params['content'].unwrap).to eq('keys-canary')
-      Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+      ok_results(targets)
     end
 
     expect(run_plan('peadm::util::copy_file', 'targets' => 'replica', 'source_host' => 'primary', 'path' => path)).to be_ok

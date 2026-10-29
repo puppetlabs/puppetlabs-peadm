@@ -7,7 +7,7 @@
     },
     "as_sensitive": {
       "type": "Optional[Boolean]",
-      "description": "Return the content under _sensitive, so Bolt masks it in its logs and output"
+      "description": "Return the content under _sensitive, so Bolt masks it in bolt-debug.log and the task's result (--stream still prints the raw output)"
     }
   },
   "implementations": [

@@ -74,13 +74,12 @@ plan peadm::upgrade (
     'replica_postgresql_host' => $replica_postgresql_host,
     'node_group_environment' => $node_group_environment,
     'version' => $version,
-    # Log only the tarball basename, not the full URL: pe_installer_source may
+    # Log only the URL's file name, not the full URL: pe_installer_source may
     # carry credentials or signed tokens (e.g. S3 pre-signed URLs) that
-    # shouldn't land in Bolt output or centralized logs. The tokens are in the
-    # query string, so drop it before taking the basename (PE-47523).
+    # shouldn't land in Bolt output or centralized logs (PE-47523).
     'pe_installer_source' => $pe_installer_source ? {
       undef   => undef,
-      default => $pe_installer_source.split(/[?#]/)[0].split('/')[-1],
+      default => peadm::url_file_name($pe_installer_source),
     },
   })
 
@@ -142,11 +141,21 @@ plan peadm::upgrade (
   $platform = run_task('peadm::precheck', $primary_target).first['platform']
 
   if $pe_installer_source {
-    # Drop any ?query or #fragment first: a pre-signed URL carries its
-    # credentials there (PE-47523), and this name becomes a file path.
-    $pe_tarball_name   = $pe_installer_source.split(/[?#]/)[0].split('/')[-1]
+    # The URL's file name, without the query string or user info, which can
+    # hold credentials (PE-47523). A URL whose file name isn't a tarball's,
+    # such as a download.cgi?...&ver= link, names no version, so the tarball
+    # is named after the version parameter instead.
+    $url_file_name = peadm::url_file_name($pe_installer_source)
+    if $url_file_name =~ /\.tar(\.gz)?\z/ {
+      $pe_tarball_name = $url_file_name
+      $_version        = $url_file_name.split('-')[2]
+    } elsif $version {
+      $pe_tarball_name = "puppet-enterprise-${version}-${platform}.tar.gz"
+      $_version        = $version
+    } else {
+      fail_plan('pe_installer_source has no .tar or .tar.gz file name to take the PE version from. Set the version parameter as well.')
+    }
     $pe_tarball_source = $pe_installer_source
-    $_version          = $pe_tarball_name.split('-')[2]
   } else {
     $_version          = $version
     $pe_tarball_name   = "puppet-enterprise-${_version}-${platform}.tar.gz"
@@ -253,14 +262,9 @@ plan peadm::upgrade (
         $primary_postgresql_target,
         $replica_postgresql_target,
     ]).each |$target| {
-      $current_pe_conf = run_task('peadm::read_file', $target,
-        path => '/etc/puppetlabs/enterprise/conf.d/pe.conf',
-      ).first['content']
-
-      $pe_conf = stdlib::to_json_pretty($current_pe_conf ? {
-          undef   => {},
-          default => stdlib::parsehocon($current_pe_conf),
-        } + {
+      # Read as Sensitive: it holds pe_conf_data, and on a converted cluster
+      # whatever the operator gave the installer (PE-47523)
+      $pe_conf = stdlib::to_json_pretty(peadm::get_pe_conf($target) + {
           'console_admin_password'                => 'not used',
           'puppet_enterprise::puppet_master_host' => $primary_target.peadm::certname(),
           'puppet_enterprise::database_host'      => $target.peadm::certname(),

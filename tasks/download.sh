@@ -43,22 +43,28 @@ verify-file() {
 # string and any user:password@ never reach the output, which Bolt logs
 # (PE-47523). Anything that doesn't look like a plain host is left out.
 describe-url() {
-  local rest="${1#*://}"   # drop scheme://
-  rest="${rest%%[?#]*}"    # drop ?query and #fragment
-  local host="$rest" name=''
-  if [[ "$rest" == */* ]]; then
-    host="${rest%%/*}"     # the authority, up to the path
-    name="${rest##*/}"     # the last path segment
-    name="${name##*@}"     # an @ here means user info with a raw / in it
+  local rest="${1#*://}"                 # drop scheme://
+  local authority="${rest%%[/?#]*}"      # up to the path, query or fragment
+  local after="${rest#"$authority"}"
+  # An @ past the authority means user info holding a raw / ? or #, so where
+  # it ends can't be told: print nothing of the URL.
+  if [[ "$after" == *@* ]]; then
+    printf 'the source URL'
+    return
   fi
-  host="${host##*@}"       # drop user:password@
+
+  local host="${authority##*@}"          # drop user:password@
   local valid_host='^([[][0-9A-Fa-f:.]+[]]|[A-Za-z0-9.-]+)(:[0-9]+)?$'
   [[ "$host" =~ $valid_host ]] || host=''
+  local path="${after%%[?#]*}"           # drop ?query and #fragment
+  local name="${path##*/}"               # the last path segment
 
   if [[ -n "$name" && -n "$host" ]]; then
     printf '%s from %s' "$name" "$host"
-  elif [[ -n "${name}${host}" ]]; then
-    printf '%s' "${name}${host}"
+  elif [[ -n "$name" ]]; then
+    printf '%s' "$name"
+  elif [[ -n "$host" ]]; then
+    printf '%s' "$host"
   else
     printf 'the source URL'
   fi
@@ -68,11 +74,14 @@ describe-url() {
 # TODO PE-47901: the URL is still on command lines (PT_source, curl's arguments) that sudo logs and ps shows.
 download() {
   local description="${3:-$(describe-url "$1")}"
+  local curl_error
   printf '%s\n' "Downloading: ${description}"
   tmp_file=$(mktemp)
   echo "Downloading to temporary file ${tmp_file}"
 
-  if curl -sS -f -L -o "${tmp_file}" "$1"; then
+  # curl's error goes to stdout with the rest: Bolt drops a task's stderr when
+  # there's stdout. It names the host at most, never the URL.
+  if curl_error=$(curl -sS -f -L -o "${tmp_file}" "$1" 2>&1); then
     echo "Moving ${tmp_file} to target path ${2}"
 
     # Perform the move. If it doesn't work, clean up and return an error
@@ -82,7 +91,7 @@ download() {
       return 1
     fi
   else
-    echo "Error: curl exited with $? downloading ${description}"
+    echo "Error: curl exited with $? downloading ${description}${curl_error:+: ${curl_error}}"
     echo "Removing temporary file ${tmp_file}"
     rm "${tmp_file}"
     return 1
@@ -113,8 +122,10 @@ download-signature-verify() {
   local source="$1"
   local path="$2"
 
-  if ! download "${source}.asc" "${path}.asc" "the .asc signature for $(describe-url "$source")"; then
-    echo "Unable to download the .asc signature for $(describe-url "$source"). Skipping verification."
+  local signature
+  signature="the .asc signature for $(describe-url "$source")"
+  if ! download "${source}.asc" "${path}.asc" "$signature"; then
+    echo "Unable to download ${signature}. Skipping verification."
     download-size-verify "$source" "$path"
     return "$?"
   fi

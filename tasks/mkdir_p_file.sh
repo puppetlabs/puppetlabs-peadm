@@ -3,8 +3,9 @@
 set -e
 
 # Parameters arrive as JSON on stdin. With environment input, Bolt puts them
-# on the remote command line (`env PT_content=...`), where sudo logs them and
-# ps shows them, and the content is often a secret (PE-47523).
+# on the remote command line (`env PT_content=...`), where sudo logs them, ps
+# shows them and Bolt's trace log records them, and the content is often a
+# secret (PE-47523).
 params=$(cat)
 
 python_exec=$(command -v python || command -v python3 || command -v python2 || command -v /usr/libexec/platform-python) || {
@@ -12,12 +13,16 @@ python_exec=$(command -v python || command -v python3 || command -v python2 || c
   exit 1
 }
 
-# Print a parameter's value, or nothing if it's unset or null
+# Print a parameter's value, or nothing if it's unset or null. It goes through
+# a pipe, never as an argument.
 param() {
   printf '%s' "$params" | "$python_exec" -c '
 import json, sys
-value = json.loads(getattr(sys.stdin, "buffer", sys.stdin).read().decode("utf-8")).get(sys.argv[1])
-getattr(sys.stdout, "buffer", sys.stdout).write(("" if value is None else value).encode("utf-8"))
+# Bytes in and out, as UTF-8 whatever the locale (Python 2 has no .buffer)
+stdin = getattr(sys.stdin, "buffer", sys.stdin)
+stdout = getattr(sys.stdout, "buffer", sys.stdout)
+value = json.loads(stdin.read().decode("utf-8")).get(sys.argv[1])
+stdout.write(("" if value is None else value).encode("utf-8"))
 ' "$1"
 }
 

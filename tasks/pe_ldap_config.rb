@@ -66,11 +66,13 @@ class PeLdapConfig
     puts({ 'status' => resp.code }.to_json)
   end
 
-  # The error kind from an RBAC error body, as " (<kind>)", or '' if there isn't one
+  # The error kind from an RBAC error body, as " (<kind>)", or '' if the body
+  # isn't a JSON object with a plain kind
   def error_kind(body)
-    kind = JSON.parse(body)['kind']
-    kind ? " (#{kind})" : ''
-  rescue JSON::ParserError, TypeError
+    parsed = JSON.parse(body.to_s)
+    kind = parsed['kind'] if parsed.is_a?(Hash)
+    (kind.is_a?(String) && kind.match?(%r{\A[\w./-]+\z})) ? " (#{kind})" : ''
+  rescue JSON::ParserError, EncodingError
     ''
   end
 end

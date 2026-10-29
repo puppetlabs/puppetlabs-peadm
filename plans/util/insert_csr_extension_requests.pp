@@ -7,7 +7,8 @@ plan peadm::util::insert_csr_extension_requests (
   get_targets($targets).each |$target| {
     # csr_attributes.yaml can hold custom_attributes such as a
     # challengePassword, so read it as Sensitive (PE-47523)
-    $csr_attributes_data = ($csr_file = peadm::read_sensitive_file($target, '/etc/puppetlabs/puppet/csr_attributes.yaml')) ? {
+    $csr_file = peadm::read_sensitive_file($target, '/etc/puppetlabs/puppet/csr_attributes.yaml')
+    $csr_attributes_data = $csr_file ? {
       undef   => {},
       default => $csr_file.unwrap.parseyaml,
     }

@@ -33,11 +33,11 @@ describe 'peadm::install' do
     end
   end
 
-  # PE-47523: console_password stays a plain String. BoltSpec's run_plan
-  # wraps Sensitive-typed parameters the way the CLI does, so only a call
-  # through the run_plan() function, as pecdm, peadm::migrate and
-  # peadm_spec::install_test_cluster make, would fail if the signature
-  # changed to Sensitive.
+  # PE-47523: console_password is a plain String on purpose, not Sensitive.
+  # BoltSpec's run_plan wraps Sensitive-typed parameters the way the CLI
+  # does, so only a call through the run_plan() function, as pecdm,
+  # peadm::migrate and peadm_spec::install_test_cluster make, would fail if
+  # the signature changed to Sensitive.
   describe 'console_password passed by another plan' do
     let(:inventory_data) { { 'targets' => [{ 'name' => 'primary', 'vars' => { 'role' => 'primary' } }] } }
 

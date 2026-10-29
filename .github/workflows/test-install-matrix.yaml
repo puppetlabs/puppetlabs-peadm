@@ -76,7 +76,7 @@ jobs:
           echo ::group::info:inventory
             sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
           echo ::endgroup::
-      # PE-47523: a unique console password per run, so the steps after the
+      # PE-47523: a unique console password per run, so the step after the
       # install can search Bolt's output and debug log for it. It uses only
       # letters, digits and - . @, which Bolt never shell-escapes, so a leak
       # can't hide in an escaped form; PE's complexity rules want the special
@@ -103,9 +103,10 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome != 'skipped' }}
         run: |
           : "${CONSOLE_PASSWORD_CANARY:?is not set}"
-          # Bolt finds no bolt-project.yaml in the checkout root or its
-          # parents, so it uses its default project, and each run overwrites
-          # that project's debug log: check it before any other Bolt run.
+          # Bolt finds no Boltdir or bolt-project.yaml in the checkout root or
+          # its parents, so it uses its default project, and each run
+          # overwrites that project's debug log: check it before any other
+          # Bolt run.
           debug_log="$HOME/.puppetlabs/bolt/bolt-debug.log"
           for log in "$debug_log" bolt-install-output.log; do
             if [ ! -s "$log" ]; then
@@ -113,7 +114,7 @@ jobs:
               exit 1
             fi
           done
-          # Positive control, once the install has got that far: the log
+          # Positive control, after a successful install only: the log
           # records task arguments, with rbac_token's password masked.
           if [ "${{ steps.install.outcome }}" = success ] &&
             ! grep -F 'Running task peadm::rbac_token with' "$debug_log" | grep -qF '"password":"Sensitive [value redacted]"'; then

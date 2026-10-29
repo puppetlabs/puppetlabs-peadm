@@ -72,18 +72,33 @@ module PeadmSpecHelpers
     end)
   end
 
-  # The primary's pe.conf is read through peadm::read_sensitive_file
-  # (peadm::get_pe_conf); upgrade still reads the PostgreSQL nodes' copies,
-  # which hold no secrets, plainly, unless plain_reads is false.
-  def expect_pe_conf_reads(content = '{}', plain_reads: true)
+  # Expects one read of pe.conf through peadm::read_sensitive_file
+  # (peadm::get_pe_conf). Returns the stub, so callers can chain
+  # be_called_times. Any plain read of pe.conf is then an unexpected call:
+  # BoltSpec doesn't fall back to allow_any_task for a task with its own stub.
+  def expect_pe_conf_reads(content = '{}')
     expect_task('peadm::read_file')
       .with_params('path' => PE_CONF, 'as_sensitive' => true)
       .return { |targets:, **| sensitive_read_file_result(targets, content) }
-    return unless plain_reads
+  end
 
+  # Allows any number of reads of path through peadm::read_sensitive_file,
+  # for specs whose plans read it but aren't about it. A nil content means
+  # the file isn't there.
+  def allow_sensitive_reads(path, content)
     allow_task('peadm::read_file')
-      .with_params('path' => PE_CONF)
-      .always_return({ 'content' => content })
+      .with_params('path' => path, 'as_sensitive' => true)
+      .return { |targets:, **| sensitive_read_file_result(targets, content) }
+  end
+
+  # The same for pe.conf, which the node_group_environment default reads
+  def allow_pe_conf_reads(content = '{}')
+    allow_sensitive_reads(PE_CONF, content)
+  end
+
+  # A successful, empty result on each target
+  def ok_results(targets)
+    Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
   end
 end
 

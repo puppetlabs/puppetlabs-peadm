@@ -754,25 +754,24 @@ describe 'peadm::subplans::install' do
         'license_key_content'      => 'license-canary',
       }
     end
+    # A raw / inside the query, as in an AWS credential scope
     let(:signed_source) do
       'https://bucket.s3.amazonaws.com/released/puppet-enterprise-2023.8.10-el-7.11-x86_64.tar.gz' \
-        '?X-Amz-Credential=AKIA-canary&X-Amz-Signature=signature-canary'
+        '?X-Amz-Credential=AKIA-canary/20261029/us-east-1/s3/aws4_request&X-Amz-Signature=signature-canary'
     end
     let(:tarball) { '/tmp/puppet-enterprise-2023.8.10-el-7.11-x86_64.tar.gz' }
 
-    def ok_results(targets)
-      Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
-    end
-
-    def command_results(targets, command)
+    def command_results(targets, command, exit_code: 0, stderr: '')
       Bolt::ResultSet.new(targets.map do |target|
-        Bolt::Result.for_command(target, { 'stdout' => '', 'stderr' => '', 'exit_code' => 0 }, 'command', command, [])
+        Bolt::Result.for_command(target, { 'stdout' => '', 'stderr' => stderr, 'exit_code' => exit_code }, 'command', command, [])
       end)
     end
 
-    # Records every task call and command as "<task or command>@<target>",
-    # in order.
-    def record_calls(call_log)
+    # Records every task, command, plan and upload, in order, as
+    # "<task or command>@<target>", "<plan>" or "upload <destination>@<target>",
+    # and returns the log.
+    def record_calls
+      call_log = []
       allow_any_task.return do |targets:, task:, **|
         targets.each { |target| call_log << "#{task}@#{target.name}" }
         ok_results(targets)
@@ -781,6 +780,15 @@ describe 'peadm::subplans::install' do
         targets.each { |target| call_log << "#{command}@#{target.name}" }
         command_results(targets, command)
       end
+      allow_any_plan.return do |plan:, **|
+        call_log << plan.closure_name
+        Bolt::PlanResult.new({}, 'success')
+      end
+      allow_upload('/mock').return do |targets:, destination:, **|
+        targets.each { |target| call_log << "upload #{destination}@#{target.name}" }
+        Bolt::ResultSet.new(targets.map { |target| Bolt::Result.for_upload(target, '/mock', destination) })
+      end
+      call_log
     end
 
     it 'passes the console password to rbac_token as Sensitive' do
@@ -817,8 +825,8 @@ describe 'peadm::subplans::install' do
     # Renders every task call and command the way Bolt logs them, so a secret
     # passed through any unflagged parameter or command line fails here, not
     # only in the acceptance canary check.
-    [{}, { 'primary_postgresql_host' => 'postgres1' }].each do |extra|
-      it "logs no secret in any task argument or command (#{extra.empty? ? 'standard' : 'extra-large'})" do
+    { 'standard' => {}, 'extra-large' => { 'primary_postgresql_host' => 'postgres1' } }.each do |architecture, extra|
+      it "logs no secret in any task argument or command (#{architecture})" do
         logged = []
         allow_any_task.return do |targets:, task:, params:|
           logged << "Running task #{task} with '#{params.reject { |key, _| key.start_with?('_') }.to_json}'"
@@ -838,9 +846,10 @@ describe 'peadm::subplans::install' do
       end
     end
 
-    # pe_installer_source's file name used to keep a pre-signed URL's query
-    # string, which then appeared in the tarball path, the task arguments
-    # and download.sh's output, and broke the installer directory name.
+    # A pre-signed URL carries its credentials in the query string, so the
+    # tarball is named from the URL's path alone. The name becomes the tarball
+    # path (a task argument, and part of download.sh's output) and the
+    # installer directory.
     it 'keeps a pre-signed URL query string out of the tarball path and installer directory' do
       expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
         expect(params['source']).to eq(signed_source)
@@ -868,6 +877,30 @@ describe 'peadm::subplans::install' do
                       install_params.merge('primary_postgresql_host' => 'postgres1', 'pe_installer_source' => signed_source))).to be_ok
     end
 
+    it 'keeps user info out of the tarball path even when the password has a raw #' do
+      expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
+        expect(params['local_path']).to eq(tarball)
+        expect(params['upload_path']).to eq(tarball)
+        Bolt::PlanResult.new({}, 'success')
+      end
+
+      source = 'https://ci:Pa55#word-canary@artifacts.example.com/puppet-enterprise-2023.8.10-el-7.11-x86_64.tar.gz'
+      expect(run_plan('peadm::subplans::install', install_params.merge('pe_installer_source' => source))).to be_ok
+    end
+
+    # Every version's download.cgi?...&ver= link has the same file name, so a
+    # tarball of another version, cached on the Bolt host, would be installed.
+    it 'names the tarball after version and platform when the URL has no tarball file name' do
+      expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
+        expect(params['local_path']).to eq(tarball)
+        expect(params['upload_path']).to eq(tarball)
+        Bolt::PlanResult.new({}, 'success')
+      end
+
+      source = 'https://pm.puppet.com/cgi-bin/download.cgi?dist=el&rel=7&arch=x86_64&ver=2023.8.10'
+      expect(run_plan('peadm::subplans::install', install_params.merge('pe_installer_source' => source))).to be_ok
+    end
+
     it 'downloads a pre-signed URL directly through the masked source parameter' do
       expect_task('peadm::download').with_targets('primary').return do |targets:, params:, **|
         expect(params['source']).to be_a(Puppet::Pops::Types::PSensitiveType::Sensitive)
@@ -880,34 +913,45 @@ describe 'peadm::subplans::install' do
                       install_params.merge('download_mode' => 'direct', 'pe_installer_source' => signed_source))).to be_ok
     end
 
-    # Only the installer runs read the uploaded bootstrap pe.conf, and the
-    # primary's copy holds the console password, so it goes as soon as they
-    # finish, before the steps a failed install most often stops at.
-    it 'removes /tmp/pe.conf from every node that got one, after the last installer run and before rbac_token' do
-      call_log = []
-      record_calls(call_log)
-      allow_task('peadm::precheck').return_for_targets(
-        'primary'   => { 'hostname' => 'primary', 'platform' => 'el-7.11-x86_64' },
-        'postgres1' => { 'hostname' => 'postgres1', 'platform' => 'el-7.11-x86_64' },
-      )
+    # Only the installer runs read the bootstrap pe.conf, and the primary's
+    # copy holds the console password, so it's on the nodes only while they
+    # run: uploaded after the download and CSR steps, and removed before the
+    # steps a failed install most often stops at.
+    it 'uploads /tmp/pe.conf just before the installer runs and removes it right after them' do
+      call_log = record_calls
 
       expect(run_plan('peadm::subplans::install', install_params.merge('primary_postgresql_host' => 'postgres1'))).to be_ok
 
+      first_reader = call_log.index { |call| call.start_with?('peadm::pe_install@') }
       last_reader = call_log.rindex { |call| call.start_with?('peadm::pe_install@', 'peadm::pe_reinstall@') }
-      rbac_token = call_log.index('peadm::rbac_token@primary')
       ['primary', 'postgres1'].each do |node|
+        uploaded = call_log.index("upload /tmp/pe.conf@#{node}")
         removed = call_log.index("rm -f /tmp/pe.conf@#{node}")
+        expect(uploaded).not_to be_nil, "/tmp/pe.conf was not uploaded to #{node}"
+        expect(uploaded).to be > call_log.index('peadm::util::retrieve_and_upload')
+        expect(uploaded).to be > call_log.rindex('peadm::util::insert_csr_extension_requests')
+        expect(uploaded).to be < first_reader
         expect(removed).not_to be_nil, "/tmp/pe.conf was not removed on #{node}"
         expect(removed).to be > last_reader
-        expect(removed).to be < rbac_token
+        expect(removed).to be < call_log.index('peadm::rbac_token@primary')
       end
     end
 
-    it 'warns but finishes the install when /tmp/pe.conf cannot be removed' do
-      expect_command('rm -f /tmp/pe.conf').with_targets(['primary'])
-                                          .error_with('kind' => 'puppetlabs.tasks/command-error', 'msg' => 'Permission denied')
+    it 'uploads no /tmp/pe.conf when the download fails' do
+      call_log = record_calls
+      allow_plan('peadm::util::retrieve_and_upload').error_with('kind' => 'peadm/download-error', 'msg' => 'Download failed')
+
+      expect(run_plan('peadm::subplans::install', install_params)).not_to be_ok
+      expect(call_log.grep(%r{\Aupload /tmp/pe\.conf@})).to be_empty
+    end
+
+    it "warns with rm's error, but finishes the install, when /tmp/pe.conf can't be removed" do
+      expect_command('rm -f /tmp/pe.conf').with_targets(['primary']).return do |targets:, command:, **|
+        command_results(targets, command, exit_code: 1, stderr: "rm: cannot remove '/tmp/pe.conf': Operation not permitted\n")
+      end
       expect_out_message.with_params(
-        "WARNING: could not delete /tmp/pe.conf on primary: Permission denied. Delete it by hand; the primary's copy holds the console password.",
+        "WARNING: could not delete /tmp/pe.conf on primary: rm: cannot remove '/tmp/pe.conf': Operation not permitted. " \
+        "Delete it by hand; the primary's copy holds the console password.",
       )
 
       expect(run_plan('peadm::subplans::install', install_params)).to be_ok

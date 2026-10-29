@@ -25,7 +25,7 @@
 #   If the file does not exist the value will simply be supplied to the primaries
 #
 # @param pe_conf_data
-#   Config data to plane into pe.conf when generated on all hosts, this can be
+#   Config data to place into pe.conf when generated on all hosts, this can be
 #   used for tuning data etc.
 #
 # @param pe_installer_source
@@ -234,14 +234,12 @@ plan peadm::subplans::install (
       'puppet_enterprise::database_host'      => $replica_postgresql_target.peadm::certname(),
   } + $puppetdb_database_temp_config + $pe_conf_data)
 
-  # Upload the pe.conf files to the hosts that need them, and ensure correctly
-  # configured certnames. Right now for these hosts we need to do that by
-  # staging a puppet.conf file.
+  # Ensure correctly configured certnames on the hosts that run the PE
+  # installer. Right now for these hosts we need to do that by staging a
+  # puppet.conf file.
   parallelize(['primary', 'primary_postgresql', 'replica_postgresql']) |$var| {
     $target  = getvar("${var}_target", [])
-    $pe_conf = getvar("${var}_pe_conf")
 
-    peadm::file_content_upload($pe_conf, '/tmp/pe.conf', $target)
 # lint:ignore:strict_indent
     run_task('peadm::mkdir_p_file', $target,
       path    => '/etc/puppetlabs/puppet/puppet.conf',
@@ -254,9 +252,16 @@ plan peadm::subplans::install (
   }
 
   if $pe_installer_source {
-    # Drop any ?query or #fragment first: a pre-signed URL carries its
-    # credentials there (PE-47523), and this name becomes a file path.
-    $pe_tarball_name = $pe_installer_source.split(/[?#]/)[0].split('/')[-1]
+    # The URL's file name, without the query string or user info, which can
+    # hold credentials (PE-47523). A URL whose file name isn't a tarball's,
+    # such as a download.cgi?...&ver= link, gets the standard name instead:
+    # its file name is the same for every version, and the bolthost download
+    # mode would reuse a tarball of another version.
+    $url_file_name = peadm::url_file_name($pe_installer_source)
+    $pe_tarball_name = $url_file_name ? {
+      /\.tar(\.gz)?\z/ => $url_file_name,
+      default          => "puppet-enterprise-${version}-${platform}.tar.gz",
+    }
     $pe_tarball_source = $pe_installer_source
   } else {
     $pe_tarball_name   = "puppet-enterprise-${version}-${platform}.tar.gz"
@@ -358,12 +363,23 @@ plan peadm::subplans::install (
 
   wait($csr_yaml_jobs)
 
+  # Upload the pe.conf files the PE installer runs below read. The primary's
+  # holds the console password, so they go up only now, after the download
+  # and CSR steps, and are removed as soon as those runs are done (PE-47523).
+  $bootstrap_pe_conf = '/tmp/pe.conf'
+  parallelize(['primary', 'primary_postgresql', 'replica_postgresql']) |$var| {
+    $target  = getvar("${var}_target", [])
+    $pe_conf = getvar("${var}_pe_conf")
+
+    peadm::file_content_upload($pe_conf, $bootstrap_pe_conf, $target)
+  }
+
   # Get the master installation up and running. The installer will "fail"
   # because PuppetDB can't start, if primary_postgresql_target is set. That's
   # expected, and handled by the task's install_extra_large parameter.
   run_task('peadm::pe_install', $primary_target,
     tarball               => $upload_tarball_path,
-    peconf                => '/tmp/pe.conf',
+    peconf                => $bootstrap_pe_conf,
     puppet_service_ensure => 'stopped',
     install_extra_large   => ($arch['architecture'] == 'extra-large'),
   )
@@ -399,7 +415,7 @@ plan peadm::subplans::install (
   # Run the PE installer on the puppetdb database hosts
   run_task('peadm::pe_install', $database_targets,
     tarball               => $upload_tarball_path,
-    peconf                => '/tmp/pe.conf',
+    peconf                => $bootstrap_pe_conf,
     puppet_service_ensure => 'stopped',
   )
 
@@ -422,18 +438,23 @@ plan peadm::subplans::install (
     # what it couldn't the first time.
     run_task('peadm::pe_reinstall', $primary_target,
       installer_dir => $pe_installer_dir,
-      peconf        => '/tmp/pe.conf',
+      peconf        => $bootstrap_pe_conf,
     )
   }
 
-  # Only the installer runs above read the bootstrap /tmp/pe.conf. The
-  # primary's copy holds the console password and every copy holds
-  # pe_conf_data, so remove it now, before the steps a failed install most
-  # often stops at (PE-47523). PE is installed by this point, so a failed
-  # removal is a warning, not a failed install.
-  $pe_conf_cleanup = run_command('rm -f /tmp/pe.conf', $pe_installer_targets, '_catch_errors' => true)
+  # Only the installer runs above read the bootstrap pe.conf. The primary's
+  # copy holds the console password and every copy holds pe_conf_data, so
+  # remove it now, before the steps a failed install most often stops at
+  # (PE-47523). PE is installed by this point, so a failed removal is a
+  # warning, not a failed install.
+  $pe_conf_cleanup = run_command("rm -f ${bootstrap_pe_conf}", $pe_installer_targets, '_catch_errors' => true)
   $pe_conf_cleanup.error_set.each |$result| {
-    out::message("WARNING: could not delete /tmp/pe.conf on ${result.target.name}: ${result.error.message}. Delete it by hand; the primary's copy holds the console password.") # lint:ignore:140chars
+    # A failed command's message is only its exit code; rm's reason is in stderr
+    $reason = $result['stderr'] ? {
+      /\S/    => $result['stderr'].strip,
+      default => $result.error.message,
+    }
+    out::message("WARNING: could not delete ${bootstrap_pe_conf} on ${result.target.name}: ${reason}. Delete it by hand; the primary's copy holds the console password.") # lint:ignore:140chars
   }
 
   # rbac-service can briefly 500/reject auth immediately after this
@@ -642,7 +663,7 @@ plan peadm::subplans::install (
     fail_plan("Could not check whether ${primary_target} has the ca_storage_import plan available: ${ca_storage_import_probe_error}") # lint:ignore:140chars
   }
 
-  # Cleanup temp bootstrapping config
+  # Remove the temporary puppetdb_hosts setting from each node's pe.conf
   parallelize(['primary', 'primary_postgresql', 'replica_postgresql']) |$var| {
     $target  = getvar("${var}_target", [])
     $pe_conf = getvar("${var}_pe_conf", '{}')

@@ -98,34 +98,38 @@ describe PeLdapConfig do
     task.execute!
   end
 
-  # PE-47523: the task's output goes into bolt-debug.log, so it never prints
-  # the response body. RBAC's error bodies can echo the submitted request,
-  # bind password included (schema-violation's details.submitted).
+  # PE-47523: Bolt logs the task's output and error, so neither carries the
+  # response body. RBAC's error bodies can echo the submitted request (bind
+  # password included, on PE versions from before rbac-service redacted it),
+  # and the legacy ds endpoint returns the settings it saved.
   #
   # Catches a mutation that drops the non-200 check, silently accepting
   # any response code as success.
-  it 'raises with the code and error kind, without printing the body, when the API responds with a non-200 code' do
-    body = '{"kind":"puppetlabs.rbac/schema-violation","msg":"bad","details":{"submitted":{"password":"bind-canary"}}}'
+  it 'raises with the code and error kind, printing nothing, when the API responds with a non-200 code' do
+    body = '{"kind":"schema-violation","msg":"bad","details":{"submitted":{"password":"bind-canary"}}}'
     allow(https_dbl).to receive(:request).with(request_dbl).and_return(instance_double(Net::HTTPBadRequest, body: body, code: '400'))
 
-    expect(STDOUT).not_to receive(:puts)
-    expect { task.execute! }.to raise_error('API response code 400 (puppetlabs.rbac/schema-violation)')
+    expect {
+      expect { task.execute! }.to raise_error(RuntimeError, 'API response code 400 (schema-violation)')
+    }.not_to output.to_stdout
   end
 
-  it 'raises with just the code when the error body is not JSON' do
-    allow(https_dbl).to receive(:request).with(request_dbl).and_return(instance_double(Net::HTTPServerError, body: '<html>boom</html>', code: '500'))
+  ['<html>boom</html>', 'null', '{"kind":{"submitted":{"password":"bind-canary"}}}'].each do |body|
+    it "raises with just the code for the error body #{body}" do
+      allow(https_dbl).to receive(:request).with(request_dbl).and_return(instance_double(Net::HTTPServerError, body: body, code: '500'))
 
-    expect { task.execute! }.to raise_error('API response code 500')
+      expect { task.execute! }.to raise_error(RuntimeError, 'API response code 500')
+    end
   end
 
-  # On PE before 2023.8 the legacy ds endpoint returns the settings it
-  # saved, bind password included.
-  #
-  # Catches a mutation that raises even on success.
-  it 'prints only the status, not the response body, when the API responds 200' do
-    allow(https_dbl).to receive(:request).with(request_dbl).and_return(instance_double(Net::HTTPOK, body: '{"password":"bind-canary"}', code: '200'))
+  context 'when pe_version is older than 2023.8.0, where the ds endpoint returns the saved settings' do
+    let(:pe_version) { '2023.7.1' }
 
-    expect(STDOUT).to receive(:puts).with('{"status":"200"}')
-    expect { task.execute! }.not_to raise_error
+    # Catches a mutation that raises even on success.
+    it 'prints only the status, not the response body, when the API responds 200' do
+      allow(https_dbl).to receive(:request).with(request_dbl).and_return(instance_double(Net::HTTPOK, body: '{"password":"bind-canary"}', code: '200'))
+
+      expect { task.execute! }.to output(%({"status":"200"}\n)).to_stdout
+    end
   end
 end
