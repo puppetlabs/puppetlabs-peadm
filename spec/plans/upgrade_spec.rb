@@ -85,6 +85,10 @@ describe 'peadm::upgrade' do
         '?X-Amz-Credential=AKIA-canary/20261029/us-east-1/s3/aws4_request&X-Amz-Signature=signature-canary'
     end
     let(:tarball) { '/tmp/puppet-enterprise-2023.8.10-el-7.11-x86_64.tar.gz' }
+    let(:no_file_name_message) do
+      'pe_installer_source has no recognizable .tar or .tar.gz file name ' \
+        '(a URL with an @ after its host is treated as having none). Set the version parameter as well.'
+    end
 
     it 'logs and names the tarball by its file name, and downloads the full URL' do
       allow_upgrade_from_url
@@ -103,7 +107,7 @@ describe 'peadm::upgrade' do
     # there is none: nothing of the URL is logged, and version is needed.
     it 'logs nothing of the URL, and needs version, when the password has a raw #' do
       allow_upgrade_from_url
-      expect_out_message.with_params("Parameter 'pe_installer_source': []")
+      expect_out_message.with_params("Parameter 'pe_installer_source': [not a tarball file name, not shown]")
       expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
         expect(params['local_path']).to eq(tarball)
         ok_plan_result
@@ -118,7 +122,7 @@ describe 'peadm::upgrade' do
     # A last path segment that isn't a tarball's can be a token
     it 'logs nothing of a URL whose last path segment is not a tarball name' do
       allow_upgrade_from_url
-      expect_out_message.with_params("Parameter 'pe_installer_source': []")
+      expect_out_message.with_params("Parameter 'pe_installer_source': [not a tarball file name, not shown]")
       expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
         expect(params['local_path']).to eq(tarball)
         ok_plan_result
@@ -156,6 +160,33 @@ describe 'peadm::upgrade' do
                       'primary_host'        => 'primary',
                       'version'             => '2023.8.10',
                       'pe_installer_source' => 'https://mirror.example.com/pe-latest.tar.gz')).to be_ok
+    end
+
+    # A stale version next to the tarball of another version would upgrade to
+    # the wrong one
+    it 'fails when version differs from the version in the tarball file name' do
+      allow_upgrade_from_url
+
+      result = run_plan('peadm::upgrade',
+                        'primary_host'        => 'primary',
+                        'version'             => '2023.8.4',
+                        'pe_installer_source' => 'https://mirror.example.com/puppet-enterprise-2023.8.10-el-7.11-x86_64.tar.gz')
+
+      expect(result).not_to be_ok
+      expect(result.value.msg).to eq('pe_installer_source is the tarball for PE 2023.8.10, but version is 2023.8.4')
+    end
+
+    it 'accepts version when it matches the version in the tarball file name' do
+      allow_upgrade_from_url
+      expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
+        expect(params['local_path']).to eq(tarball)
+        ok_plan_result
+      end
+
+      expect(run_plan('peadm::upgrade',
+                      'primary_host'        => 'primary',
+                      'version'             => '2023.8.10',
+                      'pe_installer_source' => 'https://mirror.example.com/puppet-enterprise-2023.8.10-el-7.11-x86_64.tar.gz')).to be_ok
     end
 
     it 'fails for a tarball that is not named after a version, without version' do
@@ -200,7 +231,7 @@ describe 'peadm::upgrade' do
         result = run_plan('peadm::upgrade', 'primary_host' => 'primary', 'pe_installer_source' => source)
 
         expect(result).not_to be_ok
-        expect(result.value.msg).to eq('pe_installer_source has no .tar or .tar.gz file name (nor does a URL with an @ after its host) to take the PE version from. Set the version parameter as well.')
+        expect(result.value.msg).to eq(no_file_name_message)
       end
     end
 
@@ -212,7 +243,7 @@ describe 'peadm::upgrade' do
                         'pe_installer_source' => 'https://pm.puppet.com/cgi-bin/download.cgi?dist=el&rel=7&arch=x86_64&ver=2023.8.10')
 
       expect(result).not_to be_ok
-      expect(result.value.msg).to eq('pe_installer_source has no .tar or .tar.gz file name (nor does a URL with an @ after its host) to take the PE version from. Set the version parameter as well.')
+      expect(result.value.msg).to eq(no_file_name_message)
     end
   end
 

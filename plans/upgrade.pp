@@ -21,10 +21,10 @@
 #   whose file name doesn't end in `.tar` or `.tar.gz` needs version too, and
 #   the tarball is saved under the standard name for that version.
 # @param version
-#   The PE version to upgrade to. When set, it is used whatever the tarball
-#   file name of pe_installer_source is. Required when the version can't be
-#   read from that file name: when it has none, or isn't a
-#   `puppet-enterprise-<version>-...` name.
+#   The PE version to upgrade to. Required when pe_installer_source is not
+#   set, and when the version can't be read from its file name: when it has
+#   none, or isn't a `puppet-enterprise-<version>-...` name. When both are
+#   given and the file name names another version, the upgrade fails.
 # @param final_agent_state
 #   Configures the state the puppet agent should be in on infrastructure nodes
 #   after PE is upgraded successfully.
@@ -83,13 +83,13 @@ plan peadm::upgrade (
     'replica_postgresql_host' => $replica_postgresql_host,
     'node_group_environment' => $node_group_environment,
     'version' => $version,
-    # Log only the URL's tarball file name, and nothing for any other URL:
+    # Log only the URL's tarball file name, and nothing of any other URL:
     # pe_installer_source may carry credentials or signed tokens (e.g. S3
     # pre-signed URLs) that shouldn't land in Bolt output or centralized
     # logs (PE-47523).
     'pe_installer_source' => $pe_installer_source ? {
       undef   => undef,
-      default => peadm::url_tarball_name($pe_installer_source),
+      default => peadm::url_tarball_name($pe_installer_source).lest || { 'not a tarball file name, not shown' },
     },
   })
 
@@ -154,19 +154,23 @@ plan peadm::upgrade (
     # A URL that doesn't end in a tarball file name (see peadm::url_tarball_name)
     # names no version, so the tarball is named after the version parameter
     # instead. When version is given it is the version, whatever the file is
-    # called.
+    # called, unless the name carries a different version.
     $url_tarball_name = peadm::url_tarball_name($pe_installer_source)
     if $url_tarball_name {
+      $name_version = $url_tarball_name.split('-')[2]
+      if $version and $name_version =~ Peadm::Pe_version and $name_version != $version {
+        fail_plan("pe_installer_source is the tarball for PE ${name_version}, but version is ${version}")
+      }
       $pe_tarball_name = $url_tarball_name
       $_version        = $version ? {
-        undef   => $url_tarball_name.split('-')[2],
+        undef   => $name_version,
         default => $version,
       }
     } elsif $version {
       $pe_tarball_name = "puppet-enterprise-${version}-${platform}.tar.gz"
       $_version        = $version
     } else {
-      fail_plan('pe_installer_source has no .tar or .tar.gz file name (nor does a URL with an @ after its host) to take the PE version from. Set the version parameter as well.')
+      fail_plan('pe_installer_source has no recognizable .tar or .tar.gz file name (a URL with an @ after its host is treated as having none). Set the version parameter as well.')
     }
     $pe_tarball_source = $pe_installer_source
   } else {

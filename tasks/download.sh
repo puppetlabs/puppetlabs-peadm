@@ -43,6 +43,13 @@ verify-file() {
 # URL's query string and any user:password@ never reach the output, which Bolt
 # logs (PE-47523). Anything that doesn't look like a plain host is left out.
 describe-url() {
+  local scheme='^[A-Za-z][A-Za-z0-9+.-]*://'
+  # Without a scheme there's no telling where the host starts
+  if ! [[ "$1" =~ $scheme ]]; then
+    printf 'the source URL'
+    return
+  fi
+
   local rest="${1#*://}"                 # drop scheme://
   local authority="${rest%%[/?#]*}"      # up to the path, query or fragment
   local after="${rest#"$authority"}"
@@ -59,7 +66,8 @@ describe-url() {
   local path="${after%%[?#]*}"           # drop ?query and #fragment
   local name="${path##*/}"               # the last path segment
   # Only a tarball's name is safe to print: another last segment can be a token
-  [[ "$name" =~ \.tar(\.gz)?$ ]] || name=''
+  local tarball_name='^[A-Za-z0-9._+-]+\.tar(\.gz)?$'
+  [[ "$name" =~ $tarball_name ]] || name=''
 
   if [[ -n "$name" && -n "$host" ]]; then
     printf '%s from %s' "$name" "$host"
@@ -105,7 +113,7 @@ download-size-verify() {
   local source="$1"
   local path="$2"
 
-  urisize=$(curl -s -g -L --head "$source" | sed -rn 's/Content-Length: ([0-9]+)/\1/p' | tr -d '\012\015')
+  urisize=$(curl -s -g -L --head "$source" 2>/dev/null | sed -rn 's/Content-Length: ([0-9]+)/\1/p' | tr -d '\012\015')
   filesize=$(stat -c%s "$path" 2>/dev/null || stat -f%z "$path" 2>/dev/null)
 
   echo "Filesize: ${filesize}"

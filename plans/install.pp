@@ -17,7 +17,9 @@
 #   standard public source. When specified, PEAdm will download directly from the
 #   URL given. If the URL doesn't end in a `.tar` or `.tar.gz` file name, such
 #   as a download.cgi?...&ver= link, the tarball is saved under the standard
-#   `puppet-enterprise-<version>-<platform>.tar.gz` name for the version.
+#   `puppet-enterprise-<version>-<platform>.tar.gz` name for the version, which
+#   must be the version of the media. A URL with an @ after its host counts as
+#   having no file name.
 # @param ldap_config
 #   If specified, configures PE RBAC DS with the supplied configuration hash.
 #   The parameter should be set to a valid set of connection settings as

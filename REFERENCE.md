@@ -56,7 +56,7 @@ before they get overwritten by a classification reassertion
 #### Private Functions
 
 * `peadm::get_pe_conf`: Read a node's pe.conf as a Hash
-* `peadm::read_sensitive_file`: Read a file that can hold secrets, keeping its content out of bolt-debug.log
+* `peadm::read_sensitive_file`: Read a file that can hold secrets, without Bolt logging its content
 * `peadm::url_file_name`: The file name a URL's path ends in, without its query string, fragment or user info
 * `peadm::url_tarball_name`: The tarball file name a URL ends in, or undef if it doesn't end in one
 
@@ -1747,7 +1747,7 @@ Path to the file to read
 
 Data type: `Optional[Boolean]`
 
-Return the content under _sensitive, so Bolt masks it in bolt-debug.log and the task's result (--stream still prints the raw output)
+Return the content under _sensitive, so Bolt masks it in bolt-debug.log and the task's result (--stream still prints the raw output, and the pcp transport doesn't mask it)
 
 ### <a name="reinstall_pe"></a>`reinstall_pe`
 
@@ -2386,7 +2386,9 @@ specified, PEAdm will attempt to download PE installation media from its
 standard public source. When specified, PEAdm will download directly from the
 URL given. If the URL doesn't end in a `.tar` or `.tar.gz` file name, such
 as a download.cgi?...&ver= link, the tarball is saved under the standard
-`puppet-enterprise-<version>-<platform>.tar.gz` name for the version.
+`puppet-enterprise-<version>-<platform>.tar.gz` name for the version, which
+must be the version of the media. A URL with an @ after its host counts as
+having no file name.
 
 Default value: `undef`
 
@@ -2996,10 +2998,10 @@ Default value: `undef`
 
 Data type: `Optional[Peadm::Pe_version]`
 
-The PE version to upgrade to. When set, it is used whatever the tarball
-file name of pe_installer_source is. Required when the version can't be
-read from that file name: when it has none, or isn't a
-`puppet-enterprise-<version>-...` name.
+The PE version to upgrade to. Required when pe_installer_source is not
+set, and when the version can't be read from its file name: when it has
+none, or isn't a `puppet-enterprise-<version>-...` name. When both are
+given and the file name names another version, the upgrade fails.
 
 Default value: `undef`
 

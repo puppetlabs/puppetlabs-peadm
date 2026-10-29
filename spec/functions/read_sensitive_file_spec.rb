@@ -60,7 +60,7 @@ describe 'peadm::read_sensitive_file' do
     expect_task('peadm::read_file').error_with('msg' => 'The task failed with exit code 1', 'kind' => 'puppetlabs.tasks/task-error')
 
     # rubocop:disable RSpec/NamedSubject
-    expect { subject.execute('primary', path) }.to raise_error(Puppet::Error)
+    expect { subject.execute('primary', path) }.to raise_error(Puppet::Error, %r{peadm::read_file.*failed})
     # rubocop:enable RSpec/NamedSubject
   end
 

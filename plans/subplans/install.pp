@@ -34,7 +34,9 @@
 #   standard public source. When specified, PEAdm will download directly from the
 #   URL given. If the URL doesn't end in a `.tar` or `.tar.gz` file name, such
 #   as a download.cgi?...&ver= link, the tarball is saved under the standard
-#   `puppet-enterprise-<version>-<platform>.tar.gz` name for the version.
+#   `puppet-enterprise-<version>-<platform>.tar.gz` name for the version, which
+#   must be the version of the media. A URL with an @ after its host counts as
+#   having no file name.
 #
 plan peadm::subplans::install (
   # Standard
@@ -258,9 +260,8 @@ plan peadm::subplans::install (
     # download.cgi?...&ver= link, gets the standard name instead: its file
     # name is the same for every version, and the bolthost download mode
     # would reuse a tarball of another version.
-    $pe_tarball_name = peadm::url_tarball_name($pe_installer_source) ? {
-      String  => peadm::url_tarball_name($pe_installer_source),
-      default => "puppet-enterprise-${version}-${platform}.tar.gz",
+    $pe_tarball_name = peadm::url_tarball_name($pe_installer_source).lest || {
+      "puppet-enterprise-${version}-${platform}.tar.gz"
     }
     $pe_tarball_source = $pe_installer_source
   } else {
@@ -447,7 +448,7 @@ plan peadm::subplans::install (
       )
     }
 
-    # So $installer_error is only ever an Error, never the last result
+    # Ends the block with undef, so $installer_error is undef or an Error
     undef
   }
 
@@ -458,12 +459,19 @@ plan peadm::subplans::install (
   # or fail an install that otherwise worked.
   $pe_conf_cleanup = run_command("rm -f ${bootstrap_pe_conf}", $pe_installer_targets, '_catch_errors' => true)
   $pe_conf_cleanup.error_set.each |$result| {
-    # A failed command's message is only its exit code; rm's reason is in stderr
-    $reason = $result['stderr'] ? {
-      /\S/    => $result['stderr'].strip,
-      default => $result.error.message,
+    # A failed command's message is only its exit code; rm's reason is in
+    # stderr, which is sanitized before anything else looks at it, as it can be
+    # in any encoding and a regex on invalid UTF-8 would raise and replace the
+    # installer's error below.
+    $stderr = $result['stderr'] ? {
+      String  => peadm::sanitize_log_text($result['stderr'], 200),
+      default => '',
     }
-    out::message("WARNING: ${bootstrap_pe_conf} may still be on ${result.target.name} (${peadm::sanitize_log_text($reason, 200)}). Delete it by hand; on the primary it holds the console password.") # lint:ignore:140chars
+    $reason = $stderr ? {
+      /\S/   => $stderr.strip,
+      default => peadm::sanitize_log_text($result.error.message, 200),
+    }
+    out::message("WARNING: ${bootstrap_pe_conf} may still be on ${result.target.name} (${reason}). Delete it by hand; on the primary it holds the console password.") # lint:ignore:140chars
   }
 
   if $installer_error =~ Error {
@@ -475,7 +483,9 @@ plan peadm::subplans::install (
     }
     if $failed_results =~ ResultSet {
       $failed_results.error_set.each |$result| {
-        out::message("Failed on ${result.target.name}: ${result.error.message}\n${result['stdout']}${result['stderr']}")
+        # A task result keeps what the task printed under _output; its stderr
+        # is in the error message when there was no stdout
+        out::message("Failed on ${result.target.name}: ${result.error.message}\n${result['_output']}")
       }
     }
     fail_plan($installer_error)

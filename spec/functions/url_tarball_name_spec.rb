@@ -20,6 +20,8 @@ describe 'peadm::url_tarball_name' do
     'https://pm.puppet.com/cgi-bin/download.cgi?dist=el&ver=2023.8.10',
     'https://artifacts.example.com/dl/token-canary',
     'https://artifacts.example.com/pe/x.tar.gz.asc',
+    "https://artifacts.example.com/pe/it's.tar.gz",
+    'https://artifacts.example.com/pe/a%20b.tar.gz',
     'https://artifacts.example.com/pe/',
     'https://pe-user:pass#word-canary@artifacts.example.com/pe/puppet-enterprise.tar.gz',
   ].each do |url|

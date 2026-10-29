@@ -878,14 +878,16 @@ describe 'peadm::subplans::install' do
                       install_params.merge('primary_postgresql_host' => 'postgres1', 'pe_installer_source' => signed_source))).to be_ok
     end
 
-    it 'keeps user info out of the tarball path even when the password has a raw #' do
+    # Where the user info ends can't be told when the password holds a raw /
+    # and there's no path: what's left of it used to become the file name
+    it 'keeps user info out of the tarball path even when the password has a raw /' do
       expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
         expect(params['local_path']).to eq(tarball)
         expect(params['upload_path']).to eq(tarball)
         Bolt::PlanResult.new({}, 'success')
       end
 
-      source = 'https://ci:Pa55#word-canary@artifacts.example.com/puppet-enterprise-2023.8.10-el-7.11-x86_64.tar.gz'
+      source = 'https://ci:Pa55/word-canary@artifacts.example.com'
       expect(run_plan('peadm::subplans::install', install_params.merge('pe_installer_source' => source))).to be_ok
     end
 
@@ -973,6 +975,25 @@ describe 'peadm::subplans::install' do
       end
     end
 
+    # The primary's upload can have worked when another node's didn't, and the
+    # file must still be removed then. BoltSpec's executor hands back the
+    # failed results of a parallelize block instead of raising the
+    # ParallelFailure real Bolt raises, so that failure can't be played out
+    # here; this checks that the upload is inside the block whose errors are
+    # caught, before the cleanup.
+    it 'uploads the bootstrap pe.conf inside the catch_errors block, before the cleanup' do
+      source = File.read(File.expand_path('../../../plans/subplans/install.pp', __dir__))
+      block_start = source.index('$installer_error = catch_errors()')
+      upload = source.index('peadm::file_content_upload($pe_conf, $bootstrap_pe_conf, $target)')
+      installer = source.index("run_task('peadm::pe_install'")
+      cleanup = source.index('rm -f ${bootstrap_pe_conf}')
+
+      expect([block_start, upload, installer, cleanup]).to all(be_a(Integer))
+      expect(block_start).to be < upload
+      expect(upload).to be < installer
+      expect(installer).to be < cleanup
+    end
+
     it 'uploads no /tmp/pe.conf when the download fails' do
       call_log = record_calls
       expect_plan('peadm::util::retrieve_and_upload').error_with('kind' => 'peadm/download-error', 'msg' => 'Download failed')
@@ -993,12 +1014,13 @@ describe 'peadm::subplans::install' do
         log = call_log
         allow_task('peadm::pe_install').return do |targets:, **|
           targets.each { |target| log << "peadm::pe_install@#{target.name}" }
-          Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, error: { 'msg' => 'Password is too weak', 'kind' => 'peadm/installer-failed' }) })
+          # shaped like a real failed task: what it printed is under _output
+          Bolt::ResultSet.new(targets.map { |target| Bolt::Result.for_task(target, "Installer: password is too weak\n", '', 1, 'peadm::pe_install', []) })
         end
       end
 
-      it 'removes /tmp/pe.conf, prints the failed node and fails with the installer error' do
-        expect_out_message.with_params("Failed on primary: Password is too weak\n")
+      it 'removes /tmp/pe.conf, prints the failed node and its output, and fails with the installer error' do
+        expect_out_message.with_params("Failed on primary: The task failed with exit code 1\nInstaller: password is too weak\n")
 
         result = run_plan('peadm::subplans::install', install_params)
 
@@ -1007,6 +1029,19 @@ describe 'peadm::subplans::install' do
         expect(call_log).to include('rm -f /tmp/pe.conf@primary')
         expect(call_log.index('rm -f /tmp/pe.conf@primary')).to be > call_log.index('peadm::pe_install@primary')
         expect(call_log).not_to include('peadm::rbac_token@primary')
+      end
+
+      # rm's stderr can be in any encoding (a localized message, say); it must
+      # not make the warning raise and replace the installer's error
+      it 'still fails with the installer error when rm fails with stderr that is not UTF-8' do
+        expect_command('rm -f /tmp/pe.conf').with_targets(['primary']).return do |targets:, command:, **|
+          command_results(targets, command, exit_code: 1, stderr: "rm: Op\xE9ration non permise\n".dup.force_encoding('ASCII-8BIT'))
+        end
+
+        result = run_plan('peadm::subplans::install', install_params)
+
+        expect(result).not_to be_ok
+        expect(result.value.msg).to include('peadm::pe_install')
       end
 
       # The removal's own failure is a warning and doesn't replace the error

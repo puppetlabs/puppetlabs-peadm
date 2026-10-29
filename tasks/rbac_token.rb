@@ -98,14 +98,14 @@ class RbacToken
     error_kind(body).to_s.end_with?(SERVER_ERROR_KIND_SUFFIX)
   end
 
-  # RBAC's error kind, if the body is a JSON object whose kind is made only of
+  # RBAC's error kind, if the body is a JSON object whose kind is up to 128
   # word characters, . / and - (RBAC's own kinds are, like
   # puppetlabs.rbac/server-error). Anything else is left out: the kind goes
   # into an error message that plans print and Bolt logs.
   def error_kind(body)
     parsed = JSON.parse(body.to_s)
     kind = parsed['kind'] if parsed.is_a?(Hash)
-    kind if kind.is_a?(String) && kind.valid_encoding? && kind.match?(%r{\A[\w./-]+\z})
+    kind if kind.is_a?(String) && kind.valid_encoding? && kind.match?(%r{\A[\w./-]{1,128}\z})
   rescue JSON::ParserError, EncodingError
     nil
   end

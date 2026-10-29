@@ -114,7 +114,7 @@ describe PeLdapConfig do
     }.not_to output.to_stdout
   end
 
-  ['<html>boom</html>', 'null', '{"kind":{"submitted":{"password":"bind-canary"}}}', '{"kind":"bind-canary has spaces"}',
+  ['<html>boom</html>', 'null', '{"kind":{"submitted":{"password":"bind-canary"}}}', '{"kind":"bind-canary has spaces"}', %({"kind":"#{'a' * 129}"}),
    %({"kind":"ab\xFFc-canary"}).b].each do |body|
     it "raises with just the code for the error body #{body}" do
       allow(https_dbl).to receive(:request).with(request_dbl).and_return(instance_double(Net::HTTPServerError, body: body, code: '500'))
@@ -123,14 +123,17 @@ describe PeLdapConfig do
     end
   end
 
-  context 'when pe_version is older than 2023.8.0, where the ds endpoint returns the saved settings' do
-    let(:pe_version) { '2023.7.1' }
+  # The ds endpoint, before 2023.8.0, returns the settings it saved
+  ['2023.7.1', '2025.11.3'].each do |version|
+    context "when pe_version is #{version}" do
+      let(:pe_version) { version }
 
-    # Catches a mutation that raises even on success.
-    it 'prints only the status, not the response body, when the API responds 200' do
-      allow(https_dbl).to receive(:request).with(request_dbl).and_return(instance_double(Net::HTTPOK, body: '{"password":"bind-canary"}', code: '200'))
+      # Catches a mutation that raises even on success.
+      it 'prints only the status, not the response body, when the API responds 200' do
+        allow(https_dbl).to receive(:request).with(request_dbl).and_return(instance_double(Net::HTTPOK, body: '{"password":"bind-canary"}', code: '200'))
 
-      expect { task.execute! }.to output(%({"status":"200"}\n)).to_stdout
+        expect { task.execute! }.to output(%({"status":"200"}\n)).to_stdout
+      end
     end
   end
 end
