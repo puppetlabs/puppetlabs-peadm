@@ -476,8 +476,8 @@ describe 'peadm::subplans::install' do
     # No _catch_errors on the migration run_command itself (unlike the
     # probe): a failure here raises Bolt's own uncaught PlanFailure and
     # halts the whole peadm::install run, matching the file's dominant
-    # convention (pe_install, rbac_token, code_manager, etc. all fail the
-    # same way). Bolt's own generated diagnostic names the exact command
+    # convention (rbac_token, code_manager, etc. all fail the same way, and
+    # so does pe_install, once it has removed the bootstrap pe.conf). Bolt's own generated diagnostic names the exact command
     # and target that failed -- there is no additional message to surface
     # on top of that, per this plan's established style for uncaught
     # run_command calls.
@@ -970,7 +970,7 @@ describe 'peadm::subplans::install' do
     # copy holds the console password, so it's on the nodes only while they
     # run: uploaded after the download and CSR steps, and removed right after
     # the installer runs, before the steps a failed install most often stops at.
-    it 'uploads /tmp/pe.conf just before the installer runs and removes it right after the installer runs' do
+    it 'uploads /tmp/pe.conf after the download and CSR steps and before the installers, and removes it after the last one' do
       call_log = record_calls
       allow_task('peadm::precheck').return_for_targets(
         'primary'      => { 'hostname' => 'primary', 'platform' => 'el-7.11-x86_64' },
@@ -1030,6 +1030,69 @@ describe 'peadm::subplans::install' do
 
     # PE rejects a weak console_password late in the installer run, and the
     # file with the password must not stay behind then.
+    # The removal has to follow every step in the catch_errors block, not only
+    # the first installer run: moving a step out of the block, before the removal,
+    # would leave /tmp/pe.conf behind when that step fails. (The upload and the
+    # r10k key and license writes are in parallelize blocks, and BoltSpec doesn't
+    # raise a failure from one.)
+    context 'when a later step in the block fails' do
+      let(:call_log) { record_calls }
+      let(:split_params) { install_params.merge('primary_postgresql_host' => 'postgres1') }
+
+      def failed_task_results(targets, task)
+        Bolt::ResultSet.new(targets.map { |target| Bolt::Result.for_task(target, "#{task} failed\n", '', 1, task, []) })
+      end
+
+      def expect_removal_after(step)
+        result = run_plan('peadm::subplans::install', split_params)
+
+        expect(result).not_to be_ok
+        expect(call_log).to include(step)
+        expect(call_log).to include('rm -f /tmp/pe.conf@primary')
+        expect(call_log.index('rm -f /tmp/pe.conf@primary')).to be > call_log.index(step)
+      end
+
+      it 'removes /tmp/pe.conf when the autosign write fails' do
+        log = call_log
+        allow_task('peadm::mkdir_p_file').return do |targets:, params:, **|
+          targets.each { |target| log << "peadm::mkdir_p_file #{File.basename(params['path'])}@#{target.name}" }
+          params['path'].end_with?('autosign.conf') ? failed_task_results(targets, 'peadm::mkdir_p_file') : ok_results(targets)
+        end
+
+        expect_removal_after('peadm::mkdir_p_file autosign.conf@primary')
+      end
+
+      it 'removes /tmp/pe.conf when the installer run on the PostgreSQL host fails' do
+        log = call_log
+        allow_task('peadm::pe_install').return do |targets:, **|
+          targets.each { |target| log << "peadm::pe_install@#{target.name}" }
+          targets.map(&:name).include?('postgres1') ? failed_task_results(targets, 'peadm::pe_install') : ok_results(targets)
+        end
+
+        expect_removal_after('peadm::pe_install@postgres1')
+      end
+
+      it 'removes /tmp/pe.conf when stopping PuppetDB fails' do
+        log = call_log
+        allow_command('systemctl stop pe-puppetdb').return do |targets:, command:, **|
+          targets.each { |target| log << "#{command}@#{target.name}" }
+          command_results(targets, command, exit_code: 1)
+        end
+
+        expect_removal_after('systemctl stop pe-puppetdb@primary')
+      end
+
+      it 'removes /tmp/pe.conf when the primary reinstall on a split-database install fails' do
+        log = call_log
+        allow_task('peadm::pe_reinstall').return do |targets:, **|
+          targets.each { |target| log << "peadm::pe_reinstall@#{target.name}" }
+          failed_task_results(targets, 'peadm::pe_reinstall')
+        end
+
+        expect_removal_after('peadm::pe_reinstall@primary')
+      end
+    end
+
     context 'when an installer run fails' do
       let(:call_log) { record_calls }
 

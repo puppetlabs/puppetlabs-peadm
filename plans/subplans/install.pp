@@ -375,7 +375,7 @@ plan peadm::subplans::install (
 
   wait($csr_yaml_jobs)
 
-  # The PE installer runs below read a bootstrap pe.conf on each node. The
+  # Each PE installer run below reads a bootstrap pe.conf on its node. The
   # primary's holds the console password, so it goes up only now, after the
   # download and CSR steps. An installer failure must not leave it behind, so
   # errors are caught here, the file is removed, and the plan then fails with

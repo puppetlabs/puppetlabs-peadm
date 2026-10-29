@@ -158,9 +158,11 @@ plan peadm::upgrade (
     # instead. When version is given it is the version, whatever the file is
     # called, unless the name carries a different version.
     #
-    # The version checked and used below is its x.y.z, as the one read from a
-    # file name always was: a suffix (2025.11.0-rc1, a dev build's -23-gabcdef0)
-    # is in no supported version range, and would skip the version-gated steps.
+    # The version checked and used below is the x.y.z of whichever version is
+    # known (the version parameter, or the one in the file name), as the one
+    # read from a file name always was: a suffix (2025.11.0-rc1, a dev build's
+    # -23-gabcdef0) is in no supported version range, and would skip the
+    # version-gated steps.
     $url_tarball_name = peadm::url_tarball_name($pe_installer_source)
     if $url_tarball_name {
       # Only a puppet-enterprise-<version>-... name carries a version

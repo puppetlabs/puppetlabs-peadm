@@ -18,7 +18,8 @@ plan peadm::util::sanitize_pg_pe_conf (
 
     # On a cluster PEADM didn't build this is the installer's HOCON, which
     # parsejson can't read, and its parse error quotes the whole file. The
-    # default keeps parsehocon's error, which quotes it too, from being raised.
+    # default stops parsehocon raising an error that quotes it too. (stdlib may
+    # still log that error at debug level.)
     $parsed = stdlib::parsehocon($content.unwrap, 'unparseable')
     if $parsed =~ String {
       fail_plan("The pe.conf on ${target.name} could not be parsed")
