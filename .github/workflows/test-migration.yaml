@@ -42,17 +42,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TEMPORARY, test-branch-only narrowing per request to these 4
-        # combos. Restore the full matrix before this could ever merge.
+        # TEMPORARY, test-branch-only narrowing to the 4 -with-dr combos
+        # under active investigation (all 4 hit the same
+        # wait_until_service_ready orchestrator-service timeout in the
+        # combined-fix run: jobs 123083763331, 123083763336, 123083763006,
+        # 123083763010). Restore the full matrix before this could ever
+        # merge.
         include:
-          - architecture: standard
+          - architecture: standard-with-dr
             version: 2025.12.0
             image: almalinux-cloud/almalinux-8
-            new_pe_version: 2026.0.0
-          - architecture: large
+          - architecture: large-with-dr
             version: 2025.12.0
             image: almalinux-cloud/almalinux-8
-            new_pe_version: 2026.0.0
           - architecture: standard-with-dr
             version: 2026.0.0
             image: almalinux-cloud/almalinux-8
