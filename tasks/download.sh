@@ -39,27 +39,40 @@ verify-file() {
   fi
 }
 
-# Describe a URL by its file name and host only. Pre-signed URLs carry
-# credentials in the query string, and a URL can carry user:password@
-# (PE-47523).
+# Describe a URL by its file name and host only, so a pre-signed URL's query
+# string and any user:password@ never reach the output, which Bolt logs
+# (PE-47523). Anything that doesn't look like a plain host is left out.
 describe-url() {
-  local url="${1%%[?#]*}"
-  local host="${url#*://}"
-  host="${host%%/*}"
-  host="${host##*@}"
-  if [[ -n "$host" ]]; then
-    printf '%s from %s' "${url##*/}" "$host"
+  local rest="${1#*://}"   # drop scheme://
+  rest="${rest%%[?#]*}"    # drop ?query and #fragment
+  local host="$rest" name=''
+  if [[ "$rest" == */* ]]; then
+    host="${rest%%/*}"     # the authority, up to the path
+    name="${rest##*/}"     # the last path segment
+    name="${name##*@}"     # an @ here means user info with a raw / in it
+  fi
+  host="${host##*@}"       # drop user:password@
+  local valid_host='^([[][0-9A-Fa-f:.]+[]]|[A-Za-z0-9.-]+)(:[0-9]+)?$'
+  [[ "$host" =~ $valid_host ]] || host=''
+
+  if [[ -n "$name" && -n "$host" ]]; then
+    printf '%s from %s' "$name" "$host"
+  elif [[ -n "${name}${host}" ]]; then
+    printf '%s' "${name}${host}"
   else
-    printf '%s' "${url##*/}"
+    printf 'the source URL'
   fi
 }
 
+# Download $1 to $2. $3 describes what is downloaded, for the output.
+# TODO PE-47901: the URL is still on command lines (PT_source, curl's arguments) that sudo logs and ps shows.
 download() {
-  printf '%s\n' "Downloading: $(describe-url "$1")"
+  local description="${3:-$(describe-url "$1")}"
+  printf '%s\n' "Downloading: ${description}"
   tmp_file=$(mktemp)
   echo "Downloading to temporary file ${tmp_file}"
 
-  if curl -s -f -L -o ${tmp_file} "$1"; then
+  if curl -sS -f -L -o "${tmp_file}" "$1"; then
     echo "Moving ${tmp_file} to target path ${2}"
 
     # Perform the move. If it doesn't work, clean up and return an error
@@ -69,7 +82,7 @@ download() {
       return 1
     fi
   else
-    echo "Error: Curl has failed to download the file"
+    echo "Error: curl exited with $? downloading ${description}"
     echo "Removing temporary file ${tmp_file}"
     rm "${tmp_file}"
     return 1
@@ -100,7 +113,7 @@ download-signature-verify() {
   local source="$1"
   local path="$2"
 
-  if ! download "${source}.asc" "${path}.asc" ; then
+  if ! download "${source}.asc" "${path}.asc" "the .asc signature for $(describe-url "$source")"; then
     echo "Unable to download the .asc signature for $(describe-url "$source"). Skipping verification."
     download-size-verify "$source" "$path"
     return "$?"

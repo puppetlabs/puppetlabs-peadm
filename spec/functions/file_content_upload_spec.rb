@@ -2,11 +2,12 @@
 
 require 'spec_helper'
 
-# peadm::file_content_upload has no conditional branches - it just writes
-# `content` to a Tempfile and forwards it to Bolt's upload_file, so the
-# only interesting failure modes are plumbing bugs: wrong/dropped
-# arguments, content not actually written before upload, or the return
-# value getting transformed instead of passed straight through.
+# peadm::file_content_upload writes `content` to a Tempfile, forwards it to
+# Bolt's upload_file and always deletes the Tempfile afterwards, so the
+# interesting failure modes are wrong/dropped arguments, content not
+# actually written before upload, the return value getting transformed
+# instead of passed straight through, and the Tempfile outliving the call,
+# on success or failure.
 #
 # Rather than pulling in the full BoltSpec::Plans plan-executor machinery
 # (which would require mocking upload_file's own Tempfile/Pathname/
@@ -74,9 +75,9 @@ describe 'peadm::file_content_upload' do
     expect(result).to equal(fake_result)
   end
 
-  # PE-47523: the content is usually a pe.conf carrying the console password,
-  # so the tempfile on the Bolt host must not outlive the upload, whether it
-  # succeeds or fails.
+  # PE-47523: every caller uploads a pe.conf, and the primary's holds the
+  # console password, so the tempfile on the Bolt host must not outlive the
+  # upload, whether it succeeds or fails.
   it 'deletes the tempfile after a successful upload' do
     tempfile_path = nil
     allow(subject.func).to receive(:call_function) do |_function_name, path, *_rest|

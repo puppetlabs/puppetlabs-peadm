@@ -66,10 +66,11 @@ describe 'peadm::migrate' do
     allow_task('peadm::precheck').always_return({ 'platform' => 'el-9-x86_64' })
   end
 
+  # peadm::get_pe_conf reads pe.conf as Sensitive (PE-47523).
   def stub_pe_conf_read!
     allow_task('peadm::read_file')
-      .with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf')
-      .always_return({ 'content' => '{}' })
+      .with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf', 'as_sensitive' => true)
+      .return { |targets:, **| sensitive_read_file_result(targets, '{}') }
   end
 
   def stub_backup_download_upload!

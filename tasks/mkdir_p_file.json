@@ -27,7 +27,7 @@
       "description": "If supplied, recursively chown starting at this path"
     }
   },
-  "input_method": "environment",
+  "input_method": "stdin",
   "implementations": [
     {"name": "mkdir_p_file.sh"}
   ]

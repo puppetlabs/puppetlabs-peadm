@@ -2,18 +2,40 @@
 
 set -e
 
-mkdir -p "$(dirname "$PT_path")"
-touch "$PT_path"
+# Parameters arrive as JSON on stdin. With environment input, Bolt puts them
+# on the remote command line (`env PT_content=...`), where sudo logs them and
+# ps shows them, and the content is often a secret (PE-47523).
+params=$(cat)
 
-if [ ! -z "$PT_owner" ]; then chown "$PT_owner" "$PT_path"; fi
-if [ ! -z "$PT_group" ]; then chgrp "$PT_group" "$PT_path"; fi
-if [ ! -z "$PT_mode"  ]; then chmod "$PT_mode"  "$PT_path"; fi
+python_exec=$(command -v python || command -v python3 || command -v python2 || command -v /usr/libexec/platform-python) || {
+  echo "Error: No Python version 2 or 3 interpreter found."
+  exit 1
+}
 
-if [ ! -z "$PT_chown_r" ]; then
-  chown -R "$PT_owner":"$PT_group" "$PT_chown_r"
+# Print a parameter's value, or nothing if it's unset or null
+param() {
+  printf '%s' "$params" | "$python_exec" -c '
+import json, sys
+value = json.loads(getattr(sys.stdin, "buffer", sys.stdin).read().decode("utf-8")).get(sys.argv[1])
+getattr(sys.stdout, "buffer", sys.stdout).write(("" if value is None else value).encode("utf-8"))
+' "$1"
+}
+
+path=$(param path)
+owner=$(param owner)
+group=$(param group)
+mode=$(param mode)
+chown_r=$(param chown_r)
+
+mkdir -p "$(dirname "$path")"
+touch "$path"
+
+if [ -n "$owner" ]; then chown "$owner" "$path"; fi
+if [ -n "$group" ]; then chgrp "$group" "$path"; fi
+if [ -n "$mode"  ]; then chmod "$mode"  "$path"; fi
+
+if [ -n "$chown_r" ]; then
+  chown -R "$owner":"$group" "$chown_r"
 fi
 
-cat > "$PT_path" <<MKDIRPEOF
-$PT_content
-MKDIRPEOF
-
+{ param content; echo; } > "$path"

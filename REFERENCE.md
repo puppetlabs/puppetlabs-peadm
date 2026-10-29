@@ -44,6 +44,7 @@ primary_host vs replica_host) the node was passed as.
 * [`peadm::oid`](#peadm--oid)
 * [`peadm::pe_db_names`](#peadm--pe_db_names)
 * [`peadm::plan_step`](#peadm--plan_step)
+* [`peadm::read_sensitive_file`](#peadm--read_sensitive_file): Read a file that can hold secrets, without Bolt logging its content
 * [`peadm::recovery_opts_all`](#peadm--recovery_opts_all)
 * [`peadm::recovery_opts_default`](#peadm--recovery_opts_default)
 * [`peadm::sanitize_log_text`](#peadm--sanitize_log_text): Makes arbitrary external text safe to interpolate into a single log line.
@@ -864,7 +865,7 @@ Type: Puppet Language
 
 The peadm::log_plan_parameters function.
 
-#### `peadm::log_plan_parameters(Hash $params)`
+#### `peadm::log_plan_parameters(Hash[String, Any] $params)`
 
 The peadm::log_plan_parameters function.
 
@@ -872,7 +873,7 @@ Returns: `Any`
 
 ##### `params`
 
-Data type: `Hash`
+Data type: `Hash[String, Any]`
 
 
 
@@ -971,6 +972,37 @@ Data type: `String`
 Data type: `Callable`
 
 
+
+### <a name="peadm--read_sensitive_file"></a>`peadm::read_sensitive_file`
+
+Type: Puppet Language
+
+Bolt logs every task's result in bolt-debug.log. peadm::read_file returns
+the content under _sensitive when asked, which Bolt masks there and in its
+output, and the content stays wrapped in Sensitive on the plan side
+(PE-47523).
+
+#### `peadm::read_sensitive_file(Peadm::SingleTargetSpec $target, String[1] $path)`
+
+Bolt logs every task's result in bolt-debug.log. peadm::read_file returns
+the content under _sensitive when asked, which Bolt masks there and in its
+output, and the content stays wrapped in Sensitive on the plan side
+(PE-47523).
+
+Returns: `Optional[Sensitive[String]]` The file's content, or undef if it
+doesn't exist or isn't readable
+
+##### `target`
+
+Data type: `Peadm::SingleTargetSpec`
+
+The node to read the file on
+
+##### `path`
+
+Data type: `String[1]`
+
+The file to read
 
 ### <a name="peadm--recovery_opts_all"></a>`peadm::recovery_opts_all`
 
@@ -1748,6 +1780,12 @@ Read the contents of a file
 Data type: `String`
 
 Path to the file to read
+
+##### `as_sensitive`
+
+Data type: `Optional[Boolean]`
+
+Return the content under _sensitive, so Bolt masks it in its logs and output
 
 ### <a name="reinstall_pe"></a>`reinstall_pe`
 

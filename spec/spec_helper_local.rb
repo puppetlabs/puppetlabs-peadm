@@ -56,3 +56,37 @@ if defined?(SimpleCov)
   # not part of this change.
   SimpleCov.formatters = [SimpleCov::Formatter::HTMLFormatter, SimpleCov::Formatter::Console]
 end
+
+# Helpers for stubbing peadm::read_sensitive_file, which asks peadm::read_file
+# for the content under _sensitive so Bolt masks it in bolt-debug.log
+# (PE-47523).
+module PeadmSpecHelpers
+  PE_CONF = '/etc/puppetlabs/enterprise/conf.d/pe.conf'
+
+  # Real Bolt wraps a task's _sensitive output in Sensitive when it parses the
+  # result (Bolt::Result.for_task); BoltSpec's always_return doesn't, so build
+  # the result the way Bolt does. A nil content means the file wasn't there.
+  def sensitive_read_file_result(targets, content)
+    Bolt::ResultSet.new(targets.map do |target|
+      Bolt::Result.for_task(target, { '_sensitive' => { 'content' => content } }.to_json, '', 0, 'peadm::read_file', [])
+    end)
+  end
+
+  # The primary's pe.conf is read through peadm::read_sensitive_file
+  # (peadm::get_pe_conf); upgrade still reads the PostgreSQL nodes' copies,
+  # which hold no secrets, plainly, unless plain_reads is false.
+  def expect_pe_conf_reads(content = '{}', plain_reads: true)
+    expect_task('peadm::read_file')
+      .with_params('path' => PE_CONF, 'as_sensitive' => true)
+      .return { |targets:, **| sensitive_read_file_result(targets, content) }
+    return unless plain_reads
+
+    allow_task('peadm::read_file')
+      .with_params('path' => PE_CONF)
+      .always_return({ 'content' => content })
+  end
+end
+
+RSpec.configure do |config|
+  config.include PeadmSpecHelpers
+end

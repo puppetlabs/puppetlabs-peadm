@@ -76,10 +76,11 @@ plan peadm::upgrade (
     'version' => $version,
     # Log only the tarball basename, not the full URL: pe_installer_source may
     # carry credentials or signed tokens (e.g. S3 pre-signed URLs) that
-    # shouldn't land in Bolt output or centralized logs.
+    # shouldn't land in Bolt output or centralized logs. The tokens are in the
+    # query string, so drop it before taking the basename (PE-47523).
     'pe_installer_source' => $pe_installer_source ? {
       undef   => undef,
-      default => $pe_installer_source.split('/')[-1],
+      default => $pe_installer_source.split(/[?#]/)[0].split('/')[-1],
     },
   })
 
@@ -141,7 +142,9 @@ plan peadm::upgrade (
   $platform = run_task('peadm::precheck', $primary_target).first['platform']
 
   if $pe_installer_source {
-    $pe_tarball_name   = $pe_installer_source.split('/')[-1]
+    # Drop any ?query or #fragment first: a pre-signed URL carries its
+    # credentials there (PE-47523), and this name becomes a file path.
+    $pe_tarball_name   = $pe_installer_source.split(/[?#]/)[0].split('/')[-1]
     $pe_tarball_source = $pe_installer_source
     $_version          = $pe_tarball_name.split('-')[2]
   } else {

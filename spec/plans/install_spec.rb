@@ -32,4 +32,26 @@ describe 'peadm::install' do
         'cloud_database_host' => 'cloud-sql.example.com')).to be_ok
     end
   end
+
+  # PE-47523: console_password stays a plain String. BoltSpec's run_plan
+  # wraps Sensitive-typed parameters the way the CLI does, so only a call
+  # through the run_plan() function, as pecdm, peadm::migrate and
+  # peadm_spec::install_test_cluster make, would fail if the signature
+  # changed to Sensitive.
+  describe 'console_password passed by another plan' do
+    let(:inventory_data) { { 'targets' => [{ 'name' => 'primary', 'vars' => { 'role' => 'primary' } }] } }
+
+    it 'accepts a plain String' do
+      allow_any_command
+      allow_any_task
+      allow_out_message
+      expect_plan('peadm::subplans::install')
+      expect_plan('peadm::subplans::configure')
+
+      expect(run_plan('peadm_spec::install_test_cluster',
+                      'architecture'     => 'standard',
+                      'console_password' => 'puppetLabs123!',
+                      'version'          => '2023.8.10')).to be_ok
+    end
+  end
 end

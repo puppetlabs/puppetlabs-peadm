@@ -13,19 +13,20 @@ main() {
 		exit 1
 	done
 
+	local content error_field=''
 	if [ -r "$PT_path" ]; then
-		cat <<-EOS
-			{
-				"content": $($python_exec -c "import json; print(json.dumps(open('$PT_path','r').read()))")
-			}
-		EOS
+		content=$($python_exec -c "import json; print(json.dumps(open('$PT_path','r').read()))")
 	else
-		cat <<-EOS
-			{
-				"content": null,
-				"error": "File does not exist or is not readable"
-			}
-		EOS
+		content=null
+		error_field=', "error": "File does not exist or is not readable"'
+	fi
+
+	# With as_sensitive, the content goes under _sensitive, which Bolt wraps in
+	# Sensitive and masks in its logs and output (PE-47523).
+	if [ "$PT_as_sensitive" = "true" ]; then
+		printf '%s\n' "{\"_sensitive\": {\"content\": ${content}}${error_field}}"
+	else
+		printf '%s\n' "{\"content\": ${content}${error_field}}"
 	fi
 }
 

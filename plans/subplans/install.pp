@@ -254,7 +254,9 @@ plan peadm::subplans::install (
   }
 
   if $pe_installer_source {
-    $pe_tarball_name = $pe_installer_source.split('/')[-1]
+    # Drop any ?query or #fragment first: a pre-signed URL carries its
+    # credentials there (PE-47523), and this name becomes a file path.
+    $pe_tarball_name = $pe_installer_source.split(/[?#]/)[0].split('/')[-1]
     $pe_tarball_source = $pe_installer_source
   } else {
     $pe_tarball_name   = "puppet-enterprise-${version}-${platform}.tar.gz"
@@ -422,6 +424,16 @@ plan peadm::subplans::install (
       installer_dir => $pe_installer_dir,
       peconf        => '/tmp/pe.conf',
     )
+  }
+
+  # Only the installer runs above read the bootstrap /tmp/pe.conf. The
+  # primary's copy holds the console password and every copy holds
+  # pe_conf_data, so remove it now, before the steps a failed install most
+  # often stops at (PE-47523). PE is installed by this point, so a failed
+  # removal is a warning, not a failed install.
+  $pe_conf_cleanup = run_command('rm -f /tmp/pe.conf', $pe_installer_targets, '_catch_errors' => true)
+  $pe_conf_cleanup.error_set.each |$result| {
+    out::message("WARNING: could not delete /tmp/pe.conf on ${result.target.name}: ${result.error.message}. Delete it by hand; the primary's copy holds the console password.") # lint:ignore:140chars
   }
 
   # rbac-service can briefly 500/reject auth immediately after this
@@ -639,10 +651,6 @@ plan peadm::subplans::install (
       path    => '/etc/puppetlabs/enterprise/conf.d/pe.conf',
       content => stdlib::to_json_pretty($pe_conf.parsejson() - $puppetdb_database_temp_config),
     )
-
-    # The uploaded bootstrap copy holds the console password, and nothing
-    # reads it once the installer has run (PE-47523).
-    run_command('rm -f /tmp/pe.conf', $target)
   }
 
   return("Installation of Puppet Enterprise ${arch['architecture']} succeeded.")

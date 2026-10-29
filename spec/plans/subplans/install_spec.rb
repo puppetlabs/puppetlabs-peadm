@@ -740,10 +740,11 @@ describe 'peadm::subplans::install' do
   # PE-47523: Bolt writes every task's arguments to bolt-debug.log and masks
   # only the parameters a task's metadata flags "sensitive", so the calls
   # that carry secrets must go through those parameters, which BoltSpec then
-  # sees wrapped as Sensitive. console_password stays a plain String: these
-  # examples pass one, as pecdm and peadm::migrate do.
+  # sees wrapped as Sensitive. The plans take console_password as a plain
+  # String (peadm::migrate passes one); the wrapping comes from the task
+  # metadata.
   describe 'secrets in task arguments and on disk (PE-47523)' do
-    let(:params) do
+    let(:install_params) do
       {
         'primary_host'             => 'primary',
         'console_password'         => 'puppetLabs123!',
@@ -753,51 +754,163 @@ describe 'peadm::subplans::install' do
         'license_key_content'      => 'license-canary',
       }
     end
+    let(:signed_source) do
+      'https://bucket.s3.amazonaws.com/released/puppet-enterprise-2023.8.10-el-7.11-x86_64.tar.gz' \
+        '?X-Amz-Credential=AKIA-canary&X-Amz-Signature=signature-canary'
+    end
+    let(:tarball) { '/tmp/puppet-enterprise-2023.8.10-el-7.11-x86_64.tar.gz' }
+
+    def ok_results(targets)
+      Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+    end
+
+    def command_results(targets, command)
+      Bolt::ResultSet.new(targets.map do |target|
+        Bolt::Result.for_command(target, { 'stdout' => '', 'stderr' => '', 'exit_code' => 0 }, 'command', command, [])
+      end)
+    end
+
+    # Records every task call and command as "<task or command>@<target>",
+    # in order.
+    def record_calls(call_log)
+      allow_any_task.return do |targets:, task:, **|
+        targets.each { |target| call_log << "#{task}@#{target.name}" }
+        ok_results(targets)
+      end
+      allow_any_command.return do |targets:, command:, **|
+        targets.each { |target| call_log << "#{command}@#{target.name}" }
+        command_results(targets, command)
+      end
+    end
 
     it 'passes the console password to rbac_token as Sensitive' do
       expect_task('peadm::rbac_token').with_targets('primary').return do |targets:, params:, **|
         expect(params['password']).to be_a(Puppet::Pops::Types::PSensitiveType::Sensitive)
         expect(params['password'].unwrap).to eq('puppetLabs123!')
-        Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+        ok_results(targets)
       end
 
-      expect(run_plan('peadm::subplans::install', params)).to be_ok
+      expect(run_plan('peadm::subplans::install', install_params)).to be_ok
     end
 
     it 'writes pe.conf, the r10k key and the license to the primary as Sensitive content' do
-      writes = []
+      primary_contents = {}
       allow_task('peadm::mkdir_p_file').return do |targets:, params:, **|
-        writes << [targets.map(&:name), params]
-        Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+        primary_contents[params['path']] = params['content'] if targets.map(&:name) == ['primary']
+        ok_results(targets)
       end
 
-      expect(run_plan('peadm::subplans::install', params)).to be_ok
+      expect(run_plan('peadm::subplans::install', install_params)).to be_ok
 
       {
         '/etc/puppetlabs/enterprise/conf.d/pe.conf'            => '"console_admin_password": "puppetLabs123!"',
         '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa' => 'r10k-key-canary',
         '/etc/puppetlabs/license.key'                          => 'license-canary',
       }.each do |path, secret|
-        _names, write = writes.find { |names, task_params| names == ['primary'] && task_params['path'] == path }
-        expect(write).not_to be_nil, "no mkdir_p_file call wrote #{path} on the primary"
-        expect(write['content']).to be_a(Puppet::Pops::Types::PSensitiveType::Sensitive), "#{path} content is not Sensitive"
-        expect(write['content'].unwrap).to include(secret)
+        content = primary_contents[path]
+        expect(content).not_to be_nil, "no mkdir_p_file call wrote #{path} on the primary"
+        expect(content).to be_a(Puppet::Pops::Types::PSensitiveType::Sensitive), "#{path} content is not Sensitive"
+        expect(content.unwrap).to include(secret)
       end
     end
 
-    # The uploaded bootstrap pe.conf carries the console password, and
-    # nothing reads it once the installer has run.
-    it 'removes the bootstrap /tmp/pe.conf from the primary at the end' do
-      expect_command('rm -f /tmp/pe.conf').with_targets('primary')
+    # Renders every task call and command the way Bolt logs them, so a secret
+    # passed through any unflagged parameter or command line fails here, not
+    # only in the acceptance canary check.
+    [{}, { 'primary_postgresql_host' => 'postgres1' }].each do |extra|
+      it "logs no secret in any task argument or command (#{extra.empty? ? 'standard' : 'extra-large'})" do
+        logged = []
+        allow_any_task.return do |targets:, task:, params:|
+          logged << "Running task #{task} with '#{params.reject { |key, _| key.start_with?('_') }.to_json}'"
+          ok_results(targets)
+        end
+        allow_any_command.return do |targets:, command:, **|
+          logged << "Running command '#{command}'"
+          command_results(targets, command)
+        end
 
-      expect(run_plan('peadm::subplans::install', params)).to be_ok
+        expect(run_plan('peadm::subplans::install', install_params.merge(extra))).to be_ok
+
+        # Positive control: the sweep saw rbac_token's masked password.
+        expect(logged).to include(a_string_including(%q(Running task peadm::rbac_token with '{"password":"Sensitive [value redacted]")))
+        leaks = logged.grep(%r{puppetLabs123!|r10k-key-canary|license-canary})
+        expect(leaks).to be_empty, "secrets in logged task arguments or commands:\n#{leaks.join("\n")}"
+      end
     end
 
-    it 'removes /tmp/pe.conf from the PostgreSQL node too on extra-large installs' do
-      expect_command('rm -f /tmp/pe.conf').with_targets('primary')
-      expect_command('rm -f /tmp/pe.conf').with_targets('postgres1')
+    # pe_installer_source's file name used to keep a pre-signed URL's query
+    # string, which then appeared in the tarball path, the task arguments
+    # and download.sh's output, and broke the installer directory name.
+    it 'keeps a pre-signed URL query string out of the tarball path and installer directory' do
+      expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
+        expect(params['source']).to eq(signed_source)
+        expect(params['local_path']).to eq(tarball)
+        expect(params['upload_path']).to eq(tarball)
+        Bolt::PlanResult.new({}, 'success')
+      end
+      expect_task('peadm::pe_install').with_targets('primary').with_params(
+        'tarball'               => tarball,
+        'peconf'                => '/tmp/pe.conf',
+        'puppet_service_ensure' => 'stopped',
+        'install_extra_large'   => true,
+      )
+      expect_task('peadm::pe_install').with_targets('postgres1').with_params(
+        'tarball'               => tarball,
+        'peconf'                => '/tmp/pe.conf',
+        'puppet_service_ensure' => 'stopped',
+      )
+      expect_task('peadm::pe_reinstall').with_targets('primary').with_params(
+        'installer_dir' => '/tmp/puppet-enterprise-2023.8.10-el-7.11-x86_64',
+        'peconf'        => '/tmp/pe.conf',
+      )
 
-      expect(run_plan('peadm::subplans::install', params.merge('primary_postgresql_host' => 'postgres1'))).to be_ok
+      expect(run_plan('peadm::subplans::install',
+                      install_params.merge('primary_postgresql_host' => 'postgres1', 'pe_installer_source' => signed_source))).to be_ok
+    end
+
+    it 'downloads a pre-signed URL directly through the masked source parameter' do
+      expect_task('peadm::download').with_targets('primary').return do |targets:, params:, **|
+        expect(params['source']).to be_a(Puppet::Pops::Types::PSensitiveType::Sensitive)
+        expect(params['source'].unwrap).to eq(signed_source)
+        expect(params['path']).to eq(tarball)
+        ok_results(targets)
+      end
+
+      expect(run_plan('peadm::subplans::install',
+                      install_params.merge('download_mode' => 'direct', 'pe_installer_source' => signed_source))).to be_ok
+    end
+
+    # Only the installer runs read the uploaded bootstrap pe.conf, and the
+    # primary's copy holds the console password, so it goes as soon as they
+    # finish, before the steps a failed install most often stops at.
+    it 'removes /tmp/pe.conf from every node that got one, after the last installer run and before rbac_token' do
+      call_log = []
+      record_calls(call_log)
+      allow_task('peadm::precheck').return_for_targets(
+        'primary'   => { 'hostname' => 'primary', 'platform' => 'el-7.11-x86_64' },
+        'postgres1' => { 'hostname' => 'postgres1', 'platform' => 'el-7.11-x86_64' },
+      )
+
+      expect(run_plan('peadm::subplans::install', install_params.merge('primary_postgresql_host' => 'postgres1'))).to be_ok
+
+      last_reader = call_log.rindex { |call| call.start_with?('peadm::pe_install@', 'peadm::pe_reinstall@') }
+      rbac_token = call_log.index('peadm::rbac_token@primary')
+      ['primary', 'postgres1'].each do |node|
+        removed = call_log.index("rm -f /tmp/pe.conf@#{node}")
+        expect(removed).not_to be_nil, "/tmp/pe.conf was not removed on #{node}"
+        expect(removed).to be > last_reader
+        expect(removed).to be < rbac_token
+      end
+    end
+
+    it 'warns but finishes the install when /tmp/pe.conf cannot be removed' do
+      expect_command('rm -f /tmp/pe.conf').with_targets(['primary'])
+                                          .error_with('kind' => 'puppetlabs.tasks/command-error', 'msg' => 'Permission denied')
+      expect_out_message.with_params(
+        "WARNING: could not delete /tmp/pe.conf on primary: Permission denied. Delete it by hand; the primary's copy holds the console password.",
+      )
+
+      expect(run_plan('peadm::subplans::install', install_params)).to be_ok
     end
   end
 end

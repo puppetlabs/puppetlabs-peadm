@@ -58,8 +58,20 @@ class PeLdapConfig
 
     resp = https.request(req)
 
-    puts resp.body
-    raise "API response code #{resp.code}" unless resp.code == '200'
+    # Don't print the response body: Bolt logs the task's output, the legacy
+    # ds endpoint returns the settings it saved, bind password included, and
+    # RBAC error bodies can echo the submitted request (PE-47523).
+    raise "API response code #{resp.code}#{error_kind(resp.body)}" unless resp.code == '200'
+
+    puts({ 'status' => resp.code }.to_json)
+  end
+
+  # The error kind from an RBAC error body, as " (<kind>)", or '' if there isn't one
+  def error_kind(body)
+    kind = JSON.parse(body)['kind']
+    kind ? " (#{kind})" : ''
+  rescue JSON::ParserError, TypeError
+    ''
   end
 end
 
