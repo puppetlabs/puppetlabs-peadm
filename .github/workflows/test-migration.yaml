@@ -42,15 +42,28 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TEMPORARY, test-branch-only narrowing to the 2 combos that hit the
-        # wait_until_service_ready orchestrator-service timeout (jobs
-        # 123083763006 / 123083763010). Restore the full matrix before this
-        # could ever merge.
-        architecture:
-          - standard-with-dr
-          - extra-large
-        version: [2026.0.0]
-        image: [almalinux-cloud/almalinux-8]
+        # TEMPORARY, test-branch-only narrowing to the 4 combos that failed
+        # on the initial combined-fix run (40764175069): standard/large
+        # 2025.12.0->2026.0.0 (known disk-space issue, PE-47829, not fixed by
+        # this branch) and extra-large/standard-with-dr at 2026.0.0 (the
+        # wait_until_service_ready orchestrator-service timeout, jobs
+        # 123083763006 / 123083763010, which this branch's retry fix
+        # targets). Restore the full matrix before this could ever merge.
+        include:
+          - architecture: standard
+            version: 2025.12.0
+            image: almalinux-cloud/almalinux-8
+            new_pe_version: 2026.0.0
+          - architecture: large
+            version: 2025.12.0
+            image: almalinux-cloud/almalinux-8
+            new_pe_version: 2026.0.0
+          - architecture: extra-large
+            version: 2026.0.0
+            image: almalinux-cloud/almalinux-8
+          - architecture: standard-with-dr
+            version: 2026.0.0
+            image: almalinux-cloud/almalinux-8
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
