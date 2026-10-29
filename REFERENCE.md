@@ -45,7 +45,6 @@ primary_host vs replica_host) the node was passed as.
 * [`peadm::oid`](#peadm--oid)
 * [`peadm::pe_db_names`](#peadm--pe_db_names)
 * [`peadm::plan_step`](#peadm--plan_step)
-* [`peadm::read_sensitive_file`](#peadm--read_sensitive_file): Read a file that can hold secrets, keeping its content out of bolt-debug.log
 * [`peadm::recovery_opts_all`](#peadm--recovery_opts_all)
 * [`peadm::recovery_opts_default`](#peadm--recovery_opts_default)
 * [`peadm::sanitize_log_text`](#peadm--sanitize_log_text): Makes arbitrary external text safe to interpolate into a single log line.
@@ -57,7 +56,9 @@ before they get overwritten by a classification reassertion
 #### Private Functions
 
 * `peadm::get_pe_conf`: Read a node's pe.conf as a Hash
+* `peadm::read_sensitive_file`: Read a file that can hold secrets, keeping its content out of bolt-debug.log
 * `peadm::url_file_name`: The file name a URL's path ends in, without its query string, fragment or user info
+* `peadm::url_tarball_name`: The tarball file name a URL ends in, or undef if it doesn't end in one
 
 ### Data types
 
@@ -851,15 +852,15 @@ Data type: `Optional[Integer[1,1]]`
 
 Type: Puppet Language
 
-A value whose key looks like it holds a secret prints as [redacted]
-(PE-47523). This goes by top-level key name only: it can't catch a secret
-under an innocuous key, or nested inside another value.
+A value whose key looks like it holds a secret prints as [redacted]. This
+goes by top-level key name only: it can't catch a secret under an innocuous
+key, or nested inside another value.
 
 #### `peadm::log_plan_parameters(Hash[String, Any] $params)`
 
-A value whose key looks like it holds a secret prints as [redacted]
-(PE-47523). This goes by top-level key name only: it can't catch a secret
-under an innocuous key, or nested inside another value.
+A value whose key looks like it holds a secret prints as [redacted]. This
+goes by top-level key name only: it can't catch a secret under an innocuous
+key, or nested inside another value.
 
 Returns: `Any`
 
@@ -964,42 +965,6 @@ Data type: `String`
 Data type: `Callable`
 
 
-
-### <a name="peadm--read_sensitive_file"></a>`peadm::read_sensitive_file`
-
-Type: Puppet Language
-
-Bolt logs every task's result in bolt-debug.log. With as_sensitive,
-peadm::read_file returns the content under _sensitive, which Bolt masks in
-that log and in the task's result, and this function keeps it wrapped in
-Sensitive (PE-47523). Bolt's --stream option still prints the task's raw
-output, content included, and over the pcp transport Bolt doesn't mask
-_sensitive at all.
-
-#### `peadm::read_sensitive_file(Peadm::SingleTargetSpec $target, String[1] $path)`
-
-Bolt logs every task's result in bolt-debug.log. With as_sensitive,
-peadm::read_file returns the content under _sensitive, which Bolt masks in
-that log and in the task's result, and this function keeps it wrapped in
-Sensitive (PE-47523). Bolt's --stream option still prints the task's raw
-output, content included, and over the pcp transport Bolt doesn't mask
-_sensitive at all.
-
-Returns: `Optional[Sensitive[String]]` The file's content, or undef if it
-doesn't exist or isn't readable. Fails if the read itself failed, so
-callers never rewrite a file from content they didn't get.
-
-##### `target`
-
-Data type: `Peadm::SingleTargetSpec`
-
-The node to read the file on
-
-##### `path`
-
-Data type: `String[1]`
-
-The file to read
 
 ### <a name="peadm--recovery_opts_all"></a>`peadm::recovery_opts_all`
 
@@ -2419,9 +2384,9 @@ Data type: `Optional[Stdlib::HTTPSUrl]`
 The URL to download the Puppet Enterprise installer media from. If not
 specified, PEAdm will attempt to download PE installation media from its
 standard public source. When specified, PEAdm will download directly from the
-URL given. If the URL's file name isn't a standard .tar or .tar.gz one, such
+URL given. If the URL doesn't end in a `.tar` or `.tar.gz` file name, such
 as a download.cgi?...&ver= link, the tarball is saved under the standard
-puppet-enterprise-<version>-<platform>.tar.gz name for the version.
+`puppet-enterprise-<version>-<platform>.tar.gz` name for the version.
 
 Default value: `undef`
 
@@ -3019,10 +2984,11 @@ Data type: `Optional[Stdlib::HTTPSUrl]`
 The URL to download the Puppet Enterprise installer media from. If not
 specified, PEAdm will attempt to download PE installation media from its
 standard public source. When specified, PEAdm will download directly from the
-URL given. The PE version is taken from the URL's tarball file name, which
-must be a standard puppet-enterprise-<version>-<platform>.tar[.gz] name.
-For a URL without one, set version too, and the tarball is saved under the
-standard name for that version.
+URL given. Unless version is set, the PE version is taken from the URL's
+file name, which must then be a standard
+`puppet-enterprise-<version>-<platform>.tar.gz` (or `.tar`) name. A URL
+whose file name doesn't end in `.tar` or `.tar.gz` needs version too, and
+the tarball is saved under the standard name for that version.
 
 Default value: `undef`
 
@@ -3030,8 +2996,10 @@ Default value: `undef`
 
 Data type: `Optional[Peadm::Pe_version]`
 
-The PE version to upgrade to. Required unless pe_installer_source has a
-standard tarball file name to take it from.
+The PE version to upgrade to. When set, it is used whatever the tarball
+file name of pe_installer_source is. Required when the version can't be
+read from that file name: when it has none, or isn't a
+`puppet-enterprise-<version>-...` name.
 
 Default value: `undef`
 

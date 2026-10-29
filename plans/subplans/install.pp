@@ -32,9 +32,9 @@
 #   The URL to download the Puppet Enterprise installer media from. If not
 #   specified, PEAdm will attempt to download PE installation media from its
 #   standard public source. When specified, PEAdm will download directly from the
-#   URL given. If the URL's file name isn't a standard .tar or .tar.gz one, such
+#   URL given. If the URL doesn't end in a `.tar` or `.tar.gz` file name, such
 #   as a download.cgi?...&ver= link, the tarball is saved under the standard
-#   puppet-enterprise-<version>-<platform>.tar.gz name for the version.
+#   `puppet-enterprise-<version>-<platform>.tar.gz` name for the version.
 #
 plan peadm::subplans::install (
   # Standard
@@ -254,15 +254,13 @@ plan peadm::subplans::install (
   }
 
   if $pe_installer_source {
-    # The URL's file name, without the query string or user info, which can
-    # hold credentials (PE-47523). A URL whose file name isn't a tarball's,
-    # such as a download.cgi?...&ver= link, gets the standard name instead:
-    # its file name is the same for every version, and the bolthost download
-    # mode would reuse a tarball of another version.
-    $url_file_name = peadm::url_file_name($pe_installer_source)
-    $pe_tarball_name = $url_file_name ? {
-      /\.tar(\.gz)?\z/ => $url_file_name,
-      default          => "puppet-enterprise-${version}-${platform}.tar.gz",
+    # A URL that doesn't end in a tarball file name, such as a
+    # download.cgi?...&ver= link, gets the standard name instead: its file
+    # name is the same for every version, and the bolthost download mode
+    # would reuse a tarball of another version.
+    $pe_tarball_name = peadm::url_tarball_name($pe_installer_source) ? {
+      String  => peadm::url_tarball_name($pe_installer_source),
+      default => "puppet-enterprise-${version}-${platform}.tar.gz",
     }
     $pe_tarball_source = $pe_installer_source
   } else {
@@ -367,9 +365,11 @@ plan peadm::subplans::install (
 
   # The PE installer runs below read a bootstrap pe.conf on each node. The
   # primary's holds the console password, so it goes up only now, after the
-  # download and CSR steps. A failed run must not leave it behind, so errors
-  # are caught here, the file is removed, and the plan then fails with the
-  # original error (PE-47523).
+  # download and CSR steps. An installer failure must not leave it behind, so
+  # errors are caught here, the file is removed, and the plan then fails with
+  # the original error. (Puppet has no ensure: an interrupt, or an error that
+  # isn't a Bolt one, still skips the removal, and /tmp/pe.conf should then be
+  # deleted by hand.)
   $bootstrap_pe_conf = '/tmp/pe.conf'
   $installer_error = catch_errors() || {
     parallelize(['primary', 'primary_postgresql', 'replica_postgresql']) |$var| {
@@ -447,6 +447,7 @@ plan peadm::subplans::install (
       )
     }
 
+    # So $installer_error is only ever an Error, never the last result
     undef
   }
 
@@ -462,10 +463,21 @@ plan peadm::subplans::install (
       /\S/    => $result['stderr'].strip,
       default => $result.error.message,
     }
-    out::message("WARNING: could not delete ${bootstrap_pe_conf} on ${result.target.name}: ${reason}. Delete it by hand; the primary's copy holds the console password.") # lint:ignore:140chars
+    out::message("WARNING: ${bootstrap_pe_conf} may still be on ${result.target.name} (${peadm::sanitize_log_text($reason, 200)}). Delete it by hand; on the primary it holds the console password.") # lint:ignore:140chars
   }
 
   if $installer_error =~ Error {
+    # fail_plan on a caught error hides the failed nodes' output in Bolt's
+    # human format, which a failed run_task would show, so print it first.
+    $failed_results = $installer_error.details ? {
+      Hash    => $installer_error.details['result_set'],
+      default => undef,
+    }
+    if $failed_results =~ ResultSet {
+      $failed_results.error_set.each |$result| {
+        out::message("Failed on ${result.target.name}: ${result.error.message}\n${result['stdout']}${result['stderr']}")
+      }
+    }
     fail_plan($installer_error)
   }
 
@@ -676,7 +688,8 @@ plan peadm::subplans::install (
     fail_plan("Could not check whether ${primary_target} has the ca_storage_import plan available: ${ca_storage_import_probe_error}") # lint:ignore:140chars
   }
 
-  # Remove the temporary puppetdb_hosts setting from each node's pe.conf
+  # Remove the temporary puppetdb_hosts setting from each node's
+  # /etc/puppetlabs/enterprise/conf.d/pe.conf
   parallelize(['primary', 'primary_postgresql', 'replica_postgresql']) |$var| {
     $target  = getvar("${var}_target", [])
     $pe_conf = getvar("${var}_pe_conf", '{}')

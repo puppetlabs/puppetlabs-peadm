@@ -67,11 +67,13 @@ class PeLdapConfig
   end
 
   # The error kind from an RBAC error body, as " (<kind>)", or '' if the body
-  # isn't a JSON object with a plain kind
+  # isn't a JSON object whose kind is made only of word characters, . / and -
+  # (RBAC's own kinds are). Anything else is left out: the kind goes into an
+  # error message that Bolt logs.
   def error_kind(body)
     parsed = JSON.parse(body.to_s)
     kind = parsed['kind'] if parsed.is_a?(Hash)
-    (kind.is_a?(String) && kind.match?(%r{\A[\w./-]+\z})) ? " (#{kind})" : ''
+    (kind.is_a?(String) && kind.valid_encoding? && kind.match?(%r{\A[\w./-]+\z})) ? " (#{kind})" : ''
   rescue JSON::ParserError, EncodingError
     ''
   end

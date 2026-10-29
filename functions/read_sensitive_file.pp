@@ -3,9 +3,11 @@
 # Bolt logs every task's result in bolt-debug.log. With as_sensitive,
 # peadm::read_file returns the content under _sensitive, which Bolt masks in
 # that log and in the task's result, and this function keeps it wrapped in
-# Sensitive (PE-47523). Bolt's --stream option still prints the task's raw
-# output, content included, and over the pcp transport Bolt doesn't mask
-# _sensitive at all.
+# Sensitive. Bolt's --stream option still prints the task's raw output,
+# content included, and over the pcp transport Bolt doesn't mask _sensitive
+# at all.
+#
+# @api private
 #
 # @param target The node to read the file on
 # @param path The file to read

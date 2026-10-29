@@ -986,19 +986,44 @@ describe 'peadm::subplans::install' do
 
     # PE rejects a weak console_password late in the installer run, and the
     # file with the password must not stay behind then.
-    it 'removes /tmp/pe.conf, then fails with the installer error, when an installer run fails' do
-      call_log = record_calls
-      allow_task('peadm::pe_install').return do |targets:, **|
-        targets.each { |target| call_log << "peadm::pe_install@#{target.name}" }
-        Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, error: { 'msg' => 'Password is too weak', 'kind' => 'peadm/installer-failed' }) })
+    context 'when an installer run fails' do
+      let(:call_log) { record_calls }
+
+      before(:each) do
+        log = call_log
+        allow_task('peadm::pe_install').return do |targets:, **|
+          targets.each { |target| log << "peadm::pe_install@#{target.name}" }
+          Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, error: { 'msg' => 'Password is too weak', 'kind' => 'peadm/installer-failed' }) })
+        end
       end
 
-      result = run_plan('peadm::subplans::install', install_params)
+      it 'removes /tmp/pe.conf, prints the failed node and fails with the installer error' do
+        expect_out_message.with_params("Failed on primary: Password is too weak\n")
 
-      expect(result).not_to be_ok
-      expect(call_log).to include('rm -f /tmp/pe.conf@primary')
-      expect(call_log.index('rm -f /tmp/pe.conf@primary')).to be > call_log.index('peadm::pe_install@primary')
-      expect(call_log).not_to include('peadm::rbac_token@primary')
+        result = run_plan('peadm::subplans::install', install_params)
+
+        expect(result).not_to be_ok
+        expect(result.value.msg).to include('peadm::pe_install')
+        expect(call_log).to include('rm -f /tmp/pe.conf@primary')
+        expect(call_log.index('rm -f /tmp/pe.conf@primary')).to be > call_log.index('peadm::pe_install@primary')
+        expect(call_log).not_to include('peadm::rbac_token@primary')
+      end
+
+      # The removal's own failure is a warning and doesn't replace the error
+      it "still fails with the installer error when /tmp/pe.conf can't be removed either" do
+        expect_command('rm -f /tmp/pe.conf').with_targets(['primary']).return do |targets:, command:, **|
+          command_results(targets, command, exit_code: 1, stderr: "rm: cannot remove '/tmp/pe.conf': Operation not permitted\n")
+        end
+        expect_out_message.with_params(
+          "WARNING: /tmp/pe.conf may still be on primary (rm: cannot remove '/tmp/pe.conf': Operation not permitted). " \
+          'Delete it by hand; on the primary it holds the console password.',
+        )
+
+        result = run_plan('peadm::subplans::install', install_params)
+
+        expect(result).not_to be_ok
+        expect(result.value.msg).to include('peadm::pe_install')
+      end
     end
 
     it "warns with rm's error, but finishes the install, when /tmp/pe.conf can't be removed" do
@@ -1006,8 +1031,8 @@ describe 'peadm::subplans::install' do
         command_results(targets, command, exit_code: 1, stderr: "rm: cannot remove '/tmp/pe.conf': Operation not permitted\n")
       end
       expect_out_message.with_params(
-        "WARNING: could not delete /tmp/pe.conf on primary: rm: cannot remove '/tmp/pe.conf': Operation not permitted. " \
-        "Delete it by hand; the primary's copy holds the console password.",
+        "WARNING: /tmp/pe.conf may still be on primary (rm: cannot remove '/tmp/pe.conf': Operation not permitted). " \
+        'Delete it by hand; on the primary it holds the console password.',
       )
 
       expect(run_plan('peadm::subplans::install', install_params)).to be_ok

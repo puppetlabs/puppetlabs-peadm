@@ -3,10 +3,10 @@
 # A URL can carry credentials in its query string (a pre-signed URL) or its
 # user info, and the plans use this name in file paths, task arguments and
 # logged parameters (PE-47523). The scheme and the authority (up to the first
-# /, ? or #) go first. An @ anywhere after that means user info holding a raw
-# / ? or #, where it ends can't be told, so there is no name. Like
-# tasks/download.sh, this errs on the side of printing less, so it also
-# returns undef for a URL with an @ in its path or query.
+# /, ? or #) are dropped first. Any @ after that is taken for user info
+# holding a raw / ? or #, where it ends can't be told, so there is no name,
+# even when the @ is really in the path or query. This errs on the side of
+# printing less, as tasks/download.sh does.
 #
 # @api private
 #

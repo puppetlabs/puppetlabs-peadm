@@ -1,8 +1,8 @@
 # @summary Print the PEADM version and a plan's parameters, for debugging
 #
-# A value whose key looks like it holds a secret prints as [redacted]
-# (PE-47523). This goes by top-level key name only: it can't catch a secret
-# under an innocuous key, or nested inside another value.
+# A value whose key looks like it holds a secret prints as [redacted]. This
+# goes by top-level key name only: it can't catch a secret under an innocuous
+# key, or nested inside another value.
 #
 # @param params The parameter names and values to print
 function peadm::log_plan_parameters(Hash[String, Any] $params) {

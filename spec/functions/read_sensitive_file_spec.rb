@@ -55,6 +55,15 @@ describe 'peadm::read_sensitive_file' do
     is_expected.to run.with_params('primary', path).and_return(sensitive_content)
   end
 
+  # A read that failed (Python can't decode the file, say) fails the task
+  it 'fails when the read itself fails' do
+    expect_task('peadm::read_file').error_with('msg' => 'The task failed with exit code 1', 'kind' => 'puppetlabs.tasks/task-error')
+
+    # rubocop:disable RSpec/NamedSubject
+    expect { subject.execute('primary', path) }.to raise_error(Puppet::Error)
+    # rubocop:enable RSpec/NamedSubject
+  end
+
   it 'fails, without echoing the output, when the result holds no content' do
     expect_task('peadm::read_file').always_return({ '_output' => 'unparseable keys-canary' })
 

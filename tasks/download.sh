@@ -39,9 +39,9 @@ verify-file() {
   fi
 }
 
-# Describe a URL by its file name and host only, so a pre-signed URL's query
-# string and any user:password@ never reach the output, which Bolt logs
-# (PE-47523). Anything that doesn't look like a plain host is left out.
+# Describe a URL by the host and, for a tarball, its file name, so a pre-signed
+# URL's query string and any user:password@ never reach the output, which Bolt
+# logs (PE-47523). Anything that doesn't look like a plain host is left out.
 describe-url() {
   local rest="${1#*://}"                 # drop scheme://
   local authority="${rest%%[/?#]*}"      # up to the path, query or fragment
@@ -76,17 +76,15 @@ describe-url() {
 # TODO PE-47901: the URL is still on command lines (PT_source, curl's arguments) that sudo logs and ps shows.
 download() {
   local description="${3:-$(describe-url "$1")}"
-  local curl_error
   printf '%s\n' "Downloading: ${description}"
   tmp_file=$(mktemp)
   echo "Downloading to temporary file ${tmp_file}"
 
-  # curl's error goes to stdout with the rest: Bolt drops a task's stderr when
-  # there's stdout. -g keeps curl from globbing a URL with [ ] { } in it. In
-  # practice curl's first line names a host at most, but some errors (a bad
-  # URL) print the URL, on that line or the next, so only the first line
-  # is kept, with any URL in it replaced.
-  if curl_error=$(curl -sS -g -f -L -o "${tmp_file}" "$1" 2>&1); then
+  # curl's own output is discarded and only its exit status reported, because
+  # its error text can hold part of the URL: some curl versions print what
+  # follows the first @ of a password, or the whole URL for one they can't
+  # parse. -g keeps curl from globbing a URL with [ ] { } in it.
+  if curl -s -g -f -L -o "${tmp_file}" "$1" >/dev/null 2>&1; then
     echo "Moving ${tmp_file} to target path ${2}"
 
     # Perform the move. If it doesn't work, clean up and return an error
@@ -96,10 +94,7 @@ download() {
       return 1
     fi
   else
-    local curl_status=$?
-    curl_error="${curl_error%%$'\n'*}"
-    curl_error="${curl_error//"$1"/<url>}"
-    echo "Error: curl exited with ${curl_status} downloading ${description}${curl_error:+: ${curl_error}}"
+    echo "Error: curl exited with $? downloading ${description} (see EXIT CODES in man curl)"
     echo "Removing temporary file ${tmp_file}"
     rm "${tmp_file}"
     return 1

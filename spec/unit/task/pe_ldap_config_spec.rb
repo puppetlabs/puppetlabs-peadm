@@ -114,7 +114,8 @@ describe PeLdapConfig do
     }.not_to output.to_stdout
   end
 
-  ['<html>boom</html>', 'null', '{"kind":{"submitted":{"password":"bind-canary"}}}', '{"kind":"bind-canary has spaces"}'].each do |body|
+  ['<html>boom</html>', 'null', '{"kind":{"submitted":{"password":"bind-canary"}}}', '{"kind":"bind-canary has spaces"}',
+   %({"kind":"ab\xFFc-canary"}).b].each do |body|
     it "raises with just the code for the error body #{body}" do
       allow(https_dbl).to receive(:request).with(request_dbl).and_return(instance_double(Net::HTTPServerError, body: body, code: '500'))
 

@@ -89,6 +89,21 @@ describe 'tasks/mkdir_p_file.sh' do
     expect(File.read(path)).to eq("key-canary\n")
   end
 
+  # The script needs Python; without it, it says so and fails
+  it 'fails with a message when the target has no Python interpreter' do
+    bare = File.join(workdir, 'bare')
+    FileUtils.mkdir_p(bare)
+    File.symlink(`command -v cat`.strip, File.join(bare, 'cat'))
+    path = File.join(workdir, 'pe.conf')
+
+    output, status = Open3.capture2e({ 'PATH' => bare }, '/bin/bash', script,
+                                     stdin_data: { 'path' => path, 'content' => 'x', '_task' => 'peadm::mkdir_p_file' }.to_json)
+
+    expect(status).not_to be_success
+    expect(output).to include('No Python version 2 or 3 interpreter found.')
+    expect(File.exist?(path)).to be(false)
+  end
+
   it 'leaves owner, group and mode alone when they are null or not given' do
     path = File.join(workdir, 'autosign.conf')
     File.write(path, '')

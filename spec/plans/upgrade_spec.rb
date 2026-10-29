@@ -144,6 +144,29 @@ describe 'peadm::upgrade' do
                       'pe_installer_source' => 'https://artifacts.example.com/ci/puppet-enterprise-2023.8.10-el-7.11-x86_64.tar')).to be_ok
     end
 
+    # version is the version, whatever the tarball is called
+    it 'uses version, and keeps the file name, for a tarball that is not named after a version' do
+      allow_upgrade_from_url
+      expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
+        expect(params['local_path']).to eq('/tmp/pe-latest.tar.gz')
+        ok_plan_result
+      end
+
+      expect(run_plan('peadm::upgrade',
+                      'primary_host'        => 'primary',
+                      'version'             => '2023.8.10',
+                      'pe_installer_source' => 'https://mirror.example.com/pe-latest.tar.gz')).to be_ok
+    end
+
+    it 'fails for a tarball that is not named after a version, without version' do
+      allow_upgrade_from_url
+
+      result = run_plan('peadm::upgrade', 'primary_host' => 'primary', 'pe_installer_source' => 'https://mirror.example.com/pe-latest.tar.gz')
+
+      expect(result).not_to be_ok
+      expect(result.value.msg).to match(%r{Unable to determine a valid PE version})
+    end
+
     # The file name of a download.cgi?...&ver= link says nothing about the
     # version, and would be the same for every version.
     it 'names the tarball after version when the URL has no tarball file name' do
@@ -177,7 +200,7 @@ describe 'peadm::upgrade' do
         result = run_plan('peadm::upgrade', 'primary_host' => 'primary', 'pe_installer_source' => source)
 
         expect(result).not_to be_ok
-        expect(result.value.msg).to eq('pe_installer_source has no .tar or .tar.gz file name to take the PE version from. Set the version parameter as well.')
+        expect(result.value.msg).to eq('pe_installer_source has no .tar or .tar.gz file name (nor does a URL with an @ after its host) to take the PE version from. Set the version parameter as well.')
       end
     end
 
@@ -189,7 +212,7 @@ describe 'peadm::upgrade' do
                         'pe_installer_source' => 'https://pm.puppet.com/cgi-bin/download.cgi?dist=el&rel=7&arch=x86_64&ver=2023.8.10')
 
       expect(result).not_to be_ok
-      expect(result.value.msg).to eq('pe_installer_source has no .tar or .tar.gz file name to take the PE version from. Set the version parameter as well.')
+      expect(result.value.msg).to eq('pe_installer_source has no .tar or .tar.gz file name (nor does a URL with an @ after its host) to take the PE version from. Set the version parameter as well.')
     end
   end
 

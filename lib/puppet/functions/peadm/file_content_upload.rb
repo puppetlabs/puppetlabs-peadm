@@ -19,9 +19,9 @@ Puppet::Functions.create_function(:'peadm::file_content_upload') do
     file.flush
     call_function('upload_file', file.path, destination, *targets)
   ensure
-    # Every caller uploads a pe.conf, and the primary's holds the console
-    # password, so delete it from the Bolt host now, even when the upload
-    # fails, instead of whenever Tempfile's finalizer runs (PE-47523).
+    # Callers upload pe.conf files, and the primary's holds the console
+    # password, so delete the file from the Bolt host now, even when the
+    # upload fails, instead of whenever Tempfile's finalizer runs (PE-47523).
     file&.close
     file&.unlink
   end

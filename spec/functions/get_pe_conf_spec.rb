@@ -25,7 +25,7 @@ describe 'peadm::get_pe_conf' do
   end
 
   it 'returns an empty Hash when there is no pe.conf' do
-    expect_task('peadm::read_file').return { |targets:, **| sensitive_read_file_result(targets, nil) }
+    expect_pe_conf_reads(nil)
 
     is_expected.to run.with_params(target).and_return({})
   end

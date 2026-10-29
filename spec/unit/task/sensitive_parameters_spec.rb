@@ -65,6 +65,8 @@ describe 'task metadata' do
     end
   end
 
+  input_by_implementation = metadata.keys.flat_map { |task| input_methods.call(task) }.to_h
+
   checked.each do |key, spec|
     it "flags #{key} as sensitive" do
       expect(spec['sensitive']).to be(true)
@@ -75,8 +77,10 @@ describe 'task metadata' do
   # command line. Bolt passes environment input as `env PT_name=<value> ...
   # sh -c ...`, unmasked even for a flagged parameter, where sudo logs it, ps
   # shows it and Bolt's own trace log records it. On PowerShell targets every
-  # input method ends up in the command it runs, so powershell input isn't
-  # allowed either; stdin is the one method with nothing to keep off it.
+  # input method, stdin included (as a here-string), puts the value in the
+  # command Bolt runs, so none keeps it off. An implementation with a
+  # sensitive parameter is held to the stdin rule anyway; download.ps1 is
+  # exempt until PE-47901.
   metadata.each do |task, meta|
     next unless (meta['parameters'] || {}).values.any? { |spec| spec['sensitive'] }
 
@@ -97,7 +101,7 @@ describe 'task metadata' do
 
   it 'lists only existing tasks and parameters as exceptions' do
     expect(not_secret.keys + always_sensitive - specs_by_key.keys).to be_empty
-    expect(non_stdin_input_allowed.keys - metadata.flat_map { |task, _| input_methods.call(task).map(&:first) }).to be_empty
+    expect(non_stdin_input_allowed.keys - input_by_implementation.keys).to be_empty
   end
 
   it 'lists only secret-looking names in not_secret' do
@@ -106,7 +110,6 @@ describe 'task metadata' do
 
   # So an exception doesn't outlive its fix and hide a later regression
   it 'lists only implementations that still take non-stdin input in non_stdin_input_allowed' do
-    input_by_implementation = metadata.keys.flat_map { |task| input_methods.call(task) }.to_h
     non_stdin_input_allowed.each_key do |name|
       expect(input_by_implementation[name]).not_to eq('stdin'), "#{name} no longer needs its exception"
     end

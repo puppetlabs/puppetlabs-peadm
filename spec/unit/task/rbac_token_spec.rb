@@ -75,9 +75,11 @@ describe RbacToken do
   end
 
   # Only a plain kind goes into the message; free text could hold anything
-  ['password-canary has spaces', 'quote"canary', "new\nline-canary", ''].each do |kind|
+  ['password-canary has spaces', 'quote"canary', "new\nline-canary", '', "ab\xFFc-canary"].each do |kind|
     it "leaves a kind of #{kind.inspect} out of the error" do
-      failure_response = instance_double(Net::HTTPBadRequest, code: '400', body: { 'kind' => kind }.to_json)
+      # JSON generation refuses invalid UTF-8, so the body is built by hand
+      body = kind.valid_encoding? ? { 'kind' => kind }.to_json : %({"kind":"#{kind}"}).b
+      failure_response = instance_double(Net::HTTPBadRequest, code: '400', body: body)
       allow(failure_response).to receive(:is_a?).with(Net::HTTPSuccess).and_return(false)
       allow(https_dbl).to receive(:request).with(request_dbl).and_return(failure_response)
 
