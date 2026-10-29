@@ -87,6 +87,16 @@ describe RbacToken do
     end
   end
 
+  # The longest kind kept
+  it 'keeps a kind of 128 characters in the error' do
+    kind = 'k' * 128
+    failure_response = instance_double(Net::HTTPBadRequest, code: '400', body: { 'kind' => kind }.to_json)
+    allow(failure_response).to receive(:is_a?).with(Net::HTTPSuccess).and_return(false)
+    allow(https_dbl).to receive(:request).with(request_dbl).and_return(failure_response)
+
+    expect { rbac_token.execute! }.to raise_error(RbacToken::AuthFailure, "Error requesting token (HTTP 400): #{kind}")
+  end
+
   def stub_response(code, body: "{\"msg\":\"http #{code}\"}")
     response = instance_double(Net::HTTPResponse, code: code.to_s, body: body)
     allow(response).to receive(:is_a?).with(Net::HTTPSuccess).and_return(false)

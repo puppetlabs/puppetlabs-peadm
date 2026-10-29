@@ -43,10 +43,12 @@ verify-file() {
 # URL's query string and any user:password@ never reach the output, which Bolt
 # logs (PE-47523). Anything that doesn't look like a plain host is left out.
 describe-url() {
+  local fallback='the source URL'
+  # Same scheme rule as peadm::url_file_name
   local scheme='^[A-Za-z][A-Za-z0-9+.-]*://'
   # Without a scheme there's no telling where the host starts
   if ! [[ "$1" =~ $scheme ]]; then
-    printf 'the source URL'
+    printf '%s' "$fallback"
     return
   fi
 
@@ -56,7 +58,7 @@ describe-url() {
   # An @ past the authority means user info holding a raw / ? or #, so where
   # it ends can't be told: print nothing of the URL.
   if [[ "$after" == *@* ]]; then
-    printf 'the source URL'
+    printf '%s' "$fallback"
     return
   fi
 
@@ -65,8 +67,9 @@ describe-url() {
   [[ "$host" =~ $valid_host ]] || host=''
   local path="${after%%[?#]*}"           # drop ?query and #fragment
   local name="${path##*/}"               # the last path segment
-  # Only a tarball's name is safe to print: another last segment can be a token
-  local tarball_name='^[A-Za-z0-9._+-]+\.tar(\.gz)?$'
+  # Only a tarball's name is safe to print: another last segment can be a
+  # token. Same rule as peadm::url_tarball_name.
+  local tarball_name='^[A-Za-z0-9][A-Za-z0-9._+-]*\.tar(\.gz)?$'
   [[ "$name" =~ $tarball_name ]] || name=''
 
   if [[ -n "$name" && -n "$host" ]]; then
@@ -76,7 +79,7 @@ describe-url() {
   elif [[ -n "$host" ]]; then
     printf '%s' "$host"
   else
-    printf 'the source URL'
+    printf '%s' "$fallback"
   fi
 }
 
@@ -113,6 +116,7 @@ download-size-verify() {
   local source="$1"
   local path="$2"
 
+  # curl's stderr is dropped for the same reason as in download()
   urisize=$(curl -s -g -L --head "$source" 2>/dev/null | sed -rn 's/Content-Length: ([0-9]+)/\1/p' | tr -d '\012\015')
   filesize=$(stat -c%s "$path" 2>/dev/null || stat -f%z "$path" 2>/dev/null)
 

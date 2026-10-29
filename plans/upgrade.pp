@@ -18,8 +18,10 @@
 #   URL given. Unless version is set, the PE version is taken from the URL's
 #   file name, which must then be a standard
 #   `puppet-enterprise-<version>-<platform>.tar.gz` (or `.tar`) name. A URL
-#   whose file name doesn't end in `.tar` or `.tar.gz` needs version too, and
-#   the tarball is saved under the standard name for that version.
+#   whose file name doesn't end in `.tar` or `.tar.gz`, or has characters other
+#   than letters, digits and `. _ + -`, needs version too, and the tarball is
+#   saved under the standard name for that version. A URL with an @ after its
+#   host counts as having no file name.
 # @param version
 #   The PE version to upgrade to. Required when pe_installer_source is not
 #   set, and when the version can't be read from its file name: when it has
@@ -89,7 +91,7 @@ plan peadm::upgrade (
     # logs (PE-47523).
     'pe_installer_source' => $pe_installer_source ? {
       undef   => undef,
-      default => peadm::url_tarball_name($pe_installer_source).lest || { 'not a tarball file name, not shown' },
+      default => peadm::url_tarball_name($pe_installer_source).lest || { 'no safe tarball file name, not shown' },
     },
   })
 
@@ -158,14 +160,13 @@ plan peadm::upgrade (
     $url_tarball_name = peadm::url_tarball_name($pe_installer_source)
     if $url_tarball_name {
       $name_version = $url_tarball_name.split('-')[2]
-      if $version and $name_version =~ Peadm::Pe_version and $name_version != $version {
+      # A version can carry a suffix (2025.11.0-rc1) that the name's version,
+      # read up to its first dash, doesn't, so only its x.y.z is compared
+      if $version and $name_version =~ Peadm::Pe_version and $version.split('-')[0] != $name_version {
         fail_plan("pe_installer_source is the tarball for PE ${name_version}, but version is ${version}")
       }
       $pe_tarball_name = $url_tarball_name
-      $_version        = $version ? {
-        undef   => $name_version,
-        default => $version,
-      }
+      $_version        = $version.lest || { $name_version }
     } elsif $version {
       $pe_tarball_name = "puppet-enterprise-${version}-${platform}.tar.gz"
       $_version        = $version

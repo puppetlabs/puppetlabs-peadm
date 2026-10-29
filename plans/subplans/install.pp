@@ -32,8 +32,9 @@
 #   The URL to download the Puppet Enterprise installer media from. If not
 #   specified, PEAdm will attempt to download PE installation media from its
 #   standard public source. When specified, PEAdm will download directly from the
-#   URL given. If the URL doesn't end in a `.tar` or `.tar.gz` file name, such
-#   as a download.cgi?...&ver= link, the tarball is saved under the standard
+#   URL given. If the URL doesn't end in a `.tar` or `.tar.gz` file name made of
+#   letters, digits and `. _ + -`, such as a download.cgi?...&ver= link, the
+#   tarball is saved under the standard
 #   `puppet-enterprise-<version>-<platform>.tar.gz` name for the version, which
 #   must be the version of the media. A URL with an @ after its host counts as
 #   having no file name.
@@ -463,12 +464,12 @@ plan peadm::subplans::install (
     # stderr, which is sanitized before anything else looks at it, as it can be
     # in any encoding and a regex on invalid UTF-8 would raise and replace the
     # installer's error below.
-    $stderr = $result['stderr'] ? {
+    $rm_stderr = $result['stderr'] ? {
       String  => peadm::sanitize_log_text($result['stderr'], 200),
       default => '',
     }
-    $reason = $stderr ? {
-      /\S/   => $stderr.strip,
+    $reason = $rm_stderr ? {
+      /\S/    => $rm_stderr.strip,
       default => peadm::sanitize_log_text($result.error.message, 200),
     }
     out::message("WARNING: ${bootstrap_pe_conf} may still be on ${result.target.name} (${reason}). Delete it by hand; on the primary it holds the console password.") # lint:ignore:140chars
@@ -483,9 +484,10 @@ plan peadm::subplans::install (
     }
     if $failed_results =~ ResultSet {
       $failed_results.error_set.each |$result| {
-        # A task result keeps what the task printed under _output; its stderr
-        # is in the error message when there was no stdout
-        out::message("Failed on ${result.target.name}: ${result.error.message}\n${result['_output']}")
+        # A task result keeps what the task printed under _output (its stderr
+        # is in the error message when there was no stdout); a command result
+        # has stdout and stderr. The block runs both, and an absent key is empty.
+        out::message("Failed on ${result.target.name}: ${result.error.message}\n${result['_output']}${result['stdout']}${result['stderr']}")
       }
     }
     fail_plan($installer_error)

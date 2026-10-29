@@ -123,6 +123,14 @@ describe PeLdapConfig do
     end
   end
 
+  # The longest kind kept
+  it 'keeps a kind of 128 characters in the error' do
+    kind = 'k' * 128
+    allow(https_dbl).to receive(:request).with(request_dbl).and_return(instance_double(Net::HTTPBadRequest, body: { 'kind' => kind }.to_json, code: '400'))
+
+    expect { task.execute! }.to raise_error(RuntimeError, "API response code 400 (#{kind})")
+  end
+
   # The ds endpoint, before 2023.8.0, returns the settings it saved
   ['2023.7.1', '2025.11.3'].each do |version|
     context "when pe_version is #{version}" do

@@ -105,9 +105,9 @@ describe 'peadm::upgrade' do
 
     # What the file name of a URL like this one would be can't be told, so
     # there is none: nothing of the URL is logged, and version is needed.
-    it 'logs nothing of the URL, and needs version, when the password has a raw #' do
+    it 'logs nothing of the URL, and uses version, when the password has a raw #' do
       allow_upgrade_from_url
-      expect_out_message.with_params("Parameter 'pe_installer_source': [not a tarball file name, not shown]")
+      expect_out_message.with_params("Parameter 'pe_installer_source': [no safe tarball file name, not shown]")
       expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
         expect(params['local_path']).to eq(tarball)
         ok_plan_result
@@ -122,7 +122,7 @@ describe 'peadm::upgrade' do
     # A last path segment that isn't a tarball's can be a token
     it 'logs nothing of a URL whose last path segment is not a tarball name' do
       allow_upgrade_from_url
-      expect_out_message.with_params("Parameter 'pe_installer_source': [not a tarball file name, not shown]")
+      expect_out_message.with_params("Parameter 'pe_installer_source': [no safe tarball file name, not shown]")
       expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
         expect(params['local_path']).to eq(tarball)
         ok_plan_result
@@ -174,6 +174,35 @@ describe 'peadm::upgrade' do
 
       expect(result).not_to be_ok
       expect(result.value.msg).to eq('pe_installer_source is the tarball for PE 2023.8.10, but version is 2023.8.4')
+    end
+
+    # A version can carry a suffix the name's version, read up to its first
+    # dash, doesn't
+    it 'accepts a version with a suffix next to the tarball of that build' do
+      allow_upgrade_from_url
+      expect_plan('peadm::util::retrieve_and_upload').return do |params:, **|
+        expect(params['local_path']).to eq('/tmp/puppet-enterprise-2023.8.10-rc1-el-7.11-x86_64.tar')
+        ok_plan_result
+      end
+
+      expect(run_plan('peadm::upgrade',
+                      'primary_host'        => 'primary',
+                      'version'             => '2023.8.10-rc1',
+                      'permit_unsafe_versions' => true,
+                      'pe_installer_source' => 'https://mirror.example.com/puppet-enterprise-2023.8.10-rc1-el-7.11-x86_64.tar')).to be_ok
+    end
+
+    it 'fails when a version with a suffix differs from the tarball file name in its numbers' do
+      allow_upgrade_from_url
+
+      result = run_plan('peadm::upgrade',
+                        'primary_host'           => 'primary',
+                        'version'                => '2023.8.11-rc1',
+                        'permit_unsafe_versions' => true,
+                        'pe_installer_source'    => 'https://mirror.example.com/puppet-enterprise-2023.8.10-rc1-el-7.11-x86_64.tar')
+
+      expect(result).not_to be_ok
+      expect(result.value.msg).to eq('pe_installer_source is the tarball for PE 2023.8.10, but version is 2023.8.11-rc1')
     end
 
     it 'accepts version when it matches the version in the tarball file name' do

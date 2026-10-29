@@ -979,9 +979,10 @@ describe 'peadm::subplans::install' do
     # file must still be removed then. BoltSpec's executor hands back the
     # failed results of a parallelize block instead of raising the
     # ParallelFailure real Bolt raises, so that failure can't be played out
-    # here; this checks that the upload is inside the block whose errors are
-    # caught, before the cleanup.
-    it 'uploads the bootstrap pe.conf inside the catch_errors block, before the cleanup' do
+    # here. This deliberate source-order guard checks that the upload comes
+    # after the catch_errors line, and so inside its block, and before the
+    # installers and the cleanup.
+    it 'uploads the bootstrap pe.conf after the catch_errors line and before the cleanup' do
       source = File.read(File.expand_path('../../../plans/subplans/install.pp', __dir__))
       block_start = source.index('$installer_error = catch_errors()')
       upload = source.index('peadm::file_content_upload($pe_conf, $bootstrap_pe_conf, $target)')
@@ -1031,12 +1032,63 @@ describe 'peadm::subplans::install' do
         expect(call_log).not_to include('peadm::rbac_token@primary')
       end
 
+      # The block also runs commands (restarting PuppetDB), whose results have
+      # stdout and stderr where a task's has _output
+      it 'prints the output of a failed command too' do
+        expect_out_message.with_params("Failed on primary: The command failed with exit code 5\ncommand-err-canary\n")
+        allow_command('systemctl start pe-puppetdb').return do |targets:, command:, **|
+          command_results(targets, command, exit_code: 5, stderr: "command-err-canary\n")
+        end
+        allow_task('peadm::pe_install').always_return({})
+
+        result = run_plan('peadm::subplans::install', install_params)
+
+        expect(result).not_to be_ok
+        expect(result.value.msg).to include('systemctl start pe-puppetdb')
+      end
+
       # rm's stderr can be in any encoding (a localized message, say); it must
       # not make the warning raise and replace the installer's error
       it 'still fails with the installer error when rm fails with stderr that is not UTF-8' do
         expect_command('rm -f /tmp/pe.conf').with_targets(['primary']).return do |targets:, command:, **|
-          command_results(targets, command, exit_code: 1, stderr: "rm: Op\xE9ration non permise\n".dup.force_encoding('ASCII-8BIT'))
+          # tagged UTF-8 but not valid, which is what makes a regex on it raise
+          command_results(targets, command, exit_code: 1, stderr: "rm: Op\xE9ration non permise\n".dup.force_encoding('UTF-8'))
         end
+        expect_out_message.with_params(
+          'WARNING: /tmp/pe.conf may still be on primary (rm: Op?ration non permise). ' \
+          'Delete it by hand; on the primary it holds the console password.',
+        )
+
+        result = run_plan('peadm::subplans::install', install_params)
+
+        expect(result).not_to be_ok
+        expect(result.value.msg).to include('peadm::pe_install')
+      end
+
+      # The warning falls back to the error's message when rm printed nothing
+      it 'warns with the error message when rm fails without stderr' do
+        expect_command('rm -f /tmp/pe.conf').with_targets(['primary']).return do |targets:, command:, **|
+          command_results(targets, command, exit_code: 1)
+        end
+        expect_out_message.with_params(
+          'WARNING: /tmp/pe.conf may still be on primary (The command failed with exit code 1). ' \
+          'Delete it by hand; on the primary it holds the console password.',
+        )
+
+        result = run_plan('peadm::subplans::install', install_params)
+
+        expect(result).not_to be_ok
+        expect(result.value.msg).to include('peadm::pe_install')
+      end
+
+      # A node rm can't reach has no stderr at all
+      it 'warns with the error message when the node cannot be reached' do
+        expect_command('rm -f /tmp/pe.conf').with_targets(['primary'])
+                                            .error_with('kind' => 'puppetlabs.tasks/command-error', 'msg' => 'Connection refused')
+        expect_out_message.with_params(
+          'WARNING: /tmp/pe.conf may still be on primary (Connection refused). ' \
+          'Delete it by hand; on the primary it holds the console password.',
+        )
 
         result = run_plan('peadm::subplans::install', install_params)
 

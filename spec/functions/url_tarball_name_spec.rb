@@ -10,6 +10,7 @@ describe 'peadm::url_tarball_name' do
     ['https://artifacts.example.com/pe/puppet-enterprise-2023.8.10-el-8-x86_64.tar.gz?sig=sig-canary', 'puppet-enterprise-2023.8.10-el-8-x86_64.tar.gz'],
     ['https://artifacts.example.com/ci/puppet-enterprise-2026.0.0-el-8-x86_64.tar', 'puppet-enterprise-2026.0.0-el-8-x86_64.tar'],
     ['https://artifacts.example.com/pe/pe-latest.tar.gz', 'pe-latest.tar.gz'],
+    ['https://artifacts.example.com/ci/puppet-enterprise-2025.4.0+build5-el-8-x86_64.tar', 'puppet-enterprise-2025.4.0+build5-el-8-x86_64.tar'],
   ].each do |url, name|
     it "is #{name} for #{url}" do
       is_expected.to run.with_params(url).and_return(name)
@@ -20,6 +21,8 @@ describe 'peadm::url_tarball_name' do
     'https://pm.puppet.com/cgi-bin/download.cgi?dist=el&ver=2023.8.10',
     'https://artifacts.example.com/dl/token-canary',
     'https://artifacts.example.com/pe/x.tar.gz.asc',
+    'https://artifacts.example.com/pe/..tar',
+    'https://artifacts.example.com/pe/-rf.tar',
     "https://artifacts.example.com/pe/it's.tar.gz",
     'https://artifacts.example.com/pe/a%20b.tar.gz',
     'https://artifacts.example.com/pe/',

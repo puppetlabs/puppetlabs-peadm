@@ -50,7 +50,10 @@ describe 'tasks/download.sh' do
         printf 'curl: (3) unmatched brace in URL position 16:\\n%s\\n' "$url" >&2
         exit 3
       fi
-      [ -n "$head" ] && exit 0
+      if [ -n "$head" ]; then
+        printf 'HTTP/1.1 200 OK\\r\\nContent-Length: 8\\r\\n\\r\\n'
+        exit 0
+      fi
       case "$FAKE_CURL_FAIL" in
         '') ;;
         forbidden) echo 'curl: (22) The requested URL returned error: 403' >&2; exit 22 ;;
@@ -122,16 +125,24 @@ describe 'tasks/download.sh' do
     end
   end
 
-  # Without -g curl takes [ ] { } in a URL as a glob and rejects it, for the
-  # size check's HEAD request as well as for the download
+  # Without -g curl takes [ ] { } in a URL as a glob and rejects it, in the
+  # download and in the size check's HEAD request
   [true, false].each do |verify_download|
+    source = 'https://artifacts.example.com/pe/puppet-enterprise.tar.gz?filter[a]={b}&sig=sig-canary'
+
     it "downloads a URL with [ ] { } in its query string (verify_download=#{verify_download})" do
-      source = 'https://artifacts.example.com/pe/puppet-enterprise.tar.gz?filter[a]={b}&sig=sig-canary'
       output, status = run_download(verify_download: verify_download, source: source)
 
       expect(status).to be_success, output
       expect(File.read(download_path)).to eq("payload\n")
-      expect(output).not_to include('curl: (3)')
+    end
+
+    it "sizes a URL with [ ] { } in its query string with a HEAD request (verify_download=#{verify_download})" do
+      File.write(download_path, "payload\n")
+      output, status = run_download(verify_download: verify_download, source: source)
+
+      expect(status).to be_success, output
+      expect(output).to include('File size matches HTTP Content-Length header')
     end
   end
 
@@ -139,6 +150,7 @@ describe 'tasks/download.sh' do
     'https://host-canary:pw-canary/pe/puppet-enterprise.tar.gz'                                => 'puppet-enterprise.tar.gz',
     'https://artifacts.example.com/dl/token-canary'                                            => 'artifacts.example.com',
     "https://artifacts.example.com/pe/it's.tar.gz"                                             => 'artifacts.example.com',
+    'https://artifacts.example.com/pe/-rf.tar'                                                 => 'artifacts.example.com',
     # No scheme: the :// in the query isn't one
     'localhost:1/p?next=https://token-canary/x'                                                => 'the source URL',
     'https://user-canary:password-canary@artifacts.example.com/pe/puppet-enterprise.tar.gz' => 'puppet-enterprise.tar.gz from artifacts.example.com',
