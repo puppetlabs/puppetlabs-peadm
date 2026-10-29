@@ -57,6 +57,8 @@ before they get overwritten by a classification reassertion
 
 * `peadm::get_pe_conf`: Read a node's pe.conf as a Hash
 * `peadm::read_sensitive_file`: Read a file that can hold secrets as Sensitive, so Bolt masks it in its log and results
+* `peadm::url_file_name`: The file name a URL's path ends in, without its query string, fragment or user info
+* `peadm::url_tarball_name`: The tarball file name a URL ends in, or undef if it doesn't end in one
 
 ### Data types
 
@@ -2396,7 +2398,12 @@ Data type: `Optional[Stdlib::HTTPSUrl]`
 The URL to download the Puppet Enterprise installer media from. If not
 specified, PEAdm will attempt to download PE installation media from its
 standard public source. When specified, PEAdm will download directly from the
-URL given.
+URL given. If the URL doesn't end in a `.tar` or `.tar.gz` file name made of
+letters, digits and `. _ + -`, starting with a letter or digit, such as a
+download.cgi?...&ver= link, the tarball is saved under the standard
+`puppet-enterprise-<version>-<platform>.tar.gz` name for the version, which
+must be the version of the media. A URL with an @ after its host counts as
+having no file name.
 
 Default value: `undef`
 
@@ -2934,6 +2941,7 @@ The following parameters are available in the `peadm::upgrade` plan:
 * [`internal_compiler_a_pool_address`](#-peadm--upgrade--internal_compiler_a_pool_address)
 * [`internal_compiler_b_pool_address`](#-peadm--upgrade--internal_compiler_b_pool_address)
 * [`pe_installer_source`](#-peadm--upgrade--pe_installer_source)
+* [`version`](#-peadm--upgrade--version)
 * [`final_agent_state`](#-peadm--upgrade--final_agent_state)
 * [`r10k_known_hosts`](#-peadm--upgrade--r10k_known_hosts)
 * [`stagingdir`](#-peadm--upgrade--stagingdir)
@@ -2945,7 +2953,6 @@ The following parameters are available in the `peadm::upgrade` plan:
 * [`compiler_hosts`](#-peadm--upgrade--compiler_hosts)
 * [`primary_postgresql_host`](#-peadm--upgrade--primary_postgresql_host)
 * [`replica_postgresql_host`](#-peadm--upgrade--replica_postgresql_host)
-* [`version`](#-peadm--upgrade--version)
 * [`token_file`](#-peadm--upgrade--token_file)
 * [`download_mode`](#-peadm--upgrade--download_mode)
 * [`permit_unsafe_versions`](#-peadm--upgrade--permit_unsafe_versions)
@@ -2986,7 +2993,24 @@ Data type: `Optional[Stdlib::HTTPSUrl]`
 The URL to download the Puppet Enterprise installer media from. If not
 specified, PEAdm will attempt to download PE installation media from its
 standard public source. When specified, PEAdm will download directly from the
-URL given.
+URL given. Unless version is set, the PE version is taken from the URL's
+file name, which must then be a standard
+`puppet-enterprise-<version>-<platform>.tar.gz` (or `.tar`) name. A URL
+whose file name doesn't end in `.tar` or `.tar.gz`, or has characters other
+than letters, digits and `. _ + -` (starting with a letter or digit), needs
+version too, and the tarball is saved under the standard name for that
+version. A URL with an @ after its host counts as having no file name.
+
+Default value: `undef`
+
+##### <a name="-peadm--upgrade--version"></a>`version`
+
+Data type: `Optional[Peadm::Pe_version]`
+
+The PE version to upgrade to. Required when pe_installer_source is not
+set, and when the version can't be read from its file name: when it has
+none, or isn't a `puppet-enterprise-<version>-...` name. When both are
+given and the file name names another version, the upgrade fails.
 
 Default value: `undef`
 
@@ -3077,14 +3101,6 @@ Default value: `undef`
 ##### <a name="-peadm--upgrade--replica_postgresql_host"></a>`replica_postgresql_host`
 
 Data type: `Optional[Peadm::SingleTargetSpec]`
-
-
-
-Default value: `undef`
-
-##### <a name="-peadm--upgrade--version"></a>`version`
-
-Data type: `Optional[Peadm::Pe_version]`
 
 
 
