@@ -23,9 +23,18 @@ on:
       - .puppet-lint.rc
       - .fixtures.yml
     branches: [main]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      # TEMPORARY, validation only (CAT-2538): lets a manual run exercise just
+      # the disk-resize diagnostic job below instead of the full migration
+      # matrix. Remove this input and the diagnose-disk-resize job before merge.
+      diagnose_only:
+        description: 'Skip the migration matrix and only run the disk-resize diagnostic'
+        type: boolean
+        default: false
 jobs:
   test-migration:
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.diagnose_only }}
     name: PE ${{ matrix.version }} ${{ matrix.architecture }} on ${{ matrix.image }}
       PE upgrade? ${{ matrix.new_pe_version }}
     runs-on: ubuntu-latest
@@ -170,4 +179,62 @@ jobs:
             echo ::group::info:request
               cat request.json || true; echo
             echo ::endgroup::
+          fi
+
+  # TEMPORARY, validation only (CAT-2538) -- not for merge. Provisions a
+  # single VM with a requested disk_size_gb and inspects whether the guest OS
+  # actually grew its filesystem into the larger disk, since the migration
+  # jobs above still hit "No space left on device" at the identical tar
+  # file/byte offset even with disk_size_gb set -- suggesting GCP resized the
+  # disk but the guest OS never grew its root filesystem into the extra space.
+  diagnose-disk-resize:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.diagnose_only }}
+    runs-on: ubuntu-latest
+    env:
+      BOLT_GEM: true
+      BOLT_DISABLE_ANALYTICS: true
+      LANG: en_US.UTF-8
+      PROVISION_DISK_SIZE_GB: '100'
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+      - name: Activate Ruby 3.1
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+      - name: Provision single test VM
+        timeout-minutes: 10
+        run: |
+          bundle exec rake spec_prep
+          bundle exec bolt task run provision::provision_service \
+            --targets localhost \
+            --modulepath spec/fixtures/modules \
+            action=provision \
+            platform=almalinux-cloud/almalinux-8 \
+            disk_size_gb=100 \
+            retry_attempts=1
+      - name: Output contents of litmus_inventory.yaml
+        run: |
+          sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml
+      - name: Inspect disk and filesystem size
+        run: |
+          bundle exec bolt command run '
+            echo "--- lsblk ---"
+            lsblk
+            echo "--- df -h ---"
+            df -h
+            echo "--- growpart / cloud-utils presence ---"
+            rpm -q cloud-utils-growpart google-compute-engine-guest-configs google-compute-engine 2>&1 || true
+            echo "--- guest-agent / cloud-init logs (last 100 lines each) ---"
+            journalctl -u google-guest-agent --no-pager 2>&1 | tail -100 || true
+            journalctl -u google-startup-scripts --no-pager 2>&1 | tail -100 || true
+            test -f /var/log/cloud-init.log && tail -100 /var/log/cloud-init.log || echo "no cloud-init.log"
+          ' --inventoryfile spec/fixtures/litmus_inventory.yaml --targets all --no-host-key-check
+      - name: Tear down test VM
+        if: ${{ always() }}
+        continue-on-error: true
+        run: |
+          if [ -f spec/fixtures/litmus_inventory.yaml ]; then
+            bundle exec rake 'litmus:tear_down'
           fi
