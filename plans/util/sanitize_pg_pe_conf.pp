@@ -16,8 +16,16 @@ plan peadm::util::sanitize_pg_pe_conf (
       fail_plan("No pe.conf at ${path} on ${target.name}")
     }
 
+    # On a cluster PEADM didn't build this is the installer's HOCON, which
+    # parsejson can't read, and its parse error quotes the whole file. The
+    # default keeps parsehocon's error, which quotes it too, from being raised.
+    $parsed = stdlib::parsehocon($content.unwrap, 'unparseable')
+    if $parsed =~ String {
+      fail_plan("The pe.conf on ${target.name} could not be parsed")
+    }
+
     out::message("Sanitizing pe.conf on ${target.name}")
-    $sanitized = $content.unwrap.parsejson() + {
+    $sanitized = $parsed + {
       'puppet_enterprise::puppet_master_host' => $primary_target.peadm::certname(),
       'puppet_enterprise::puppetdb_database_host'      => $target.peadm::certname(),
     }

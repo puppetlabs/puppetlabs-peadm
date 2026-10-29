@@ -52,6 +52,40 @@ describe 'peadm::util::sanitize_pg_pe_conf' do
     expect(messages.join("\n")).not_to include('password-canary')
   end
 
+  # An installer-style pe.conf on a cluster PEADM didn't build is HOCON, not
+  # JSON. JSON.parse quotes the whole document in its error, console password
+  # included.
+  it 'reads a pe.conf with comments, and prints no content' do
+    stub_uploads
+    expect_task('peadm::read_file').return do |targets:, **|
+      sensitive_read_file_result(targets, "# written by hand\n{\n  \"console_admin_password\": \"password-canary\"\n  # more\n}\n")
+    end
+
+    result = run_plan('peadm::util::sanitize_pg_pe_conf', 'targets' => 'pg1', 'primary_host' => 'primary')
+
+    expect(result).to be_ok
+    expect(JSON.parse(uploads['pg1'][:content])).to eq(
+      'console_admin_password' => 'password-canary',
+      'puppet_enterprise::puppet_master_host' => 'primary',
+      'puppet_enterprise::puppetdb_database_host' => 'pg1',
+    )
+    expect(messages.join("\n")).not_to include('password-canary')
+  end
+
+  it 'fails without quoting the content when a pe.conf cannot be parsed' do
+    stub_uploads
+    expect_task('peadm::read_file').return do |targets:, **|
+      sensitive_read_file_result(targets, '{ "console_admin_password": "password-canary" ')
+    end
+
+    result = run_plan('peadm::util::sanitize_pg_pe_conf', 'targets' => 'pg1', 'primary_host' => 'primary')
+
+    expect(result).not_to be_ok
+    expect(result.value.message).to include('The pe.conf on pg1 could not be parsed')
+    expect(result.value.message).not_to include('password-canary')
+    expect(uploads).to be_empty
+  end
+
   it 'fails with a clear message, and uploads nothing, when a node has no pe.conf' do
     stub_uploads
     expect_task('peadm::read_file').return { |targets:, **| sensitive_read_file_result(targets, nil) }
