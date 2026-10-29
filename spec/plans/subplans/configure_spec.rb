@@ -293,11 +293,15 @@ describe 'peadm::subplans::configure' do
 
       # Catches: (a) pe_version not being read at all or read from the wrong
       # path, (b) the trailing newline from the file read leaking through
-      # unchomped, (c) pe_main/ldap_config getting dropped or corrupted, and
-      # (d) the task being run against the wrong target.
+      # unchomped, (c) pe_main/ldap_config getting dropped or corrupted,
+      # (d) the task being run against the wrong target, and (e) ldap_config
+      # reaching the task without the Sensitive wrapper its metadata flag
+      # gives it, which is what makes Bolt mask the whole hash, bind password
+      # included, in bolt-debug.log (PE-47523).
       expect_task('peadm::pe_ldap_config').with_targets(['primary']).return do |targets:, params:, **|
         expect(params['pe_main']).to eq('primary')
-        expect(params['ldap_config']).to eq(valid_ldap_config)
+        expect(params['ldap_config']).to be_a(Puppet::Pops::Types::PSensitiveType::Sensitive)
+        expect(params['ldap_config'].unwrap).to eq(valid_ldap_config)
         expect(params['pe_version']).to eq('2023.8.1')
         Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
       end

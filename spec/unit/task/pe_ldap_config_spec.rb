@@ -98,19 +98,59 @@ describe PeLdapConfig do
     task.execute!
   end
 
+  # PE-47523: Bolt logs the task's output and error, so neither carries the
+  # response body. RBAC's error bodies may echo the submitted request, bind
+  # password included, and the legacy ds endpoint returns the settings it
+  # saved.
+  #
   # Catches a mutation that drops the non-200 check, silently accepting
   # any response code as success.
-  it 'prints the response body and raises when the API responds with a non-200 code' do
-    allow(https_dbl).to receive(:request).with(request_dbl).and_return(instance_double(Net::HTTPServerError, body: '{"error":"boom"}', code: '500'))
+  it 'raises with the code and error kind, printing nothing, when the API responds with a non-200 code' do
+    body = '{"kind":"schema-violation","msg":"bad","details":{"submitted":{"password":"bind-canary"}}}'
+    allow(https_dbl).to receive(:request).with(request_dbl).and_return(instance_double(Net::HTTPBadRequest, body: body, code: '400'))
 
-    expect(STDOUT).to receive(:puts).with('{"error":"boom"}')
-    expect { task.execute! }.to raise_error('API response code 500')
+    expect {
+      expect { task.execute! }.to raise_error(RuntimeError, 'API response code 400 (schema-violation)')
+    }.not_to output.to_stdout
   end
 
-  # Catches a mutation that raises even on success, or omits printing the
-  # response body on the happy path.
-  it 'prints the response body and does not raise when the API responds 200' do
-    expect(STDOUT).to receive(:puts).with('{}')
-    expect { task.execute! }.not_to raise_error
+  [
+    '<html>boom</html>',
+    'null',
+    '{"kind":{"submitted":{"password":"bind-canary"}}}',
+    '{"kind":"bind-canary has spaces"}',
+    %({"kind":"#{'a' * 129}"}),
+    %({"kind":"x\\nbind-canary"}),
+    %({"kind":"abc\\n"}),
+    %({"kind":"ab\xFFc-canary"}).b,
+  ].each do |body|
+    it "raises with just the code for the error body #{body}" do
+      allow(https_dbl).to receive(:request).with(request_dbl).and_return(instance_double(Net::HTTPServerError, body: body, code: '500'))
+
+      expect { task.execute! }.to raise_error(RuntimeError, 'API response code 500')
+    end
+  end
+
+  # The longest kind kept
+  it 'keeps a kind of 128 characters in the error' do
+    kind = 'k' * 128
+    allow(https_dbl).to receive(:request).with(request_dbl).and_return(instance_double(Net::HTTPBadRequest, body: { 'kind' => kind }.to_json, code: '400'))
+
+    expect { task.execute! }.to raise_error(RuntimeError, "API response code 400 (#{kind})")
+  end
+
+  # Both endpoints print only the status; the legacy ds endpoint (before
+  # 2023.8.0) returns the settings it saved
+  ['2023.7.1', '2025.11.3'].each do |version|
+    context "when pe_version is #{version}" do
+      let(:pe_version) { version }
+
+      # Catches a mutation that raises even on success.
+      it 'prints only the status, not the response body, when the API responds 200' do
+        allow(https_dbl).to receive(:request).with(request_dbl).and_return(instance_double(Net::HTTPOK, body: '{"password":"bind-canary"}', code: '200'))
+
+        expect { task.execute! }.to output(%({"status":"200"}\n)).to_stdout
+      end
+    end
   end
 end

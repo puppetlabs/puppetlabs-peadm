@@ -3,7 +3,8 @@
   "parameters": {
     "password": {
       "type": "String",
-      "description": "The password for the admin user"
+      "description": "The password for the admin user",
+      "sensitive": true
     },
     "token_lifetime": {
       "type": "String",

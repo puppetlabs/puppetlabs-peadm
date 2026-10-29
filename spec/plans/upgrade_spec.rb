@@ -7,6 +7,9 @@ describe 'peadm::upgrade' do
   def allow_standard_non_returning_calls
     allow_apply
     allow_any_task
+    # The node_group_environment default reads pe.conf as Sensitive
+    # (PE-47523); examples about those reads expect them on top of this.
+    allow_pe_conf_reads
     allow_any_plan
     allow_any_command
     allow_out_message
@@ -53,7 +56,7 @@ describe 'peadm::upgrade' do
 
     expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(1)
     expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
-    expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
+    expect_pe_conf_reads
 
     expect(run_plan('peadm::upgrade',
                     'primary_host' => 'primary',
@@ -67,7 +70,7 @@ describe 'peadm::upgrade' do
     expect_task('peadm::read_file')
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
       .always_return({ 'content' => '2021.7.3' })
-    expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
+    expect_pe_conf_reads
     expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary,
                                                        'compiler' => trusted_compiler).be_called_times(1)
     expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check).be_called_times(1)
@@ -110,7 +113,7 @@ describe 'peadm::upgrade' do
 
     expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(1)
     expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
-    expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
+    expect_pe_conf_reads
 
     expect(run_plan('peadm::upgrade',
                     'primary_host' => 'primary',
@@ -175,7 +178,7 @@ describe 'peadm::upgrade' do
     expect_task('peadm::read_file')
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
       .always_return({ 'content' => '2021.7.3' })
-    expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
+    expect_pe_conf_reads
 
     result = run_plan('peadm::upgrade',
                       'primary_host' => 'primary',
@@ -196,7 +199,7 @@ describe 'peadm::upgrade' do
     expect_task('peadm::read_file')
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
       .always_return({ 'content' => '2021.7.3' })
-    expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
+    expect_pe_conf_reads
     expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(1)
     expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
 
@@ -226,7 +229,7 @@ describe 'peadm::upgrade' do
     expect_task('peadm::read_file')
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
       .always_return({ 'content' => '2021.7.3' })
-    expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
+    expect_pe_conf_reads
     expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(1)
     expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
 
@@ -274,7 +277,7 @@ describe 'peadm::upgrade' do
     expect_task('peadm::read_file')
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
       .always_return({ 'content' => '2021.7.3' })
-    expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
+    expect_pe_conf_reads
     expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(1)
     expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
     expect_plan('peadm::util::update_classification').be_called_times(1).return { ok_plan_result }
@@ -299,7 +302,7 @@ describe 'peadm::upgrade' do
     expect_task('peadm::read_file')
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
       .always_return({ 'content' => '2021.7.3' })
-    expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
+    expect_pe_conf_reads
     expect_task('peadm::cert_data').return_for_targets('primary' => trusted_primary).be_called_times(1)
     expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
     expect_plan('peadm::util::update_classification').be_called_times(1).return { ok_plan_result }
@@ -340,10 +343,10 @@ describe 'peadm::upgrade' do
     expect_task('peadm::read_file')
       .with_params('path' => '/opt/puppetlabs/server/pe_build')
       .always_return({ 'content' => '2021.7.3' })
-    expect_task('peadm::read_file')
-      .with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf')
-      .always_return({ 'content' => '{}' })
-      .be_called_times(3)
+    # The primary's pe.conf and the two PostgreSQL nodes' copies, all read as
+    # Sensitive: the PostgreSQL copies hold pe_conf_data, and on a converted
+    # cluster whatever the operator gave the installer (PE-47523).
+    expect_pe_conf_reads.be_called_times(3)
     expect_task('peadm::cert_data').return_for_targets(
       'primary'      => trusted_primary,
       'replica'      => trusted_replica,
@@ -412,7 +415,7 @@ describe 'peadm::upgrade' do
       expect_task('peadm::read_file')
         .with_params('path' => '/opt/puppetlabs/server/pe_build')
         .always_return({ 'content' => '2021.7.3' })
-      expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
+      expect_pe_conf_reads
       expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
       expect_task('peadm::cert_data').return_for_targets(
         'primary'   => trusted_primary,
@@ -480,7 +483,7 @@ describe 'peadm::upgrade' do
     before(:each) do
       allow_standard_non_returning_calls
       expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' }).be_called_times(2)
-      expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
+      expect_pe_conf_reads
       expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
     end
 
@@ -563,12 +566,13 @@ describe 'peadm::upgrade' do
     end
 
     it 'updates pe.conf if r10k_known_hosts is set' do
-      expect_task('peadm::read_file')
-        .with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf')
-        .always_return({ 'content' => <<~PECONF }).be_called_times(2)
-          # spec pe.conf
-          "puppet_enterprise::puppet_master_host": "%{::trusted.certname}"
-        PECONF
+      pe_conf = <<~PECONF
+        # spec pe.conf
+        "puppet_enterprise::puppet_master_host": "%{::trusted.certname}"
+      PECONF
+      # Both reads of the primary's pe.conf (node_group_environment, then
+      # r10k_known_hosts) are Sensitive (PE-47523).
+      expect_pe_conf_reads(pe_conf).be_called_times(2)
       # TODO: this doesn't verify what we are writing; we would need to mock
       # write_file for that. Being more specific about exactly what file we are
       # uploading runs afoul of the fact that write_file creates a source tempfile,
@@ -588,7 +592,7 @@ describe 'peadm::upgrade' do
       expect_out_message.with_params(r10k_warning)
       expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
 
-      expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
+      expect_pe_conf_reads
 
       expect(run_plan('peadm::upgrade',
                        'primary_host'     => 'primary',
@@ -603,7 +607,7 @@ describe 'peadm::upgrade' do
         expect_out_message.with_params(r10k_warning).not_be_called
         expect_task('peadm::check_pe_master_rules').always_return(pe_rule_check)
 
-        expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' })
+        expect_pe_conf_reads
 
         expect(run_plan('peadm::upgrade',
                          'primary_host'     => 'primary',

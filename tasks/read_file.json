@@ -4,6 +4,10 @@
     "path": {
       "type": "String",
       "description": "Path to the file to read"
+    },
+    "as_sensitive": {
+      "type": "Optional[Boolean]",
+      "description": "Return the content under _sensitive, so Bolt masks it in bolt-debug.log and the task's result (--stream still prints the raw output, and the pcp transport doesn't mask it)"
     }
   },
   "implementations": [
