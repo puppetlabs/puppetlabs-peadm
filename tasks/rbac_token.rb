@@ -70,6 +70,7 @@ class RbacToken
     token = JSON.parse(response.body)['token']
 
     FileUtils.mkdir_p('/root/.puppetlabs')
+    # TODO: PE-47910 the mode follows the umask; create the file 0600 and the directory 0700.
     File.open('/root/.puppetlabs/token', 'w') { |file| file.write(token) }
   end
 

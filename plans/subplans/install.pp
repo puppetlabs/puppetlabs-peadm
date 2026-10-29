@@ -382,6 +382,7 @@ plan peadm::subplans::install (
   # the original error. (Puppet has no ensure: an interrupt, or an error that
   # isn't a Bolt one, still skips the removal, and /tmp/pe.conf should then be
   # deleted by hand.)
+  # TODO PE-47910: a predictable path in world-writable /tmp; upload into a 0700 directory instead.
   $bootstrap_pe_conf = '/tmp/pe.conf'
   $installer_error = catch_errors() || {
     parallelize(['primary', 'primary_postgresql', 'replica_postgresql']) |$var| {
@@ -718,6 +719,7 @@ plan peadm::subplans::install (
     $target  = getvar("${var}_target", [])
     $pe_conf = getvar("${var}_pe_conf", '{}')
 
+    # TODO PE-47910: no mode is passed, so the primary's pe.conf, which keeps console_admin_password, gets whatever mode it had.
     run_task('peadm::mkdir_p_file', $target,
       path    => '/etc/puppetlabs/enterprise/conf.d/pe.conf',
       content => stdlib::to_json_pretty($pe_conf.parsejson() - $puppetdb_database_temp_config),
