@@ -140,6 +140,28 @@ plan peadm::subplans::configure (
         if $attempt > 1 {
           out::message("provision_replica not ready; retrying (attempt ${attempt}) after 15s...")
           out::message($memo.to_data)
+
+          # DIAGNOSTIC ONLY (diag/configure-provision-replica-services scratch
+          # branch) -- provision_replica's CLI reports several services as
+          # "not running" (Code Manager, File Sync Storage/Client Service,
+          # Puppet Server, Orchestrator), but we've never captured what those
+          # services' own systemd/log state actually looks like at that
+          # moment. Grab it here, right after a failed attempt, before
+          # retrying.
+          $diag = run_command(@("HEREDOC"/L), $primary_target, '_catch_errors' => true)
+            echo "=== systemctl list-units pe-* ==="; \
+            systemctl list-units 'pe-*' --all --no-pager 2>&1; \
+            echo "=== latest provision_replica CLI output log ==="; \
+            tail -n 200 $(ls -t /var/log/puppetlabs/installer/provision_replica_*_cli-output.log 2>/dev/null | head -1) 2>&1; \
+            echo "=== pe-puppetserver journal (last 80) ==="; \
+            journalctl -u pe-puppetserver --no-pager -n 80 2>&1; \
+            echo "=== pe-orchestration-services journal (last 80) ==="; \
+            journalctl -u pe-orchestration-services --no-pager -n 80 2>&1; \
+            echo "=== pe-console-services journal (last 80, covers code-manager/file-sync in some PE versions) ==="; \
+            journalctl -u pe-console-services --no-pager -n 80 2>&1
+            |-HEREDOC
+          out::message("DIAGNOSTIC: service state on ${primary_target.peadm::certname()}:\n${diag.first.value['merged_output']}")
+
           ctrl::sleep(15)
         }
         run_task('peadm::provision_replica', $primary_target,

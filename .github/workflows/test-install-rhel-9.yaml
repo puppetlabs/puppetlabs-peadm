@@ -41,8 +41,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture: [standard-with-dr, large, extra-large-with-dr]
-        version: [2023.8.12, 2025.12.0, 2026.0.0]
+        # TEMPORARY, test-branch-only narrowing to repro the provision_replica
+        # "is not running" race on this exact combo. Restore the full matrix
+        # before this could ever merge.
+        architecture: [standard-with-dr]
+        version: [2025.12.0]
         image: [rhel-9]
     steps:
       - name: Checkout Source
