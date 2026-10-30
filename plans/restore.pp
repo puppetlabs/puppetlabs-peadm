@@ -441,6 +441,19 @@ plan peadm::restore (
   # service reporting "not running".
   peadm::wait_until_service_ready('all', $primary_target)
 
+  # The certs-scope restore re-issues this primary's certificate through the
+  # filesystem CA (bumping $cadir/serial), but the database-backed CA restored
+  # above from the pe-ca dump never learns about it: its next serial still
+  # equals the serial the primary just got. The next certificate the running
+  # CA signs (e.g. the replica in peadm::migrate's add_replica) then reuses
+  # that serial, and revoking it (ca clean / node purge) also revokes the
+  # primary's own certificate. Re-import the filesystem CA into the database
+  # so both agree on issued certificates and the next serial.
+  if $ca_restore_check == 'restore' {
+    out::message('# Re-importing filesystem CA into the CA database')
+    run_command('/opt/puppetlabs/bin/puppetserver ca storage --import --full', $primary_target)
+  }
+
   apply($primary_target) {
     file { $recovery_directory :
       ensure => 'absent',
