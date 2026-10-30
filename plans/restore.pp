@@ -191,6 +191,16 @@ plan peadm::restore (
         su - pe-postgres -s /bin/bash -c \
           "/opt/puppetlabs/server/bin/psql -d 'pe-ca' -c 'ALTER USER \"pe-ca\" WITH NOSUPERUSER;'"
         | CMD
+      # A pe-ca dump from a cluster with a replica carries the pglogical schema
+      # and extension. Drop them as done for the other restored databases,
+      # otherwise the CA migration service fails to initialise the database
+      # ("current database is not configured as pglogical node").
+      run_command(@("CMD"/L), $primary_target)
+        su - pe-postgres -s /bin/bash -c \
+          "/opt/puppetlabs/server/bin/psql -d 'pe-ca' \
+             -c 'DROP SCHEMA IF EXISTS pglogical CASCADE;' \
+             -c 'DROP EXTENSION IF EXISTS pglogical CASCADE;'"
+        | CMD
     }
 
     if getvar('recovery_opts.ca') {
