@@ -37,7 +37,10 @@ jobs:
       # provision#301 (provision >= v3.1.0), scoped to only the 2026.0.0
       # matrix combinations -- empty string for everything else leaves the
       # task's own default untouched (see provision_service.rb).
-      PROVISION_MACHINE_TYPE: ${{ matrix.version == '2026.0.0' && 'n2-standard-4' || '' }}
+      # PE 2025.12.0 extra-large-with-dr also needs it: on the default size the
+      # primary's puppetserver goes down during provision_replica's enable-replica
+      # puppet run (Connection refused on :8140) and the step hits its timeout.
+      PROVISION_MACHINE_TYPE: ${{ (matrix.version == '2026.0.0' || (matrix.version == '2025.12.0' && matrix.architecture == 'extra-large-with-dr')) && 'n2-standard-4' || '' }}
     strategy:
       fail-fast: false
       matrix:
