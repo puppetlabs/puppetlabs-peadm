@@ -151,6 +151,17 @@ plan peadm::backup (
 # lint:endignore
   } else {
     if getvar('recovery_opts.ca') {
+      # With a database-backed CA, certificates signed after the CA moved into
+      # pe-ca (replica, compilers, agents) and the serial counter only advance
+      # in the database; $cadir on disk keeps the install-time state. The
+      # certs-scope backup below copies $cadir, and restoring it re-issues the
+      # new primary's certificate from that stale on-disk serial counter, i.e.
+      # with a serial the old CA already issued (and may already have revoked).
+      # Export the database's CA material to disk first so the backup is current.
+      if $ca_database_backed {
+        out::message('# Exporting CA database to disk before backing up certs')
+        run_command('/opt/puppetlabs/bin/puppetserver ca storage --export', $targets)
+      }
       out::message('# Backing up ca and ssl certificates')
   # lint:ignore:strict_indent
       run_command(@("CMD"), $targets)
