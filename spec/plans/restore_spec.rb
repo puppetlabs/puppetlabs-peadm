@@ -263,6 +263,43 @@ describe 'peadm::restore' do
 
       expect(call_log.index(export_command)).to be < shutdown_index
       expect(call_log.index('rbac_token')).to be < call_log.index(import_command)
+      expect(call_log).not_to include('/opt/puppetlabs/bin/puppetserver ca storage --import')
+    end
+
+    # With a database-backed CA the pe-ca database is restored before the
+    # certs scope. The agent must be stopped before pe-puppetserver (an
+    # in-progress run restarts it and cancels the stop job), and the
+    # certificates issued afterwards from the restored CA files (the new
+    # primary's host cert) must be synced into the database at the end, or
+    # the CA reuses their serials.
+    it 'stops the agent first and syncs the CA into the database on a pe-ca restore', valid_cluster: true do
+      call_log = []
+      allow_any_command.return do |targets:, command:, **|
+        call_log << command
+        stdout = command.include?('pe-ca.dump.d') ? 'restore' : ''
+        Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: { 'stdout' => stdout }) })
+      end
+      allow_task('peadm::backup_classification')
+      allow_task('peadm::transform_classification_groups')
+      allow_task('peadm::restore_classification')
+      allow_task('peadm::rbac_token')
+
+      expect(run_plan('peadm::restore', migration_params)).to be_ok
+
+      ca_import = '/opt/puppetlabs/bin/puppetserver ca storage --import'
+      stop_agent = call_log.index('systemctl stop puppet.service')
+      stop_puppetserver = call_log.index("systemctl stop pe-puppetserver\n")
+      expect(stop_agent).not_to be_nil
+      expect(stop_puppetserver).not_to be_nil
+      expect(stop_agent).to be < stop_puppetserver
+      pe_ca_restore = call_log.index { |c| c.include?('pg_restore') && c.include?('dbname=pe-ca') }
+      drop_pglogical = call_log.index { |c| c.include?("-d 'pe-ca'") && c.include?('DROP SCHEMA IF EXISTS pglogical CASCADE') }
+      drop_extension = call_log.index { |c| c.include?("-d 'pe-ca'") && c.include?('DROP EXTENSION IF EXISTS pglogical CASCADE') }
+      expect(pe_ca_restore).not_to be_nil
+      expect(drop_pglogical).to be > pe_ca_restore
+      expect(drop_extension).to be > pe_ca_restore
+      expect(call_log.count(ca_import)).to eq(1)
+      expect(call_log.index(ca_import)).to be > call_log.index("/opt/puppetlabs/bin/puppet-infrastructure configure --no-recover\n")
     end
 
     # PE-47009: a permanent failure (wrong console_password) is tagged with

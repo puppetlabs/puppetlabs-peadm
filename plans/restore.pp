@@ -165,6 +165,12 @@ plan peadm::restore (
       # to be the same CA, otherwise it fails with "The CRL issued by ... is
       # missing" (PE-47558).
       out::message('# Restoring database pe-ca (before certs)')
+      # Stop the agent first. peadm::install leaves puppet.service running, and
+      # an agent run that is in progress enforces Service[pe-puppetserver]
+      # running, which cancels the stop job ("Job for pe-puppetserver.service
+      # canceled.") or starts puppetserver again mid-restore. Stop it as a
+      # separate step so it has fully exited before puppetserver is stopped.
+      run_command('systemctl stop puppet.service', $primary_target)
       run_command(@("CMD"/L), $primary_target)
         systemctl stop pe-puppetserver
         | CMD
@@ -190,6 +196,25 @@ plan peadm::restore (
       run_command(@("CMD"/L), $primary_target)
         su - pe-postgres -s /bin/bash -c \
           "/opt/puppetlabs/server/bin/psql -d 'pe-ca' -c 'ALTER USER \"pe-ca\" WITH NOSUPERUSER;'"
+        | CMD
+
+      # Drop pglogical extension and schema if present after db restore, as
+      # for the other databases. A dump taken on a DR cluster carries the
+      # source's pglogical node state; left in place it breaks puppetserver's
+      # CA migration service ("current database is not configured as
+      # pglogical node"), so 'puppetserver ca storage --import' fails.
+      run_command(@("CMD"/L), $primary_target)
+        su - pe-postgres -s /bin/bash -c \
+          "/opt/puppetlabs/server/bin/psql \
+             --tuples-only \
+             -d 'pe-ca' \
+             -c 'DROP SCHEMA IF EXISTS pglogical CASCADE;'"
+        | CMD
+      run_command(@("CMD"/L), $primary_target)
+        su - pe-postgres -s /bin/bash -c \
+          "/opt/puppetlabs/server/bin/psql \
+             -d 'pe-ca' \
+             -c 'DROP EXTENSION IF EXISTS pglogical CASCADE;'"
         | CMD
     }
 
@@ -440,6 +465,19 @@ plan peadm::restore (
   # peadm::migrate's add_replica/provision_replica call) can hit every PE
   # service reporting "not running".
   peadm::wait_until_service_ready('all', $primary_target)
+
+  # The pe-ca database was restored before the certs scope, so certificates
+  # the restore issued afterwards from the restored CA files (the new
+  # primary's own host certificate on a migration) exist only on the
+  # filesystem. The database's next_serial does not move past them, so the
+  # next certificate the CA signs reuses the primary's serial, and revoking
+  # that certificate later (e.g. add_replica's ca clean) also revokes the
+  # primary's. Sync the filesystem CA into the database (delta import) so
+  # those certificates are recorded and their serials reserved.
+  if $ca_restore_check == 'restore' {
+    out::message('# Syncing certificates issued during the restore into the pe-ca database')
+    run_command('/opt/puppetlabs/bin/puppetserver ca storage --import', $primary_target)
+  }
 
   apply($primary_target) {
     file { $recovery_directory :
