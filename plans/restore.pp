@@ -165,8 +165,11 @@ plan peadm::restore (
       # to be the same CA, otherwise it fails with "The CRL issued by ... is
       # missing" (PE-47558).
       out::message('# Restoring database pe-ca (before certs)')
+      # Stop the agent first: a background agent run (e.g. left over from
+      # peadm::install) restarts pe-puppetserver and cancels the stop job
+      # ("Job for pe-puppetserver.service canceled").
       run_command(@("CMD"/L), $primary_target)
-        systemctl stop pe-puppetserver
+        systemctl stop puppet.service && systemctl stop pe-puppetserver
         | CMD
 # lint:ignore:140chars
       run_command(@("CMD"/L), $primary_target)
@@ -461,7 +464,7 @@ plan peadm::restore (
   # so both agree on issued certificates and the next serial.
   if $ca_restore_check == 'restore' {
     out::message('# Re-importing filesystem CA into the CA database')
-    run_command('/opt/puppetlabs/bin/puppetserver ca storage --import --full', $primary_target)
+    run_command('/opt/puppetlabs/bin/puppetserver ca storage --import', $primary_target)
   }
 
   apply($primary_target) {
