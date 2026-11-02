@@ -41,8 +41,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture: [standard-with-dr, large, extra-large-with-dr]
-        version: [2023.8.12, 2025.12.0, 2026.0.0]
+        # DIAGNOSTIC ONLY: narrowed to the one failing combination, default VM size.
+        architecture: [extra-large-with-dr]
+        version: [2025.12.0]
         image: [rhel-9]
     steps:
       - name: Checkout Source
@@ -82,15 +83,64 @@ jobs:
           echo ::group::info:inventory
             sed -e 's/password: .*/password: "[redacted]"/' < spec/fixtures/litmus_inventory.yaml || true
           echo ::endgroup::
+      - name: Record VM sizing
+        continue-on-error: true
+        timeout-minutes: 5
+        run: |
+          mkdir -p ci-logs
+          bundle exec bolt command run \
+            'hostname -f; echo "cpus: $(nproc)"; free -m | sed -n 2,3p; df -h / | tail -1; (curl -s -m 3 -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/machine-type || true); echo' \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml --targets all --no-color | tee ci-logs/sizing.txt
       - name: Install PE on test cluster
         timeout-minutes: 120
         run: |
+          mkdir -p ci-logs
+          # Background sampler: memory, swap, load, OOM kills and top RSS on every node.
+          (
+            while true; do
+              echo "=== $(date -u +%FT%TZ)" >> ci-logs/mem-samples.log
+              bundle exec bolt command run \
+                'echo "== $(hostname -f)"; free -m | sed -n 2,3p; cat /proc/loadavg; echo "oom-kills: $(dmesg 2>/dev/null | grep -ciE "out of memory|oom-kill")"; ps -eo rss,comm --sort=-rss | head -3' \
+                --inventoryfile spec/fixtures/litmus_inventory.yaml --targets all --no-color >> ci-logs/mem-samples.log 2>&1 || true
+              sleep 45
+            done
+          ) &
+          SAMPLER=$!
+          trap 'kill $SAMPLER 2>/dev/null || true' EXIT
           bundle exec bolt plan run peadm_spec::install_test_cluster \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules \
             architecture=${{ matrix.architecture }} \
             version=${{ matrix.version }} \
             console_password=${{ secrets.CONSOLE_PASSWORD }}
+      - name: Collect diagnostics from test cluster
+        if: ${{ always() }}
+        continue-on-error: true
+        timeout-minutes: 20
+        run: |-
+          if [ -f spec/fixtures/litmus_inventory.yaml ]; then
+            mkdir -p ci-logs
+            INV=spec/fixtures/litmus_inventory.yaml
+            echo ::group::info:final_state
+              bundle exec bolt command run \
+                'echo "== $(hostname -f)"; free -m | sed -n 2,3p; cat /proc/loadavg; dmesg -T 2>/dev/null | grep -iE "out of memory|oom-kill|killed process" | tail -20; journalctl -k --no-pager 2>/dev/null | grep -iE "out of memory|oom-kill" | tail -20; systemctl is-active pe-puppetserver pe-puppetdb pe-postgresql 2>&1 | tr "\n" " "; echo' \
+                --inventoryfile $INV --targets all --no-color | tee ci-logs/final-state.txt || true
+            echo ::endgroup::
+            echo ::group::download:logs
+              for d in /var/log/puppetlabs/installer /var/log/puppetlabs/puppetserver /var/log/puppetlabs/puppetdb; do
+                bundle exec bolt file download "$d" ci-logs --inventoryfile $INV --targets all --no-color || true
+              done
+            echo ::endgroup::
+          fi
+      - name: Upload diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-logs-${{ matrix.version }}-${{ matrix.architecture }}-${{ matrix.image }}
+          path: ci-logs
+          retention-days: 7
+          if-no-files-found: ignore
       - name: Tear down test cluster
         if: ${{ always() }}
         continue-on-error: true
