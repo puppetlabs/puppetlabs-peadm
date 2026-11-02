@@ -1353,6 +1353,12 @@ Data type: `Boolean`
 
 Whether to check the integrity of the downloaded file
 
+##### `require_signature`
+
+Data type: `Optional[Boolean]`
+
+If true, fails the task when no .asc signature file is available or verification fails
+
 ##### `key_server`
 
 Data type: `String`
@@ -2332,6 +2338,7 @@ The following parameters are available in the `peadm::install` plan:
 * [`stagingdir`](#-peadm--install--stagingdir)
 * [`uploaddir`](#-peadm--install--uploaddir)
 * [`cloud_database_host`](#-peadm--install--cloud_database_host)
+* [`download_require_signature`](#-peadm--install--download_require_signature)
 * [`primary_host`](#-peadm--install--primary_host)
 * [`replica_host`](#-peadm--install--replica_host)
 * [`compiler_hosts`](#-peadm--install--compiler_hosts)
@@ -2446,6 +2453,15 @@ the default on-prem topology where Postgres runs on the primary or on a
 managed external Postgres target.
 
 Default value: `undef`
+
+##### <a name="-peadm--install--download_require_signature"></a>`download_require_signature`
+
+Data type: `Boolean`
+
+Set this to True for mandatory signature check on downloaded PE files
+The corresponding .asc file is required in upstream repository
+
+Default value: `false`
 
 ##### <a name="-peadm--install--primary_host"></a>`primary_host`
 
@@ -2942,6 +2958,7 @@ The following parameters are available in the `peadm::upgrade` plan:
 * [`uploaddir`](#-peadm--upgrade--uploaddir)
 * [`begin_at_step`](#-peadm--upgrade--begin_at_step)
 * [`node_group_environment`](#-peadm--upgrade--node_group_environment)
+* [`download_require_signature`](#-peadm--upgrade--download_require_signature)
 * [`primary_host`](#-peadm--upgrade--primary_host)
 * [`replica_host`](#-peadm--upgrade--replica_host)
 * [`compiler_hosts`](#-peadm--upgrade--compiler_hosts)
@@ -3045,6 +3062,15 @@ Data type: `String[1]`
 environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
 
 Default value: `peadm::get_node_group_environment($primary_host)`
+
+##### <a name="-peadm--upgrade--download_require_signature"></a>`download_require_signature`
+
+Data type: `Boolean`
+
+Set this to True for mandatory signature check on downloaded PE files
+The corresponding .asc file is required in upstream repository
+
+Default value: `false`
 
 ##### <a name="-peadm--upgrade--primary_host"></a>`primary_host`
 

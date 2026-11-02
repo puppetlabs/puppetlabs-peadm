@@ -40,6 +40,10 @@
 #   the default on-prem topology where Postgres runs on the primary or on a
 #   managed external Postgres target.
 #
+# @param download_require_signature
+#   Set this to True for mandatory signature check on downloaded PE files
+#   The corresponding .asc file is required in upstream repository
+#
 plan peadm::install (
   # Standard
   Peadm::SingleTargetSpec           $primary_host,
@@ -80,22 +84,23 @@ plan peadm::install (
   Optional[String]                  $license_key_content = undef,
 
   # Other
-  Optional[String]           $stagingdir             = undef,
-  Optional[String]           $uploaddir              = undef,
-  Enum['running', 'stopped'] $final_agent_state      = 'running',
-  Peadm::Download_mode       $download_mode          = 'bolthost',
-  Boolean                    $permit_unsafe_versions = false,
-  String                     $token_lifetime         = '1y',
+  Optional[String]           $stagingdir                 = undef,
+  Optional[String]           $uploaddir                  = undef,
+  Enum['running', 'stopped'] $final_agent_state          = 'running',
+  Peadm::Download_mode       $download_mode              = 'bolthost',
+  Boolean                    $permit_unsafe_versions     = false,
+  String                     $token_lifetime             = '1y',
+  Boolean                    $download_require_signature = false,
 ) {
   # Log parameters for debugging 
   peadm::log_plan_parameters({
-    'primary_host' => $primary_host,
-    'replica_host' => $replica_host,
-    'compiler_hosts' => $compiler_hosts,
-    'legacy_compilers' => $legacy_compilers,
-    'primary_postgresql_host' => $primary_postgresql_host,
-    'replica_postgresql_host' => $replica_postgresql_host,
-    'version' => $version,
+      'primary_host' => $primary_host,
+      'replica_host' => $replica_host,
+      'compiler_hosts' => $compiler_hosts,
+      'legacy_compilers' => $legacy_compilers,
+      'primary_postgresql_host' => $primary_postgresql_host,
+      'replica_postgresql_host' => $replica_postgresql_host,
+      'version' => $version,
   })
 
   peadm::assert_supported_bolt_version()
@@ -137,6 +142,7 @@ plan peadm::install (
     stagingdir                     => $stagingdir,
     uploaddir                      => $uploaddir,
     download_mode                  => $download_mode,
+    download_require_signature     => $download_require_signature,
     permit_unsafe_versions         => $permit_unsafe_versions,
     token_lifetime                 => $token_lifetime,
   )
