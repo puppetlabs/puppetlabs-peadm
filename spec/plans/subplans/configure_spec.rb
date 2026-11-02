@@ -302,6 +302,8 @@ describe 'peadm::subplans::configure' do
         Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
       end
 
+      expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' }).be_called_times(1)
+
       expect(run_plan('peadm::subplans::configure',
                        'primary_host' => 'primary',
                        'ldap_config'  => valid_ldap_config)).to be_ok
@@ -319,6 +321,8 @@ describe 'peadm::subplans::configure' do
           Bolt::Result.new(target, value: { '_error' => { 'msg' => 'ldap bind failed', 'kind' => 'peadm/ldap-error' } })
         end)
       end
+
+      expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' }).be_called_times(1)
 
       static_notice = 'There was a problem with the LDAP configuration, configuration must be completed manually.'
 

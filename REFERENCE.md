@@ -2332,6 +2332,7 @@ The following parameters are available in the `peadm::install` plan:
 * [`stagingdir`](#-peadm--install--stagingdir)
 * [`uploaddir`](#-peadm--install--uploaddir)
 * [`cloud_database_host`](#-peadm--install--cloud_database_host)
+* [`node_group_environment`](#-peadm--install--node_group_environment)
 * [`primary_host`](#-peadm--install--primary_host)
 * [`replica_host`](#-peadm--install--replica_host)
 * [`compiler_hosts`](#-peadm--install--compiler_hosts)
@@ -2446,6 +2447,14 @@ the default on-prem topology where Postgres runs on the primary or on a
 managed external Postgres target.
 
 Default value: `undef`
+
+##### <a name="-peadm--install--node_group_environment"></a>`node_group_environment`
+
+Data type: `String[1]`
+
+environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
+
+Default value: `peadm::get_node_group_environment($primary_host)`
 
 ##### <a name="-peadm--install--primary_host"></a>`primary_host`
 
