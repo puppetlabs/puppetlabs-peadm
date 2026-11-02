@@ -112,4 +112,46 @@ describe 'peadm::backup' do
 
     expect(run_plan('peadm::backup', all_backup_options)).to be_ok
   end
+
+  # With a database-backed CA the on-disk CA files (incl. $cadir/serial) lag
+  # behind the pe-ca database, so they must be exported to disk before the
+  # certs scope is backed up; a filesystem CA needs no export.
+  context 'with only the ca scope' do
+    let(:ca_only) do
+      {
+        'targets' => 'primary',
+        'backup_type' => 'custom',
+        'backup' => {
+          'activity' => false, 'ca' => true, 'classifier' => false, 'code' => false,
+          'config' => false, 'orchestrator' => false, 'puppetdb' => false, 'rbac' => false
+        }
+      }
+    end
+    let(:ca_export) { '/opt/puppetlabs/bin/puppetserver ca storage --export' }
+    let(:certs_backup) { "/opt/puppetlabs/bin/puppet-backup create --dir=/tmp/pe-backup-1970-01-01T000000Z/ca --scope=certs\n" }
+
+    def run_with_ca_backend(backend)
+      call_log = []
+      allow_out_message
+      allow_any_command.return do |targets:, command:, **|
+        call_log << command
+        stdout = command.include?('database-storage-service') ? backend : ''
+        Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: { 'stdout' => stdout }) })
+      end
+      expect(run_plan('peadm::backup', ca_only)).to be_ok
+      call_log
+    end
+
+    it 'exports a database-backed CA to disk before backing up the certs scope' do
+      call_log = run_with_ca_backend('database')
+      expect(call_log.count(ca_export)).to eq(1)
+      expect(call_log.index(ca_export)).to be < call_log.index(certs_backup)
+    end
+
+    it 'does not export a filesystem-backed CA' do
+      call_log = run_with_ca_backend('filesystem')
+      expect(call_log).to include(certs_backup)
+      expect(call_log).not_to include(ca_export)
+    end
+  end
 end
