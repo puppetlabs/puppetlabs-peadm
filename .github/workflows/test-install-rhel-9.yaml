@@ -34,10 +34,14 @@ jobs:
       LANG: en_US.UTF-8
       # PE 2026.0.0 jobs hit CI VM OOM (Cannot allocate memory - fork(2))
       # on the default provision_service VM size. Request a bigger VM via
-      # provision#301 (provision >= v3.1.0), scoped to only the 2026.0.0
-      # matrix combinations -- empty string for everything else leaves the
+      # provision#301 (provision >= v3.1.0). Also requested for PE 2025.12.0
+      # (all architectures): jobs 124151599458 (standard-with-dr) and
+      # 124151687083 (extra-large-with-dr) show the same category of
+      # suspected memory-pressure symptom -- the primary's puppetserver/
+      # orchestrator becomes unresponsive mid-run during provision_replica's
+      # enable-replica step. Empty string for everything else leaves the
       # task's own default untouched (see provision_service.rb).
-      PROVISION_MACHINE_TYPE: ${{ matrix.version == '2026.0.0' && 'n2-standard-4' || '' }}
+      PROVISION_MACHINE_TYPE: ${{ (matrix.version == '2026.0.0' || matrix.version == '2025.12.0') && 'n2-standard-4' || '' }}
     strategy:
       fail-fast: false
       matrix:
