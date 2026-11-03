@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.39.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.39.0) - 2026-11-03
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.38.3...v3.39.0)
+
+### Added
+
+- (PE-46104) Add peadm task to list all compiler ICAs and their state [#709](https://github.com/puppetlabs/puppetlabs-peadm/pull/709) ([coreymbe](https://github.com/coreymbe))
+
+### Fixed
+
+- (PE-47384) Keep console databases on the primary for extra-large installs [#730](https://github.com/puppetlabs/puppetlabs-peadm/pull/730) ([mehul-jain1](https://github.com/mehul-jain1))
+- (PE-47200) Re-assert PE Infrastructure Agent classification at upgrade finalize [#728](https://github.com/puppetlabs/puppetlabs-peadm/pull/728) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
+- (PE-46879) Fix 3 real bugs surfaced by PEADM coverage work [#726](https://github.com/puppetlabs/puppetlabs-peadm/pull/726) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
+- (PE-47009) Fail fast on permanent rbac_token failures in install and restore [#725](https://github.com/puppetlabs/puppetlabs-peadm/pull/725) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
+- (PE-47024) Fix stale 2023.5.0 version fallback in test-backup-restore.yaml [#723](https://github.com/puppetlabs/puppetlabs-peadm/pull/723) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
+- (PE-46917) Widen rbac_token retry margin and sanitize logged error text [#719](https://github.com/puppetlabs/puppetlabs-peadm/pull/719) ([Jade2153](https://github.com/Jade2153))
+- (PE-46870) Fix pe_installer_dir to strip bare .tar, not just .tar.gz [#713](https://github.com/puppetlabs/puppetlabs-peadm/pull/713) ([Jade2153](https://github.com/Jade2153))
+- (PE-46689) Retry rbac_token in subplans::install after the puppetdb bounce [#705](https://github.com/puppetlabs/puppetlabs-peadm/pull/705) ([jonathannewman](https://github.com/jonathannewman))
+- (PE-46685) Fix ca_storage_import probe to resolve through Bolt's modulepath [#704](https://github.com/puppetlabs/puppetlabs-peadm/pull/704) ([jonathannewman](https://github.com/jonathannewman))
+- (PE-46576) Set database_host for primary on split-DB installs [#700](https://github.com/puppetlabs/puppetlabs-peadm/pull/700) ([Jade2153](https://github.com/Jade2153))
+- (PE-43987) Preserve availability group identity in convert after a role swap [#684](https://github.com/puppetlabs/puppetlabs-peadm/pull/684) ([Jade2153](https://github.com/Jade2153))
+- fix url to AL2023 installer [#683](https://github.com/puppetlabs/puppetlabs-peadm/pull/683) ([vchepkov](https://github.com/vchepkov))
+- (PE-44017) Update PE Master rules before compilers' first Puppet run in convert [#682](https://github.com/puppetlabs/puppetlabs-peadm/pull/682) ([Jade2153](https://github.com/Jade2153))
+- (PE-42816) Mitigate provision_replica race on XL+DR installs [#681](https://github.com/puppetlabs/puppetlabs-peadm/pull/681) ([Jade2153](https://github.com/Jade2153))
+- (PE-43373) Give a targeted error for malformed pe_installer_source tarball names [#680](https://github.com/puppetlabs/puppetlabs-peadm/pull/680) ([Jade2153](https://github.com/Jade2153))
+
+### Other
+
+- (PE-46877) Add unit specs for 6 remaining untested PEADM tasks [#729](https://github.com/puppetlabs/puppetlabs-peadm/pull/729) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
+- (PE-44999) Verify replica PostgreSQL host in verify_replica for extra-large-with-dr [#727](https://github.com/puppetlabs/puppetlabs-peadm/pull/727) ([Jade2153](https://github.com/Jade2153))
+- Fix stale forge token in Puppet 9 / Ruby 4.0 experimental spec job [#722](https://github.com/puppetlabs/puppetlabs-peadm/pull/722) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
+- (PE-47082) Exclude '$' from install_test_cluster's random console password [#721](https://github.com/puppetlabs/puppetlabs-peadm/pull/721) ([Jade2153](https://github.com/Jade2153))
+- (PE-46918) Forward compiler_pool_address through install_test_cluster [#720](https://github.com/puppetlabs/puppetlabs-peadm/pull/720) ([Jade2153](https://github.com/Jade2153))
+- (PE-46429) Clean disk cache before PE migration tests to fix classifier-api race [#712](https://github.com/puppetlabs/puppetlabs-peadm/pull/712) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
+- (PE-46427) tasks/sign_csr.rb: SigningError has no Exception superclass, making its retry loop dead code [#711](https://github.com/puppetlabs/puppetlabs-peadm/pull/711) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
+- (PE-44793) Note CA-proxy mode and opt-in ICA promotion in add_compilers output [#707](https://github.com/puppetlabs/puppetlabs-peadm/pull/707) ([Jade2153](https://github.com/Jade2153))
+- (PE-46426) PEADM test coverage: SimpleCov line coverage follow-up [#701](https://github.com/puppetlabs/puppetlabs-peadm/pull/701) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
+- (PE-45737) PEADM test coverage: close remaining gaps toward 90% [#697](https://github.com/puppetlabs/puppetlabs-peadm/pull/697) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
+- (PE-45655) Wire up SimpleCov and add DR/XL spec coverage to configure.pp [#689](https://github.com/puppetlabs/puppetlabs-peadm/pull/689) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
+
 ## [v3.38.3](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.38.3) - 2026-09-15
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.38.2...v3.38.3)
@@ -13,6 +53,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 - Adding support for PE 2023.8.11 and 2025.11.3 [#702](https://github.com/puppetlabs/puppetlabs-peadm/pull/702) ([Jade2153](https://github.com/Jade2153))
 - (PE-45431) Complete CA storage migration for split topologies [#696](https://github.com/puppetlabs/puppetlabs-peadm/pull/696) ([Jade2153](https://github.com/Jade2153))
+- (PE-44793) Note CA-proxy mode and opt-in ICA promotion in add_compilers output [#692](https://github.com/puppetlabs/puppetlabs-peadm/pull/692) ([coreymbe](https://github.com/coreymbe))
 - (PE-43490) Surface provision_replica failures in add_replica plan [#677](https://github.com/puppetlabs/puppetlabs-peadm/pull/677) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
 
 ### Fixed
@@ -21,16 +62,21 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 ### Other
 
-- (PE-45110) Ruby 4.0 compatibility: fix missing default-gem deps, document upstream blockers maintenance [#685](https://github.com/puppetlabs/puppetlabs-peadm/pull/685) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
+- Revert "(PE-44793) Note CA-proxy mode and opt-in ICA promotion in add_compilers output" (#692) [#706](https://github.com/puppetlabs/puppetlabs-peadm/pull/706) ([Jade2153](https://github.com/Jade2153))
 - (PE-45390) Add code coverage reporting to CI [#686](https://github.com/puppetlabs/puppetlabs-peadm/pull/686) ([seamymckenna](https://github.com/seamymckenna))
+- (PE-45110) Ruby 4.0 compatibility: fix missing default-gem deps, document upstream blockers [#685](https://github.com/puppetlabs/puppetlabs-peadm/pull/685) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
 
 ## [v3.38.2](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.38.2) - 2026-09-01
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.38.1...v3.38.2)
 
-### Added
+### Other
 
+- Revert "(PE-45431) Complete CA storage migration for split topologies (#691)" [#695](https://github.com/puppetlabs/puppetlabs-peadm/pull/695) ([Jade2153](https://github.com/Jade2153))
 - Adding support for PE 2025.11.2 [#694](https://github.com/puppetlabs/puppetlabs-peadm/pull/694) ([Jade2153](https://github.com/Jade2153))
+- (PE-45431) Complete CA storage migration for split topologies [#691](https://github.com/puppetlabs/puppetlabs-peadm/pull/691) ([jonathannewman](https://github.com/jonathannewman))
+- Revert "(PE-45431) Complete CA storage migration for split topologies (#688)" [#690](https://github.com/puppetlabs/puppetlabs-peadm/pull/690) ([jonathannewman](https://github.com/jonathannewman))
+- (PE-45431) Complete CA storage migration for split topologies [#688](https://github.com/puppetlabs/puppetlabs-peadm/pull/688) ([jonathannewman](https://github.com/jonathannewman))
 
 ## [v3.38.1](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.38.1) - 2026-07-08
 
