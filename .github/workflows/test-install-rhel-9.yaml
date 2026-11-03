@@ -32,9 +32,9 @@ jobs:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
       LANG: en_US.UTF-8
-      # PE 2026.0.1 jobs hit CI VM OOM (Cannot allocate memory - fork(2))
+      # PE 2026.0.0 jobs hit CI VM OOM (Cannot allocate memory - fork(2))
       # on the default provision_service VM size. Request a bigger VM via
-      # provision#301 (provision >= v3.1.0). Also requested for PE 2025.12.1
+      # provision#301 (provision >= v3.1.0). Also requested for PE 2025.12.0
       # (all architectures): jobs 124151599458 (standard-with-dr) and
       # 124151687083 (extra-large-with-dr) show the same category of
       # suspected memory-pressure symptom -- the primary's puppetserver/

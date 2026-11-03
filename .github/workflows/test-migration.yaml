@@ -33,14 +33,14 @@ jobs:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
       LANG: en_US.UTF-8
-      # PE 2026.0.1 jobs hit CI VM OOM (Cannot allocate memory - fork(2))
+      # PE 2026.0.0 jobs hit CI VM OOM (Cannot allocate memory - fork(2))
       # on the default provision_service VM size. Request a bigger VM via
       # provision#301 (provision >= v3.1.0), scoped to combinations that
-      # install or upgrade to 2026.0.1 -- empty string for everything else
+      # install or upgrade to 2026.0.0 -- empty string for everything else
       # leaves the task's own default untouched (see provision_service.rb).
       PROVISION_MACHINE_TYPE: ${{ (matrix.version == '2026.0.1' || matrix.new_pe_version == '2026.0.1') && 'n2-standard-4' || '' }}
-      # standard/large/extra-large -> 2026.0.1 migrations run out of boot
-      # disk space extracting the PE 2026.0.1 tarball (tar: ... No space
+      # standard/large/extra-large -> 2026.0.0 migrations run out of boot
+      # disk space extracting the PE 2026.0.0 tarball (tar: ... No space
       # left on device -- PE-47829). Request a bigger boot disk via
       # provision_service's disk_size_gb support (provision#303, provision
       # >= v3.2.0), scoped the same way as PROVISION_MACHINE_TYPE above --
