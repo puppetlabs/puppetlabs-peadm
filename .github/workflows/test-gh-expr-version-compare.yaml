@@ -1,6 +1,8 @@
 ---
 name: Scratch - GH expression version string comparison check
 on:
+  pull_request:
+    branches: [main]
   workflow_dispatch: {}
 jobs:
   compare:
