@@ -33,11 +33,29 @@ jobs:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
       LANG: en_US.UTF-8
+      # PE 2026.0.0 jobs hit CI VM OOM (Cannot allocate memory - fork(2))
+      # on the default provision_service VM size. Request a bigger VM via
+      # provision#301 (provision >= v3.1.0), scoped to only the 2026.0.0
+      # matrix combinations -- empty string for everything else leaves the
+      # task's own default untouched (see provision_service.rb).
+      #
+      # Also scoped to 3 specific FIPS/DR combinations that were failing
+      # with connection-level errors (SSH IOError / orchestrator SSL drop,
+      # or "certificate revoked" mid-purge) during long pg_basebackup-heavy
+      # replica provisioning. Tested on a separate scratch branch
+      # (test/fips-dr-bigger-vm-experiment) -- all 3 passed on n2-standard-4:
+      #   - PE 2023.8.12 extra-large-with-dr (run 40311093235/job 121532181078)
+      #   - PE 2025.12.0 standard-with-dr (run 40311093235/job 121532181414)
+      #   - PE 2025.12.0 extra-large-with-dr (run 40322952862/job 121572291837)
+      # Evidence this fixes the root cause (vs. masking it) is supportive
+      # but not conclusive -- one passing run per combo, not a repeated
+      # confirmation. Tracked in PE-47827.
+      PROVISION_MACHINE_TYPE: ${{ (matrix.version == '2026.0.0' || (matrix.version == '2023.8.12' && matrix.architecture == 'extra-large-with-dr') || (matrix.version == '2025.12.0' && matrix.architecture == 'standard-with-dr') || (matrix.version == '2025.12.0' && matrix.architecture == 'extra-large-with-dr')) && 'n2-standard-4' || '' }}
     strategy:
       fail-fast: false
       matrix:
         architecture: [standard-with-dr, large, extra-large-with-dr]
-        version: [2021.7.9, 2023.8.11, 2025.11.3]
+        version: [2023.8.12, 2025.12.0, 2026.0.0]
         image: [rhel-8]
         fips: [enable]
     steps:

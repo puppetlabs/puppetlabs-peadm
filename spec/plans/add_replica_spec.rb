@@ -136,17 +136,24 @@ describe 'peadm::add_replica' do
       expect_task('package').always_return({ 'status' => 'uninstalled' })
       expect_plan('peadm::util::copy_file').be_called_times(5)
 
-      attempts = 0
-      expect_task('peadm::provision_replica').be_called_times(2).return do |targets:, **_kwargs|
-        attempts += 1
+      # provision/enable are now separate calls to the same task (action:
+      # 'provision' then 'enable'); only the provision call is retried here.
+      provision_attempts = 0
+      expect_task('peadm::provision_replica').be_called_times(3).return do |targets:, params:, **_kwargs|
+        action = params['action']
         results = targets.map do |target|
-          if attempts == 1
-            Bolt::Result.new(target,
-                              error: { 'msg' => 'The task failed with exit code 1', 'kind' => 'bolt/error' },
-                              message: '[Error]: An error has occurred while running orchestrated job. ' \
-                                       'The orchestration service returned an error response. (status 500: ' \
-                                       '{"msg":"org.apache.http.ConnectionClosedException: Connection closed ' \
-                                       'unexpectedly","kind":"puppetlabs.orchestrator/unknown-error"})')
+          if action == 'provision'
+            provision_attempts += 1
+            if provision_attempts == 1
+              Bolt::Result.new(target,
+                                error: { 'msg' => 'The task failed with exit code 1', 'kind' => 'bolt/error' },
+                                message: '[Error]: An error has occurred while running orchestrated job. ' \
+                                         'The orchestration service returned an error response. (status 500: ' \
+                                         '{"msg":"org.apache.http.ConnectionClosedException: Connection closed ' \
+                                         'unexpectedly","kind":"puppetlabs.orchestrator/unknown-error"})')
+            else
+              Bolt::Result.new(target, value: {})
+            end
           else
             Bolt::Result.new(target, value: {})
           end
@@ -157,7 +164,7 @@ describe 'peadm::add_replica' do
       expect_out_verbose.with_params('Current config is...')
       expect_out_verbose.with_params('Updating classification to...')
       expect(run_plan('peadm::add_replica', params)).to be_ok
-      expect(attempts).to eq(2)
+      expect(provision_attempts).to eq(2)
     end
 
     it 'gives up after exhausting retries when the transient orchestrator error persists' do
