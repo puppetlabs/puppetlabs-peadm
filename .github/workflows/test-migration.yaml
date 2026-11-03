@@ -33,20 +33,20 @@ jobs:
       BOLT_GEM: true
       BOLT_DISABLE_ANALYTICS: true
       LANG: en_US.UTF-8
-      # PE 2026.0.0 jobs hit CI VM OOM (Cannot allocate memory - fork(2))
+      # PE 2026.0.1 jobs hit CI VM OOM (Cannot allocate memory - fork(2))
       # on the default provision_service VM size. Request a bigger VM via
       # provision#301 (provision >= v3.1.0), scoped to combinations that
-      # install or upgrade to 2026.0.0 -- empty string for everything else
+      # install or upgrade to 2026.0.1 -- empty string for everything else
       # leaves the task's own default untouched (see provision_service.rb).
-      PROVISION_MACHINE_TYPE: ${{ (matrix.version == '2026.0.0' || matrix.new_pe_version == '2026.0.0') && 'n2-standard-4' || '' }}
-      # standard/large/extra-large -> 2026.0.0 migrations run out of boot
-      # disk space extracting the PE 2026.0.0 tarball (tar: ... No space
+      PROVISION_MACHINE_TYPE: ${{ (matrix.version == '2026.0.1' || matrix.new_pe_version == '2026.0.1') && 'n2-standard-4' || '' }}
+      # standard/large/extra-large -> 2026.0.1 migrations run out of boot
+      # disk space extracting the PE 2026.0.1 tarball (tar: ... No space
       # left on device -- PE-47829). Request a bigger boot disk via
       # provision_service's disk_size_gb support (provision#303, provision
       # >= v3.2.0), scoped the same way as PROVISION_MACHINE_TYPE above --
       # empty string for everything else leaves the task's own default
       # (10G) untouched. 100G confirmed sufficient in validation (puppetlabs-peadm#740).
-      PROVISION_DISK_SIZE_GB: ${{ (matrix.version == '2026.0.0' || matrix.new_pe_version == '2026.0.0') && '100' || '' }}
+      PROVISION_DISK_SIZE_GB: ${{ (matrix.version == '2026.0.1' || matrix.new_pe_version == '2026.0.1') && '100' || '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -57,33 +57,33 @@ jobs:
           - extra-large
           - large-with-dr
           - extra-large-with-dr
-        version: [2023.8.12, 2025.12.0, 2026.0.0]
+        version: [2023.8.13, 2025.12.1, 2026.0.1]
         image: [almalinux-cloud/almalinux-8]
         include:
           - architecture: standard
-            version: 2025.12.0
+            version: 2025.12.1
             image: almalinux-cloud/almalinux-8
-            new_pe_version: 2026.0.0
+            new_pe_version: 2026.0.1
           - architecture: large
-            version: 2025.12.0
+            version: 2025.12.1
             image: almalinux-cloud/almalinux-8
-            new_pe_version: 2026.0.0
+            new_pe_version: 2026.0.1
           - architecture: extra-large
-            version: 2025.12.0
+            version: 2025.12.1
             image: almalinux-cloud/almalinux-8
-            new_pe_version: 2026.0.0
+            new_pe_version: 2026.0.1
           # excluding the following combinations as due to their long running nature they always fail due to
           # the test nodes in GCP that litmus provisions becoming unreachable after a time. If we address PE-40902
           # to change how we provision test nodes in CI then we will hopefully be able to include these
         exclude:
           - architecture: extra-large-with-dr
-            version: 2023.8.12
+            version: 2023.8.13
             image: almalinux-cloud/almalinux-8
           - architecture: extra-large-with-dr
-            version: 2025.12.0
+            version: 2025.12.1
             image: almalinux-cloud/almalinux-8
           - architecture: extra-large-with-dr
-            version: 2026.0.0
+            version: 2026.0.1
             image: almalinux-cloud/almalinux-8
     steps:
       - name: Checkout Source
