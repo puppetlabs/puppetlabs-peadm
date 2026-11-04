@@ -12,6 +12,18 @@
 #   Optional new primary PostgreSQL server to be added to the cluster
 # @param replica_postgresql_host
 #   Optional new replica PostgreSQL server to be added to the cluster
+# @param download_mode
+#   How the PE installer reaches the new hosts, for both the install and the
+#   optional upgrade. 'bolthost' (default) downloads it to the Bolt host and
+#   uploads it to the new hosts, so they need no internet access; 'direct'
+#   has each new host download it itself.
+# @param pe_installer_source
+#   Optional URL of the PE installer for the old cluster's PE version, which
+#   is the version the new primary is first installed at. Defaults to the
+#   standard public source.
+# @param upgrade_pe_installer_source
+#   Optional URL of the PE installer for upgrade_version. Only used when
+#   upgrade_version is set. Defaults to the standard public source.
 plan peadm::migrate (
   Peadm::SingleTargetSpec $old_primary_host,
   Peadm::SingleTargetSpec $new_primary_host,
@@ -19,6 +31,9 @@ plan peadm::migrate (
   Optional[Peadm::SingleTargetSpec] $replica_host = undef,
   Optional[Peadm::SingleTargetSpec] $primary_postgresql_host = undef,
   Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
+  Peadm::Download_mode $download_mode = 'bolthost',
+  Optional[Stdlib::HTTPSUrl] $pe_installer_source = undef,
+  Optional[Stdlib::HTTPSUrl] $upgrade_pe_installer_source = undef,
 ) {
   # Log parameters for debugging 
   peadm::log_plan_parameters({
@@ -28,6 +43,14 @@ plan peadm::migrate (
     'primary_postgresql_host' => $primary_postgresql_host,
     'replica_postgresql_host' => $replica_postgresql_host,
     'upgrade_version' => $upgrade_version,
+    'download_mode' => $download_mode,
+    # Log only the tarball name, as peadm::upgrade does: the URL may carry
+    # credentials or a signed token. This keeps it out of the console output;
+    # Bolt's debug log still records the parameters of the tasks it runs.
+    'pe_installer_source' => $pe_installer_source.then |$url| { $url.regsubst(/[?#].*\z/, '').split('/')[-1] },
+    'upgrade_pe_installer_source' => $upgrade_pe_installer_source.then |$url| {
+      $url.regsubst(/[?#].*\z/, '').split('/')[-1]
+    },
   })
 
   # pre-migration checks
@@ -68,6 +91,50 @@ plan peadm::migrate (
   out::message("Old primary platform: ${old_primary_platform}")
   out::message("New primary platform: ${new_primary_platform}")
 
+  # Check the installers before the backup, rather than an hour into the
+  # migration. Only the first is needed unless upgrade_version is set.
+  if $upgrade_pe_installer_source and empty($upgrade_version) {
+    out::message('Ignoring upgrade_pe_installer_source: upgrade_version is not set, so there is no upgrade')
+  }
+  $installers = {
+    'pe_installer_source'         => [$pe_installer_source, getvar('cluster.pe_version'), [$new_primary_host]],
+    'upgrade_pe_installer_source' => [$upgrade_pe_installer_source, $upgrade_version, $new_hosts],
+  }.filter |$param, $installer| { !empty($installer[1]) }
+
+  $installers.each |$param, $installer| {
+    [$source, $version, $download_targets] = $installer
+    $tarball_name = "puppet-enterprise-${version}-${new_primary_platform}.tar.gz"
+
+    # peadm::install and peadm::upgrade use the URL's file name as the
+    # installer's name, and peadm::upgrade takes the version to upgrade to
+    # from it, so a mismatch would install the wrong PE or fail mid-way.
+    if $source {
+      if $source =~ /[?#]/ {
+        # lint:ignore:strict_indent
+        fail_plan(@("MSG"/L))
+          ${param} can't have a query string or fragment (the part after '?' or \
+          '#'): PEADM uses the end of the URL as the installer's file name.
+          |-MSG
+        # lint:endignore
+      }
+      $source_name = $source.split('/')[-1]
+      unless $source_name == $tarball_name {
+        # lint:ignore:strict_indent
+        fail_plan(@("MSG"/L))
+          ${param} must point to ${tarball_name} (PE ${version} for the new \
+          primary's platform), but its file name is ${source_name}.
+          |-MSG
+        # lint:endignore
+      }
+    }
+
+    run_plan('peadm::util::check_installer_source', $download_targets,
+      source        => $source.lest || { "https://s3.amazonaws.com/pe-builds/released/${version}/${tarball_name}" },
+      tarball_name  => $tarball_name,
+      download_mode => $download_mode,
+    )
+  }
+
   $backup_file = run_plan('peadm::backup', $old_primary_host, {
       backup_type => 'migration',
   })
@@ -88,7 +155,8 @@ plan peadm::migrate (
       primary_host                => $new_primary_host,
       console_password            => $old_primary_password,
       code_manager_auto_configure => true,
-      download_mode               => 'direct',
+      download_mode               => $download_mode,
+      pe_installer_source         => $pe_installer_source,
       version                     => $old_pe_conf['pe_version'],
   })
 
@@ -165,7 +233,8 @@ plan peadm::migrate (
     run_plan('peadm::upgrade', {
         primary_host                => $new_primary_host,
         version                     => $upgrade_version,
-        download_mode               => 'direct',
+        download_mode               => $download_mode,
+        pe_installer_source         => $upgrade_pe_installer_source,
         replica_host                => $replica_host,
         primary_postgresql_host     => $primary_postgresql_host,
         replica_postgresql_host     => $replica_postgresql_host,
