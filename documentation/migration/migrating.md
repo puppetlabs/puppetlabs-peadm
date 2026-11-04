@@ -56,11 +56,27 @@ Both installer URLs must end in the standard file name, `puppet-enterprise-<vers
 
 ### Migrating when the new hosts can't reach the internet
 
-Pass `download_mode=bolthost` to have the machine running Bolt download each PE installer and upload it to the new hosts, so only that machine needs internet access. If it can't reach the internet either, download the installer tarballs in advance and place them in `/tmp` on the Bolt machine (the staging directory used by `peadm::install` and `peadm::upgrade`). PEADM uploads a tarball that's already there instead of downloading it. The file name must match exactly: `puppet-enterprise-<version>-<platform>.tar.gz`, where `<version>` is the old primary's PE version (for the install) or `upgrade_version` (for the upgrade), and `<platform>` is the new primary's platform, for example `el-8-x86_64`. PEADM only checks that the file exists and doesn't verify it, so download the matching `.asc` signature too and verify each tarball before the migration:
+By default (`download_mode=direct`), each new host downloads the PE installer itself, so it needs internet access. If the new hosts can't reach the internet, use one of these options.
+
+**Option 1: let the Bolt machine download the installer.** Pass `download_mode=bolthost`. The machine running Bolt downloads each installer and uploads it to the new hosts (for example over SSH), so only that machine needs internet access and about 1 GB of free space in `/tmp` per installer:
 ```
-gpg --verify puppet-enterprise-<version>-<platform>.tar.gz.asc puppet-enterprise-<version>-<platform>.tar.gz
+bolt plan run peadm::migrate
+old_primary_host=\<old_primary_host\>
+new_primary_host=\<new_primary_host\>
+download_mode=bolthost
 ```
-The Bolt machine needs about 1 GB of free space in `/tmp` per installer. Alternatively, point `pe_installer_source` and `upgrade_pe_installer_source` at an internal mirror:
+
+**Option 2: no internet access at all.** Pre-stage the installers on the Bolt machine:
+1. Find the old primary's PE version (`cat /opt/puppetlabs/server/pe_version` on the old primary) and the new primary's platform, for example `el-8-x86_64`.
+2. On a machine with internet access, download `puppet-enterprise-<version>-<platform>.tar.gz` and its `.asc` signature from `https://s3.amazonaws.com/pe-builds/released/<version>/`. If you set `upgrade_version`, also download the installer for that version.
+3. Verify each tarball. PEADM only checks that a staged file exists, not that it's complete or genuine:
+   ```
+   gpg --verify puppet-enterprise-<version>-<platform>.tar.gz.asc puppet-enterprise-<version>-<platform>.tar.gz
+   ```
+4. Copy the tarballs to `/tmp` on the Bolt machine (the staging directory used by `peadm::install` and `peadm::upgrade`). Keep the file names exactly as downloaded.
+5. Run `migrate` with `download_mode=bolthost`, as in option 1. PEADM uploads the staged tarballs instead of downloading them.
+
+**Option 3: use an internal mirror.** If the new hosts can reach an internal web server, host the installers there and point `pe_installer_source` and `upgrade_pe_installer_source` at them. This works with either `download_mode`:
 ```
 bolt plan run peadm::migrate
 old_primary_host=\<old_primary_host\>
