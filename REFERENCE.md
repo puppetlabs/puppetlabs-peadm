@@ -144,6 +144,9 @@ Supported use cases:
 * `peadm::subplans::modify_certificate`
 * `peadm::subplans::prepare_agent`
 * `peadm::uninstall`: Single-entry-point plan for uninstalling Puppet Enterprise
+* `peadm::util::check_installer_source`: Check that a PE installer can be fetched the same way a later
+install or upgrade will fetch it, so a bad URL or missing network access
+fails the plan before anything has been changed.
 * `peadm::util::code_sync_status`
 * `peadm::util::copy_file`
 * `peadm::util::db_disable_pglogical`
@@ -2627,6 +2630,9 @@ The following parameters are available in the `peadm::migrate` plan:
 * [`replica_postgresql_host`](#-peadm--migrate--replica_postgresql_host)
 * [`license_key_file`](#-peadm--migrate--license_key_file)
 * [`license_key_content`](#-peadm--migrate--license_key_content)
+* [`download_mode`](#-peadm--migrate--download_mode)
+* [`pe_installer_source`](#-peadm--migrate--pe_installer_source)
+* [`upgrade_pe_installer_source`](#-peadm--migrate--upgrade_pe_installer_source)
 
 ##### <a name="-peadm--migrate--old_primary_host"></a>`old_primary_host`
 
@@ -2700,6 +2706,36 @@ Data type: `Optional[String]`
 
 Same as license_key_file, but takes the license text instead of a file
 path. Cannot be combined with license_key_file, and must not be blank.
+
+Default value: `undef`
+
+##### <a name="-peadm--migrate--download_mode"></a>`download_mode`
+
+Data type: `Peadm::Download_mode`
+
+How the PE installer reaches the new hosts, for both the install and the
+optional upgrade. 'bolthost' (default) downloads it to the Bolt host and
+uploads it to the new hosts, so they need no internet access; 'direct'
+has each new host download it itself.
+
+Default value: `'bolthost'`
+
+##### <a name="-peadm--migrate--pe_installer_source"></a>`pe_installer_source`
+
+Data type: `Optional[Stdlib::HTTPSUrl]`
+
+Optional URL of the PE installer for the old cluster's PE version, which
+is the version the new primary is first installed at. Defaults to the
+standard public source.
+
+Default value: `undef`
+
+##### <a name="-peadm--migrate--upgrade_pe_installer_source"></a>`upgrade_pe_installer_source`
+
+Data type: `Optional[Stdlib::HTTPSUrl]`
+
+Optional URL of the PE installer for upgrade_version. Only used when
+upgrade_version is set. Defaults to the standard public source.
 
 Default value: `undef`
 

@@ -21,6 +21,9 @@ The plan accepts the following parameters:
 * _\<upgrade_version\>_ - [Optional] The PE version to upgrade to 
 * _\<license_key_file\>_ - [Optional] Path to a local PE license file (on the Bolt controller) to install on the new primary. Cannot be combined with `license_key_content` 
 * _\<license_key_content\>_ - [Optional] PE license content to install on the new primary. Cannot be combined with `license_key_file` 
+* _\<download_mode\>_ - [Optional] How the PE installer reaches the new hosts: `bolthost` (default) or `direct` 
+* _\<pe_installer_source\>_ - [Optional] URL of the PE installer for the old primary's PE version 
+* _\<upgrade_pe_installer_source\>_ - [Optional] URL of the PE installer for `upgrade_version` 
 
 To perform a basic migration from one PE primary server to another run the following command: 
 ``` 
@@ -49,6 +52,11 @@ Please note, the optional parameters and values of the plan are as follows.
 | `upgrade_version` | `undef` | By default, the new PE installation will be set up with the PE version used on the old primary server. The user can pass in a newer version to upgrade using this parameter, e.g. 2025.1.0 |  
 | `license_key_file` | `undef` | By default, the PE license is copied from the old primary server (`/etc/puppetlabs/license.key`, or `/etc/puppetlabs/suite-license.lic` if `license.key` is missing, unreadable, blank, or the task that reads it fails). Supply a local license file to use a different license. See [Licenses](#licenses) for what happens when no license is found. |
 | `license_key_content` | `undef` | Same as `license_key_file`, but takes the license text instead of a file path. |
+| `download_mode` | `bolthost` | How the PE installer reaches the new hosts, for both the install and the optional upgrade. `bolthost` downloads the installer to the machine running Bolt and uploads it to the new hosts (for example over SSH), so the new hosts don't need internet access. It can't be used with the `pcp` transport. `direct` has each new host download the installer itself. |
+| `pe_installer_source` | `undef` | URL to download the PE installer from for the old primary's PE version (the version the new primary is first installed at), e.g. an internal mirror. By default the standard public source is used. |
+| `upgrade_pe_installer_source` | `undef` | URL to download the PE installer from for `upgrade_version`. Only used when `upgrade_version` is set. By default the standard public source is used. |
+
+Both installer URLs must end in the standard file name, `puppet-enterprise-<version>-<platform>.tar.gz`, with no query string: `<version>` is the old primary's PE version for `pe_installer_source` and `upgrade_version` for `upgrade_pe_installer_source`, and `<platform>` is the new primary's platform. Before taking the backup, `migrate` checks the file names and checks that each installer can be downloaded from where it will be downloaded (the Bolt machine, or the new hosts with `download_mode=direct`), so a wrong URL or missing network access fails the plan before anything has changed. The download check is skipped when the Bolt machine runs Windows.
 
 ### Licenses
 
@@ -57,6 +65,26 @@ When a license is found or supplied, it is installed on the new primary as `/etc
 If no license is found on the old primary, or it cannot be read, the migration continues and the new primary is installed without a license key. The plan prints a message beginning `Warning:` in that case (and another when the migration finishes). It cannot tell a missing file from an unreadable or blank one. If the task that reads the file itself fails, the file path and the task's error message are printed as well, even when the other file then supplies a license.
 
 The license is handled as plain text, as it is by `peadm::install`. Bolt can print it to the terminal when run with `-v` or `--log-level debug` (for example when the plan reads it from the old primary), and it can appear in `bolt-debug.log`, which Bolt writes by default. Protect that log and any captured output when migrating a licensed installation. Supplying `license_key_file` rather than `license_key_content` keeps the license text out of your shell history and the process list.
+
+### Migrating when the new hosts can't reach the internet
+
+By default (`download_mode=bolthost`), the machine running Bolt downloads each PE installer and uploads it to the new hosts, so only that machine needs internet access. If it can't reach the internet either, download the installer tarballs in advance and place them in `/tmp` on the Bolt machine (the staging directory used by `peadm::install` and `peadm::upgrade`). PEADM uploads a tarball that's already there instead of downloading it. The file name must match exactly: `puppet-enterprise-<version>-<platform>.tar.gz`, where `<version>` is the old primary's PE version (for the install) or `upgrade_version` (for the upgrade), and `<platform>` is the new primary's platform, for example `el-8-x86_64`. PEADM only checks that the file exists and doesn't verify it, so download the matching `.asc` signature too and verify each tarball before the migration:
+```
+gpg --verify puppet-enterprise-<version>-<platform>.tar.gz.asc puppet-enterprise-<version>-<platform>.tar.gz
+```
+The Bolt machine needs about 1 GB of free space in `/tmp` per installer. Alternatively, point `pe_installer_source` and `upgrade_pe_installer_source` at an internal mirror:
+```
+bolt plan run peadm::migrate
+old_primary_host=\<old_primary_host\>
+new_primary_host=\<new_primary_host\>
+upgrade_version=2025.2.0
+pe_installer_source=https://mirror.example.com/pe/puppet-enterprise-2023.8.11-el-8-x86_64.tar.gz
+upgrade_pe_installer_source=https://mirror.example.com/pe/puppet-enterprise-2025.2.0-el-8-x86_64.tar.gz
+```
+
+**Note:** earlier PEADM versions always used `download_mode=direct` for `peadm::migrate`. To keep that behaviour, pass `download_mode=direct`.
+
+**Note:** on a Windows Bolt machine, PEADM downloads the installer without checking the server's TLS certificate or the installer's signature. If you run Bolt on Windows, pre-stage installers you have verified, or use a Linux or macOS Bolt machine.
 
 ## What exactly is migrated? 
  
