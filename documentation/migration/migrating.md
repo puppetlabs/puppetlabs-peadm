@@ -21,7 +21,7 @@ The plan accepts the following parameters:
 * _\<upgrade_version\>_ - [Optional] The PE version to upgrade to 
 * _\<license_key_file\>_ - [Optional] Path to a local PE license file (on the Bolt controller) to install on the new primary. Cannot be combined with `license_key_content` 
 * _\<license_key_content\>_ - [Optional] PE license content to install on the new primary. Cannot be combined with `license_key_file` 
-* _\<download_mode\>_ - [Optional] How the PE installer reaches the new hosts: `bolthost` (default) or `direct` 
+* _\<download_mode\>_ - [Optional] How the PE installer reaches the new hosts: `direct` (default) or `bolthost` 
 * _\<pe_installer_source\>_ - [Optional] URL of the PE installer for the old primary's PE version 
 * _\<upgrade_pe_installer_source\>_ - [Optional] URL of the PE installer for `upgrade_version` 
 
@@ -52,11 +52,11 @@ Please note, the optional parameters and values of the plan are as follows.
 | `upgrade_version` | `undef` | By default, the new PE installation will be set up with the PE version used on the old primary server. The user can pass in a newer version to upgrade using this parameter, e.g. 2025.1.0 |  
 | `license_key_file` | `undef` | By default, the PE license is copied from the old primary server (`/etc/puppetlabs/license.key`, or `/etc/puppetlabs/suite-license.lic` if `license.key` is missing, unreadable, blank, or the task that reads it fails). Supply a local license file to use a different license. See [Licenses](#licenses) for what happens when no license is found. |
 | `license_key_content` | `undef` | Same as `license_key_file`, but takes the license text instead of a file path. |
-| `download_mode` | `bolthost` | How the PE installer reaches the new hosts, for both the install and the optional upgrade. `bolthost` downloads the installer to the machine running Bolt and uploads it to the new hosts (for example over SSH), so the new hosts don't need internet access. It can't be used with the `pcp` transport. `direct` has each new host download the installer itself. |
+| `download_mode` | `direct` | How the PE installer reaches the new hosts, for both the install and the optional upgrade. `direct` has each new host download the installer itself. `bolthost` downloads the installer to the machine running Bolt and uploads it to the new hosts (for example over SSH), so the new hosts don't need internet access. `bolthost` can't be used with the `pcp` transport. |
 | `pe_installer_source` | `undef` | URL to download the PE installer from for the old primary's PE version (the version the new primary is first installed at), e.g. an internal mirror. By default the standard public source is used. |
 | `upgrade_pe_installer_source` | `undef` | URL to download the PE installer from for `upgrade_version`. Only used when `upgrade_version` is set. By default the standard public source is used. |
 
-Both installer URLs must end in the standard file name, `puppet-enterprise-<version>-<platform>.tar.gz`, with no query string: `<version>` is the old primary's PE version for `pe_installer_source` and `upgrade_version` for `upgrade_pe_installer_source`, and `<platform>` is the new primary's platform. Before taking the backup, `migrate` checks the file names and checks that each installer can be downloaded from where it will be downloaded (the Bolt machine, or the new hosts with `download_mode=direct`), so a wrong URL or missing network access fails the plan before anything has changed. The download check is skipped when the Bolt machine runs Windows.
+Both installer URLs must end in the standard file name, `puppet-enterprise-<version>-<platform>.tar.gz`, with no query string: `<version>` is the old primary's PE version for `pe_installer_source` and `upgrade_version` for `upgrade_pe_installer_source`, and `<platform>` is the new primary's platform. Before taking the backup, `migrate` checks the file names and checks that each installer can be downloaded from where it will be downloaded (the new hosts, or the Bolt machine with `download_mode=bolthost`), so a wrong URL or missing network access fails the plan before anything has changed. The download check is skipped when the Bolt machine runs Windows.
 
 ### Licenses
 
@@ -68,7 +68,7 @@ The license is handled as plain text, as it is by `peadm::install`. Bolt can pri
 
 ### Migrating when the new hosts can't reach the internet
 
-By default (`download_mode=bolthost`), the machine running Bolt downloads each PE installer and uploads it to the new hosts, so only that machine needs internet access. If it can't reach the internet either, download the installer tarballs in advance and place them in `/tmp` on the Bolt machine (the staging directory used by `peadm::install` and `peadm::upgrade`). PEADM uploads a tarball that's already there instead of downloading it. The file name must match exactly: `puppet-enterprise-<version>-<platform>.tar.gz`, where `<version>` is the old primary's PE version (for the install) or `upgrade_version` (for the upgrade), and `<platform>` is the new primary's platform, for example `el-8-x86_64`. PEADM only checks that the file exists and doesn't verify it, so download the matching `.asc` signature too and verify each tarball before the migration:
+Pass `download_mode=bolthost` to have the machine running Bolt download each PE installer and upload it to the new hosts, so only that machine needs internet access. If it can't reach the internet either, download the installer tarballs in advance and place them in `/tmp` on the Bolt machine (the staging directory used by `peadm::install` and `peadm::upgrade`). PEADM uploads a tarball that's already there instead of downloading it. The file name must match exactly: `puppet-enterprise-<version>-<platform>.tar.gz`, where `<version>` is the old primary's PE version (for the install) or `upgrade_version` (for the upgrade), and `<platform>` is the new primary's platform, for example `el-8-x86_64`. PEADM only checks that the file exists and doesn't verify it, so download the matching `.asc` signature too and verify each tarball before the migration:
 ```
 gpg --verify puppet-enterprise-<version>-<platform>.tar.gz.asc puppet-enterprise-<version>-<platform>.tar.gz
 ```
@@ -81,8 +81,6 @@ upgrade_version=2025.2.0
 pe_installer_source=https://mirror.example.com/pe/puppet-enterprise-2023.8.11-el-8-x86_64.tar.gz
 upgrade_pe_installer_source=https://mirror.example.com/pe/puppet-enterprise-2025.2.0-el-8-x86_64.tar.gz
 ```
-
-**Note:** earlier PEADM versions always used `download_mode=direct` for `peadm::migrate`. To keep that behaviour, pass `download_mode=direct`.
 
 **Note:** on a Windows Bolt machine, PEADM downloads the installer without checking the server's TLS certificate or the installer's signature. If you run Bolt on Windows, pre-stage installers you have verified, or use a Linux or macOS Bolt machine.
 

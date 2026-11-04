@@ -86,5 +86,18 @@ describe 'peadm::util::check_installer_source' do
 
       expect(run_plan('peadm::util::check_installer_source', params('direct'))).to be_ok
     end
+
+    # Bolt can't pass environment variables to commands over pcp.
+    it 'skips targets that use the pcp transport' do
+      expect_command(curl).with_targets(['new1'])
+
+      expect(run_plan('peadm::util::check_installer_source', params('direct').merge('targets' => ['new1', 'pcp://new2']))).to be_ok
+    end
+
+    it 'checks nothing when every target uses the pcp transport' do
+      expect_command(curl).not_be_called
+
+      expect(run_plan('peadm::util::check_installer_source', params('direct').merge('targets' => ['pcp://new2']))).to be_ok
+    end
   end
 end
