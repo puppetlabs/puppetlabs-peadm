@@ -7,6 +7,8 @@
 # @param targets
 #   The hosts that download the installer themselves when download_mode is
 #   'direct'. Unused for 'bolthost', where only the Bolt host downloads it.
+#   Hosts using the pcp transport are skipped: Bolt can't pass environment
+#   variables to commands over pcp.
 # @param source
 #   URL of the installer.
 # @param tarball_name
@@ -45,7 +47,10 @@ plan peadm::util::check_installer_source(
     $check_targets = get_targets('local://localhost')
     $where = 'the Bolt host'
   } else {
-    $check_targets = get_targets($targets)
+    $check_targets = get_targets($targets).filter |$t| { $t.transport != 'pcp' }
+    if $check_targets.empty {
+      return()
+    }
     $where = $check_targets.map |$t| { $t.name }.join(', ')
   }
 

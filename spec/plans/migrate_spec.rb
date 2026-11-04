@@ -223,26 +223,28 @@ describe 'peadm::migrate' do
       end
     end
 
-    it 'defaults to bolthost with no custom source for both install and upgrade' do
-      stub_full_flow!
-      expect_download_options('peadm::install', mode: 'bolthost', source: nil)
-      expect_download_options('peadm::upgrade', mode: 'bolthost', source: nil)
-
-      expect(run_plan('peadm::migrate', upgrade_params)).to be_ok
-    end
-
-    it 'passes download_mode=direct through to both install and upgrade' do
+    # direct was hardcoded before download_mode existed; keeping it as the
+    # default means existing migrate runs behave exactly as before.
+    it 'defaults to direct with no custom source for both install and upgrade' do
       stub_full_flow!
       expect_download_options('peadm::install', mode: 'direct', source: nil)
       expect_download_options('peadm::upgrade', mode: 'direct', source: nil)
 
-      expect(run_plan('peadm::migrate', upgrade_params.merge('download_mode' => 'direct'))).to be_ok
+      expect(run_plan('peadm::migrate', upgrade_params)).to be_ok
+    end
+
+    it 'passes download_mode=bolthost through to both install and upgrade' do
+      stub_full_flow!
+      expect_download_options('peadm::install', mode: 'bolthost', source: nil)
+      expect_download_options('peadm::upgrade', mode: 'bolthost', source: nil)
+
+      expect(run_plan('peadm::migrate', upgrade_params.merge('download_mode' => 'bolthost'))).to be_ok
     end
 
     it 'sends pe_installer_source to install and upgrade_pe_installer_source to upgrade' do
       stub_full_flow!
-      expect_download_options('peadm::install', mode: 'bolthost', source: install_source)
-      expect_download_options('peadm::upgrade', mode: 'bolthost', source: upgrade_source)
+      expect_download_options('peadm::install', mode: 'direct', source: install_source)
+      expect_download_options('peadm::upgrade', mode: 'direct', source: upgrade_source)
 
       params = upgrade_params.merge('pe_installer_source' => install_source, 'upgrade_pe_installer_source' => upgrade_source)
       expect(run_plan('peadm::migrate', params)).to be_ok
@@ -261,7 +263,7 @@ describe 'peadm::migrate' do
       stub_full_flow!
       expect_out_message.with_params("Parameter 'pe_installer_source': [puppet-enterprise-2019.8.12-el-9-x86_64.tar.gz]")
       expect_out_message.with_params("Parameter 'upgrade_pe_installer_source': [puppet-enterprise-2023.8.10-el-9-x86_64.tar.gz]")
-      expect_out_message.with_params("Parameter 'download_mode': [bolthost]")
+      expect_out_message.with_params("Parameter 'download_mode': [direct]")
 
       params = upgrade_params.merge('pe_installer_source' => install_source, 'upgrade_pe_installer_source' => upgrade_source)
       expect(run_plan('peadm::migrate', params)).to be_ok
@@ -299,7 +301,7 @@ describe 'peadm::migrate' do
       expect_plan('peadm::backup').not_be_called
     end
 
-    def expect_check(name, source, targets, mode: 'bolthost')
+    def expect_check(name, source, targets, mode: 'direct')
       expect_plan('peadm::util::check_installer_source').with_params(
         'targets' => targets, 'source' => source, 'tarball_name' => name, 'download_mode' => mode,
       )
@@ -313,11 +315,11 @@ describe 'peadm::migrate' do
       expect(run_plan('peadm::migrate', upgrade_params)).to be_ok
     end
 
-    it 'checks a custom installer source from the new hosts in direct mode' do
+    it 'checks a custom installer source in bolthost mode' do
       stub_full_flow!
-      expect_check(install_name, "#{mirror}/#{install_name}", [new_primary_host], mode: 'direct')
+      expect_check(install_name, "#{mirror}/#{install_name}", [new_primary_host], mode: 'bolthost')
 
-      params = base_params.merge('pe_installer_source' => "#{mirror}/#{install_name}", 'download_mode' => 'direct')
+      params = base_params.merge('pe_installer_source' => "#{mirror}/#{install_name}", 'download_mode' => 'bolthost')
       expect(run_plan('peadm::migrate', params)).to be_ok
     end
 

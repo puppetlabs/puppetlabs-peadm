@@ -2681,11 +2681,11 @@ Default value: `undef`
 Data type: `Peadm::Download_mode`
 
 How the PE installer reaches the new hosts, for both the install and the
-optional upgrade. 'bolthost' (default) downloads it to the Bolt host and
-uploads it to the new hosts, so they need no internet access; 'direct'
-has each new host download it itself.
+optional upgrade. 'direct' (default) has each new host download it
+itself; 'bolthost' downloads it to the Bolt host and uploads it to the
+new hosts, so they need no internet access.
 
-Default value: `'bolthost'`
+Default value: `'direct'`
 
 ##### <a name="-peadm--migrate--pe_installer_source"></a>`pe_installer_source`
 

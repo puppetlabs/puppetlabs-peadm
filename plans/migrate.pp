@@ -14,9 +14,9 @@
 #   Optional new replica PostgreSQL server to be added to the cluster
 # @param download_mode
 #   How the PE installer reaches the new hosts, for both the install and the
-#   optional upgrade. 'bolthost' (default) downloads it to the Bolt host and
-#   uploads it to the new hosts, so they need no internet access; 'direct'
-#   has each new host download it itself.
+#   optional upgrade. 'direct' (default) has each new host download it
+#   itself; 'bolthost' downloads it to the Bolt host and uploads it to the
+#   new hosts, so they need no internet access.
 # @param pe_installer_source
 #   Optional URL of the PE installer for the old cluster's PE version, which
 #   is the version the new primary is first installed at. Defaults to the
@@ -31,7 +31,7 @@ plan peadm::migrate (
   Optional[Peadm::SingleTargetSpec] $replica_host = undef,
   Optional[Peadm::SingleTargetSpec] $primary_postgresql_host = undef,
   Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
-  Peadm::Download_mode $download_mode = 'bolthost',
+  Peadm::Download_mode $download_mode = 'direct',
   Optional[Stdlib::HTTPSUrl] $pe_installer_source = undef,
   Optional[Stdlib::HTTPSUrl] $upgrade_pe_installer_source = undef,
 ) {
