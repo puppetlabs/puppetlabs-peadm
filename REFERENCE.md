@@ -70,6 +70,7 @@ before they get overwritten by a classification reassertion
 * [`backup_classification`](#backup_classification): A task to call the classification api and write to file
 * [`cert_data`](#cert_data): Return certificate data related to the Puppet agent
 * [`cert_valid_status`](#cert_valid_status): Check primary for valid state of a certificate
+* [`check_ica_expiry`](#check_ica_expiry): Report active and draining compiler ICAs approaching expiry. Run on a PE primary. Exits 0 when no active or draining ICA is in the tightest b
 * [`check_pe_master_rules`](#check_pe_master_rules): Checks if the PE Master group rules have already been updated to support 'pe_compiler_legacy' as a pp_auth_role
 * [`classify_compilers`](#classify_compilers): Classify compilers as legacy or non-legacy
 * [`code_manager`](#code_manager): Perform various code manager actions
@@ -1266,6 +1267,26 @@ Check primary for valid state of a certificate
 Data type: `String`
 
 The certifcate name to check validation of
+
+### <a name="check_ica_expiry"></a>`check_ica_expiry`
+
+Report active and draining compiler ICAs approaching expiry. Run on a PE primary. Exits 0 when no active or draining ICA is in the tightest band, 1 when at least one is (the alert condition), and 2 when the check itself could not be performed, in which case the output normally carries an `_error` whose kind starts with `peadm/check_ica_expiry_`. An active or draining ICA whose certificate cannot be read (a null, missing or unparseable not-after) fails the whole check with exit 2 rather than being skipped, and so does a response in which any ICA lacks a string state. In a plan, a non-zero exit makes run_task fail; use _catch_errors to still read the result.
+
+**Supports noop?** false
+
+#### Parameters
+
+##### `thresholds`
+
+Data type: `Optional[Array[Integer[1], 1]]`
+
+Days-remaining thresholds, as a non-empty list of positive whole numbers in any order. An active or draining ICA is reported in the smallest threshold for which its whole days remaining (rounded down) is less than or equal to that threshold. The task exits 1 when any active or draining ICA is in the smallest threshold, including one that has already expired. Defaults to [90, 60, 30].
+
+##### `format`
+
+Data type: `Optional[Enum[table,json]]`
+
+table for human-readable output (default), json for use in another plan or a monitoring wrapper. Both list only the ICAs inside a threshold band, each with its days-remaining and threshold-band (the matched threshold, in the BAND column of the table). The json output is an object with thresholds (the de-duplicated thresholds, largest first), total (all ICAs registered), checked (those that are active or draining) and icas (the reported ones; each is the CA's intermediate-ca object, including compiler-fqdn, state and not-after, with days-remaining and threshold-band added and any other CA fields passed through), so an empty fleet can be told apart from a healthy one.
 
 ### <a name="check_pe_master_rules"></a>`check_pe_master_rules`
 
