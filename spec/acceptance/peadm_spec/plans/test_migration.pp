@@ -5,6 +5,9 @@ plan peadm_spec::test_migration(
   Optional[String] $new_primary_postgresql_host = undef,
   Optional[String] $new_replica_postgresql_host = undef,
   Optional[String] $upgrade_version = undef,
+  # CI runners download the installer directly on each test VM rather than
+  # relaying it through the runner (peadm::migrate's bolthost default).
+  Peadm::Download_mode $download_mode = 'direct',
 ) {
   # Convert String values to targets if they are not blank
   $primary_target = $primary_host ? { '' => undef, default => peadm::get_targets($primary_host, 1) }
@@ -32,6 +35,7 @@ plan peadm_spec::test_migration(
     replica_host => $new_replica_target,
     primary_postgresql_host => $new_primary_postgresql_target,
     replica_postgresql_host => $new_replica_postgresql_target,
+    download_mode => $download_mode,
   )
 
   # run infra status on the new primary

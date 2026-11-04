@@ -19,6 +19,9 @@ The plan accepts the following parameters:
 * _\<primary_postgresql_host\>_ - [Optional] The FQDN and certname of the new PE PostgreSQL server 
 * _\<replica_postgresql_host\>_ - [Optional] The FQDN and certname of the new replica PE PostgreSQL server 
 * _\<upgrade_version\>_ - [Optional] The PE version to upgrade to 
+* _\<download_mode\>_ - [Optional] How the PE installer reaches the new hosts: `bolthost` (default) or `direct` 
+* _\<pe_installer_source\>_ - [Optional] URL of the PE installer for the old primary's PE version 
+* _\<upgrade_pe_installer_source\>_ - [Optional] URL of the PE installer for `upgrade_version` 
 
 To perform a basic migration from one PE primary server to another run the following command: 
 ``` 
@@ -45,6 +48,31 @@ Please note, the optional parameters and values of the plan are as follows.
 | `primary_postgresql_host` | `undef` | By default, no PE PostgreSQL server will be set up unless this value is supplied. | 
 | `replica_postgresql_host` | `undef` | By default, no PE PostgreSQL replica server will be set up unless this value is supplied. | 
 | `upgrade_version` | `undef` | By default, the new PE installation will be set up with the PE version used on the old primary server. The user can pass in a newer version to upgrade using this parameter, e.g. 2025.1.0 |  
+| `download_mode` | `bolthost` | How the PE installer reaches the new hosts, for both the install and the optional upgrade. `bolthost` downloads the installer to the machine running Bolt and uploads it to the new hosts (for example over SSH), so the new hosts don't need internet access. It can't be used with the `pcp` transport. `direct` has each new host download the installer itself. |
+| `pe_installer_source` | `undef` | URL to download the PE installer from for the old primary's PE version (the version the new primary is first installed at), e.g. an internal mirror. By default the standard public source is used. |
+| `upgrade_pe_installer_source` | `undef` | URL to download the PE installer from for `upgrade_version`. Only used when `upgrade_version` is set. By default the standard public source is used. |
+
+Both installer URLs must end in the standard file name, `puppet-enterprise-<version>-<platform>.tar.gz`, with no query string: `<version>` is the old primary's PE version for `pe_installer_source` and `upgrade_version` for `upgrade_pe_installer_source`, and `<platform>` is the new primary's platform. Before taking the backup, `migrate` checks the file names and checks that each installer can be downloaded from where it will be downloaded (the Bolt machine, or the new hosts with `download_mode=direct`), so a wrong URL or missing network access fails the plan before anything has changed. The download check is skipped when the Bolt machine runs Windows.
+
+### Migrating when the new hosts can't reach the internet
+
+By default (`download_mode=bolthost`), the machine running Bolt downloads each PE installer and uploads it to the new hosts, so only that machine needs internet access. If it can't reach the internet either, download the installer tarballs in advance and place them in `/tmp` on the Bolt machine (the staging directory used by `peadm::install` and `peadm::upgrade`). PEADM uploads a tarball that's already there instead of downloading it. The file name must match exactly: `puppet-enterprise-<version>-<platform>.tar.gz`, where `<version>` is the old primary's PE version (for the install) or `upgrade_version` (for the upgrade), and `<platform>` is the new primary's platform, for example `el-8-x86_64`. PEADM only checks that the file exists and doesn't verify it, so download the matching `.asc` signature too and verify each tarball before the migration:
+```
+gpg --verify puppet-enterprise-<version>-<platform>.tar.gz.asc puppet-enterprise-<version>-<platform>.tar.gz
+```
+The Bolt machine needs about 1 GB of free space in `/tmp` per installer. Alternatively, point `pe_installer_source` and `upgrade_pe_installer_source` at an internal mirror:
+```
+bolt plan run peadm::migrate
+old_primary_host=\<old_primary_host\>
+new_primary_host=\<new_primary_host\>
+upgrade_version=2025.2.0
+pe_installer_source=https://mirror.example.com/pe/puppet-enterprise-2023.8.11-el-8-x86_64.tar.gz
+upgrade_pe_installer_source=https://mirror.example.com/pe/puppet-enterprise-2025.2.0-el-8-x86_64.tar.gz
+```
+
+**Note:** earlier PEADM versions always used `download_mode=direct` for `peadm::migrate`. To keep that behaviour, pass `download_mode=direct`.
+
+**Note:** on a Windows Bolt machine, PEADM downloads the installer without checking the server's TLS certificate or the installer's signature. If you run Bolt on Windows, pre-stage installers you have verified, or use a Linux or macOS Bolt machine.
 
 ## What exactly is migrated? 
  
