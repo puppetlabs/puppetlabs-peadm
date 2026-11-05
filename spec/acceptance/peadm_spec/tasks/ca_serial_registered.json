@@ -1,0 +1,13 @@
+{
+  "description": "Report whether the pe-ca ca_signed_certificates table exists (table_present), how many rows carry a certname and serial (count), and how many serials sit on more than one row (duplicates)",
+  "parameters": {
+    "certname": {
+      "type": "String",
+      "description": "The certname to look for"
+    },
+    "serial": {
+      "type": "Integer[0]",
+      "description": "The certificate serial, in decimal"
+    }
+  }
+}
