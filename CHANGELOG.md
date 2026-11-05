@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.40.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.40.0) - 2026-11-05
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.39.0...v3.40.0)
+
+### Added
+
+- Adding support for PE 2023.8.13, 2025.12.1, and 2026.0.1 [#752](https://github.com/puppetlabs/puppetlabs-peadm/pull/752) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
+
 ## [v3.39.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.39.0) - 2026-11-03
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.38.3...v3.39.0)
