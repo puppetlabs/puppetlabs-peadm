@@ -42,12 +42,12 @@ jobs:
       # provision#301 (provision >= v3.1.0), scoped to only the 2026.0.0
       # matrix combinations -- empty string for everything else leaves the
       # task's own default untouched (see provision_service.rb).
-      PROVISION_MACHINE_TYPE: ${{ matrix.version == '2026.0.0' && 'n2-standard-4' || '' }}
+      PROVISION_MACHINE_TYPE: ${{ matrix.version == '2026.0.1' && 'n2-standard-4' || '' }}
     strategy:
       fail-fast: false
       matrix:
         architecture: [standard, large, extra-large]
-        version: [2023.8.12, 2025.12.0, 2026.0.0]
+        version: [2023.8.13, 2025.12.1, 2026.0.1]
         image: [almalinux-cloud/almalinux-8]
     steps:
       - name: Checkout Source

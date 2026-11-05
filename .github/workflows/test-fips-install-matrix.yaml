@@ -50,12 +50,12 @@ jobs:
       # Evidence this fixes the root cause (vs. masking it) is supportive
       # but not conclusive -- one passing run per combo, not a repeated
       # confirmation. Tracked in PE-47827.
-      PROVISION_MACHINE_TYPE: ${{ (matrix.version == '2026.0.0' || (matrix.version == '2023.8.12' && matrix.architecture == 'extra-large-with-dr') || (matrix.version == '2025.12.0' && matrix.architecture == 'standard-with-dr') || (matrix.version == '2025.12.0' && matrix.architecture == 'extra-large-with-dr')) && 'n2-standard-4' || '' }}
+      PROVISION_MACHINE_TYPE: ${{ (matrix.version == '2026.0.1' || (matrix.version == '2023.8.13' && matrix.architecture == 'extra-large-with-dr') || (matrix.version == '2025.12.1' && matrix.architecture == 'standard-with-dr') || (matrix.version == '2025.12.1' && matrix.architecture == 'extra-large-with-dr')) && 'n2-standard-4' || '' }}
     strategy:
       fail-fast: false
       matrix:
         architecture: [standard-with-dr, large, extra-large-with-dr]
-        version: [2023.8.12, 2025.12.0, 2026.0.0]
+        version: [2023.8.13, 2025.12.1, 2026.0.1]
         image: [rhel-8]
         fips: [enable]
     steps:
