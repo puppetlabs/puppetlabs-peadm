@@ -34,6 +34,10 @@
 #
 # @param node_group_environment environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
 #
+# @param download_require_signature
+#   Set this to True for mandatory signature check on downloaded PE files
+#   The corresponding .asc file is required in upstream repository
+#
 plan peadm::upgrade (
   # Standard
   Peadm::SingleTargetSpec           $primary_host,
@@ -64,6 +68,7 @@ plan peadm::upgrade (
 
   Optional[Peadm::UpgradeSteps] $begin_at_step = undef,
   String[1] $node_group_environment = peadm::get_node_group_environment($primary_host),
+  Boolean $download_require_signature = false,
 ) {
   # Log parameters for debugging
   peadm::log_plan_parameters({
@@ -218,15 +223,17 @@ plan peadm::upgrade (
     if $download_mode == 'bolthost' {
       # Download the PE tarball on the nodes that need it
       run_plan('peadm::util::retrieve_and_upload', $pe_installer_targets,
-        source      => $pe_tarball_source,
-        local_path  => "${stagingdir}/${pe_tarball_name}",
-        upload_path => $upload_tarball_path,
+        source                     => $pe_tarball_source,
+        local_path                 => "${stagingdir}/${pe_tarball_name}",
+        upload_path                => $upload_tarball_path,
+        download_require_signature => false,
       )
     } else {
       # Download PE tarballs directly to nodes that need it
       run_task('peadm::download', $pe_installer_targets,
-        source => $pe_tarball_source,
-        path   => $upload_tarball_path,
+        source                     => $pe_tarball_source,
+        path                       => $upload_tarball_path,
+        download_require_signature => false,
       )
     }
 

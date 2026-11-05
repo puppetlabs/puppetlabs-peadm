@@ -17,25 +17,32 @@ verify-file() {
     return "$EX_UNAVAILABLE"
   fi
 
-  # The verification key must be present, or it must be possible to download it
-  # from the keyserver to perform file verification. If it is not present,
-  # return EX_UNAVAILABLE.
-  keyid=$(gpg --list-packets --with-colons "$sig" | awk '/:signature packet:/{print $NF; exit 0}')
-  if [[ -z "$keyid" ]]; then
-    echo "Unable to determine verification key from ${sig}"
-    return "$EX_UNAVAILABLE"
-  elif ! { gpg --list-keys "$keyid" || gpg --keyserver "$PT_key_server" --recv-key "$keyid"; } then
-    echo "Unable to download verification key ${keyid}"
-    return "$EX_UNAVAILABLE"
-  fi
-
   # Perform the verification and return success or failure.
-  if gpg --verify "$sig" "$doc"; then
-    echo "Signature verification succeeded"
+  if [ -z "$doc" ]; then
+    # .asc file verification only
+    #
+    # The verification key must be present, or it must be possible to download it
+    # from the keyserver to perform file verification. If it is not present,
+    # return EX_UNAVAILABLE.
+    keyid=$(gpg --list-packets --with-colons "$sig" | awk '/:signature packet:/{print $NF; exit 0}')
+    if [[ -z "$keyid" ]]; then
+      echo "Unable to determine verification key from ${sig}"
+      return "$EX_UNAVAILABLE"
+    elif ! { gpg --list-keys "$keyid" || gpg --keyserver "$PT_key_server" --recv-key "$keyid"; } then
+      echo "Unable to download verification key ${keyid}"
+      return "$EX_UNAVAILABLE"
+    fi
+    # Verification available and signature key is valid
+    echo "Signature file verification successful"
     return 0
   else
-    echo "Signature verification failed"
-    return 1
+    if gpg --verify "$sig" "$doc"; then
+      echo "Signature verification succeeded"
+      return 0
+    else
+      echo "Signature verification failed"
+      return 1
+    fi
   fi
 }
 
@@ -85,23 +92,41 @@ download-signature-verify() {
   local source="$1"
   local path="$2"
 
+  # Try to download the signature file
   if ! download "${source}.asc" "${path}.asc" ; then
-    echo "Unable to download ${source}.asc. Skipping verification."
-    download-size-verify "$source" "$path"
-    return "$?"
+    if [[ "$PT_require_signature" == "true" ]]; then
+      echo "Error: Signature required but ${source}.asc not available."
+      exit 1
+    else
+      echo "Unable to download ${source}.asc. Skipping verification."
+      download-size-verify "$source" "$path"
+      return "$?"
+    fi
   fi
 
-  echo "Verifying ${path}..."
-  verify_output=$(verify-file "${path}.asc" "$path");
+  echo "Verifying signature file..."
+  verify_output=$(verify-file "${path}.asc")
   verify_exit="$?"
+
   if [[ "$verify_exit" -eq "$EX_UNAVAILABLE" ]]; then
+    if [[ "$PT_require_signature" == "true" ]]; then
+      echo "Error: Key verification failed."
+      exit 1
+    fi
     echo "Verification unavailable. ${verify_output}. Skipping verification."
     download-size-verify "$source" "$path"
-  elif [[ "$verify_exit" -eq "1" ]]; then
-    echo "$verify_output"
+    return 0
+  elif [[ "$verify_exit" -eq "0" ]]; then
     download "$source" "$path" || return 1
     echo "Verifying ${path}..."
-    verify-file "${path}.asc" "$path"
+    verify_output=$(verify-file "${path}.asc" "$path")
+    verify_exit="$?"
+    if [[ "$verify_exit" -eq "1" ]]; then
+      echo "GPG check error: ${verify_output}"
+      exit 1
+    fi
+    echo "GPG check result: ${verify_output}"
+    return 0
   fi
 }
 
