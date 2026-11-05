@@ -53,14 +53,48 @@ describe RbacToken do
   end
 
   # Catches a mutation that drops the `unless response.is_a? Net::HTTPSuccess`
-  # guard (or the response body from the error message), which would hide a
-  # failed token request instead of raising a clear error.
-  it 'raises with the response body when the RBAC API responds with a non-success status' do
+  # guard, which would hide a failed token request instead of raising a
+  # clear error.
+  it 'raises with the status and error kind when the RBAC API responds with a non-success status' do
     failure_response = instance_double(Net::HTTPUnauthorized, code: '401', body: '{"kind":"unauthorized","msg":"bad password"}')
     allow(failure_response).to receive(:is_a?).with(Net::HTTPSuccess).and_return(false)
     allow(https_dbl).to receive(:request).with(request_dbl).and_return(failure_response)
 
-    expect { rbac_token.execute! }.to raise_error(RuntimeError, 'Error requesting token (HTTP 401), {"kind":"unauthorized","msg":"bad password"}')
+    expect { rbac_token.execute! }.to raise_error(RuntimeError, 'Error requesting token (HTTP 401): unauthorized')
+  end
+
+  # PE-47523: plans print this error and Bolt logs it, and RBAC error bodies
+  # can echo the submitted request, password included.
+  it 'keeps the response body out of the error' do
+    body = '{"kind":"schema-violation","msg":"bad","details":{"submitted":{"password":"password-canary"}}}'
+    failure_response = instance_double(Net::HTTPBadRequest, code: '400', body: body)
+    allow(failure_response).to receive(:is_a?).with(Net::HTTPSuccess).and_return(false)
+    allow(https_dbl).to receive(:request).with(request_dbl).and_return(failure_response)
+
+    expect { rbac_token.execute! }.to raise_error(RbacToken::AuthFailure, 'Error requesting token (HTTP 400): schema-violation')
+  end
+
+  # Only a plain kind goes into the message; free text could hold anything
+  ['password-canary has spaces', 'quote"canary', "new\nline-canary", '', "ab\xFFc-canary", 'a' * 129, "abc\n"].each do |kind|
+    it "leaves a kind of #{kind.inspect} out of the error" do
+      # JSON generation refuses invalid UTF-8, so the body is built by hand
+      body = kind.valid_encoding? ? { 'kind' => kind }.to_json : %({"kind":"#{kind}"}).b
+      failure_response = instance_double(Net::HTTPBadRequest, code: '400', body: body)
+      allow(failure_response).to receive(:is_a?).with(Net::HTTPSuccess).and_return(false)
+      allow(https_dbl).to receive(:request).with(request_dbl).and_return(failure_response)
+
+      expect { rbac_token.execute! }.to raise_error(RbacToken::AuthFailure, 'Error requesting token (HTTP 400)')
+    end
+  end
+
+  # The longest kind kept
+  it 'keeps a kind of 128 characters in the error' do
+    kind = 'k' * 128
+    failure_response = instance_double(Net::HTTPBadRequest, code: '400', body: { 'kind' => kind }.to_json)
+    allow(failure_response).to receive(:is_a?).with(Net::HTTPSuccess).and_return(false)
+    allow(https_dbl).to receive(:request).with(request_dbl).and_return(failure_response)
+
+    expect { rbac_token.execute! }.to raise_error(RbacToken::AuthFailure, "Error requesting token (HTTP 400): #{kind}")
   end
 
   def stub_response(code, body: "{\"msg\":\"http #{code}\"}")
@@ -77,7 +111,7 @@ describe RbacToken do
     it "raises RbacToken::AuthFailure for a permanent HTTP #{code}" do
       stub_response(code)
 
-      expect { rbac_token.execute! }.to raise_error(RbacToken::AuthFailure, %(Error requesting token (HTTP #{code}), {"msg":"http #{code}"}))
+      expect { rbac_token.execute! }.to raise_error(RbacToken::AuthFailure, "Error requesting token (HTTP #{code})")
     end
   end
 
@@ -137,16 +171,17 @@ describe RbacToken do
       stub_response(401)
 
       expect { rbac_token.run! }.to output(
-        { '_error' => { 'msg' => 'Error requesting token (HTTP 401), {"msg":"http 401"}', 'kind' => 'peadm/rbac-auth-failure' } }.to_json + "\n",
+        { '_error' => { 'msg' => 'Error requesting token (HTTP 401)', 'kind' => 'peadm/rbac-auth-failure' } }.to_json + "\n",
       ).to_stdout.and raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
     end
 
-    # Net::HTTP returns bodies binary-tagged, where String#scrub is a no-op,
-    # so the body here is binary too -- not force_encoded to UTF-8.
-    it 'scrubs invalid UTF-8 from the message so the permanent failure is still reported as such' do
+    # Net::HTTP returns bodies binary-tagged, so the body here is binary too,
+    # not force_encoded to UTF-8. Whatever the body holds, the message stays
+    # valid for to_json, or the permanent failure would read as a retryable one.
+    it 'still reports a permanent failure as such when the body is not valid UTF-8' do
       stub_response(401, body: "bad \xFF password".b)
 
-      expect { rbac_token.run! }.to output(%r{"msg":"Error requesting token \(HTTP 401\), bad \uFFFD password".*"kind":"peadm/rbac-auth-failure"}).to_stdout.and raise_error(SystemExit)
+      expect { rbac_token.run! }.to output(%r{"msg":"Error requesting token \(HTTP 401\)".*"kind":"peadm/rbac-auth-failure"}).to_stdout.and raise_error(SystemExit)
     end
 
     it 'lets a connection error propagate as a generic error' do
@@ -158,7 +193,7 @@ describe RbacToken do
     it 'lets a transient failure propagate as a generic error' do
       stub_response(500)
 
-      expect { rbac_token.run! }.to raise_error(RuntimeError, 'Error requesting token (HTTP 500), {"msg":"http 500"}')
+      expect { rbac_token.run! }.to raise_error(RuntimeError, 'Error requesting token (HTTP 500)')
     end
   end
 

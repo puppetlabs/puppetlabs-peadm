@@ -3,7 +3,8 @@
   "parameters": {
     "ldap_config": {
       "type": "Peadm::Ldap_config",
-      "description": "The hash of options for ldap."
+      "description": "The hash of options for ldap.",
+      "sensitive": true
     },
     "pe_main": {
       "type": "String",
