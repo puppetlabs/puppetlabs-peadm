@@ -74,12 +74,13 @@ plan peadm::upgrade (
     'replica_postgresql_host' => $replica_postgresql_host,
     'node_group_environment' => $node_group_environment,
     'version' => $version,
-    # Log only the tarball basename, not the full URL: pe_installer_source may
+    # Log only the tarball name, not the full URL: pe_installer_source may
     # carry credentials or signed tokens (e.g. S3 pre-signed URLs) that
-    # shouldn't land in Bolt output or centralized logs.
+    # shouldn't land in Bolt output or centralized logs. Bolt's debug log
+    # still records the parameters of the tasks it runs.
     'pe_installer_source' => $pe_installer_source ? {
       undef   => undef,
-      default => $pe_installer_source.split('/')[-1],
+      default => $pe_installer_source.regsubst(/[?#].*\z/, '').split('/')[-1],
     },
   })
 
