@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.40.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.40.0) - 2026-11-05
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.39.0...v3.40.0)
+
+### Added
+
+- Adding support for PE 2023.8.13, 2025.12.1, and 2026.0.1 [#752](https://github.com/puppetlabs/puppetlabs-peadm/pull/752) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
+
 ## [v3.39.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.39.0) - 2026-11-03
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.38.3...v3.39.0)
@@ -54,6 +62,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 - Adding support for PE 2023.8.11 and 2025.11.3 [#702](https://github.com/puppetlabs/puppetlabs-peadm/pull/702) ([Jade2153](https://github.com/Jade2153))
 - (PE-45431) Complete CA storage migration for split topologies [#696](https://github.com/puppetlabs/puppetlabs-peadm/pull/696) ([Jade2153](https://github.com/Jade2153))
+- (PE-44793) Note CA-proxy mode and opt-in ICA promotion in add_compilers output [#692](https://github.com/puppetlabs/puppetlabs-peadm/pull/692) ([coreymbe](https://github.com/coreymbe))
 - (PE-43490) Surface provision_replica failures in add_replica plan [#677](https://github.com/puppetlabs/puppetlabs-peadm/pull/677) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
 
 ### Fixed
@@ -62,16 +71,21 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 ### Other
 
-- (PE-45110) Ruby 4.0 compatibility: fix missing default-gem deps, document upstream blockers maintenance [#685](https://github.com/puppetlabs/puppetlabs-peadm/pull/685) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
+- Revert "(PE-44793) Note CA-proxy mode and opt-in ICA promotion in add_compilers output" (#692) [#706](https://github.com/puppetlabs/puppetlabs-peadm/pull/706) ([Jade2153](https://github.com/Jade2153))
 - (PE-45390) Add code coverage reporting to CI [#686](https://github.com/puppetlabs/puppetlabs-peadm/pull/686) ([seamymckenna](https://github.com/seamymckenna))
+- (PE-45110) Ruby 4.0 compatibility: fix missing default-gem deps, document upstream blockers [#685](https://github.com/puppetlabs/puppetlabs-peadm/pull/685) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
 
 ## [v3.38.2](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.38.2) - 2026-09-01
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.38.1...v3.38.2)
 
-### Added
+### Other
 
+- Revert "(PE-45431) Complete CA storage migration for split topologies (#691)" [#695](https://github.com/puppetlabs/puppetlabs-peadm/pull/695) ([Jade2153](https://github.com/Jade2153))
 - Adding support for PE 2025.11.2 [#694](https://github.com/puppetlabs/puppetlabs-peadm/pull/694) ([Jade2153](https://github.com/Jade2153))
+- (PE-45431) Complete CA storage migration for split topologies [#691](https://github.com/puppetlabs/puppetlabs-peadm/pull/691) ([jonathannewman](https://github.com/jonathannewman))
+- Revert "(PE-45431) Complete CA storage migration for split topologies (#688)" [#690](https://github.com/puppetlabs/puppetlabs-peadm/pull/690) ([jonathannewman](https://github.com/jonathannewman))
+- (PE-45431) Complete CA storage migration for split topologies [#688](https://github.com/puppetlabs/puppetlabs-peadm/pull/688) ([jonathannewman](https://github.com/jonathannewman))
 
 ## [v3.38.1](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.38.1) - 2026-07-08
 
