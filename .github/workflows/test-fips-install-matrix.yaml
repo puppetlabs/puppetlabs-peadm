@@ -39,7 +39,7 @@ jobs:
       # matrix combinations -- empty string for everything else leaves the
       # task's own default untouched (see provision_service.rb).
       #
-      # Also scoped to 3 specific FIPS/DR combinations that were failing
+      # Also scoped to specific FIPS/DR combinations that were failing
       # with connection-level errors (SSH IOError / orchestrator SSL drop,
       # or "certificate revoked" mid-purge) during long pg_basebackup-heavy
       # replica provisioning. Tested on a separate scratch branch
@@ -50,7 +50,10 @@ jobs:
       # Evidence this fixes the root cause (vs. masking it) is supportive
       # but not conclusive -- one passing run per combo, not a repeated
       # confirmation. Tracked in PE-47827.
-      PROVISION_MACHINE_TYPE: ${{ (matrix.version == '2026.0.1' || (matrix.version == '2023.8.13' && matrix.architecture == 'extra-large-with-dr') || (matrix.version == '2025.12.1' && matrix.architecture == 'standard-with-dr') || (matrix.version == '2025.12.1' && matrix.architecture == 'extra-large-with-dr')) && 'n2-standard-4' || '' }}
+      #
+      # PE 2023.8.13 standard-with-dr was added for PE-48037 (orchestrator
+      # SSL drop, then every primary service down during enable replica).
+      PROVISION_MACHINE_TYPE: ${{ (matrix.version == '2026.0.1' || (matrix.version == '2023.8.13' && matrix.architecture == 'standard-with-dr') || (matrix.version == '2023.8.13' && matrix.architecture == 'extra-large-with-dr') || (matrix.version == '2025.12.1' && matrix.architecture == 'standard-with-dr') || (matrix.version == '2025.12.1' && matrix.architecture == 'extra-large-with-dr')) && 'n2-standard-4' || '' }}
     strategy:
       fail-fast: false
       matrix:
