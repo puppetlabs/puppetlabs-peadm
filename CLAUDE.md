@@ -69,7 +69,7 @@ On extra-large, only **PuppetDB's** database moves to the dedicated PostgreSQL n
 ## Tests
 
 - `spec/plans/**`: BoltSpec plan tests (`expect_task` / `allow_task` / `expect_plan` stubs; no real targets).
-- `spec/unit/task/`: specs for task scripts.
+- `spec/unit/task/`: specs for task scripts. Ruby tasks are loaded and tested in-process. Shell tasks are run for real under bash with stub commands first on PATH; `code_manager_spec.rb` is the pattern to copy.
 - `spec/functions/`, `spec/classes/`: function and `node_manager` class specs.
 - `spec/acceptance/peadm_spec/`: a **fixtures module**, not rspec. It holds Bolt plans that the GitHub Actions acceptance workflows run (`provision_test_cluster`, `install_test_cluster`, `upgrade_test_cluster`, `verify_replica`, `perform_failover`, …). It is symlinked into `spec/fixtures/modules/peadm_spec` by `spec_prep`.
 - PE acceptance workflows (`.github/workflows/test-*`) provision cloud VMs per architecture (`standard`, `standard-with-dr`, `large`, `large-with-dr`, `extra-large`, `extra-large-with-dr`) and run those plans. When they run:
