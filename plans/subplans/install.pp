@@ -244,14 +244,12 @@ plan peadm::subplans::install (
       'puppet_enterprise::database_host'      => $replica_postgresql_target.peadm::certname(),
   } + $puppetdb_database_temp_config + $pe_conf_data)
 
-  # Upload the pe.conf files to the hosts that need them, and ensure correctly
-  # configured certnames. Right now for these hosts we need to do that by
-  # staging a puppet.conf file.
+  # Ensure correctly configured certnames on the hosts that run the PE
+  # installer. Right now for these hosts we need to do that by staging a
+  # puppet.conf file.
   parallelize(['primary', 'primary_postgresql', 'replica_postgresql']) |$var| {
     $target  = getvar("${var}_target", [])
-    $pe_conf = getvar("${var}_pe_conf")
 
-    peadm::file_content_upload($pe_conf, '/tmp/pe.conf', $target)
 # lint:ignore:strict_indent
     run_task('peadm::mkdir_p_file', $target,
       path    => '/etc/puppetlabs/puppet/puppet.conf',
@@ -366,72 +364,135 @@ plan peadm::subplans::install (
 
   wait($csr_yaml_jobs)
 
-  # Get the master installation up and running. The installer will "fail"
-  # because PuppetDB can't start, if primary_postgresql_target is set. That's
-  # expected, and handled by the task's install_extra_large parameter.
-  run_task('peadm::pe_install', $primary_target,
-    tarball               => $upload_tarball_path,
-    peconf                => '/tmp/pe.conf',
-    puppet_service_ensure => 'stopped',
-    install_extra_large   => ($arch['architecture'] == 'extra-large'),
-  )
+  # Each PE installer run below reads a bootstrap pe.conf on its node. The
+  # primary's holds the console password, so it goes up only now, after the
+  # download and CSR steps. An installer failure must not leave it behind, so
+  # errors are caught here, the file is removed, and the plan then fails with
+  # the original error. (Puppet has no ensure: an interrupt, or an error that
+  # isn't a Bolt one, still skips the removal, and /tmp/pe.conf should then be
+  # deleted by hand.)
+  # TODO PE-47910: a predictable path in world-writable /tmp; upload into a 0700 directory instead.
+  $bootstrap_pe_conf = '/tmp/pe.conf'
+  $installer_error = catch_errors() || {
+    parallelize(['primary', 'primary_postgresql', 'replica_postgresql']) |$var| {
+      $target  = getvar("${var}_target", [])
+      $pe_conf = getvar("${var}_pe_conf")
 
-  parallelize($primary_targets) |$target| {
-    if $r10k_private_key {
-      run_task('peadm::mkdir_p_file', $target,
-        path    => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
-        mode    => '0600',
-        content => $r10k_private_key,
+      peadm::file_content_upload($pe_conf, $bootstrap_pe_conf, $target)
+    }
+
+    # Get the master installation up and running. The installer will "fail"
+    # because PuppetDB can't start, if primary_postgresql_target is set. That's
+    # expected, and handled by the task's install_extra_large parameter.
+    run_task('peadm::pe_install', $primary_target,
+      tarball               => $upload_tarball_path,
+      peconf                => $bootstrap_pe_conf,
+      puppet_service_ensure => 'stopped',
+      install_extra_large   => ($arch['architecture'] == 'extra-large'),
+    )
+
+    parallelize($primary_targets) |$target| {
+      if $r10k_private_key {
+        run_task('peadm::mkdir_p_file', $target,
+          path    => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
+          mode    => '0600',
+          content => $r10k_private_key,
+        )
+      }
+
+      if $license_key {
+        run_task('peadm::mkdir_p_file', $target,
+          path    => '/etc/puppetlabs/license.key',
+          mode    => '0644',
+          content => $license_key,
+        )
+      }
+    }
+
+    # Configure autosigning for the puppetdb database hosts 'cause they need it
+    $autosign_conf = $database_targets.reduce('') |$memo,$target| { "${target.peadm::certname}\n${memo}" }
+    run_task('peadm::mkdir_p_file', $primary_target,
+      path    => '/etc/puppetlabs/puppet/autosign.conf',
+      owner   => 'pe-puppet',
+      group   => 'pe-puppet',
+      mode    => '0644',
+      content => $autosign_conf,
+    )
+
+    # Run the PE installer on the puppetdb database hosts
+    run_task('peadm::pe_install', $database_targets,
+      tarball               => $upload_tarball_path,
+      peconf                => $bootstrap_pe_conf,
+      puppet_service_ensure => 'stopped',
+    )
+
+    # Now that the main PuppetDB database node is ready, finish priming the
+    # master. Explicitly stop puppetdb first to avoid any systemd interference.
+    run_command('systemctl stop pe-puppetdb', $primary_target)
+    run_command('systemctl start pe-puppetdb', $primary_target)
+
+    if $primary_postgresql_host {
+      # On split-database installs, the primary's own install pass runs before
+      # the dedicated Postgres host is up. Every one-time bootstrap step in
+      # that pass which depends on a database-backed service -- rbac's admin
+      # account activation, classifier's default node groups, and potentially
+      # others -- fails silently when it calls that service's local API,
+      # because the service can't reach its now-remote database yet. Those
+      # steps only exist in the installer's one-shot catalog apply, so nothing
+      # later in a normal install (including an ordinary Puppet run) ever
+      # retries them. Re-run the installer against the already-extracted
+      # installer directory now that the database host is up, so it can finish
+      # what it couldn't the first time.
+      run_task('peadm::pe_reinstall', $primary_target,
+        installer_dir => $pe_installer_dir,
+        peconf        => $bootstrap_pe_conf,
       )
     }
 
-    if $license_key {
-      run_task('peadm::mkdir_p_file', $target,
-        path    => '/etc/puppetlabs/license.key',
-        mode    => '0644',
-        content => $license_key,
-      )
-    }
+    # Ends the block with undef, so $installer_error is undef or an Error
+    undef
   }
 
-  # Configure autosigning for the puppetdb database hosts 'cause they need it
-  $autosign_conf = $database_targets.reduce('') |$memo,$target| { "${target.peadm::certname}\n${memo}" }
-  run_task('peadm::mkdir_p_file', $primary_target,
-    path    => '/etc/puppetlabs/puppet/autosign.conf',
-    owner   => 'pe-puppet',
-    group   => 'pe-puppet',
-    mode    => '0644',
-    content => $autosign_conf,
-  )
+  # Only the installer runs above read the bootstrap pe.conf. The primary's
+  # copy holds the console password and every copy holds pe_conf_data, so
+  # remove it now, whether or not they succeeded, and before the steps below.
+  # A failed removal is a warning: it mustn't replace the installer's error,
+  # or fail an install that otherwise worked.
+  $pe_conf_cleanup = run_command("rm -f ${bootstrap_pe_conf}", $pe_installer_targets, '_catch_errors' => true)
+  $pe_conf_cleanup.error_set.each |$result| {
+    # A failed command's message is only its exit code; rm's reason is in
+    # stderr, which is sanitized before anything else looks at it, as it can be
+    # in any encoding and a regex on invalid UTF-8 would raise and replace the
+    # installer's error below.
+    $rm_stderr = $result['stderr'] ? {
+      String  => peadm::sanitize_log_text($result['stderr'], 200),
+      default => '',
+    }
+    $reason = $rm_stderr ? {
+      /\S/    => $rm_stderr.strip,
+      default => peadm::sanitize_log_text($result.error.message, 200),
+    }
+    out::message("WARNING: ${bootstrap_pe_conf} may still be on ${result.target.name} (${reason}). Delete it by hand; on the primary it holds the console password.") # lint:ignore:140chars
+  }
 
-  # Run the PE installer on the puppetdb database hosts
-  run_task('peadm::pe_install', $database_targets,
-    tarball               => $upload_tarball_path,
-    peconf                => '/tmp/pe.conf',
-    puppet_service_ensure => 'stopped',
-  )
-
-  # Now that the main PuppetDB database node is ready, finish priming the
-  # master. Explicitly stop puppetdb first to avoid any systemd interference.
-  run_command('systemctl stop pe-puppetdb', $primary_target)
-  run_command('systemctl start pe-puppetdb', $primary_target)
-
-  if $primary_postgresql_host {
-    # On split-database installs, the primary's own install pass runs before
-    # the dedicated Postgres host is up. Every one-time bootstrap step in
-    # that pass which depends on a database-backed service -- rbac's admin
-    # account activation, classifier's default node groups, and potentially
-    # others -- fails silently when it calls that service's local API,
-    # because the service can't reach its now-remote database yet. Those
-    # steps only exist in the installer's one-shot catalog apply, so nothing
-    # later in a normal install (including an ordinary Puppet run) ever
-    # retries them. Re-run the installer against the already-extracted
-    # installer directory now that the database host is up, so it can finish
-    # what it couldn't the first time.
-    run_task('peadm::pe_reinstall', $primary_target,
-      installer_dir => $pe_installer_dir,
-      peconf        => '/tmp/pe.conf',
-    )
+  if $installer_error =~ Error {
+    # fail_plan on a caught error hides the failed nodes' output in Bolt's
+    # human format, which a failed run_task would show, so print it first.
+    $failed_results = $installer_error.details ? {
+      Hash    => $installer_error.details['result_set'],
+      default => undef,
+    }
+    if $failed_results =~ ResultSet {
+      $failed_results.error_set.each |$result| {
+        # A task result keeps what the task printed under _output (its stderr
+        # is in the error message when there was no stdout); a command result
+        # has stdout and stderr. This handles both kinds of result, and a key a
+        # result lacks counts as empty.
+        $output = [$result['_output'], $result['stdout'], $result['stderr']].filter |$text| { $text =~ String[1] }.join("\n")
+        out::message("Failed on ${result.target.name}: ${result.error.message}\n${output}")
+      }
+    }
+    fail_plan($installer_error)
   }
 
   # rbac-service can briefly 500/reject auth immediately after this
@@ -641,11 +702,13 @@ plan peadm::subplans::install (
     fail_plan("Could not check whether ${primary_target} has the ca_storage_import plan available: ${ca_storage_import_probe_error}") # lint:ignore:140chars
   }
 
-  # Cleanup temp bootstrapping config
+  # Remove the temporary puppetdb_hosts setting from each node's
+  # /etc/puppetlabs/enterprise/conf.d/pe.conf
   parallelize(['primary', 'primary_postgresql', 'replica_postgresql']) |$var| {
     $target  = getvar("${var}_target", [])
     $pe_conf = getvar("${var}_pe_conf", '{}')
 
+    # TODO PE-47910: no mode is passed, so the primary's pe.conf, which keeps console_admin_password, gets whatever mode it had.
     run_task('peadm::mkdir_p_file', $target,
       path    => '/etc/puppetlabs/enterprise/conf.d/pe.conf',
       content => stdlib::to_json_pretty($pe_conf.parsejson() - $puppetdb_database_temp_config),
