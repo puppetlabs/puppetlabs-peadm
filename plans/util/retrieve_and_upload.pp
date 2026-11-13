@@ -4,6 +4,7 @@ plan peadm::util::retrieve_and_upload(
   String[1]  $source,
   String[1]  $local_path,
   String[1]  $upload_path,
+  Boolean    $download_require_signature,
 ) {
   # lint:ignore:strict_indent
   $nodes.peadm::fail_on_transport('pcp', @(HEREDOC/n))
@@ -53,8 +54,9 @@ plan peadm::util::retrieve_and_upload(
     }
     unless $exists {
       run_task('peadm::download', 'local://localhost',
-        source => $source,
-        path   => $local_path,
+        source            => $source,
+        path              => $local_path,
+        require_signature => $download_require_signature,
       )
     }
 
