@@ -16,4 +16,5 @@ do
   sleep 3
 done
 
+# TODO PE-48270: say which service and port timed out before failing.
 exit 1

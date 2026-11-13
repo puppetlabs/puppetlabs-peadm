@@ -72,7 +72,7 @@ before they get overwritten by a classification reassertion
 * [`cert_valid_status`](#cert_valid_status): Check primary for valid state of a certificate
 * [`check_pe_master_rules`](#check_pe_master_rules): Checks if the PE Master group rules have already been updated to support 'pe_compiler_legacy' as a pp_auth_role
 * [`classify_compilers`](#classify_compilers): Classify compilers as legacy or non-legacy
-* [`code_manager`](#code_manager): Perform various code manager actions
+* [`code_manager`](#code_manager): Perform various code manager actions. Fails if an r10k run, file-sync call or environment-cache flush fails
 * [`code_manager_enabled`](#code_manager_enabled): Run on a PE primary node to check if Code Manager is enabled.
 * [`code_sync_status`](#code_sync_status): A task to confirm code is in sync accross the cluster for clusters with code manager configured
 * [`divert_code_manager`](#divert_code_manager): Divert the code manager live-dir setting
@@ -1289,7 +1289,7 @@ List of FQDNs of compilers
 
 ### <a name="code_manager"></a>`code_manager`
 
-Perform various code manager actions
+Perform various code manager actions. Fails if an r10k run, file-sync call or environment-cache flush fails
 
 **Supports noop?** false
 

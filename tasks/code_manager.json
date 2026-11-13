@@ -1,5 +1,5 @@
 {
-  "description": "Perform various code manager actions",
+  "description": "Perform various code manager actions. Fails if an r10k run, file-sync call or environment-cache flush fails",
   "parameters": {
     "action": {
       "type": "String",

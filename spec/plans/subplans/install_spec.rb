@@ -77,6 +77,123 @@ describe 'peadm::subplans::install' do
     expect(result).not_to be_ok
   end
 
+  # PE-47521: the code_manager task exits non-zero when file-sync fails.
+  # Replication needs this commit, so the install stops here. The stubbed
+  # error message is arbitrary; the plan's failure names the task.
+  it 'fails, naming peadm::code_manager, when the file-sync commit fails' do
+    params = {
+      'primary_host' => 'primary',
+      'console_password' => 'puppetLabs123!',
+      'version' => '2019.8.12',
+      'code_manager_auto_configure' => true,
+    }
+
+    expect_task('peadm::code_manager')
+      .with_targets('primary')
+      .with_params('action' => 'file-sync commit')
+      .error_with('msg' => 'The task failed with exit code 1', 'kind' => 'puppetlabs.tasks/task-error')
+
+    result = run_plan('peadm::subplans::install', params)
+    expect(result).not_to be_ok
+    expect(result.value.msg).to match(%r{peadm::code_manager.*failed on 1 target}m)
+  end
+
+  # With file_sync_enabled left 'automatic', PE runs file-sync only when Code
+  # Manager is on, which is off on a primary-only cluster unless
+  # code_manager_auto_configure is true.
+  it 'skips the file-sync commit when Code Manager is not configured' do
+    params = {
+      'primary_host' => 'primary',
+      'console_password' => 'puppetLabs123!',
+      'version' => '2019.8.12',
+    }
+
+    expect_task('peadm::code_manager').not_be_called
+
+    expect(run_plan('peadm::subplans::install', params)).to be_ok
+  end
+
+  # Compilers get their code through file-sync, and install turns Code
+  # Manager on for them.
+  it 'waits for puppetserver, then runs the file-sync commit, on a cluster with compilers' do
+    allow_task('peadm::precheck').return_for_targets(
+      'primary' => { 'hostname' => 'primary', 'platform' => 'el-7.11-x86_64' },
+      'compiler1' => { 'hostname' => 'compiler1', 'platform' => 'el-7.11-x86_64' },
+    )
+    params = {
+      'primary_host' => 'primary',
+      'compiler_hosts' => ['compiler1'],
+      'console_password' => 'puppetLabs123!',
+      'version' => '2023.8.10',
+    }
+
+    calls = []
+    allow_task('peadm::wait_until_service_ready').return do |targets:, params:, **|
+      calls << "wait #{params['service']}"
+      Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+    end
+    expect_task('peadm::code_manager').with_targets('primary').with_params('action' => 'file-sync commit').return do |targets:, **|
+      calls << 'commit'
+      Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: {}) })
+    end
+
+    expect(run_plan('peadm::subplans::install', params)).to be_ok
+    expect(calls.first(2)).to eq(['wait pe-master', 'commit'])
+  end
+
+  # pe_conf_data overrides peadm's own pe.conf values, so it decides
+  # whether PE runs file-sync.
+  cm_key = 'puppet_enterprise::profile::master::code_manager_auto_configure'
+  fs_key = 'puppet_enterprise::profile::master::file_sync_enabled'
+  [
+    { case: 'pe_conf_data turns Code Manager on', pe_conf_data: { cm_key => true }, code_manager: nil, commits: true },
+    { case: 'pe_conf_data turns file-sync on', pe_conf_data: { fs_key => true }, code_manager: nil, commits: true },
+    { case: 'pe_conf_data turns Code Manager off', pe_conf_data: { cm_key => false }, code_manager: true, commits: false },
+    { case: 'pe_conf_data turns file-sync off', pe_conf_data: { fs_key => false }, code_manager: true, commits: false },
+    { case: "file-sync is 'automatic' and Code Manager is on", pe_conf_data: { fs_key => 'automatic' }, code_manager: true, commits: true },
+    { case: "file-sync is 'automatic' and Code Manager is off", pe_conf_data: { fs_key => 'automatic' }, code_manager: false, commits: false },
+  ].each do |c|
+    it "#{c[:commits] ? 'runs' : 'skips'} the file-sync commit when #{c[:case]}" do
+      params = {
+        'primary_host' => 'primary',
+        'console_password' => 'puppetLabs123!',
+        'version' => '2019.8.12',
+        'pe_conf_data' => c[:pe_conf_data],
+      }
+      params['code_manager_auto_configure'] = c[:code_manager] unless c[:code_manager].nil?
+
+      if c[:commits]
+        expect_task('peadm::code_manager').with_targets('primary').with_params('action' => 'file-sync commit')
+      else
+        expect_task('peadm::code_manager').not_be_called
+      end
+
+      expect(run_plan('peadm::subplans::install', params)).to be_ok
+    end
+  end
+
+  # Replication needs the file-sync commit, so a replica with file-sync turned
+  # off fails before anything is installed.
+  it 'fails before installing when a replica is requested but pe_conf_data turns file-sync off' do
+    allow_task('peadm::precheck').return_for_targets(
+      'primary' => { 'hostname' => 'primary', 'platform' => 'el-7.11-x86_64' },
+      'replica' => { 'hostname' => 'replica', 'platform' => 'el-7.11-x86_64' },
+    )
+    params = {
+      'primary_host' => 'primary',
+      'replica_host' => 'replica',
+      'console_password' => 'puppetLabs123!',
+      'version' => '2023.8.10',
+      'pe_conf_data' => { fs_key => false },
+    }
+
+    expect_task('peadm::pe_install').not_be_called
+
+    result = run_plan('peadm::subplans::install', params)
+    expect(result).not_to be_ok
+    expect(result.value.msg).to match(%r{A replica needs file-sync on the primary})
+  end
+
   it 'installs 2023.4 without r10k_known_hosts' do
     params = {
       'primary_host' => 'primary',
@@ -634,6 +751,10 @@ describe 'peadm::subplans::install' do
       'console_password' => 'puppetLabs123!',
       'version' => '2023.8.10',
     }
+
+    # PE-47521: replication needs the file-sync commit, which install runs
+    # only when Code Manager is on, so it must run here.
+    expect_task('peadm::code_manager').with_targets('primary').with_params('action' => 'file-sync commit')
 
     expect(run_plan('peadm::subplans::install', params)).to be_ok
 
