@@ -8,6 +8,7 @@ describe 'peadm::install' do
       allow_out_message
       expect_plan('peadm::subplans::install')
       expect_plan('peadm::subplans::configure')
+      expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' }).be_called_times(1)
       expect(run_plan('peadm::install', 'primary_host' => 'primary', 'console_password' => 'puppetLabs123!', 'version' => '2021.7.9')).to be_ok
     end
   end
@@ -24,6 +25,7 @@ describe 'peadm::install' do
     it 'accepts cloud_database_host and runs the plan to completion' do
       allow_out_message
       expect_plan('peadm::subplans::install')
+      expect_task('peadm::read_file').with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf').always_return({ 'content' => '{}' }).be_called_times(1)
       expect_plan('peadm::subplans::configure')
       expect(run_plan('peadm::install',
         'primary_host'        => 'primary',

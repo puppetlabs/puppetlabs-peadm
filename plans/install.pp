@@ -40,6 +40,8 @@
 #   the default on-prem topology where Postgres runs on the primary or on a
 #   managed external Postgres target.
 #
+# @param node_group_environment environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
+#
 plan peadm::install (
   # Standard
   Peadm::SingleTargetSpec           $primary_host,
@@ -86,6 +88,7 @@ plan peadm::install (
   Peadm::Download_mode       $download_mode          = 'bolthost',
   Boolean                    $permit_unsafe_versions = false,
   String                     $token_lifetime         = '1y',
+  String[1] $node_group_environment = peadm::get_node_group_environment($primary_host),
 ) {
   # Log parameters for debugging 
   peadm::log_plan_parameters({
@@ -160,6 +163,7 @@ plan peadm::install (
     internal_compiler_b_pool_address => $internal_compiler_b_pool_address,
     deploy_environment               => $deploy_environment,
     ldap_config                      => $ldap_config,
+    node_group_environment           => $node_group_environment,
 
     # Cloud Database
     cloud_database_host              => $cloud_database_host,
