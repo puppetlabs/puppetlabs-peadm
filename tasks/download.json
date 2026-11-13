@@ -3,7 +3,8 @@
   "parameters": {
     "source": {
       "type": "String",
-      "description": "Where to download the file from"
+      "description": "Where to download the file from",
+      "sensitive": true
     },
     "path": {
       "type": "String",
