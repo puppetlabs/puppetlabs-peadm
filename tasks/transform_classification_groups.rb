@@ -12,6 +12,16 @@ require 'json'
 # Class which merges a source cluster's user-defined classification groups
 # into a target cluster's PE Infrastructure group tree, for DR restore.
 class TransformClassificationGroups
+  # Raised when the PE Infrastructure group can't be identified in a
+  # classification, so run! can report it as a readable Bolt error.
+  class InfraGroupNotFound < RuntimeError; end
+
+  INFRA_GROUP_NOT_FOUND_KIND = 'peadm/infra-group-not-found'
+
+  # All Nodes has this fixed id on every PE install.
+  ALL_NODES_ID = '00000000-0000-4000-8000-000000000000'
+  INFRA_GROUP_NAME = 'PE Infrastructure'
+
   def initialize(params)
     @source_classification_file      = "#{params['source_directory']}/classification_backup.json"
     @target_classification_file      = "#{params['working_directory']}/classification_backup.json"
@@ -26,16 +36,16 @@ class TransformClassificationGroups
     data_DR = JSON.parse(File.read(@target_classification_file))
 
     # Find the infrastructure group and its ID
-    peinf = data.select { |x| x['name'] == 'PE Infrastructure' }
-    group_id = peinf[0]['id']
+    group_id = find_infra_group(data, "the source cluster's classification backup (#{@source_classification_file})")['id']
 
     # Remove this group from the list and recursively remove all subgroups
     data.reject! { |x| x['id'] == group_id }
     data = removesubgroups(data, group_id)
 
     # Find the DR infrastructure group and its ID
-    peinf_DR = data_DR.select { |x| x['name'] == 'PE Infrastructure' }
-    id_DR = peinf_DR[0]['id']
+    infra_DR = find_infra_group(data_DR, "the target cluster's current classification (#{@target_classification_file})")
+    id_DR = infra_DR['id']
+    peinf_DR = [infra_DR]
 
     # Recursively go through inf groups to get the full tree
     peinf_DR = addsubgroups(data_DR, id_DR, peinf_DR)
@@ -46,7 +56,43 @@ class TransformClassificationGroups
     File.open(@transformed_classification_file, 'w') { |file| file.write(JSON.pretty_generate(peinf_transformed_groups)) }
   end
 
+  # Runs the task, reporting a missing or ambiguous PE Infrastructure group
+  # as a Bolt _error instead of a Ruby stack trace.
+  def run!
+    execute!
+  rescue InfraGroupNotFound => e
+    puts({ '_error' => { 'msg' => e.message, 'kind' => INFRA_GROUP_NOT_FOUND_KIND } }.to_json)
+    exit 1
+  end
+
   private
+
+  # Finds the PE Infrastructure group without relying on its name, which
+  # customers can change (PE-47659). It's the group directly under All Nodes
+  # that carries the puppet_enterprise class; its id differs per install.
+  # If more than one group matches, the one with the default name wins.
+  # `where` names the classification being searched, for error messages.
+  def find_infra_group(groups, where)
+    candidates = groups.select do |g|
+      g['parent'] == ALL_NODES_ID && (g['classes'] || {}).key?('puppet_enterprise')
+    end
+    return candidates.first if candidates.size == 1
+
+    by_name = candidates.select { |g| g['name'] == INFRA_GROUP_NAME }
+    return by_name.first if by_name.size == 1
+
+    if candidates.empty?
+      raise InfraGroupNotFound, "Could not find the PE Infrastructure node group in #{where}. " \
+                                'PEADM looks for the node group directly under All Nodes that has the puppet_enterprise class; ' \
+                                'its name does not matter, so a renamed group is fine. Check that this group exists ' \
+                                'and still has the puppet_enterprise class, then retry.'
+    end
+
+    found = candidates.map { |g| "'#{g['name']}' (#{g['id']})" }.join(', ')
+    raise InfraGroupNotFound, "Found more than one possible PE Infrastructure node group in #{where}: #{found}. " \
+                              'Each is directly under All Nodes and has the puppet_enterprise class. Remove the ' \
+                              "puppet_enterprise class from the groups that are not PE Infrastructure, or rename the real one to '#{INFRA_GROUP_NAME}', then retry."
+  end
 
   # Recursively removes all subgroups (descendants) of the group identified
   # by id_rsg -- does not remove id_rsg's own entry, which the caller
@@ -80,5 +126,5 @@ end
 # testing of this task.
 unless ENV['RSPEC_UNIT_TEST_MODE']
   task = TransformClassificationGroups.new(JSON.parse(STDIN.read))
-  task.execute!
+  task.run!
 end
