@@ -100,6 +100,15 @@ describe 'peadm::upgrade' do
     expect(result.value.msg).to match(%r{Unable to determine a valid PE version})
   end
 
+  it 'logs pe_installer_source without its query string' do
+    allow_standard_non_returning_calls
+    expect_out_message.with_params("Parameter 'pe_installer_source': [my-custom-installer-name.tar.gz]")
+
+    run_plan('peadm::upgrade',
+             'primary_host' => 'primary',
+             'pe_installer_source' => 'https://example.com/downloads/my-custom-installer-name.tar.gz?X-Amz-Signature=a/b')
+  end
+
   it 'proceeds normally with a well-formed pe_installer_source tarball name' do
     allow_standard_non_returning_calls
     expect_task('peadm::get_group_rules').return_for_targets('primary' => { '_output' => '{"rules": []}' }).be_called_times(2)

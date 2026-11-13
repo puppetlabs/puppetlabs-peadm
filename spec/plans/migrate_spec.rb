@@ -29,7 +29,7 @@ describe 'peadm::migrate' do
   # assert_supported_architecture()/cluster.error checks. Kept as a minimally
   # valid "standard" architecture (primary only) everywhere except the
   # cluster-error test, so that check never fails by accident.
-  let(:cluster_data) { { 'params' => { 'primary_host' => old_primary_host } } }
+  let(:cluster_data) { { 'pe_version' => pe_version, 'params' => { 'primary_host' => old_primary_host } } }
 
   # $old_pe_conf: populated from the SECOND run_task('peadm::get_peadm_config',
   # ...) call (migrate.pp line ~85), used to build $node_types / drive the
@@ -92,6 +92,7 @@ describe 'peadm::migrate' do
     stub_pe_conf_read!
     stub_backup_download_upload!
     stub_get_peadm_config!
+    allow_plan('peadm::util::check_installer_source')
     allow_plan('peadm::install').always_return({})
     allow_plan('peadm::restore').always_return({})
     allow_plan('peadm::add_database').always_return({})
@@ -110,6 +111,7 @@ describe 'peadm::migrate' do
     stub_pe_conf_read!
     stub_backup_download_upload!
     stub_get_peadm_config!
+    allow_plan('peadm::util::check_installer_source')
     allow_plan('peadm::install').always_return({})
     allow_plan('peadm::restore').always_return({})
     allow_plan('peadm::add_database').always_return({})
@@ -196,11 +198,180 @@ describe 'peadm::migrate' do
       expect_plan('peadm::upgrade').return do |params:, **_kwargs|
         expect(params['version']).to eq('2023.8.10')
         expect(params['primary_host']).to eq(new_primary_host)
-        expect(params['download_mode']).to eq('direct')
         Bolt::PlanResult.new({}, 'success')
       end
 
       expect(run_plan('peadm::migrate', base_params.merge('upgrade_version' => '2023.8.10'))).to be_ok
+    end
+  end
+
+  # --------------------------------------------------------------------
+  # 2b. download_mode and installer sources (PE-47661). The new primary is
+  #     installed at the old cluster's version and only later upgraded to
+  #     upgrade_version, so install and upgrade each get their own source.
+  # --------------------------------------------------------------------
+  describe 'installer download options' do
+    let(:install_source) { 'https://deploy:install-secret@mirror.example.com/pe/puppet-enterprise-2019.8.12-el-9-x86_64.tar.gz' }
+    let(:upgrade_source) { 'https://deploy:upgrade-secret@mirror.example.com/pe/puppet-enterprise-2023.8.10-el-9-x86_64.tar.gz' }
+    let(:upgrade_params) { base_params.merge('upgrade_version' => '2023.8.10') }
+
+    def expect_download_options(plan, mode:, source:)
+      expect_plan(plan).be_called_times(1).return do |params:, **_kwargs|
+        expect(params['download_mode']).to eq(mode)
+        expect(params['pe_installer_source']).to eq(source)
+        Bolt::PlanResult.new({}, 'success')
+      end
+    end
+
+    # direct was hardcoded before download_mode existed; keeping it as the
+    # default means existing migrate runs behave exactly as before.
+    it 'defaults to direct with no custom source for both install and upgrade' do
+      stub_full_flow!
+      expect_download_options('peadm::install', mode: 'direct', source: nil)
+      expect_download_options('peadm::upgrade', mode: 'direct', source: nil)
+
+      expect(run_plan('peadm::migrate', upgrade_params)).to be_ok
+    end
+
+    it 'passes download_mode=bolthost through to both install and upgrade' do
+      stub_full_flow!
+      expect_download_options('peadm::install', mode: 'bolthost', source: nil)
+      expect_download_options('peadm::upgrade', mode: 'bolthost', source: nil)
+
+      expect(run_plan('peadm::migrate', upgrade_params.merge('download_mode' => 'bolthost'))).to be_ok
+    end
+
+    it 'sends pe_installer_source to install and upgrade_pe_installer_source to upgrade' do
+      stub_full_flow!
+      expect_download_options('peadm::install', mode: 'direct', source: install_source)
+      expect_download_options('peadm::upgrade', mode: 'direct', source: upgrade_source)
+
+      params = upgrade_params.merge('pe_installer_source' => install_source, 'upgrade_pe_installer_source' => upgrade_source)
+      expect(run_plan('peadm::migrate', params)).to be_ok
+    end
+
+    it 'rejects a download_mode that is not direct or bolthost' do
+      result = run_plan('peadm::migrate', base_params.merge('download_mode' => 'ftp'))
+
+      expect(result).not_to be_ok
+      expect(result.value.msg).to match(%r{parameter 'download_mode' expects a match for Peadm::Download_mode})
+    end
+
+    # Installer URLs can carry credentials, so migrate logs only the tarball
+    # name. peadm::upgrade logs its own source the same way (stubbed here).
+    it 'logs only the tarball name of each installer source' do
+      stub_full_flow!
+      expect_out_message.with_params("Parameter 'pe_installer_source': [puppet-enterprise-2019.8.12-el-9-x86_64.tar.gz]")
+      expect_out_message.with_params("Parameter 'upgrade_pe_installer_source': [puppet-enterprise-2023.8.10-el-9-x86_64.tar.gz]")
+      expect_out_message.with_params("Parameter 'download_mode': [direct]")
+
+      params = upgrade_params.merge('pe_installer_source' => install_source, 'upgrade_pe_installer_source' => upgrade_source)
+      expect(run_plan('peadm::migrate', params)).to be_ok
+    end
+
+    # A signed token after '?' must not be logged either, even though the
+    # plan then rejects the URL.
+    it 'drops the query string from the logged tarball name' do
+      allow_out_message
+      allow_any_command
+      stub_precheck!
+      stub_get_peadm_config!
+      expect_out_message.with_params("Parameter 'pe_installer_source': [puppet-enterprise-2019.8.12-el-9-x86_64.tar.gz]")
+
+      result = run_plan('peadm::migrate', base_params.merge('pe_installer_source' => "#{install_source}?X-Amz-Signature=a/b"))
+      expect(result).not_to be_ok
+    end
+  end
+
+  # --------------------------------------------------------------------
+  # 2c. Installer checks before the backup (PE-47661): a wrong or
+  #     unreachable installer must fail the plan before anything changes.
+  # --------------------------------------------------------------------
+  describe 'installer checks before the backup' do
+    let(:mirror) { 'https://mirror.example.com/pe' }
+    let(:install_name) { 'puppet-enterprise-2019.8.12-el-9-x86_64.tar.gz' }
+    let(:upgrade_name) { 'puppet-enterprise-2023.8.10-el-9-x86_64.tar.gz' }
+    let(:upgrade_params) { base_params.merge('upgrade_version' => '2023.8.10') }
+
+    def stub_until_backup!
+      allow_out_message
+      allow_any_command
+      stub_precheck!
+      stub_get_peadm_config!
+      expect_plan('peadm::backup').not_be_called
+    end
+
+    def expect_check(name, source, targets, mode: 'direct')
+      expect_plan('peadm::util::check_installer_source').with_params(
+        'targets' => targets, 'source' => source, 'tarball_name' => name, 'download_mode' => mode,
+      )
+    end
+
+    it 'checks the default installer for the old version, then the upgrade installer' do
+      stub_full_flow!
+      expect_check(install_name, "https://s3.amazonaws.com/pe-builds/released/2019.8.12/#{install_name}", [new_primary_host])
+      expect_check(upgrade_name, "https://s3.amazonaws.com/pe-builds/released/2023.8.10/#{upgrade_name}", [new_primary_host])
+
+      expect(run_plan('peadm::migrate', upgrade_params)).to be_ok
+    end
+
+    it 'checks a custom installer source in bolthost mode' do
+      stub_full_flow!
+      expect_check(install_name, "#{mirror}/#{install_name}", [new_primary_host], mode: 'bolthost')
+
+      params = base_params.merge('pe_installer_source' => "#{mirror}/#{install_name}", 'download_mode' => 'bolthost')
+      expect(run_plan('peadm::migrate', params)).to be_ok
+    end
+
+    it 'checks only the install installer, with a note, when upgrade_version is not set' do
+      stub_full_flow!
+      expect_check(install_name, "https://s3.amazonaws.com/pe-builds/released/2019.8.12/#{install_name}", [new_primary_host])
+      expect_out_message.with_params('Ignoring upgrade_pe_installer_source: upgrade_version is not set, so there is no upgrade')
+
+      expect(run_plan('peadm::migrate', base_params.merge('upgrade_pe_installer_source' => "#{mirror}/#{upgrade_name}"))).to be_ok
+    end
+
+    it 'fails before the backup when the installer sources are swapped' do
+      stub_until_backup!
+
+      params = upgrade_params.merge('pe_installer_source' => "#{mirror}/#{upgrade_name}", 'upgrade_pe_installer_source' => "#{mirror}/#{install_name}")
+      result = run_plan('peadm::migrate', params)
+
+      expect(result).not_to be_ok
+      expect(result.value.msg).to eq(
+        "pe_installer_source must point to #{install_name} (PE 2019.8.12 for the new primary's platform), but its file name is #{upgrade_name}.",
+      )
+    end
+
+    it "fails before the backup when the upgrade installer doesn't match upgrade_version" do
+      stub_until_backup!
+      allow_plan('peadm::util::check_installer_source')
+
+      wrong_name = 'puppet-enterprise-2023.8.9-el-9-x86_64.tar.gz'
+      result = run_plan('peadm::migrate', upgrade_params.merge('upgrade_pe_installer_source' => "#{mirror}/#{wrong_name}"))
+
+      expect(result).not_to be_ok
+      expect(result.value.msg).to start_with("upgrade_pe_installer_source must point to #{upgrade_name}")
+    end
+
+    it 'fails before the backup when an installer URL has a query string' do
+      stub_until_backup!
+
+      result = run_plan('peadm::migrate', base_params.merge('pe_installer_source' => "#{mirror}/#{install_name}?token=secret"))
+
+      expect(result).not_to be_ok
+      expect(result.value.msg).to start_with("pe_installer_source can't have a query string or fragment")
+      expect(result.value.msg).not_to include('secret')
+    end
+
+    it "doesn't take the backup when an installer can't be downloaded" do
+      stub_until_backup!
+      expect_plan('peadm::util::check_installer_source').error_with('kind' => 'bolt/plan-failure', 'msg' => "Can't download the PE installer")
+
+      result = run_plan('peadm::migrate', base_params)
+
+      expect(result).not_to be_ok
+      expect(result.value.msg).to eq("Can't download the PE installer")
     end
   end
 
