@@ -36,7 +36,12 @@
 #   The URL to download the Puppet Enterprise installer media from. If not
 #   specified, PEAdm will attempt to download PE installation media from its
 #   standard public source. When specified, PEAdm will download directly from the
-#   URL given.
+#   URL given. If the URL doesn't end in a `.tar` or `.tar.gz` file name made of
+#   letters, digits and `. _ + -`, starting with a letter or digit, such as a
+#   download.cgi?...&ver= link, the tarball is saved under the standard
+#   `puppet-enterprise-<version>-<platform>.tar.gz` name for the version, which
+#   must be the version of the media. A URL with an @ after its host counts as
+#   having no file name.
 #
 plan peadm::subplans::install (
   # Standard
@@ -262,7 +267,13 @@ plan peadm::subplans::install (
   }
 
   if $pe_installer_source {
-    $pe_tarball_name = $pe_installer_source.split('/')[-1]
+    # A URL that doesn't end in a tarball file name, such as a
+    # download.cgi?...&ver= link, gets the standard name instead: its file
+    # name is the same for every version, and the bolthost download mode
+    # would reuse a tarball of another version.
+    $pe_tarball_name = peadm::url_tarball_name($pe_installer_source).lest || {
+      "puppet-enterprise-${version}-${platform}.tar.gz"
+    }
     $pe_tarball_source = $pe_installer_source
   } else {
     $pe_tarball_name   = "puppet-enterprise-${version}-${platform}.tar.gz"
