@@ -1,5 +1,5 @@
 {
-  "description": "Read a regular file as UTF-8 text. If the path is missing, isn't a regular file (for example a directory) or the task user lacks read permission, returns content null with an error message and exits 0. If reading the file then fails, or its content isn't valid UTF-8, the task fails with the error kind peadm/read-file-error.",
+  "description": "Read a regular file as UTF-8 text. Missing or unreadable: content null, exit 0. Read or decode error: fails with peadm/read-file-error.",
   "parameters": {
     "path": {
       "type": "String",

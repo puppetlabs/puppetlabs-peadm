@@ -49,7 +49,7 @@ describe 'peadm::read_file task' do
     expect(JSON.parse(result[:stdout])).to eq('content' => "plain\n")
   end
 
-  it 'returns the content byte for byte, including CRLF line endings' do
+  it 'returns the content with line endings unchanged' do
     result = run_task(write_file('crlf.txt', "a\r\nb\n", mode: 'wb'))
 
     expect(result[:exitstatus]).to eq(0)
@@ -57,8 +57,8 @@ describe 'peadm::read_file task' do
   end
 
   # Python 3.7+ switches a C locale to UTF-8 by itself, so on those versions
-  # this passes even without the task's explicit encoding. It matters on
-  # Python 2.7 and 3.6 (RHEL 8 platform-python), which CI doesn't run.
+  # this passes even without the task's explicit encoding. The encoding
+  # matters on Python 2.7 and 3.6 (RHEL 8 platform-python).
   it 'reads UTF-8 content even when the locale is C' do
     result = run_task(write_file('utf8.txt', "café\n", mode: 'w:UTF-8'), 'LC_ALL' => 'C', 'LANG' => 'C')
 
@@ -89,6 +89,7 @@ describe 'peadm::read_file task' do
     expect(JSON.parse(result[:stdout])).to eq('content' => "meta\n")
   end
 
+  # Guards against a future change that runs Python before the -f/-r check.
   it 'reports a missing crafted path as missing, without running it' do
     result = run_task(File.join(dir, "c'+__import__('os').system('touch pwned_missing')+'.txt"))
 
@@ -132,5 +133,24 @@ describe 'peadm::read_file task' do
     expect(error['kind']).to eq('peadm/read-file-error')
     expect(error['msg']).to include(path)
     expect(error['details']).to eq('path' => path)
+  end
+
+  # A path that isn't valid UTF-8 must still give valid JSON, with the bad
+  # bytes replaced. Filesystems that reject such names (APFS) skip this.
+  it 'fails with valid JSON when the path itself is not UTF-8' do
+    path = File.join(dir, "lat\xE9.bin".b)
+    begin
+      File.binwrite(path, "ok\xff\n".b)
+    rescue SystemCallError
+      skip 'this filesystem rejects file names that are not UTF-8'
+    end
+
+    result = run_task(path)
+
+    expect(result[:exitstatus]).to eq(1)
+    error = JSON.parse(result[:stdout]).fetch('_error')
+    expect(error['kind']).to eq('peadm/read-file-error')
+    expect(error['details']['path']).to end_with("lat\uFFFD.bin")
+    expect(error['msg']).to include("lat\uFFFD.bin")
   end
 end
