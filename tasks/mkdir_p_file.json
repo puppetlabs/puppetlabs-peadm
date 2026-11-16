@@ -1,5 +1,5 @@
 {
-  "description": "Create a file with the specified content at the specified location",
+  "description": "Create a file with the specified content at the specified location. Needs a Python interpreter on the target.",
   "parameters": {
     "path": {
       "type": "String",
@@ -7,7 +7,8 @@
     },
     "content": {
       "type": "String",
-      "description": "The content to create the file with"
+      "description": "The content to create the file with",
+      "sensitive": true
     },
     "owner": {
       "type": "Optional[String]",
@@ -26,7 +27,7 @@
       "description": "If supplied, recursively chown starting at this path"
     }
   },
-  "input_method": "environment",
+  "input_method": "stdin",
   "implementations": [
     {"name": "mkdir_p_file.sh"}
   ]

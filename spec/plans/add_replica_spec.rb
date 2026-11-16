@@ -6,6 +6,10 @@ describe 'peadm::add_replica' do
   def allow_standard_non_returning_calls
     allow_apply
     allow_any_task
+    # The node_group_environment default reads pe.conf, and
+    # insert_csr_extension_requests csr_attributes.yaml, as Sensitive (PE-47523)
+    allow_pe_conf_reads
+    allow_sensitive_reads('/etc/puppetlabs/puppet/csr_attributes.yaml', nil)
     allow_any_command
     allow_any_out_message
   end

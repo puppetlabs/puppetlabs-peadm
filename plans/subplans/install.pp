@@ -11,6 +11,10 @@
 #   over to the primary at /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa
 #   If the file does not exist the value will simply be supplied to the primary
 #
+# @param r10k_private_key_content
+#   The text of the private key to use for r10k, as an alternative to
+#   r10k_private_key_file. One of its lines must start with `-----BEGIN`.
+#
 # @param r10k_known_hosts
 #   Puppet Enterprise 2023.3+ requires host key verification for the
 #   r10k_remote host when using ssh. When setting \$r10k_private_key, you must
@@ -25,7 +29,7 @@
 #   If the file does not exist the value will simply be supplied to the primaries
 #
 # @param pe_conf_data
-#   Config data to plane into pe.conf when generated on all hosts, this can be
+#   Config data to place into pe.conf when generated on all hosts, this can be
 #   used for tuning data etc.
 #
 # @param pe_installer_source
@@ -58,7 +62,7 @@ plan peadm::subplans::install (
   Optional[Boolean]    $code_manager_auto_configure = undef,
   Optional[String]     $r10k_remote              = undef,
   Optional[String]     $r10k_private_key_file    = undef,
-  Optional[Peadm::Pem] $r10k_private_key_content = undef,
+  Optional[String]     $r10k_private_key_content = undef,
   Optional[Peadm::Known_hosts] $r10k_known_hosts = undef,
 
   # License key
@@ -72,6 +76,12 @@ plan peadm::subplans::install (
   Boolean               $permit_unsafe_versions = false,
   String                $token_lifetime         = '1y',
 ) {
+  # A parameter type would quote a key that doesn't match it in its error, and
+  # print the key. Check it here, and name only the parameter (PE-47523).
+  if $r10k_private_key_content =~ String and $r10k_private_key_content !~ Peadm::Pem {
+    fail_plan('r10k_private_key_content must be a PEM private key: a line of it must start with -----BEGIN')
+  }
+
   peadm::assert_supported_pe_version($version, $permit_unsafe_versions)
 
   # Convert inputs into targets.
@@ -454,8 +464,9 @@ plan peadm::subplans::install (
       $memo
     } else {
       if $attempt > 1 {
-        # rbac-api's response body is external content -- sanitize before
-        # logging it on every retry: strip newlines so it can't forge/obscure
+        # The task's error message can carry external content (a connection
+        # error's text, or Bolt's "stderr contained: ..." output) -- sanitize
+        # before logging it on every retry: strip newlines so it can't forge/obscure
         # adjacent CI log lines, cap its length so an unexpectedly verbose
         # payload isn't echoed in full each time, and fix up any invalid or
         # non-UTF8-tagged content -- regsubst/regex can't safely process
@@ -478,8 +489,8 @@ plan peadm::subplans::install (
     # the message that actually surfaces on exhaustion, and Bolt's own
     # --format json outputter calls JSON.generate on plan failure messages,
     # which raises JSON::GeneratorError on invalid UTF-8 -- an unsanitized
-    # rbac-api error could crash the failure report itself, in exactly the
-    # CI scenario (machine-parseable output) this ticket exists to fix.
+    # task error could crash the failure report itself, in exactly the
+    # CI scenario (machine-parseable output) PE-46917 exists to fix.
     $rbac_token_error = peadm::sanitize_log_text($rbac_token_result.first.error.message, 200)
     if $rbac_token_result.first.error.kind == $rbac_auth_failure_kind {
       fail_plan("Failed to obtain RBAC token, permanent failure (not retrying): ${rbac_token_error}")

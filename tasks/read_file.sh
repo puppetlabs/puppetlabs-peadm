@@ -13,19 +13,25 @@ main() {
 		exit 1
 	done
 
-	if [ -r "$PT_path" ]; then
-		cat <<-EOS
-			{
-				"content": $($python_exec -c "import json; print(json.dumps(open('$PT_path','r').read()))")
-			}
-		EOS
+	local content error_field=''
+	if [ -f "$PT_path" ] && [ -r "$PT_path" ]; then
+		# The path goes in as an argument, so a ' in it can't break the Python
+		# source. A failed read fails the task (Python's traceback is the error)
+		# instead of printing JSON Bolt can't parse, which a caller would read
+		# as a missing file.
+		content=$("$python_exec" -c 'import io, json, sys; print(json.dumps(io.open(sys.argv[1], encoding="utf-8").read()))' "$PT_path") || exit 1
 	else
-		cat <<-EOS
-			{
-				"content": null,
-				"error": "File does not exist or is not readable"
-			}
-		EOS
+		content=null
+		error_field=', "error": "File does not exist or is not readable"'
+	fi
+
+	# With as_sensitive, the content goes under _sensitive, which Bolt wraps in
+	# Sensitive and masks in bolt-debug.log and the task's result (PE-47523).
+	# Bolt's --stream option still prints the task's raw output.
+	if [ "$PT_as_sensitive" = "true" ]; then
+		printf '%s\n' "{\"_sensitive\": {\"content\": ${content}}${error_field}}"
+	else
+		printf '%s\n' "{\"content\": ${content}${error_field}}"
 	fi
 }
 

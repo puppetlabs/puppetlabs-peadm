@@ -66,10 +66,11 @@ describe 'peadm::migrate' do
     allow_task('peadm::precheck').always_return({ 'platform' => 'el-9-x86_64' })
   end
 
+  # peadm::get_pe_conf reads pe.conf as Sensitive (PE-47523).
   def stub_pe_conf_read!
     allow_task('peadm::read_file')
-      .with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf')
-      .always_return({ 'content' => '{}' })
+      .with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf', 'as_sensitive' => true)
+      .return { |targets:, **| sensitive_read_file_result(targets, '{}') }
   end
 
   def stub_backup_download_upload!
@@ -373,6 +374,31 @@ describe 'peadm::migrate' do
     it 'never calls add_replica when replica_host is not set' do
       stub_full_flow!
       expect_plan('peadm::add_replica').not_be_called
+
+      expect(run_plan('peadm::migrate', base_params)).to be_ok
+    end
+  end
+
+  # --------------------------------------------------------------------
+  # 6. The old primary's console password (migrate.pp ~84-99): read from its
+  #    pe.conf as Sensitive (PE-47523), then handed to install and restore
+  #    as the plain String their signatures take. BoltSpec doesn't
+  #    type-check mocked plans, so the value itself is asserted.
+  # --------------------------------------------------------------------
+  describe 'console password' do
+    it "hands the old primary's console_admin_password to install and restore as a plain String" do
+      stub_full_flow!
+      allow_task('peadm::read_file')
+        .with_params('path' => '/etc/puppetlabs/enterprise/conf.d/pe.conf', 'as_sensitive' => true)
+        .return { |targets:, **| sensitive_read_file_result(targets, '{"console_admin_password": "old-canary"}') }
+      expect_plan('peadm::install').return do |params:, **|
+        expect(params['console_password']).to eq('old-canary')
+        Bolt::PlanResult.new({}, 'success')
+      end
+      expect_plan('peadm::restore').return do |params:, **|
+        expect(params['console_password']).to eq('old-canary')
+        Bolt::PlanResult.new({}, 'success')
+      end
 
       expect(run_plan('peadm::migrate', base_params)).to be_ok
     end

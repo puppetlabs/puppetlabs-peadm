@@ -89,6 +89,28 @@ describe 'peadm::subplans::install' do
     expect(run_plan('peadm::subplans::install', params)).to be_ok
   end
 
+  # PE-47523: a Pattern type quotes a value that doesn't match it in the
+  # error, so a key pasted with a leading space or without its header would
+  # print in full on the console and in a CI log. The plan checks the key
+  # itself and names only the parameter.
+  ['  -----BEGIN OPENSSH PRIVATE KEY-----', 'key-canary', "\uFEFF-----BEGIN KEY"].each do |bad_key|
+    it "rejects r10k_private_key_content #{bad_key.inspect} without quoting it" do
+      params = {
+        'primary_host' => 'primary',
+        'console_password' => 'puppetLabs123!',
+        'version' => '2023.4.0',
+        'r10k_remote' => 'git@github.com:puppetlabs/nothing',
+        'r10k_private_key_content' => "#{bad_key}\nSECRET-canary\n-----END KEY-----",
+      }
+
+      result = run_plan('peadm::subplans::install', params)
+
+      expect(result).not_to be_ok
+      expect(result.value.message).to include('r10k_private_key_content must be a PEM private key')
+      expect(result.value.message).not_to include('canary')
+    end
+  end
+
   it 'installs 2023.4+ with r10k_private_key and r10k_known_hosts' do
     params = {
       'primary_host' => 'primary',
@@ -251,8 +273,9 @@ describe 'peadm::subplans::install' do
       expect(run_plan('peadm::subplans::install', params)).to be_ok
     end
 
-    # rbac-api's response body is external, network-sourced content (PE-46689's
-    # own retry loop already carries it into fail_plan on final exhaustion) --
+    # The task's error message can carry external content (a connection error's
+    # text, or Bolt's "stderr contained: ..." output), and PE-46689's own retry
+    # loop already carries it into fail_plan on final exhaustion --
     # surfacing it on every retry too widens where it can end up, so it must be
     # sanitized rather than logged verbatim: newlines could forge/obscure
     # adjacent CI log lines, and an unexpectedly large payload shouldn't get
@@ -735,5 +758,79 @@ describe 'peadm::subplans::install' do
                    })
 
     expect(run_plan('peadm::subplans::install', params)).to be_ok
+  end
+
+  describe 'secrets in task arguments and on disk (PE-47523)' do
+    let(:install_params) do
+      {
+        'primary_host'             => 'primary',
+        'console_password'         => 'puppetLabs123!',
+        'version'                  => '2023.8.10',
+        'r10k_remote'              => 'git@github.com:puppetlabs/nothing',
+        'r10k_private_key_content' => '-----BEGIN r10k-key-canary',
+        'license_key_content'      => 'license-canary',
+      }
+    end
+
+    def command_results(targets, command, exit_code: 0, stdout: '', stderr: '')
+      Bolt::ResultSet.new(targets.map do |target|
+        Bolt::Result.for_command(target, { 'stdout' => stdout, 'stderr' => stderr, 'exit_code' => exit_code }, 'command', command, [])
+      end)
+    end
+
+    it 'passes the console password to rbac_token as Sensitive' do
+      expect_task('peadm::rbac_token').with_targets('primary').return do |targets:, params:, **|
+        expect(params['password']).to be_a(Puppet::Pops::Types::PSensitiveType::Sensitive)
+        expect(params['password'].unwrap).to eq('puppetLabs123!')
+        ok_results(targets)
+      end
+
+      expect(run_plan('peadm::subplans::install', install_params)).to be_ok
+    end
+
+    it 'writes pe.conf, the r10k key and the license to the primary as Sensitive content' do
+      primary_contents = {}
+      allow_task('peadm::mkdir_p_file').return do |targets:, params:, **|
+        primary_contents[params['path']] = params['content'] if targets.map(&:name) == ['primary']
+        ok_results(targets)
+      end
+
+      expect(run_plan('peadm::subplans::install', install_params)).to be_ok
+
+      {
+        '/etc/puppetlabs/enterprise/conf.d/pe.conf'            => '"console_admin_password": "puppetLabs123!"',
+        '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa' => 'r10k-key-canary',
+        '/etc/puppetlabs/license.key'                          => 'license-canary',
+      }.each do |path, secret|
+        content = primary_contents[path]
+        expect(content).not_to be_nil, "no mkdir_p_file call wrote #{path} on the primary"
+        expect(content).to be_a(Puppet::Pops::Types::PSensitiveType::Sensitive), "#{path} content is not Sensitive"
+        expect(content.unwrap).to include(secret)
+      end
+    end
+
+    # Renders every task call and command the way Bolt logs them, so a secret
+    # passed through any unflagged parameter or command line fails here, not
+    # only in the acceptance canary check.
+    { 'standard' => {}, 'extra-large' => { 'primary_postgresql_host' => 'postgres1' } }.each do |architecture, extra|
+      it "logs no secret in any task argument or command (#{architecture})" do
+        logged = []
+        allow_any_task.return do |targets:, task:, params:|
+          logged << "Running task #{task} with '#{params.reject { |key, _| key.start_with?('_') }.to_json}'"
+          ok_results(targets)
+        end
+        allow_any_command.return do |targets:, command:, **|
+          logged << "Running command '#{command}'"
+          command_results(targets, command)
+        end
+
+        expect(run_plan('peadm::subplans::install', install_params.merge(extra))).to be_ok
+
+        # Positive control: the sweep saw rbac_token's masked password.
+        expect(logged).to include(a_string_including(%q(Running task peadm::rbac_token with '{"password":"Sensitive [value redacted]")))
+        leaks = logged.grep(%r{puppetLabs123!|r10k-key-canary|license-canary})
+        expect(leaks).to be_empty, "secrets in logged task arguments or commands:\n#{leaks.join("\n")}"
+      end
+    end
   end
 end
