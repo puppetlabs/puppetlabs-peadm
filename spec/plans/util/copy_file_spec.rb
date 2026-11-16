@@ -28,13 +28,12 @@ describe 'peadm::util::copy_file' do
     expect(run_plan('peadm::util::copy_file', params)).to be_ok
   end
 
-  # read_file used to exit 0 with unparseable output when Python couldn't
-  # read the file, which this plan took for "no content" and skipped. It now
-  # fails, and the plan must fail rather than skip or write an empty file.
+  # A read error must fail the plan, not be mistaken for a missing file and
+  # skipped, or written out as an empty file.
   it 'fails, without writing anything, when the source file cannot be read' do
     expect_task('peadm::read_file').error_with(
       'kind' => 'peadm/read-file-error',
-      'msg' => "Could not read #{params['path']} as UTF-8 text: invalid start byte",
+      'msg' => "Could not read #{params['path']}: 'utf-8' codec can't decode byte 0xff",
     )
     expect_task('peadm::mkdir_p_file').not_be_called
 

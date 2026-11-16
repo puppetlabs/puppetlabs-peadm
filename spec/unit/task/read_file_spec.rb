@@ -12,7 +12,9 @@ describe 'peadm::read_file task' do
   let(:script) { File.expand_path('../../../tasks/read_file.sh', __dir__) }
   let(:dir) { Dir.mktmpdir('read_file_spec') }
 
-  python_available = ['python', 'python3', 'python2'].any? { |py| system("command -v #{py} >/dev/null 2>&1") }
+  python_available = ['python', 'python3', 'python2', '/usr/libexec/platform-python'].any? do |py|
+    system("command -v #{py} >/dev/null 2>&1")
+  end
 
   before(:each) do
     skip 'no Python interpreter on this host' unless python_available
@@ -54,6 +56,9 @@ describe 'peadm::read_file task' do
     expect(JSON.parse(result[:stdout])).to eq('content' => "a\r\nb\n")
   end
 
+  # Python 3.7+ switches a C locale to UTF-8 by itself, so on those versions
+  # this passes even without the task's explicit encoding. It matters on
+  # Python 2.7 and 3.6 (RHEL 8 platform-python), which CI doesn't run.
   it 'reads UTF-8 content even when the locale is C' do
     result = run_task(write_file('utf8.txt', "café\n", mode: 'w:UTF-8'), 'LC_ALL' => 'C', 'LANG' => 'C')
 
@@ -73,6 +78,7 @@ describe 'peadm::read_file task' do
     expect(JSON.parse(result[:stdout])).to eq('content' => "hello\n")
   end
 
+  # Guards against a future change that lets the shell re-parse the path.
   it 'reads a path containing shell metacharacters as an ordinary path, without running them' do
     path = write_file('b$(touch pwned_sub)`touch pwned_tick`;touch pwned_semi;".txt', "meta\n")
 
