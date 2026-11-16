@@ -12,6 +12,25 @@
 #   Optional new primary PostgreSQL server to be added to the cluster
 # @param replica_postgresql_host
 #   Optional new replica PostgreSQL server to be added to the cluster
+# @param license_key_file
+#   Optional path to a local PE license file (on the Bolt controller) to
+#   install on the new primary. The plan fails before anything is changed if
+#   the file does not exist or cannot be read, if it is blank, or if both
+#   license_key_file and license_key_content are given. If neither parameter
+#   is given, the plan copies the old primary's license, read from
+#   /etc/puppetlabs/license.key, or from /etc/puppetlabs/suite-license.lic if
+#   license.key is missing, unreadable, blank, or its read task fails. (The old
+#   primary's license files are not read when a license is supplied.) When a
+#   license is found or supplied, it is installed on the new primary as
+#   /etc/puppetlabs/license.key. If none is found or readable, migration
+#   continues and the new primary is installed without a license key. The plan
+#   prints a message beginning 'Warning:' in that case (and another when the
+#   migration finishes), which cannot tell a missing file from an unreadable or
+#   blank one. If a read task itself fails, the file path and the task's error
+#   message are printed too, even when the other file then supplies a license.
+# @param license_key_content
+#   Same as license_key_file, but takes the license text instead of a file
+#   path. Cannot be combined with license_key_file, and must not be blank.
 plan peadm::migrate (
   Peadm::SingleTargetSpec $old_primary_host,
   Peadm::SingleTargetSpec $new_primary_host,
@@ -19,8 +38,11 @@ plan peadm::migrate (
   Optional[Peadm::SingleTargetSpec] $replica_host = undef,
   Optional[Peadm::SingleTargetSpec] $primary_postgresql_host = undef,
   Optional[Peadm::SingleTargetSpec] $replica_postgresql_host = undef,
+  Optional[String] $license_key_file = undef,
+  Optional[String] $license_key_content = undef,
 ) {
-  # Log parameters for debugging 
+  # Log parameters for debugging. Do not add license_key_file/license_key_content
+  # here: this prints values unmasked.
   peadm::log_plan_parameters({
     'old_primary_host' => $old_primary_host,
     'new_primary_host' => $new_primary_host,
@@ -32,6 +54,18 @@ plan peadm::migrate (
 
   # pre-migration checks
   peadm::assert_supported_bolt_version()
+  # Resolve any operator-supplied license now, so that passing both
+  # license_key_file and license_key_content fails before any host is touched.
+  $supplied_license = peadm::file_or_content('license_key', $license_key_file, $license_key_content)
+  if ($license_key_file or $license_key_content) and $supplied_license !~ Pattern[/\S/] {
+    # file_or_content has already rejected both being given, so only one is set
+    if $license_key_file {
+      $blank_param = 'license_key_file'
+    } else {
+      $blank_param = 'license_key_content'
+    }
+    fail_plan("${blank_param} was given but is empty or blank")
+  }
   if $upgrade_version and $upgrade_version != '' and !empty($upgrade_version) {
     $permit_unsafe_versions = false
     peadm::assert_supported_pe_version($upgrade_version, $permit_unsafe_versions)
@@ -84,12 +118,73 @@ plan peadm::migrate (
   $old_primary_password = peadm::get_pe_conf($old_primary_target)['console_admin_password']
   $old_pe_conf = run_task('peadm::get_peadm_config', $old_primary_target).first.value
 
+  # An operator-supplied license (never blank, checked above) wins; otherwise
+  # carry the old primary's license across. Reads use _catch_errors because an
+  # unreadable license must not abort the migration. If the read task itself
+  # fails (e.g. no python on the old primary) the file path and Bolt's error
+  # message are printed. A missing or unreadable file is not a task failure:
+  # peadm::read_file returns null content, so it is indistinguishable from no
+  # license and is covered by the 'none found or readable' message. So is a
+  # readable file that python cannot decode, where the task prints invalid JSON
+  # and still exits 0. A blank file counts as no license.
+  #
+  # The license travels as a plain String, as it does through peadm::install,
+  # so Bolt can show it: on the console with -v or --log-level debug, and in
+  # bolt-debug.log. Never interpolate it into a message.
+  #
+  # The 'Could not read' messages below print error.message, which Bolt builds
+  # and which, for a failed task, can include the task's own output. The only
+  # way peadm::read_file exits non-zero is when it finds no python, and then it
+  # prints fixed text, never file contents. Keep it that way.
+  $license_key_path = '/etc/puppetlabs/license.key'
+  $suite_license_path = '/etc/puppetlabs/suite-license.lic'
+  if $supplied_license =~ Pattern[/\S/] {
+    $install_license_content = $supplied_license
+    $license_source = 'operator-supplied'
+  } else {
+    $primary_result = run_task('peadm::read_file', $old_primary_target,
+      path => $license_key_path,
+      _catch_errors => true
+    ).first
+    unless $primary_result.ok {
+      out::message("Could not read ${license_key_path} on the old primary: ${primary_result.error.message}")
+    }
+    $primary_license = $primary_result['content']
+    if $primary_license =~ Pattern[/\S/] {
+      $install_license_content = $primary_license
+      $license_source = "${license_key_path} on the old primary"
+    } else {
+      $suite_result = run_task('peadm::read_file', $old_primary_target,
+        path => $suite_license_path,
+        _catch_errors => true
+      ).first
+      unless $suite_result.ok {
+        out::message("Could not read ${suite_license_path} on the old primary: ${suite_result.error.message}")
+      }
+      $suite_license = $suite_result['content']
+      if $suite_license =~ Pattern[/\S/] {
+        $install_license_content = $suite_license
+        $license_source = "${suite_license_path} on the old primary"
+      } else {
+        $install_license_content = undef
+        $license_source = 'none found or readable, the new primary will be installed without a license key'
+      }
+    }
+  }
+  # $license_source is a fixed string, never the license itself. Keep it that way.
+  if $install_license_content {
+    out::message("PE license for the new primary: ${license_source}")
+  } else {
+    out::message("Warning: PE license for the new primary: ${license_source}")
+  }
+
   run_plan('peadm::install', {
       primary_host                => $new_primary_host,
       console_password            => $old_primary_password,
       code_manager_auto_configure => true,
       download_mode               => 'direct',
       version                     => $old_pe_conf['pe_version'],
+      license_key_content         => $install_license_content,
   })
 
   run_plan('peadm::restore', {
@@ -170,5 +265,11 @@ plan peadm::migrate (
         primary_postgresql_host     => $primary_postgresql_host,
         replica_postgresql_host     => $replica_postgresql_host,
     })
+  }
+
+  # Say it again now the migration has finished, so it is not lost among the
+  # progress output of a long run.
+  unless $install_license_content {
+    out::message('Warning: migration finished but no license key was installed on the new primary')
   }
 }

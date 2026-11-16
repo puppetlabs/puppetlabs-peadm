@@ -2625,6 +2625,8 @@ The following parameters are available in the `peadm::migrate` plan:
 * [`replica_host`](#-peadm--migrate--replica_host)
 * [`primary_postgresql_host`](#-peadm--migrate--primary_postgresql_host)
 * [`replica_postgresql_host`](#-peadm--migrate--replica_postgresql_host)
+* [`license_key_file`](#-peadm--migrate--license_key_file)
+* [`license_key_content`](#-peadm--migrate--license_key_content)
 
 ##### <a name="-peadm--migrate--old_primary_host"></a>`old_primary_host`
 
@@ -2667,6 +2669,37 @@ Default value: `undef`
 Data type: `Optional[Peadm::SingleTargetSpec]`
 
 Optional new replica PostgreSQL server to be added to the cluster
+
+Default value: `undef`
+
+##### <a name="-peadm--migrate--license_key_file"></a>`license_key_file`
+
+Data type: `Optional[String]`
+
+Optional path to a local PE license file (on the Bolt controller) to
+install on the new primary. The plan fails before anything is changed if
+the file does not exist or cannot be read, if it is blank, or if both
+license_key_file and license_key_content are given. If neither parameter
+is given, the plan copies the old primary's license, read from
+/etc/puppetlabs/license.key, or from /etc/puppetlabs/suite-license.lic if
+license.key is missing, unreadable, blank, or its read task fails. (The old
+primary's license files are not read when a license is supplied.) When a
+license is found or supplied, it is installed on the new primary as
+/etc/puppetlabs/license.key. If none is found or readable, migration
+continues and the new primary is installed without a license key. The plan
+prints a message beginning 'Warning:' in that case (and another when the
+migration finishes), which cannot tell a missing file from an unreadable or
+blank one. If a read task itself fails, the file path and the task's error
+message are printed too, even when the other file then supplies a license.
+
+Default value: `undef`
+
+##### <a name="-peadm--migrate--license_key_content"></a>`license_key_content`
+
+Data type: `Optional[String]`
+
+Same as license_key_file, but takes the license text instead of a file
+path. Cannot be combined with license_key_file, and must not be blank.
 
 Default value: `undef`
 
