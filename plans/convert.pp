@@ -121,6 +121,7 @@ plan peadm::convert (
   }
 
   # Know what version of PE the current targets are
+  # TODO PE-48666: content is null when the file is missing; fail with a message naming it.
   $pe_version = run_task('peadm::read_file', $primary_target,
     path => '/opt/puppetlabs/server/pe_version',
   )[0][content].chomp

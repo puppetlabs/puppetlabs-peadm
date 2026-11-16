@@ -12,6 +12,7 @@ plan peadm::util::sanitize_pg_pe_conf (
     path => $path,
   ).map |$result| {
     out::message("Sanitizing pe.conf on ${result.value}")
+    # TODO PE-48666: content is null when the file is missing; fail with a message naming it.
     $sanitized = $result.value['content'].parsejson() + {
       'puppet_enterprise::puppet_master_host' => $primary_target.peadm::certname(),
       'puppet_enterprise::puppetdb_database_host'      => $result.target.peadm::certname(),
