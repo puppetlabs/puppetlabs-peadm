@@ -46,17 +46,20 @@
 #   "status" => "\e[33mdegraded\e[0m"
 # }
 function peadm::determine_status(Array $status_data, Boolean $use_colors = true) >> Hash {
-  # convert the data into a hash with the sevice names as the keys
-  $hash_data = $status_data.reduce({}) | $res, $data | {
-    stdlib::merge($res, { $data[service] => $data })
-  }
-  $out = $hash_data.reduce({}) | $res, $svc_data | {
-    $service_name = $svc_data[0]
-    $server = $svc_data[1][server]
-    stdlib::merge($res, { "${service_name}/${server}" => $svc_data[1][state] == 'running' })
+  # convert the data into a hash keyed by "<service>/<server>". The same service name is
+  # reported once per node (e.g. on both the primary and the replica), and a single node can
+  # report a service name more than once (e.g. PCP Broker and PCP Broker v2), so a key is
+  # only considered running if every entry for it is running.
+  $out = $status_data.reduce({}) | $res, $data | {
+    $key = "${data[service]}/${data[server]}"
+    stdlib::merge($res, { $key => ($data[state] == 'running' and $res[$key] != false) })
   }
   $bad_status = $out.filter | $item | { ! $item[1] }
   $passed_status = $out.filter | $item | { $item[1] }
-  $overall_status = peadm::convert_status($bad_status.count, $out.count, $use_colors)
+  # no services reported at all means nothing is running, not that everything is operational
+  $overall_status = $out.empty ? {
+    true    => peadm::convert_status(false, 0, $use_colors),
+    default => peadm::convert_status($bad_status.count, $out.count, $use_colors),
+  }
   return { status => $overall_status, state => $out, failed => $bad_status, passed => $passed_status }
 }
