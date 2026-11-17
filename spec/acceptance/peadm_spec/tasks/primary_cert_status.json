@@ -1,0 +1,9 @@
+{
+  "description": "Must run on the CA primary. Report the serial of a host certificate and whether that serial is in the primary's CA CRL file",
+  "parameters": {
+    "certname": {
+      "type": "String",
+      "description": "The certname whose certificate under /etc/puppetlabs/puppet/ssl/certs to inspect"
+    }
+  }
+}
