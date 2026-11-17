@@ -1,5 +1,5 @@
 {
-  "description": "Read the contents of a file",
+  "description": "Read a regular file as UTF-8 text. Missing or unreadable: content null, exit 0. Read or decode error: fails with peadm/read-file-error.",
   "parameters": {
     "path": {
       "type": "String",

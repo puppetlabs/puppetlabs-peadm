@@ -97,7 +97,7 @@ before they get overwritten by a classification reassertion
 * [`puppet_infra_upgrade`](#puppet_infra_upgrade): Execute the puppet infra upgrade command
 * [`puppet_runonce`](#puppet_runonce): Run the Puppet agent one time
 * [`rbac_token`](#rbac_token): Get and save an rbac token for the root user, admin rbac user
-* [`read_file`](#read_file): Read the contents of a file
+* [`read_file`](#read_file): Read a regular file as UTF-8 text. Missing or unreadable: content null, exit 0. Read or decode error: fails with peadm/read-file-error.
 * [`reinstall_pe`](#reinstall_pe): Reinstall PE, only to be used to restore PE
 * [`restore_classification`](#restore_classification): A short description of this task
 * [`sign_csr`](#sign_csr): Submit a certificate signing request
@@ -1743,7 +1743,7 @@ The duration for which a token will be valid. Format <integer>[smhdy]
 
 ### <a name="read_file"></a>`read_file`
 
-Read the contents of a file
+Read a regular file as UTF-8 text. Missing or unreadable: content null, exit 0. Read or decode error: fails with peadm/read-file-error.
 
 **Supports noop?** false
 
