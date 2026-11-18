@@ -80,7 +80,7 @@ before they get overwritten by a classification reassertion
 * [`download`](#download): Download a file using curl
 * [`enable_replica`](#enable_replica): Execute the enable replica puppet command
 * [`filesize`](#filesize): Return the size of a file in bytes
-* [`get_code_manager_config`](#get_code_manager_config): Run on a PE primary to read the r10k settings of the PE Master node group's puppet_enterprise::profile::master class.
+* [`get_code_manager_config`](#get_code_manager_config): Run on a PE primary to read the Code Manager settings of the PE Master node group, for peadm::migrate.
 * [`get_group_rules`](#get_group_rules): Run on a PE primary node to return the rules currently applied to the PE Infrastructure Agent group
 * [`get_peadm_config`](#get_peadm_config): Run on a PE primary node to return the currently configured PEAdm parameters
 * [`get_psql_version`](#get_psql_version): Run on a PE PSQL node to return the major version of the PSQL server currently installed
@@ -1412,7 +1412,7 @@ Path to the file to return the size of
 
 ### <a name="get_code_manager_config"></a>`get_code_manager_config`
 
-Run on a PE primary to read the r10k settings of the PE Master node group's puppet_enterprise::profile::master class.
+Run on a PE primary to read the Code Manager settings of the PE Master node group, for peadm::migrate.
 
 **Supports noop?** false
 
@@ -2636,7 +2636,9 @@ Default value: `'1y'`
 
 ### <a name="peadm--migrate"></a>`peadm::migrate`
 
-Migrate a PE installation to new host(s)
+The old primary's Code Manager r10k settings (remote, deploy key, known
+hosts, git provider) are carried across to the new primary. See
+documentation/migration/migrating.md.
 
 #### Parameters
 

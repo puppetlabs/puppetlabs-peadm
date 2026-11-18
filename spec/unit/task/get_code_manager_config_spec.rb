@@ -11,30 +11,29 @@ describe GetCodeManagerConfig do
   let(:task) { described_class.new }
 
   let(:https_dbl) { instance_double(Net::HTTP) }
+  let(:url) { 'https://primary.example.com:4433/classifier-api/v1/groups' }
 
   let(:known_hosts) do
     [{ 'name' => 'github.com', 'type' => 'ssh-ed25519', 'key' => 'AAAAC3Nza' }]
   end
 
-  let(:pe_master_params) do
+  let(:carried) do
     {
-      'code_manager_auto_configure' => true,
       'r10k_remote' => 'git@github.com:example/control-repo.git',
       'r10k_private_key' => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
       'r10k_known_hosts' => known_hosts,
       'r10k_git_provider' => 'rugged',
-      'r10k_proxy' => 'http://proxy.example.com:3128',
-      'r10k_postrun' => ['/bin/true'],
-      'replication_mode' => 'none',
-      'check_for_updates' => false,
     }
   end
 
-  def groups_with_pe_master(params)
-    [
-      { 'name' => 'PE Infrastructure', 'classes' => {} },
-      { 'name' => 'PE Master', 'classes' => { 'puppet_enterprise::profile::master' => params } },
-    ]
+  def pe_master(classes: {}, config_data: nil)
+    group = { 'name' => 'PE Master', 'classes' => classes }
+    group['config_data'] = config_data if config_data
+    [{ 'name' => 'PE Infrastructure', 'classes' => {} }, group]
+  end
+
+  def profile(params)
+    { 'puppet_enterprise::profile::master' => params }
   end
 
   # A real Net::HTTPResponse subclass, so the task's is_a?(Net::HTTPSuccess)
@@ -45,11 +44,31 @@ describe GetCodeManagerConfig do
     allow(https_dbl).to receive(:get).with('/classifier-api/v1/groups').and_return(response)
   end
 
+  def stub_groups(groups)
+    stub_response(Net::HTTPOK, groups.to_json)
+  end
+
+  # Runs the task and returns every line it printed to stdout, and its exit
+  # status (nil when it did not exit).
   def run_task
-    output = nil
-    allow(STDOUT).to receive(:puts) { |s| output = s }
-    task.execute!
-    JSON.parse(output)
+    output = []
+    allow(STDOUT).to receive(:puts) { |s| output << s }
+    status = nil
+    begin
+      task.execute!
+    rescue SystemExit => e
+      status = e.status
+    end
+    [output, status]
+  end
+
+  def expect_error(msg_parts, kind)
+    output, status = run_task
+    expect(status).to eq(1)
+    expect(output.size).to eq(1)
+    error = JSON.parse(output.first)['_error']
+    expect(error['kind']).to eq(kind)
+    expect(error['msg']).to include(*msg_parts)
   end
 
   before(:each) do
@@ -68,62 +87,109 @@ describe GetCodeManagerConfig do
     allow(https_dbl).to receive(:ca_file=)
   end
 
-  it "returns only the r10k settings from PE Master's puppet_enterprise::profile::master class" do
-    stub_response(Net::HTTPOK, groups_with_pe_master(pe_master_params).to_json)
+  it 'returns the carried settings under _sensitive, and names only for the others' do
+    stub_groups(pe_master(classes: profile(carried.merge(
+      'r10k_proxy' => 'http://user:SECRET@proxy.example.com:3128',
+      'r10k_postrun' => ['/bin/notify-SECRET'],
+      'code_manager_auto_configure' => true,
+      'replication_mode' => 'none',
+    ))))
 
-    expect(run_task).to eq(
-      'params' => {
-        'r10k_remote' => 'git@github.com:example/control-repo.git',
-        'r10k_private_key' => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
-        'r10k_known_hosts' => known_hosts,
-        'r10k_git_provider' => 'rugged',
-        'r10k_proxy' => 'http://proxy.example.com:3128',
-        'r10k_postrun' => ['/bin/true'],
-      },
+    output, status = run_task
+
+    expect(status).to be_nil
+    expect(output.size).to eq(1)
+    expect(JSON.parse(output.first)).to eq(
+      '_sensitive' => { 'settings' => carried },
+      'not_carried' => [
+        'puppet_enterprise::profile::master::r10k_proxy',
+        'puppet_enterprise::profile::master::r10k_postrun',
+      ],
+    )
+    expect(output.first).not_to include('SECRET')
+  end
+
+  it 'leaves out settings that are not set or are null' do
+    stub_groups(pe_master(classes: profile('r10k_remote' => 'https://git.example.com/control.git', 'r10k_proxy' => nil)))
+
+    output, = run_task
+
+    expect(JSON.parse(output.first)).to eq(
+      '_sensitive' => { 'settings' => { 'r10k_remote' => 'https://git.example.com/control.git' } },
+      'not_carried' => [],
     )
   end
 
-  it 'returns only the settings that are set' do
-    stub_response(Net::HTTPOK, groups_with_pe_master('r10k_remote' => 'https://git.example.com/control.git').to_json)
+  it "names Code Manager entries in PE Master's configuration data, without their values" do
+    stub_groups(pe_master(
+      classes: profile(carried),
+      config_data: {
+        'puppet_enterprise::master::code_manager' => { 'sources' => { 'a' => { 'remote' => 'SECRET' } } },
+        'puppet_enterprise::master::code_management' => { 'git_private_key' => '/SECRET' },
+        'puppet_enterprise::profile::master' => { 'r10k_remote' => 'SECRET', 'java_args' => {} },
+        'puppet_enterprise::profile::console' => { 'r10k_unrelated' => 'x' },
+      },
+    ))
 
-    expect(run_task).to eq('params' => { 'r10k_remote' => 'https://git.example.com/control.git' })
+    output, = run_task
+
+    expect(JSON.parse(output.first)['not_carried']).to eq([
+                                                            'puppet_enterprise::master::code_manager::sources',
+                                                            'puppet_enterprise::master::code_management::git_private_key',
+                                                            'puppet_enterprise::profile::master::r10k_remote',
+                                                          ])
+    expect(output.first).not_to include('SECRET')
   end
 
   it 'returns no settings when PE Master has no puppet_enterprise::profile::master class' do
-    stub_response(Net::HTTPOK, [{ 'name' => 'PE Master', 'classes' => {} }].to_json)
+    stub_groups(pe_master)
 
-    expect(run_task).to eq('params' => {})
+    output, = run_task
+
+    expect(JSON.parse(output.first)).to eq('_sensitive' => { 'settings' => {} }, 'not_carried' => [])
   end
 
-  it 'returns no settings when there is no PE Master group' do
-    stub_response(Net::HTTPOK, [{ 'name' => 'PE Infrastructure', 'classes' => {} }].to_json)
+  it 'fails when there is no PE Master group' do
+    stub_groups([{ 'name' => 'PE Infrastructure', 'classes' => {} }])
 
-    expect(run_task).to eq('params' => {})
+    expect_error(["The classifier at #{url} has no 'PE Master' node group."], 'peadm/pe-master-group-missing')
   end
 
   it 'fails with only the _error JSON on stdout when the classifier returns an error' do
     stub_response(Net::HTTPServiceUnavailable, 'classifier is down')
-    output = []
-    allow(STDOUT).to receive(:puts) { |s| output << s }
 
-    expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
-    expect(output.size).to eq(1)
-    expect(JSON.parse(output.first)).to eq(
-      '_error' => {
-        'msg' => 'Classifier returned HTTP 503 for /classifier-api/v1/groups: classifier is down',
-        'kind' => 'peadm/classifier-request-failed',
-      },
-    )
+    expect_error(["Classifier returned HTTP 503 for #{url}: classifier is down"], 'peadm/classifier-request-failed')
   end
 
-  it 'fails with the _error JSON when the classifier cannot be reached' do
-    allow(https_dbl).to receive(:get).and_raise(Errno::ECONNREFUSED, 'connect(2) for primary.example.com port 4433')
-    output = []
-    allow(STDOUT).to receive(:puts) { |s| output << s }
+  it 'fails when the classifier returns a body that is not JSON' do
+    stub_response(Net::HTTPOK, '<html>proxy page</html>')
 
-    expect { task.execute! }.to raise_error(SystemExit) { |e| expect(e.status).to eq(1) }
-    error = JSON.parse(output.first)['_error']
-    expect(error['kind']).to eq('peadm/classifier-request-failed')
-    expect(error['msg']).to include('Could not reach the classifier', 'Connection refused')
+    expect_error(["Classifier returned a response that is not JSON for #{url}"], 'peadm/classifier-request-failed')
+  end
+
+  [
+    [Errno::ECONNREFUSED, 'connect(2) for primary.example.com port 4433', 'Connection refused'],
+    [SocketError, 'getaddrinfo: Name or service not known', 'getaddrinfo'],
+    [Net::OpenTimeout, 'execution expired', 'execution expired'],
+  ].each do |error_class, message, expected|
+    it "fails with the _error JSON when the classifier cannot be reached (#{error_class})" do
+      allow(https_dbl).to receive(:get).and_raise(error_class, message)
+
+      expect_error(["Could not reach the classifier at #{url}", expected], 'peadm/classifier-request-failed')
+    end
+  end
+
+  it 'reports a missing certificate file as a certificate error, not a network one' do
+    allow(File).to receive(:read).with('/etc/puppetlabs/puppet/ssl/certs/primary.pem')
+                                 .and_raise(Errno::ENOENT, '/etc/puppetlabs/puppet/ssl/certs/primary.pem')
+
+    expect_error(["Could not load this node's certificate or key", 'No such file or directory'], 'peadm/certificate-error')
+  end
+
+  it 'verifies the classifier certificate' do
+    stub_groups(pe_master)
+    expect(https_dbl).to receive(:verify_mode=).with(OpenSSL::SSL::VERIFY_PEER)
+
+    run_task
   end
 end

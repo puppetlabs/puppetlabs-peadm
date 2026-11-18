@@ -75,12 +75,13 @@ describe 'peadm::migrate' do
       .always_return({ 'content' => content })
   end
 
-  # The old primary's PE Master r10k settings, as peadm::get_code_manager_config
-  # reports them. None by default: the old primary had no Code Manager remote.
-  def stub_code_manager_config!(params = {})
+  # The old primary's PE Master Code Manager settings, as
+  # peadm::get_code_manager_config reports them. None by default: the old
+  # primary had no Code Manager remote.
+  def stub_code_manager_config!(settings = {}, not_carried = [])
     allow_task('peadm::get_code_manager_config')
       .with_targets([old_primary_host])
-      .always_return({ 'params' => params })
+      .always_return({ '_sensitive' => { 'settings' => settings }, 'not_carried' => not_carried })
   end
 
   # Stub the old primary's license file(s). A nil content mirrors the
@@ -147,6 +148,16 @@ describe 'peadm::migrate' do
     allow_plan('peadm::add_database').always_return({})
     allow_plan('peadm::add_replica').always_return({})
     allow_plan('peadm::upgrade').always_return({})
+  end
+
+  # BoltSpec compares out::message stubs with ==, so use a matcher object
+  # that "equals" any message containing the given text. The license block's
+  # positive control checks it.
+  def message_containing(text)
+    matcher = Object.new
+    matcher.define_singleton_method(:to_str) { "message-containing-#{text}" }
+    matcher.define_singleton_method(:==) { |message| message.to_s.include?(text) }
+    matcher
   end
 
   def base_params
@@ -614,15 +625,6 @@ describe 'peadm::migrate' do
       expect_out_message.with_params('Warning: migration finished but no license key was installed on the new primary')
     end
 
-    # BoltSpec compares out::message stubs with ==, so use a matcher object
-    # that "equals" any message containing the given text.
-    def message_containing(text)
-      matcher = Object.new
-      matcher.define_singleton_method(:to_str) { "message-containing-#{text}" }
-      matcher.define_singleton_method(:==) { |message| message.to_s.include?(text) }
-      matcher
-    end
-
     def stub_license_read_failure!
       [license_path, suite_license_path].each do |path|
         allow_task('peadm::read_file')
@@ -901,11 +903,12 @@ describe 'peadm::migrate' do
   end
 
   # --------------------------------------------------------------------
-  # 7. Code Manager settings (PE-45912). The old PE Master group is replaced
+  # 7. Code Manager settings (PE-45912). The old PE Master node group is replaced
   #    by the new install's, so migrate must install the new primary with the
   #    old r10k remote, deploy key path, known hosts and git provider, and
   #    copy the deploy key file across, or `puppet code deploy` fails after
-  #    the migration.
+  #    the migration. Anything that stops it doing so stops the plan before
+  #    the backup.
   # --------------------------------------------------------------------
   describe 'Code Manager settings' do
     let(:key_path) { '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa' }
@@ -916,33 +919,33 @@ describe 'peadm::migrate' do
     def expect_install_pe_conf_data(expected)
       expect_plan('peadm::install').be_called_times(1).return do |params:, **_kwargs|
         expect(params['pe_conf_data']).to eq(expected)
-        expect(params['code_manager_auto_configure']).to be(true)
         Bolt::PlanResult.new({}, 'success')
       end
     end
 
-    # Stands in for the key file Bolt downloads from the old primary.
-    # upload_file needs a real local file, and the plan deletes it afterwards.
-    def stub_key_download!(local_key)
+    def expect_nothing_changed
+      expect_plan('peadm::backup').not_be_called
+      expect_plan('peadm::install').not_be_called
+    end
+
+    # A stand-in for the key file Bolt downloads from the old primary, in a
+    # temporary directory: upload_file needs a real local file, and the plan
+    # deletes it afterwards.
+    def with_downloaded_key
+      dir = Dir.mktmpdir('pe45912')
+      local_key = File.join(dir, 'id-control_repo.rsa')
+      File.write(local_key, 'not a real key')
       allow_download(key_path).with_targets([old_primary_host]).return do |targets:, **_kwargs|
         Bolt::ResultSet.new(targets.map { |t| Bolt::Result.new(t, value: { 'path' => local_key }) })
       end
-    end
-
-    def message_containing(text)
-      matcher = Object.new
-      matcher.define_singleton_method(:to_str) { "message-containing-#{text}" }
-      matcher.define_singleton_method(:==) { |message| message.to_s.include?(text) }
-      matcher
+      yield local_key
+    ensure
+      FileUtils.remove_entry(dir)
     end
 
     it "installs the new primary with the old PE Master's r10k settings" do
       stub_full_flow!
-      stub_code_manager_config!(
-        'r10k_remote' => remote,
-        'r10k_known_hosts' => known_hosts,
-        'r10k_git_provider' => 'shellgit',
-      )
+      stub_code_manager_config!('r10k_remote' => remote, 'r10k_known_hosts' => known_hosts, 'r10k_git_provider' => 'shellgit')
       expect_install_pe_conf_data(
         "#{prefix}r10k_remote" => remote,
         "#{prefix}r10k_known_hosts" => known_hosts,
@@ -952,17 +955,23 @@ describe 'peadm::migrate' do
       expect(run_plan('peadm::migrate', base_params)).to be_ok
     end
 
-    it "falls back to the old primary's pe.conf for settings PE Master does not have" do
+    it "takes r10k_known_hosts, and only that setting, from the old primary's pe.conf" do
       stub_full_flow!
       stub_pe_conf_read!({
         "#{prefix}r10k_remote" => 'https://stale.example.com/control.git',
+        "#{prefix}r10k_git_provider" => 'shellgit',
         "#{prefix}r10k_known_hosts" => known_hosts,
       }.to_json)
-      stub_code_manager_config!('r10k_remote' => remote)
-      expect_install_pe_conf_data(
-        "#{prefix}r10k_remote" => remote,
-        "#{prefix}r10k_known_hosts" => known_hosts,
-      )
+      expect_install_pe_conf_data("#{prefix}r10k_known_hosts" => known_hosts)
+
+      expect(run_plan('peadm::migrate', base_params)).to be_ok
+    end
+
+    it "prefers PE Master's r10k_known_hosts to pe.conf's" do
+      stub_full_flow!
+      stub_pe_conf_read!({ "#{prefix}r10k_known_hosts" => [{ 'name' => 'old.example.com', 'type' => 'ssh-rsa', 'key' => 'OLD' }] }.to_json)
+      stub_code_manager_config!('r10k_remote' => remote, 'r10k_known_hosts' => known_hosts)
+      expect_install_pe_conf_data("#{prefix}r10k_remote" => remote, "#{prefix}r10k_known_hosts" => known_hosts)
 
       expect(run_plan('peadm::migrate', base_params)).to be_ok
     end
@@ -988,64 +997,108 @@ describe 'peadm::migrate' do
       stub_code_manager_config!('r10k_remote' => remote, 'r10k_private_key' => key_path)
       expect_install_pe_conf_data("#{prefix}r10k_remote" => remote, "#{prefix}r10k_private_key" => key_path)
 
-      dir = Dir.mktmpdir('pe45912')
-      local_key = File.join(dir, 'id-control_repo.rsa')
-      File.write(local_key, 'not a real key')
-      stub_key_download!(local_key)
-      expect_command('mkdir -p -m 0700 /etc/puppetlabs/puppetserver/ssh').with_targets([new_primary_host])
-      expect_upload(local_key).with_destination(key_path).with_targets([new_primary_host])
-      expect_command("chmod 0600 #{key_path}").with_targets([new_primary_host])
+      with_downloaded_key do |local_key|
+        expect_command('mkdir -p /etc/puppetlabs/puppetserver/ssh').with_targets([new_primary_host])
+        expect_upload(local_key).with_destination(key_path).with_targets([new_primary_host])
+        expect_command("chmod 0600 #{key_path}").with_targets([new_primary_host])
 
-      expect(run_plan('peadm::migrate', base_params)).to be_ok
-      expect(File.exist?(local_key)).to be(false)
-    ensure
-      FileUtils.remove_entry(dir) if dir
+        expect(run_plan('peadm::migrate', base_params)).to be_ok
+        expect(File.exist?(local_key)).to be(false)
+      end
     end
 
-    it 'warns and carries on when the deploy key cannot be downloaded' do
+    it 'stops before the backup when the deploy key cannot be downloaded' do
       stub_full_flow!
       stub_code_manager_config!('r10k_remote' => remote, 'r10k_private_key' => key_path)
-      expect_install_pe_conf_data("#{prefix}r10k_remote" => remote, "#{prefix}r10k_private_key" => key_path)
       allow_download(key_path).error_with('msg' => 'No such file or directory', 'kind' => 'bolt/file-transfer-error')
-      expect_upload(key_path).not_be_called
-      expect_out_message.with_params(
-        "Warning: could not copy the Code Manager deploy key #{key_path} from the old primary: No such file or directory. " \
-        "Copy it to #{key_path} on the new primary before deploying code.",
-      )
-
-      expect(run_plan('peadm::migrate', base_params)).to be_ok
-    end
-
-    it 'names, without printing, r10k settings it does not carry across' do
-      stub_full_flow!
-      stub_code_manager_config!(
-        'r10k_remote' => remote,
-        'r10k_proxy' => 'http://user:SECRET@proxy.example.com:3128',
-        'r10k_postrun' => ['/usr/local/bin/notify-SECRET'],
-      )
-      expect_install_pe_conf_data("#{prefix}r10k_remote" => remote)
-      ['r10k_proxy', 'r10k_postrun'].each do |setting|
-        expect_out_message.with_params(
-          "Warning: #{prefix}#{setting} is set on the old primary but is not carried across. " \
-          'Set it on the new PE Master node group after the migration.',
-        )
-      end
-      expect_out_message.with_params(message_containing('SECRET')).not_be_called
-
-      expect(run_plan('peadm::migrate', base_params)).to be_ok
-    end
-
-    it 'fails before backing up when the old Code Manager settings cannot be read' do
-      stub_full_flow!
-      allow_task('peadm::get_code_manager_config')
-        .error_with('msg' => 'Classifier returned HTTP 503', 'kind' => 'peadm/classifier-request-failed')
-      expect_plan('peadm::backup').not_be_called
-      expect_plan('peadm::install').not_be_called
+      expect_command(%r{chmod}).not_be_called
+      expect_nothing_changed
 
       result = run_plan('peadm::migrate', base_params)
 
       expect(result).not_to be_ok
-      expect(result.value.msg).to eq("run_task 'peadm::get_code_manager_config' failed on 1 target")
+      expect(result.value.kind).to eq('peadm/deploy-key-copy-failed')
+      expect(result.value.msg).to eq(
+        "Could not copy the Code Manager deploy key #{key_path} from #{old_primary_host} to #{new_primary_host}. " \
+        'Nothing has been backed up or installed yet: fix the cause, then run peadm::migrate again. ' \
+        'Error: No such file or directory',
+      )
+    end
+
+    it 'deletes the local copy and stops before the backup when the upload fails' do
+      stub_full_flow!
+      stub_code_manager_config!('r10k_remote' => remote, 'r10k_private_key' => key_path)
+      expect_nothing_changed
+
+      with_downloaded_key do |local_key|
+        expect_upload(local_key).error_with('msg' => 'Permission denied', 'kind' => 'bolt/file-transfer-error')
+        expect_command(%r{chmod}).not_be_called
+
+        result = run_plan('peadm::migrate', base_params)
+
+        expect(result).not_to be_ok
+        expect(result.value.kind).to eq('peadm/deploy-key-copy-failed')
+        expect(result.value.msg).to end_with('Error: Permission denied')
+        expect(File.exist?(local_key)).to be(false)
+      end
+    end
+
+    it 'stops before the backup, naming but not printing them, when settings have the wrong type' do
+      stub_full_flow!
+      stub_code_manager_config!(
+        'r10k_remote' => remote,
+        'r10k_private_key' => 'relative/SECRET.rsa',
+        'r10k_known_hosts' => [{ 'name' => 'SECRET.example.com' }],
+        'r10k_git_provider' => 'SECRET',
+      )
+      expect_download(key_path).not_be_called
+      expect_nothing_changed
+
+      result = run_plan('peadm::migrate', base_params)
+
+      expect(result).not_to be_ok
+      expect(result.value.kind).to eq('peadm/invalid-code-manager-settings')
+      expect(result.value.msg).to eq(
+        "These Code Manager settings on #{old_primary_host} have values of the wrong type: " \
+        "#{prefix}r10k_private_key, #{prefix}r10k_known_hosts, #{prefix}r10k_git_provider. " \
+        "Nothing has been changed: fix them on #{old_primary_host}, then run peadm::migrate again.",
+      )
+    end
+
+    it 'names, without printing, settings it does not carry across, now and when the migration finishes' do
+      stub_full_flow!
+      not_carried = ["#{prefix}r10k_proxy", 'puppet_enterprise::master::code_manager::sources']
+      stub_code_manager_config!({ 'r10k_remote' => remote }, not_carried)
+      expect_install_pe_conf_data("#{prefix}r10k_remote" => remote)
+      not_carried.each do |setting|
+        expect_out_message.with_params(
+          "Warning: #{setting} is set on the old primary's PE Master node group but is not carried across. " \
+          'Set it on the new primary after the migration.',
+        )
+      end
+      expect_out_message.with_params(
+        'Warning: migration finished, but these Code Manager settings on the old primary were not carried across: ' \
+        "#{not_carried.join(', ')}",
+      )
+
+      expect(run_plan('peadm::migrate', base_params)).to be_ok
+    end
+
+    it 'stops before the backup when the old Code Manager settings cannot be read' do
+      stub_full_flow!
+      allow_task('peadm::get_code_manager_config')
+        .error_with('msg' => 'Classifier returned HTTP 503', 'kind' => 'peadm/classifier-request-failed')
+      expect_nothing_changed
+
+      result = run_plan('peadm::migrate', base_params)
+
+      expect(result).not_to be_ok
+      expect(result.value.kind).to eq('peadm/code-manager-settings-unreadable')
+      expect(result.value.msg).to eq(
+        "Could not read the Code Manager settings of the PE Master node group on #{old_primary_host}. " \
+        "Nothing has been changed: check pe-console-services on #{old_primary_host}, then run peadm::migrate again. " \
+        'Error: Classifier returned HTTP 503',
+      )
     end
   end
 end

@@ -102,18 +102,20 @@ upgrade_pe_installer_source=https://mirror.example.com/pe/puppet-enterprise-2025
 
 ### Code Manager
 
-The new primary gets the PE Master node group from its own install, not the old one, so `migrate` installs it with the old primary's Code Manager remote. It reads these `puppet_enterprise::profile::master` settings from the old PE Master node group, or from the old primary's `pe.conf` for any the node group does not set:
+The new primary keeps the PE Master node group from its own install, not the old one, so `migrate` carries the old primary's Code Manager remote across. It reads these `puppet_enterprise::profile::master` class parameters from the old PE Master node group:
 
 * `r10k_remote`
 * `r10k_private_key`
-* `r10k_known_hosts`
+* `r10k_known_hosts` (taken from the old primary's `pe.conf` if the node group does not set it, because PE's installer leaves it there)
 * `r10k_git_provider`
 
-It passes them to `peadm::install` in `pe.conf`, as you would on a fresh install. If `r10k_private_key` is set, the key file is copied from the old primary to the same path on the new primary before the install, through the Bolt project's `downloads` directory; the local copy is deleted after the upload. If the key file cannot be copied, the plan prints a message beginning `Warning:` and carries on, and you need to copy it yourself before deploying code. The plan stops before the backup if it cannot read the old PE Master node group.
+It passes them to `peadm::install` as `pe_conf_data`, so they are written to the new primary's `pe.conf` and PE configures Code Manager with them at install. If `r10k_private_key` is set, the key file is copied from the old primary to the same path on the new primary, through the Bolt project's `downloads` directory. The local copy is deleted afterwards, whether or not the upload works.
 
-`r10k_proxy` and `r10k_postrun` are not carried across. If either is set on the old primary, the plan prints a `Warning:` naming it; set it on the new PE Master node group after the migration. Code Manager settings that live elsewhere are not carried across either, for example Hiera data in your control repository (such as `puppet_enterprise::master::code_management` settings for several control repositories), because code is not migrated. Re-apply those on the new primary.
+All of this happens before the backup. The plan stops, with nothing changed, if it cannot read the old PE Master node group, if any of the settings above has a value of the wrong type, or if the deploy key cannot be copied. The error says what to fix before you run `migrate` again.
 
-Values such as the remote URL are passed as plain text, as with `peadm::install`, and can appear in `bolt-debug.log`. The plan never prints them in its own messages.
+Other Code Manager settings on the old PE Master node group are not carried across: the `r10k_proxy` and `r10k_postrun` class parameters, and Code Manager entries in the group's configuration data (for example `puppet_enterprise::master::code_manager` or `puppet_enterprise::master::code_management` settings). The plan prints a message beginning `Warning:` naming each one, and names them again when the migration finishes. Set them on the new primary after the migration. Settings kept elsewhere, such as Hiera data in your control repository, are not read. Hiera data in the control repository comes back with your code once you deploy it, if the remote carried across is that repository; check those settings after the first deploy.
+
+The settings are read through Bolt as sensitive values, so the task output does not show them. They are then passed to `peadm::install` as plain text, as they would be if you supplied them to `peadm::install` yourself, so they can appear in `bolt-debug.log` and in `-v` output. The plan's own messages name settings but never print their values.
 
 ## What exactly is migrated? 
  

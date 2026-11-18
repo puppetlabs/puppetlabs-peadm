@@ -6,36 +6,50 @@ require 'net/http'
 require 'openssl'
 require 'puppet'
 
-# Prints the r10k settings set on the PE Master node group's
-# puppet_enterprise::profile::master class, as {"params": {...}}. Settings
-# that are not set are left out. peadm::migrate uses this to install the new
-# primary with the old primary's Code Manager remote (PE-45912).
+# Reads the Code Manager settings of the PE Master node group, for
+# peadm::migrate to carry across to the new primary (PE-45912). Prints:
+#
+#   {"_sensitive": {"settings": {...}}, "not_carried": [...]}
+#
+# settings: the CARRIED settings set as class parameters of
+# puppet_enterprise::profile::master. Bolt wraps _sensitive in Sensitive, so
+# the values (an r10k remote URL can hold a credential) stay out of its output
+# and logs.
+#
+# not_carried: names only, never values, of other Code Manager settings on the
+# group: the NOT_CARRIED class parameters, and Code Manager entries in the
+# group's configuration data.
 class GetCodeManagerConfig
-  SETTINGS = [
-    'r10k_remote',
-    'r10k_private_key',
-    'r10k_known_hosts',
-    'r10k_git_provider',
-    'r10k_proxy',
-    'r10k_postrun',
-  ].freeze
-
+  CARRIED = ['r10k_remote', 'r10k_private_key', 'r10k_known_hosts', 'r10k_git_provider'].freeze
+  NOT_CARRIED = ['r10k_proxy', 'r10k_postrun'].freeze
+  PROFILE = 'puppet_enterprise::profile::master'
+  CODE_MANAGER_CLASSES = ['puppet_enterprise::master::code_manager', 'puppet_enterprise::master::code_management'].freeze
   GROUPS_PATH = '/classifier-api/v1/groups'
 
   def execute!
-    pe_master = groups.find { |group| group['name'] == 'PE Master' } || {}
-    params = pe_master.dig('classes', 'puppet_enterprise::profile::master') || {}
-    puts({ 'params' => params.slice(*SETTINGS).compact }.to_json)
+    pe_master = groups.find { |group| group['name'] == 'PE Master' }
+    error!("The classifier at #{url} has no 'PE Master' node group.", 'peadm/pe-master-group-missing') unless pe_master
+
+    params = pe_master.dig('classes', PROFILE) || {}
+    puts({
+      '_sensitive' => { 'settings' => params.slice(*CARRIED).compact },
+      'not_carried' => params.slice(*NOT_CARRIED).compact.keys.map { |p| "#{PROFILE}::#{p}" } + config_data_settings(pe_master),
+    }.to_json)
   end
 
   def groups
-    response = https.get(GROUPS_PATH)
-    unless response.is_a?(Net::HTTPSuccess)
-      error!("Classifier returned HTTP #{response.code} for #{GROUPS_PATH}: #{response.body}")
+    client = https
+    begin
+      response = client.get(GROUPS_PATH)
+    rescue SystemCallError, SocketError, IOError, OpenSSL::SSL::SSLError, Net::OpenTimeout, Net::ReadTimeout => e
+      error!("Could not reach the classifier at #{url}: #{e.message}")
     end
-    JSON.parse(response.body)
-  rescue SystemCallError, IOError, OpenSSL::OpenSSLError, Net::OpenTimeout, Net::ReadTimeout => e
-    error!("Could not reach the classifier at #{GROUPS_PATH}: #{e.message}")
+    error!("Classifier returned HTTP #{response.code} for #{url}: #{response.body}") unless response.is_a?(Net::HTTPSuccess)
+    begin
+      JSON.parse(response.body)
+    rescue JSON::ParserError => e
+      error!("Classifier returned a response that is not JSON for #{url}: #{e.message}")
+    end
   end
 
   def https
@@ -46,12 +60,35 @@ class GetCodeManagerConfig
     https.verify_mode = OpenSSL::SSL::VERIFY_PEER
     https.ca_file = Puppet.settings[:localcacert]
     https
+  rescue SystemCallError, OpenSSL::X509::CertificateError, OpenSSL::PKey::PKeyError => e
+    error!("Could not load this node's certificate or key to call the classifier: #{e.message}", 'peadm/certificate-error')
   end
 
   private
 
-  def error!(msg)
-    puts({ '_error' => { 'msg' => msg, 'kind' => 'peadm/classifier-request-failed' } }.to_json)
+  # Code Manager entries in the group's configuration data ("Data" tab), named
+  # class::parameter. Data for the profile class counts when it is an r10k or
+  # Code Manager setting.
+  def config_data_settings(group)
+    (group['config_data'] || {}).flat_map do |klass, data|
+      next [] unless data.is_a?(Hash)
+      keys = if CODE_MANAGER_CLASSES.include?(klass)
+               data.keys
+             elsif klass == PROFILE
+               data.keys.grep(%r{\A(r10k_|code_manager_)})
+             else
+               []
+             end
+      keys.map { |key| "#{klass}::#{key}" }
+    end
+  end
+
+  def url
+    "https://#{Puppet.settings[:certname]}:4433#{GROUPS_PATH}"
+  end
+
+  def error!(msg, kind = 'peadm/classifier-request-failed')
+    puts({ '_error' => { 'msg' => msg, 'kind' => kind } }.to_json)
     exit 1
   end
 end

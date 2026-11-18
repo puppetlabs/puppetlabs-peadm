@@ -1,5 +1,5 @@
 {
-  "description": "Run on a PE primary to read the r10k settings of the PE Master node group's puppet_enterprise::profile::master class.",
+  "description": "Run on a PE primary to read the Code Manager settings of the PE Master node group, for peadm::migrate.",
   "parameters": {},
   "input_method": "stdin",
   "implementations": [{ "name": "get_code_manager_config.rb" }]
