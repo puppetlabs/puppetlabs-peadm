@@ -169,6 +169,46 @@ plan peadm::migrate (
     )
   }
 
+  # Code Manager settings (PE-45912). The migration replaces the old PE Master
+  # node group with the new install's, so install the new primary with the old
+  # r10k settings, as peadm::install would with the same parameters. PE Master's
+  # puppet_enterprise::profile::master class wins; settings it does not have
+  # come from the old primary's pe.conf, where peadm::install also writes
+  # r10k_known_hosts. Read before the backup so a failure stops the migration
+  # early. Values are never printed: an r10k remote or proxy URL can hold a
+  # credential.
+  $old_primary_target = get_targets($old_primary_host)[0]
+  $old_primary_pe_conf = peadm::get_pe_conf($old_primary_target)
+  $old_code_manager = run_task('peadm::get_code_manager_config', $old_primary_target).first['params']
+  $old_r10k = [
+    'r10k_remote', 'r10k_private_key', 'r10k_known_hosts', 'r10k_git_provider', 'r10k_proxy', 'r10k_postrun',
+  ].reduce({}) |$memo, $setting| {
+    $value = $old_code_manager[$setting] ? {
+      undef   => $old_primary_pe_conf["puppet_enterprise::profile::master::${setting}"],
+      default => $old_code_manager[$setting],
+    }
+    ($value =~ NotUndef and !empty($value)) ? {
+      true    => $memo + { $setting => $value },
+      default => $memo,
+    }
+  }
+  $code_manager_pe_conf = $old_r10k.reduce({}) |$memo, $entry| {
+    $entry[0] in ['r10k_remote', 'r10k_private_key', 'r10k_known_hosts', 'r10k_git_provider'] ? {
+      true    => $memo + { "puppet_enterprise::profile::master::${entry[0]}" => $entry[1] },
+      default => $memo,
+    }
+  }
+  # PE copies only some r10k settings from pe.conf into the PE Master group at
+  # install, so these would be dropped at the new primary's next Puppet run.
+  ['r10k_proxy', 'r10k_postrun'].each |$setting| {
+    if $setting in $old_r10k {
+      out::message(@("MSG"/L))
+        Warning: puppet_enterprise::profile::master::${setting} is set on the old primary but is not carried across. \
+        Set it on the new PE Master node group after the migration.
+        |- MSG
+    }
+  }
+
   $backup_file = run_plan('peadm::backup', $old_primary_host, {
       backup_type => 'migration',
   })
@@ -181,8 +221,7 @@ plan peadm::migrate (
 
   upload_file($download_path, $remote_backup_path, $new_primary_host)
 
-  $old_primary_target = get_targets($old_primary_host)[0]
-  $old_primary_password = peadm::get_pe_conf($old_primary_target)['console_admin_password']
+  $old_primary_password = $old_primary_pe_conf['console_admin_password']
   $old_pe_conf = run_task('peadm::get_peadm_config', $old_primary_target).first.value
 
   # An operator-supplied license (never blank, checked above) wins; otherwise
@@ -245,6 +284,26 @@ plan peadm::migrate (
     out::message("Warning: PE license for the new primary: ${license_source}")
   }
 
+  # Copy the Code Manager deploy key to the same path on the new primary before
+  # the install, which configures Code Manager to use it. It goes through the
+  # Bolt project's downloads directory, like the backup above, and the local
+  # copy is deleted once uploaded.
+  $deploy_key = $code_manager_pe_conf['puppet_enterprise::profile::master::r10k_private_key']
+  if $deploy_key {
+    $key_download = download_file($deploy_key, 'code-manager-key', $old_primary_target, '_catch_errors' => true).first
+    if $key_download.ok {
+      run_command("mkdir -p -m 0700 ${shellquote(dirname($deploy_key))}", $new_primary_host)
+      upload_file($key_download['path'], $deploy_key, $new_primary_host)
+      run_command("chmod 0600 ${shellquote($deploy_key)}", $new_primary_host)
+      file::delete($key_download['path'])
+    } else {
+      out::message(@("MSG"/L))
+        Warning: could not copy the Code Manager deploy key ${deploy_key} from the old primary: ${key_download.error.message}. \
+        Copy it to ${deploy_key} on the new primary before deploying code.
+        |- MSG
+    }
+  }
+
   run_plan('peadm::install', {
       primary_host                => $new_primary_host,
       console_password            => $old_primary_password,
@@ -253,6 +312,7 @@ plan peadm::migrate (
       pe_installer_source         => $pe_installer_source,
       version                     => $old_pe_conf['pe_version'],
       license_key_content         => $install_license_content,
+      pe_conf_data                => $code_manager_pe_conf,
   })
 
   run_plan('peadm::restore', {
