@@ -1002,6 +1002,25 @@ describe 'peadm::migrate' do
       expect(run_plan('peadm::migrate', base_params)).to be_ok
     end
 
+    # The plan now reads the old pe.conf before the backup, and get_peadm_config's
+    # result is named $old_peadm_config: the password and version must still
+    # reach install and restore.
+    it "still passes the old primary's console password and PE version to install and restore" do
+      stub_full_flow!
+      stub_pe_conf_read!({ 'console_admin_password' => 'OLD-PW' }.to_json)
+      expect_plan('peadm::install').be_called_times(1).return do |params:, **_kwargs|
+        expect(params['console_password']).to eq('OLD-PW')
+        expect(params['version']).to eq(pe_version)
+        Bolt::PlanResult.new({}, 'success')
+      end
+      expect_plan('peadm::restore').be_called_times(1).return do |params:, **_kwargs|
+        expect(params['console_password']).to eq('OLD-PW')
+        Bolt::PlanResult.new({}, 'success')
+      end
+
+      expect(run_plan('peadm::migrate', base_params)).to be_ok
+    end
+
     it 'adds no Code Manager settings, and warns about none, when the old primary had no remote' do
       stub_full_flow!
       expect_install_pe_conf_data({})
