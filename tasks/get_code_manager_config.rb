@@ -21,6 +21,10 @@ require 'puppet'
 # data of the profile class, and configuration data of the Code Manager
 # classes. code_manager_auto_configure is left out because peadm::migrate
 # always turns it on. Empty settings are left out.
+#
+# On failure, prints {"_error": {...}} and exits 1. Error messages never
+# quote node group data; the only outside text they quote is an HTTP error
+# body and network or certificate error messages.
 class GetCodeManagerConfig
   CARRIED = ['r10k_remote', 'r10k_private_key', 'r10k_known_hosts', 'r10k_git_provider'].freeze
   PROFILE = 'puppet_enterprise::profile::master'
@@ -34,8 +38,8 @@ class GetCodeManagerConfig
     pe_master = groups.find { |group| group['name'] == 'PE Master' }
     error!("The classifier at #{url} has no 'PE Master' node group.", 'peadm/pe-master-group-missing') unless pe_master
 
-    params = set(pe_master.dig('classes', PROFILE))
-    data = (pe_master['config_data'] || {}).transform_values { |value| set(value) }
+    params = set(set(pe_master['classes'])[PROFILE])
+    data = set(pe_master['config_data']).transform_values { |value| set(value) }
     profile_data = data.fetch(PROFILE, {})
     puts({
       '_sensitive' => { 'settings' => profile_data.merge(params).slice(*CARRIED) },
@@ -43,31 +47,38 @@ class GetCodeManagerConfig
     }.to_json)
   rescue StandardError => e
     # Not e.message: some Ruby errors quote the value they failed on, which can
-    # be a setting such as an r10k remote with a credential in it. The class,
-    # the method name of a NameError and the line in this task are enough to
-    # find the cause.
-    name = e.is_a?(NameError) ? " (#{e.name})" : ''
-    line = e.backtrace&.find { |frame| frame.start_with?(__FILE__) } || e.backtrace&.first
-    error!("Unexpected error reading the Code Manager settings from #{url}: #{e.class}#{name} at #{line}")
+    # be a setting such as an r10k remote with a credential in it. Instead,
+    # give the class, the method or constant name a NameError reports, and the
+    # first line of this task in the backtrace (or the first line, if none is).
+    missing_name = " (#{e.name})" if e.is_a?(NameError) && e.name
+    backtrace = e.backtrace || []
+    line = backtrace.find { |frame| frame.start_with?(__FILE__) } || backtrace.first
+    error!("Unexpected error reading the Code Manager settings from #{url}: #{e.class}#{missing_name} at #{line}")
   end
 
   def groups
-    response = get_groups
-    # An error response's body is the classifier's error message, not node
-    # group data, so it is safe to show.
+    response = request_groups
+    # A non-2xx body is an error page, from the classifier or a proxy in front
+    # of it, never node group data, so it is safe to show.
     error!("Classifier returned HTTP #{response.code} for #{url}: #{truncate(response.body)}") unless response.is_a?(Net::HTTPSuccess)
-    groups = JSON.parse(response.body)
-    error!("Classifier returned JSON that is not a list of node groups for #{url}.") unless groups.is_a?(Array) && groups.all?(Hash)
-    groups
-  rescue JSON::ParserError
-    # Not the parser's message: it quotes the body, which holds every node
-    # group's class parameters and configuration data.
-    error!("Classifier returned a response that is not JSON for #{url}.")
+    node_groups(response)
   end
 
-  def get_groups
-    client = https
-    client.get(GROUPS_PATH)
+  # The parsed list of node groups. Errors give the response's type and size,
+  # not its content: the body holds every node group's class parameters and
+  # configuration data, and the parser's message quotes it.
+  def node_groups(response)
+    parsed = JSON.parse(response.body)
+    return parsed if parsed.is_a?(Array) && parsed.all?(Hash)
+    got = parsed.is_a?(Array) ? "a list holding a #{parsed.find { |group| !group.is_a?(Hash) }.class}" : "a #{parsed.class}"
+    error!("Classifier returned JSON that is not a list of node groups for #{url} (got #{got}).")
+  rescue JSON::ParserError
+    content_type = response.content_type ? "Content-Type #{response.content_type}" : 'no Content-Type'
+    error!("Classifier returned a response that is not JSON for #{url} (#{content_type}, #{response.body.to_s.bytesize} bytes).")
+  end
+
+  def request_groups
+    https.get(GROUPS_PATH)
   rescue SystemCallError, SocketError, IOError, OpenSSL::SSL::SSLError, Net::OpenTimeout, Net::ReadTimeout => e
     error!("Could not reach the classifier at #{url}: #{e.message}")
   end

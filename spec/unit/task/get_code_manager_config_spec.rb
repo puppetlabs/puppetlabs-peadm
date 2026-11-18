@@ -38,8 +38,9 @@ describe GetCodeManagerConfig do
 
   # A real Net::HTTPResponse subclass, so the task's is_a?(Net::HTTPSuccess)
   # check sees the true class; only the body is stubbed.
-  def stub_response(klass, body)
+  def stub_response(klass, body, content_type: nil)
     response = klass.new('1.1', (klass == Net::HTTPOK) ? '200' : '503', 'status')
+    response['Content-Type'] = content_type if content_type
     allow(response).to receive(:body).and_return(body)
     allow(https_dbl).to receive(:get).with('/classifier-api/v1/groups').and_return(response)
   end
@@ -218,15 +219,33 @@ describe GetCodeManagerConfig do
   end
 
   [
-    { 'r10k_remote' => 'https://user:SECRET@git.example.com/control.git' },
-    ['https://user:SECRET@git.example.com/control.git'],
-  ].each do |body|
+    [{ 'r10k_remote' => 'https://user:SECRET@git.example.com/control.git' }, 'got a Hash'],
+    [['https://user:SECRET@git.example.com/control.git'], 'got a list holding a String'],
+  ].each do |body, got|
     it "fails, without the body, when the classifier returns JSON that is not a list of node groups (#{body.class})" do
       stub_response(Net::HTTPOK, body.to_json)
 
-      msg = expect_error(["Classifier returned JSON that is not a list of node groups for #{url}."], 'peadm/classifier-request-failed')
+      msg = expect_error(["Classifier returned JSON that is not a list of node groups for #{url} (#{got})."], 'peadm/classifier-request-failed')
       expect(msg).not_to include('SECRET')
     end
+  end
+
+  it 'treats PE Master configuration data that is not a Hash as no data' do
+    stub_groups(pe_master(classes: profile(carried), config_data: 'https://user:SECRET@git.example.com/control.git'))
+
+    output, status = run_task
+
+    expect(status).to be_nil
+    expect(JSON.parse(output.first)).to eq('_sensitive' => { 'settings' => carried }, 'not_carried' => [])
+  end
+
+  it 'treats PE Master classes that are not a Hash as no classes' do
+    stub_groups([{ 'name' => 'PE Master', 'classes' => ['puppet_enterprise::profile::master'] }])
+
+    output, status = run_task
+
+    expect(status).to be_nil
+    expect(JSON.parse(output.first)).to eq('_sensitive' => { 'settings' => {} }, 'not_carried' => [])
   end
 
   # A forced error, so the check does not depend on which Ruby errors quote values.
@@ -239,25 +258,38 @@ describe GetCodeManagerConfig do
     expect(msg).not_to include('SECRET')
   end
 
-  it 'names the missing method of an unexpected NoMethodError, without the value' do
-    stub_groups(pe_master(config_data: 'https://user:SECRET@git.example.com/control.git'))
+  it 'names the missing method of an unexpected NoMethodError, without its message' do
+    stub_groups(pe_master(classes: profile(carried)))
+    allow(task).to receive(:not_carried)
+      .and_raise(NoMethodError.new('undefined method for "https://user:SECRET@git.example.com/control.git"', :transform_values))
 
     msg = expect_error(['NoMethodError (transform_values) at '], 'peadm/classifier-request-failed')
+    expect(msg).to match(%r{ at \S*tasks/get_code_manager_config\.rb:\d+})
     expect(msg).not_to include('SECRET')
   end
 
-  it 'fails when the classifier returns a body that is not JSON' do
+  it 'leaves out an empty name of an unexpected NameError' do
+    stub_groups(pe_master(classes: profile(carried)))
+    allow(task).to receive(:not_carried).and_raise(NameError, 'SECRET')
+
+    msg = expect_error(['NameError at '], 'peadm/classifier-request-failed')
+    expect(msg).not_to include('()', 'SECRET')
+  end
+
+  # The parser's message quotes the body, which can hold an r10k remote with a
+  # credential in it, so the error gives only its type and size.
+  it 'fails, without the body, when the classifier returns a body that is not JSON' do
+    stub_response(Net::HTTPOK, '[{"r10k_remote": https://user:SECRET@git.example.com/control.git}]', content_type: 'text/html')
+
+    msg = expect_error(["Classifier returned a response that is not JSON for #{url} (Content-Type text/html, 66 bytes)."],
+                       'peadm/classifier-request-failed')
+    expect(msg).not_to include('SECRET')
+  end
+
+  it 'says when a body that is not JSON has no Content-Type' do
     stub_response(Net::HTTPOK, '<html>proxy page</html>')
 
-    expect_error(["Classifier returned a response that is not JSON for #{url}"], 'peadm/classifier-request-failed')
-  end
-
-  # The parser's message quotes the body, which can hold an r10k remote with a credential in it.
-  it 'does not copy the body into the error when it is not JSON' do
-    stub_response(Net::HTTPOK, '[{"r10k_remote": https://user:SECRET@git.example.com/control.git}]')
-
-    msg = expect_error(["Classifier returned a response that is not JSON for #{url}."], 'peadm/classifier-request-failed')
-    expect(msg).not_to include('SECRET')
+    expect_error(["Classifier returned a response that is not JSON for #{url} (no Content-Type, 23 bytes)."], 'peadm/classifier-request-failed')
   end
 
   [
