@@ -936,16 +936,27 @@ describe 'peadm::migrate' do
     # A stand-in for the key file Bolt downloads from the old primary, in a
     # temporary directory: upload_file needs a real local file, and the plan
     # deletes it afterwards.
-    def with_downloaded_key
+    def with_downloaded_key(path = key_path)
       dir = Dir.mktmpdir('pe45912')
-      local_key = File.join(dir, 'id-control_repo.rsa')
+      local_key = File.join(dir, File.basename(path))
       File.write(local_key, 'not a real key')
-      allow_download(key_path).with_targets([old_primary_host]).return do |targets:, **_kwargs|
+      allow_download(path).with_targets([old_primary_host]).return do |targets:, **_kwargs|
         Bolt::ResultSet.new(targets.map { |t| Bolt::Result.new(t, value: { 'path' => local_key }) })
       end
       yield local_key
     ensure
       FileUtils.remove_entry(dir)
+    end
+
+    # A failed command as Bolt reports it: the error message only gives the exit
+    # code, and the command's own output is in the result's value.
+    def expect_failing_command(command, stderr)
+      expect_command(command).return do |targets:, **_kwargs|
+        Bolt::ResultSet.new(targets.map do |t|
+          Bolt::Result.for_command(t, { 'stdout' => '', 'stderr' => stderr, 'merged_output' => stderr, 'exit_code' => 1 },
+                                   'command', command, [])
+        end)
+      end
     end
 
     it "installs the new primary with the old PE Master's r10k settings, without printing them" do
@@ -1006,7 +1017,7 @@ describe 'peadm::migrate' do
       expect_install_pe_conf_data("#{prefix}r10k_remote" => remote, "#{prefix}r10k_private_key" => key_path)
 
       with_downloaded_key do |local_key|
-        expect_command('mkdir -p /etc/puppetlabs/puppetserver/ssh && chmod 0700 /etc/puppetlabs/puppetserver/ssh').with_targets([new_primary_host])
+        expect_command('mkdir -p /etc/puppetlabs/puppetserver/ssh').with_targets([new_primary_host])
         expect_upload(local_key).with_destination(key_path).with_targets([new_primary_host])
         expect_command("chmod 0600 #{key_path}").with_targets([new_primary_host])
 
@@ -1057,15 +1068,17 @@ describe 'peadm::migrate' do
       expect_nothing_changed
 
       with_downloaded_key do |local_key|
-        expect_command('mkdir -p /etc/puppetlabs/puppetserver/ssh && chmod 0700 /etc/puppetlabs/puppetserver/ssh')
-          .error_with('msg' => 'Read-only file system', 'kind' => 'puppetlabs.tasks/command-error')
+        expect_failing_command('mkdir -p /etc/puppetlabs/puppetserver/ssh',
+                               "mkdir: cannot create directory '/etc/puppetlabs': Read-only file system\n")
         expect_upload(local_key).not_be_called
         expect_command("chmod 0600 #{key_path}").not_be_called
 
         result = run_plan('peadm::migrate', base_params)
 
         expect(result.value.kind).to eq('peadm/deploy-key-copy-failed')
-        expect(result.value.msg).to end_with('Error: Read-only file system')
+        expect(result.value.msg).to end_with(
+          "Error: The command failed with exit code 1: mkdir: cannot create directory '/etc/puppetlabs': Read-only file system",
+        )
         expect(File.exist?(local_key)).to be(false)
       end
     end
@@ -1077,13 +1090,48 @@ describe 'peadm::migrate' do
 
       with_downloaded_key do |local_key|
         expect_upload(local_key).with_destination(key_path)
-        expect_command("chmod 0600 #{key_path}").error_with('msg' => 'Operation not permitted', 'kind' => 'puppetlabs.tasks/command-error')
+        expect_failing_command("chmod 0600 #{key_path}", "chmod: changing permissions of '#{key_path}': Operation not permitted\n")
 
         result = run_plan('peadm::migrate', base_params)
 
         expect(result.value.kind).to eq('peadm/deploy-key-copy-failed')
-        expect(result.value.msg).to end_with('Error: Operation not permitted')
+        expect(result.value.msg).to end_with(
+          "Error: The command failed with exit code 1: chmod: changing permissions of '#{key_path}': Operation not permitted",
+        )
         expect(File.exist?(local_key)).to be(false)
+      end
+    end
+
+    it 'quotes a deploy key path that needs it in the commands, and uploads to the path as is' do
+      stub_full_flow!
+      odd_path = "/etc/puppetlabs/puppetserver/ssh dir/it's.rsa"
+      stub_code_manager_config!('r10k_remote' => remote, 'r10k_private_key' => odd_path)
+      expect_install_pe_conf_data("#{prefix}r10k_remote" => remote, "#{prefix}r10k_private_key" => odd_path)
+
+      with_downloaded_key(odd_path) do |local_key|
+        expect_command('mkdir -p "/etc/puppetlabs/puppetserver/ssh dir"').with_targets([new_primary_host])
+        expect_upload(local_key).with_destination(odd_path).with_targets([new_primary_host])
+        expect_command(%(chmod 0600 "#{odd_path}")).with_targets([new_primary_host])
+
+        expect(run_plan('peadm::migrate', base_params)).to be_ok
+      end
+    end
+
+    {
+      'a relative deploy key path' => ['r10k_private_key', 'id-control_repo.rsa'],
+      'a deploy key path ending in /' => ['r10k_private_key', '/etc/puppetlabs/puppetserver/ssh/'],
+      "a deploy key path with a '..' segment" => ['r10k_private_key', '/etc/puppetlabs/puppetserver/ssh/../key.rsa'],
+      'known hosts given as lines of text' => ['r10k_known_hosts', ['github.com ssh-ed25519 AAAAC3Nza']],
+    }.each do |description, (setting, value)|
+      it "stops before the backup for #{description}" do
+        stub_full_flow!
+        stub_code_manager_config!('r10k_remote' => remote, setting => value)
+        expect_nothing_changed
+
+        result = run_plan('peadm::migrate', base_params)
+
+        expect(result.value.kind).to eq('peadm/invalid-code-manager-settings')
+        expect(result.value.msg).to include("#{prefix}#{setting} in the PE Master node group")
       end
     end
 

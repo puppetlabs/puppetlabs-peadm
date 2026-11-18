@@ -251,9 +251,9 @@ plan peadm::migrate (
   if $deploy_key {
     $key_download = download_file($deploy_key, 'code-manager-key', $old_primary_target, '_catch_errors' => true).first
     if $key_download.ok {
-      # 0700, as PE sets it once Code Manager is configured.
-      $key_dir_path = shellquote(dirname($deploy_key))
-      $key_dir = run_command("mkdir -p ${key_dir_path} && chmod 0700 ${key_dir_path}", $new_primary_host, '_catch_errors' => true).first
+      # As peadm::install does. PE then gives the key to pe-puppet and, for
+      # /etc/puppetlabs/puppetserver/ssh, sets the directory's owner and mode.
+      $key_dir = run_command("mkdir -p ${shellquote(dirname($deploy_key))}", $new_primary_host, '_catch_errors' => true).first
       $key_upload = $key_dir.ok ? {
         true    => upload_file($key_download['path'], $deploy_key, $new_primary_host, '_catch_errors' => true).first,
         default => $key_dir,
@@ -267,10 +267,16 @@ plan peadm::migrate (
       $key_copy = $key_download
     }
     unless $key_copy.ok {
+      # A failed command's error message only gives the exit code; its output
+      # says why.
+      $key_copy_output = $key_copy['merged_output'] ? {
+        String[1] => ": ${key_copy['merged_output'].strip}",
+        default   => '',
+      }
       fail_plan(@("MSG"/L), 'peadm/deploy-key-copy-failed')
         Could not copy the Code Manager deploy key ${deploy_key} from ${old_primary_host} to ${new_primary_host}. \
         Nothing has been backed up or installed yet, but the key or its directory may already be on ${new_primary_host}: \
-        fix the cause, then run peadm::migrate again. Error: ${key_copy.error.message}
+        fix the cause, then run peadm::migrate again. Error: ${key_copy.error.message}${key_copy_output}
         |- MSG
     }
   }
