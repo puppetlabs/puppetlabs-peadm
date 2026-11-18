@@ -13,20 +13,7 @@ describe 'peadm::migrate' do
   include BoltSpec::Plans
 
   let(:old_primary_host) { 'old_primary' }
-  let(:license_path) { '/etc/puppetlabs/license.key' }
-  let(:suite_license_path) { '/etc/puppetlabs/suite-license.lic' }
-  let(:new_primary_host) { 'new_primary' }
-  let(:backup_path) { '/tmp/mock-backup.tar.gz' }
-  # A real file that exists on disk. upload_file() insists the source file
-  # actually exists (Puppet::FileSystem.exist?) before handing off to the
-  # mock executor, so the fake path produced by the default download stub
-  # (which does not create a real file) would blow up here. Reusing this
-  # fixture -- already used the same way in restore_spec.rb -- sidesteps
-  # that without resorting to the Pathname/Tempfile double dance used
-  # elsewhere in this repo for *uploads* of freshly-written local files.
-  let(:downloaded_fixture_path) { File.expand_path(File.join(fixtures, 'peadm_config.json')) }
   let(:pe_version) { '2019.8.12' }
-
   # $cluster: populated from the FIRST run_task('peadm::get_peadm_config', ...)
   # call (migrate.pp lines ~53-64), used only for the pre-flight
   # assert_supported_architecture()/cluster.error checks. Kept as a minimally
@@ -51,6 +38,23 @@ describe 'peadm::migrate' do
     }
   end
   let(:old_pe_conf) { { 'pe_version' => pe_version, 'params' => old_pe_conf_params } }
+  let(:license_path) { '/etc/puppetlabs/license.key' }
+  let(:suite_license_path) { '/etc/puppetlabs/suite-license.lic' }
+  let(:new_primary_host) { 'new_primary' }
+  let(:backup_path) { '/tmp/mock-backup.tar.gz' }
+  # A real file that exists on disk. upload_file() insists the source file
+  # actually exists (Puppet::FileSystem.exist?) before handing off to the
+  # mock executor, so the fake path produced by the default download stub
+  # (which does not create a real file) would blow up here. Reusing this
+  # fixture -- already used the same way in restore_spec.rb -- sidesteps
+  # that without resorting to the Pathname/Tempfile double dance used
+  # elsewhere in this repo for *uploads* of freshly-written local files.
+  # A throwaway stand-in for the backup Bolt downloads from the old primary:
+  # the plan deletes it after a successful migration.
+  let(:download_dir) { Dir.mktmpdir('pe48753') }
+  let(:downloaded_backup_path) { File.join(download_dir, 'mock-backup.tar.gz').tap { |path| File.write(path, 'backup') } }
+
+  after(:each) { FileUtils.rm_rf(download_dir) }
 
   # peadm::get_peadm_config is called twice on (effectively) the same
   # certname: once for $cluster, once for $old_pe_conf. return_for_targets
@@ -108,7 +112,7 @@ describe 'peadm::migrate' do
     allow_plan('peadm::backup').always_return({ 'path' => backup_path })
 
     allow_download(backup_path).return do |targets:, **_kwargs|
-      Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: { 'path' => downloaded_fixture_path }) })
+      Bolt::ResultSet.new(targets.map { |target| Bolt::Result.new(target, value: { 'path' => downloaded_backup_path }) })
     end
 
     allow_any_upload
@@ -135,12 +139,14 @@ describe 'peadm::migrate' do
   end
 
   # Same as stub_full_flow!, but leaves `hostname`/`puppet agent --enable`/
-  # purge commands to be asserted explicitly instead of blanket-allowed, for
-  # the nodes_to_purge tests where the whole point is which commands get run.
+  # backup cleanup/purge commands to be asserted explicitly instead of
+  # blanket-allowed, for the nodes_to_purge tests where the whole point is
+  # which commands get run.
   def stub_full_flow_without_commands!
     allow_out_message
     allow_command('hostname')
     allow_command('puppet agent --enable')
+    allow_command('rm -rf /tmp/mock-backup.tar.gz /tmp/mock-backup')
     stub_precheck!
     stub_pe_conf_read!
     stub_license_files!
@@ -1235,6 +1241,78 @@ describe 'peadm::migrate' do
         'Nothing has been changed: fix the cause, then run peadm::migrate again. ' \
         'Error: Classifier returned HTTP 503',
       )
+    end
+  end
+
+  # --------------------------------------------------------------------
+  # 8. Migration backup copies (PE-48753). The backup holds PE secrets; it is
+  #    downloaded to this machine and uploaded to the new primary's /tmp,
+  #    where peadm::restore also unpacks it.
+  # --------------------------------------------------------------------
+  describe 'migration backup copies' do
+    let(:remote_cleanup) { 'rm -rf /tmp/mock-backup.tar.gz /tmp/mock-backup' }
+
+    it 'says where each copy is as soon as they are made' do
+      stub_full_flow!
+      expect_out_message.with_params(message_containing(
+        "The migration backup holds PE secrets. Copies: #{old_primary_host}:#{backup_path}, " \
+        "this machine:#{downloaded_backup_path}, #{new_primary_host}:/tmp/mock-backup.tar.gz",
+      ))
+
+      expect(run_plan('peadm::migrate', base_params)).to be_ok
+    end
+
+    it 'deletes the copies on this machine and the new primary after a successful migration' do
+      stub_full_flow!
+      expect_command(remote_cleanup).with_targets([new_primary_host])
+      expect_out_message.with_params("Removed the migration backup copy #{downloaded_backup_path} on this machine.")
+      expect_out_message.with_params(
+        "Removed the migration backup copies /tmp/mock-backup.tar.gz and /tmp/mock-backup on #{new_primary_host}.",
+      )
+      expect_out_message.with_params(message_containing(
+        "The old primary's migration backup is still at #{old_primary_host}:#{backup_path}. It holds PE secrets",
+      ))
+
+      expect(run_plan('peadm::migrate', base_params)).to be_ok
+      expect(File).not_to exist(downloaded_backup_path)
+    end
+
+    it 'keeps every copy, and lists them, when keep_backup is true' do
+      stub_full_flow!
+      expect_command(remote_cleanup).not_be_called
+      expect_out_message.with_params(message_containing(
+        "Kept the migration backup copies, as keep_backup is true: #{old_primary_host}:#{backup_path}, " \
+        "this machine:#{downloaded_backup_path}, #{new_primary_host}:/tmp/mock-backup.tar.gz",
+      ))
+
+      expect(run_plan('peadm::migrate', base_params.merge('keep_backup' => true))).to be_ok
+      expect(File).to exist(downloaded_backup_path)
+    end
+
+    it 'deletes nothing when the migration fails' do
+      stub_full_flow!
+      allow_plan('peadm::restore').error_with('msg' => 'restore failed', 'kind' => 'peadm/test')
+      expect_command(remote_cleanup).not_be_called
+
+      expect(run_plan('peadm::migrate', base_params)).not_to be_ok
+      expect(File).to exist(downloaded_backup_path)
+    end
+
+    it 'fails, naming what is left, when a copy on the new primary cannot be deleted' do
+      stub_full_flow!
+      expect_command(remote_cleanup).with_targets([new_primary_host]).error_with(
+        'msg' => 'The command failed with exit code 1', 'kind' => 'puppetlabs.tasks/command-error',
+      )
+
+      result = run_plan('peadm::migrate', base_params)
+
+      expect(result).not_to be_ok
+      expect(result.value.kind).to eq('peadm/backup-cleanup-failed')
+      expect(result.value.msg).to include(
+        "Migration finished, but these migration backup copies could not be deleted: #{new_primary_host}:/tmp/mock-backup.tar.gz " \
+        'and /tmp/mock-backup (The command failed with exit code 1). They hold PE secrets: delete them yourself.',
+      )
+      expect(File).not_to exist(downloaded_backup_path)
     end
   end
 end

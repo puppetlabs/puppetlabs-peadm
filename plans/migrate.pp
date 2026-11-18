@@ -47,6 +47,13 @@
 # @param upgrade_pe_installer_source
 #   Optional URL of the PE installer for upgrade_version. Only used when
 #   upgrade_version is set. Defaults to the standard public source.
+# @param keep_backup
+#   The migration backup holds PE secrets. It is downloaded to the Bolt
+#   project's downloads/backup directory and uploaded to /tmp on the new
+#   primary, where it is also unpacked. When the migration succeeds, those
+#   copies are deleted unless this is true. The old primary's copy is always
+#   kept, and the plan says where it is. If the migration fails, nothing is
+#   deleted.
 plan peadm::migrate (
   Peadm::SingleTargetSpec $old_primary_host,
   Peadm::SingleTargetSpec $new_primary_host,
@@ -59,6 +66,7 @@ plan peadm::migrate (
   Peadm::Download_mode $download_mode = 'direct',
   Optional[Stdlib::HTTPSUrl] $pe_installer_source = undef,
   Optional[Stdlib::HTTPSUrl] $upgrade_pe_installer_source = undef,
+  Boolean $keep_backup = false,
 ) {
   # Log parameters for debugging. Do not add license_key_file/license_key_content
   # here: this prints values unmasked.
@@ -77,6 +85,7 @@ plan peadm::migrate (
     'upgrade_pe_installer_source' => $upgrade_pe_installer_source.then |$url| {
       $url.regsubst(/[?#].*\z/, '').split('/')[-1]
     },
+    'keep_backup' => $keep_backup,
   })
 
   # pre-migration checks
@@ -285,14 +294,23 @@ plan peadm::migrate (
       backup_type => 'migration',
   })
 
-  # TODO PE-48753: the backup tarball (PE secrets) is never removed from downloads/backup or from /tmp on the new primary.
   $download_results = download_file($backup_file['path'], 'backup', $old_primary_host)
   $download_path = $download_results[0]['path']
 
   $backup_filename = basename($backup_file['path'])
   $remote_backup_path = "/tmp/${backup_filename}"
+  # Where peadm::restore unpacks it.
+  $remote_backup_directory = "/tmp/${basename($backup_filename, '.tar.gz')}"
 
   upload_file($download_path, $remote_backup_path, $new_primary_host)
+
+  # Say where every copy of the backup is now, so the output has it even if a
+  # later step fails. Nothing is deleted then (PE-48753).
+  $backup_copies = "${old_primary_host}:${backup_file['path']}, this machine:${download_path}, ${new_primary_host}:${remote_backup_path}"
+  out::message(@("MSG"/L))
+    The migration backup holds PE secrets. Copies: ${backup_copies}. \
+    If the migration succeeds, the last two are deleted unless keep_backup is true.
+    |- MSG
 
   $old_primary_password = $old_primary_pe_conf['console_admin_password']
   $old_peadm_config = run_task('peadm::get_peadm_config', $old_primary_target).first.value
@@ -462,5 +480,55 @@ plan peadm::migrate (
       Warning: migration finished, but these Code Manager settings on the old primary were not carried across: \
       ${code_manager_not_carried.join(', ')}. Set them on the new primary.
       |- MSG
+  }
+
+  # The migration has succeeded, so delete the backup copies it made (PE-48753).
+  # The old primary's copy is the operator's to keep or delete.
+  if $keep_backup {
+    out::message(@("MSG"/L))
+      Kept the migration backup copies, as keep_backup is true: ${backup_copies}. \
+      They hold PE secrets: delete them once you no longer need them.
+      |- MSG
+  } else {
+    $local_cleanup = catch_errors() || { file::delete($download_path) }
+    if $local_cleanup =~ Error {
+      $local_cleanup_failure = ["this machine:${download_path} (${local_cleanup.message})"]
+    } else {
+      out::message("Removed the migration backup copy ${download_path} on this machine.")
+      $local_cleanup_failure = []
+    }
+
+    $remote_cleanup = run_command(
+      "rm -rf ${shellquote($remote_backup_path)} ${shellquote($remote_backup_directory)}",
+      $new_primary_host,
+      '_catch_errors' => true,
+    ).first
+    if $remote_cleanup.ok {
+      out::message("Removed the migration backup copies ${remote_backup_path} and ${remote_backup_directory} on ${new_primary_host}.")
+      $remote_cleanup_failure = []
+    } else {
+      # A failed command's error message only gives the exit code; its output
+      # says why.
+      $remote_cleanup_output = $remote_cleanup['merged_output'] ? {
+        String[1] => ": ${remote_cleanup['merged_output'].strip}",
+        default   => '',
+      }
+      $remote_cleanup_failure = [
+        "${new_primary_host}:${remote_backup_path} and ${remote_backup_directory} (${remote_cleanup.error.message}${remote_cleanup_output})",
+      ]
+    }
+
+    out::message(@("MSG"/L))
+      The old primary's migration backup is still at ${old_primary_host}:${backup_file['path']}. \
+      It holds PE secrets: delete it, or archive it somewhere safe.
+      |- MSG
+
+    $cleanup_failures = $local_cleanup_failure + $remote_cleanup_failure
+    unless empty($cleanup_failures) {
+      fail_plan(@("MSG"/L), 'peadm/backup-cleanup-failed')
+        Migration finished, but these migration backup copies could not be deleted: ${cleanup_failures.join('; ')}. \
+        They hold PE secrets: delete them yourself.
+        |- MSG
+    }
   }
 }

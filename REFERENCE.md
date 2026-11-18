@@ -2655,6 +2655,7 @@ The following parameters are available in the `peadm::migrate` plan:
 * [`download_mode`](#-peadm--migrate--download_mode)
 * [`pe_installer_source`](#-peadm--migrate--pe_installer_source)
 * [`upgrade_pe_installer_source`](#-peadm--migrate--upgrade_pe_installer_source)
+* [`keep_backup`](#-peadm--migrate--keep_backup)
 
 ##### <a name="-peadm--migrate--old_primary_host"></a>`old_primary_host`
 
@@ -2760,6 +2761,18 @@ Optional URL of the PE installer for upgrade_version. Only used when
 upgrade_version is set. Defaults to the standard public source.
 
 Default value: `undef`
+##### <a name="-peadm--migrate--keep_backup"></a>`keep_backup`
+
+Data type: `Boolean`
+
+The migration backup holds PE secrets. It is downloaded to the Bolt
+project's downloads/backup directory and uploaded to /tmp on the new
+primary, where it is also unpacked. When the migration succeeds, those
+copies are deleted unless this is true. The old primary's copy is always
+kept, and the plan says where it is. If the migration fails, nothing is
+deleted.
+
+Default value: `false`
 
 ### <a name="peadm--modify_certificate"></a>`peadm::modify_certificate`
 
