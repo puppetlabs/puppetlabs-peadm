@@ -42,22 +42,25 @@ class GetCodeManagerConfig
       'not_carried' => not_carried(params, data),
     }.to_json)
   rescue StandardError => e
-    error!("Unexpected error reading the Code Manager settings from #{url}: #{e.class}: #{e.message}")
+    # Not e.message: some Ruby errors quote the value they failed on, which can
+    # be a setting such as an r10k remote with a credential in it.
+    error!("Unexpected error reading the Code Manager settings from #{url}: #{e.class} at #{e.backtrace&.first}")
   end
 
   def groups
-    client = https
-    begin
-      response = client.get(GROUPS_PATH)
-    rescue SystemCallError, SocketError, IOError, OpenSSL::SSL::SSLError, Net::OpenTimeout, Net::ReadTimeout => e
-      error!("Could not reach the classifier at #{url}: #{e.message}")
-    end
+    response = get_groups
     error!("Classifier returned HTTP #{response.code} for #{url}: #{truncate(response.body)}") unless response.is_a?(Net::HTTPSuccess)
-    begin
-      JSON.parse(response.body)
-    rescue JSON::ParserError => e
-      error!("Classifier returned a response that is not JSON for #{url}: #{e.message}")
-    end
+    JSON.parse(response.body)
+  rescue JSON::ParserError
+    # Not the parser's message: it quotes the body, which holds the settings.
+    error!("Classifier returned a response that is not JSON for #{url}.")
+  end
+
+  def get_groups
+    client = https
+    client.get(GROUPS_PATH)
+  rescue SystemCallError, SocketError, IOError, OpenSSL::SSL::SSLError, Net::OpenTimeout, Net::ReadTimeout => e
+    error!("Could not reach the classifier at #{url}: #{e.message}")
   end
 
   def https

@@ -227,6 +227,26 @@ describe GetCodeManagerConfig do
     expect_error(["Classifier returned a response that is not JSON for #{url}"], 'peadm/classifier-request-failed')
   end
 
+  # The parser's message quotes the body, which can hold an r10k remote with a credential in it.
+  it 'does not copy the body into the error when it is not JSON' do
+    stub_response(Net::HTTPOK, '[{"r10k_remote": https://user:SECRET@git.example.com/control.git}]')
+
+    output, = run_task
+
+    expect(output.first).to include('not JSON')
+    expect(output.first).not_to include('SECRET')
+  end
+
+  # Some Ruby error messages quote the value they failed on.
+  it 'does not copy the failing value into an unexpected error' do
+    stub_groups(pe_master(config_data: 'https://user:SECRET@git.example.com/control.git'))
+
+    output, = run_task
+
+    expect(output.first).to include('Unexpected error reading the Code Manager settings', 'NoMethodError')
+    expect(output.first).not_to include('SECRET')
+  end
+
   [
     [Errno::ECONNREFUSED, 'connect(2) for primary.example.com port 4433', 'Connection refused'],
     [SocketError, 'getaddrinfo: Name or service not known', 'getaddrinfo'],
