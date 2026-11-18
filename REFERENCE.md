@@ -2636,9 +2636,9 @@ Default value: `'1y'`
 
 ### <a name="peadm--migrate"></a>`peadm::migrate`
 
-The old primary's Code Manager r10k settings (remote, deploy key, known
-hosts, git provider) are carried across to the new primary. See
-documentation/migration/migrating.md.
+Migrates a PE installation to new host(s). The old primary's Code Manager
+r10k settings (remote, deploy key, known hosts, git provider) are carried
+across to the new primary; see documentation/migration/migrating.md.
 
 #### Parameters
 

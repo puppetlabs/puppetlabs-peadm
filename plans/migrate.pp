@@ -1,8 +1,8 @@
 # @summary Migrate a PE installation to new host(s)
 #
-# The old primary's Code Manager r10k settings (remote, deploy key, known
-# hosts, git provider) are carried across to the new primary. See
-# documentation/migration/migrating.md.
+# Migrates a PE installation to new host(s). The old primary's Code Manager
+# r10k settings (remote, deploy key, known hosts, git provider) are carried
+# across to the new primary; see documentation/migration/migrating.md.
 #
 # @param old_primary_host
 #   The existing PE primary server that will be migrated from
@@ -176,40 +176,63 @@ plan peadm::migrate (
   # Code Manager settings (PE-45912). The new primary keeps the PE Master node
   # group from its own install, so install it with the old primary's r10k
   # settings and copy the deploy key across. This is done before the backup,
-  # so anything that stops it leaves both primaries untouched. Setting values
-  # are never printed: an r10k remote URL can hold a credential.
+  # so if it stops the plan, nothing has been backed up or installed. Messages
+  # name settings but never print their values: an r10k remote URL can hold a
+  # credential.
   $old_primary_target = get_targets($old_primary_host)[0]
   $old_primary_pe_conf = peadm::get_pe_conf($old_primary_target)
+  $code_manager_types = {
+    'r10k_remote'       => String[1],
+    # A file under /, with no '..' segment: the plan downloads, uploads and
+    # chmods this path as root.
+    'r10k_private_key'  => Pattern[/\A(?!.*\/\.\.(?:\/|\z))\/[^\0\n]*[^\/\0\n]\z/],
+    'r10k_known_hosts'  => Array[Hash],
+    'r10k_git_provider' => Enum['rugged', 'shellgit'],
+  }
+  $code_manager_expected = {
+    'r10k_remote'       => 'a non-empty string',
+    'r10k_private_key'  => "an absolute file path with no '..'",
+    'r10k_known_hosts'  => 'an array of hashes',
+    'r10k_git_provider' => "'rugged' or 'shellgit'",
+  }
   $code_manager_read = run_task('peadm::get_code_manager_config', $old_primary_target, '_catch_errors' => true).first
-  unless $code_manager_read.ok {
-    fail_plan(@("MSG"/L), 'peadm/code-manager-settings-unreadable')
+  $code_manager_read_error = if !$code_manager_read.ok {
+    $code_manager_read.error.message
+  # Bolt wraps _sensitive in Sensitive when it parses real task output; unwrap
+  # also accepts a plain value.
+  } elsif !($code_manager_read['_sensitive'].unwrap =~ Struct[{ 'settings' => Hash[Enum[$code_manager_types.keys], Data] }]
+    and $code_manager_read['not_carried'] =~ Array[String[1]]) {
+    'peadm::get_code_manager_config returned output in an unexpected form'
+  }
+  if $code_manager_read_error {
+    $task_error_kind = $code_manager_read.ok ? { true => undef, default => $code_manager_read.error.kind }
+    fail_plan(@("MSG"/L), 'peadm/code-manager-settings-unreadable', { 'task_error_kind' => $task_error_kind })
       Could not read the Code Manager settings of the PE Master node group on ${old_primary_host}. \
-      Nothing has been changed: check pe-console-services on ${old_primary_host}, then run peadm::migrate again. \
-      Error: ${code_manager_read.error.message}
+      Nothing has been changed: fix the cause, then run peadm::migrate again. \
+      Error: ${code_manager_read_error}
       |- MSG
   }
   # PE's installer copies r10k_remote, r10k_private_key and r10k_git_provider
   # from pe.conf into the PE Master group, but not r10k_known_hosts
   # (pe_install::install::classification in PE 2025.12). So a primary
   # installed with peadm::install's r10k_known_hosts has it only in pe.conf.
+  $pe_master_settings = $code_manager_read['_sensitive'].unwrap['settings']
+  $pe_conf_path = '/etc/puppetlabs/enterprise/conf.d/pe.conf'
   $code_manager_settings = ({
       'r10k_known_hosts' => $old_primary_pe_conf['puppet_enterprise::profile::master::r10k_known_hosts'],
-    } + $code_manager_read['_sensitive'].unwrap['settings']).filter |$_setting, $value| {
-    $value =~ NotUndef and !($value =~ Variant[String[0, 0], Collection[0, 0]])
-  }
-  $code_manager_types = {
-    'r10k_remote'       => String[1],
-    'r10k_private_key'  => Stdlib::Unixpath,
-    'r10k_known_hosts'  => Peadm::Known_hosts,
-    'r10k_git_provider' => Enum['rugged', 'shellgit'],
+  } + $pe_master_settings).filter |$_setting, $value| {
+    !($value =~ Variant[Undef, String[0, 0], Collection[0, 0]])
   }
   $invalid_settings = $code_manager_types.keys.filter |$setting| {
     $setting in $code_manager_settings and !($code_manager_settings[$setting] =~ $code_manager_types[$setting])
   }
   unless empty($invalid_settings) {
-    $invalid_names = $invalid_settings.map |$setting| { "puppet_enterprise::profile::master::${setting}" }.join(', ')
+    $invalid_descriptions = $invalid_settings.map |$setting| {
+      $source = $setting in $pe_master_settings ? { true => 'the PE Master node group', default => $pe_conf_path }
+      "puppet_enterprise::profile::master::${setting} in ${source} (expected ${code_manager_expected[$setting]})"
+    }.join(', ')
     fail_plan(@("MSG"/L), 'peadm/invalid-code-manager-settings')
-      These Code Manager settings on ${old_primary_host} have values of the wrong type: ${invalid_names}. \
+      These Code Manager settings on ${old_primary_host} have values of the wrong type: ${invalid_descriptions}. \
       Nothing has been changed: fix them on ${old_primary_host}, then run peadm::migrate again.
       |- MSG
   }
@@ -222,21 +245,20 @@ plan peadm::migrate (
   }
 
   # The deploy key goes through the Bolt project's downloads directory, like
-  # the backup below. The local copy is deleted whether or not the upload
-  # works.
+  # the backup below. The local copy is deleted whether or not the copy to the
+  # new primary works.
   $deploy_key = $code_manager_settings['r10k_private_key']
   if $deploy_key {
     $key_download = download_file($deploy_key, 'code-manager-key', $old_primary_target, '_catch_errors' => true).first
     if $key_download.ok {
       $key_dir = run_command("mkdir -p ${shellquote(dirname($deploy_key))}", $new_primary_host, '_catch_errors' => true).first
-      if $key_dir.ok {
-        $key_upload = upload_file($key_download['path'], $deploy_key, $new_primary_host, '_catch_errors' => true).first
-        $key_copy = $key_upload.ok ? {
-          true    => run_command("chmod 0600 ${shellquote($deploy_key)}", $new_primary_host, '_catch_errors' => true).first,
-          default => $key_upload,
-        }
-      } else {
-        $key_copy = $key_dir
+      $key_upload = $key_dir.ok ? {
+        true    => upload_file($key_download['path'], $deploy_key, $new_primary_host, '_catch_errors' => true).first,
+        default => $key_dir,
+      }
+      $key_copy = $key_upload.ok ? {
+        true    => run_command("chmod 0600 ${shellquote($deploy_key)}", $new_primary_host, '_catch_errors' => true).first,
+        default => $key_upload,
       }
       file::delete($key_download['path'])
     } else {
@@ -245,8 +267,8 @@ plan peadm::migrate (
     unless $key_copy.ok {
       fail_plan(@("MSG"/L), 'peadm/deploy-key-copy-failed')
         Could not copy the Code Manager deploy key ${deploy_key} from ${old_primary_host} to ${new_primary_host}. \
-        Nothing has been backed up or installed yet: fix the cause, then run peadm::migrate again. \
-        Error: ${key_copy.error.message}
+        Nothing has been backed up or installed yet, but the key or its directory may already be on ${new_primary_host}: \
+        fix the cause, then run peadm::migrate again. Error: ${key_copy.error.message}
         |- MSG
     }
   }
@@ -428,7 +450,7 @@ plan peadm::migrate (
   unless empty($code_manager_not_carried) {
     out::message(@("MSG"/L))
       Warning: migration finished, but these Code Manager settings on the old primary were not carried across: \
-      ${code_manager_not_carried.join(', ')}
+      ${code_manager_not_carried.join(', ')}. Set them on the new primary.
       |- MSG
   }
 }

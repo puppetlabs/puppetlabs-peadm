@@ -943,9 +943,11 @@ describe 'peadm::migrate' do
       FileUtils.remove_entry(dir)
     end
 
-    it "installs the new primary with the old PE Master's r10k settings" do
+    it "installs the new primary with the old PE Master's r10k settings, without printing them" do
       stub_full_flow!
+      remote = 'https://user:SECRET@git.example.com/control.git'
       stub_code_manager_config!('r10k_remote' => remote, 'r10k_known_hosts' => known_hosts, 'r10k_git_provider' => 'shellgit')
+      expect_out_message.with_params(message_containing('SECRET')).not_be_called
       expect_install_pe_conf_data(
         "#{prefix}r10k_remote" => remote,
         "#{prefix}r10k_known_hosts" => known_hosts,
@@ -984,9 +986,10 @@ describe 'peadm::migrate' do
       expect(run_plan('peadm::migrate', base_params)).to be_ok
     end
 
-    it 'adds no Code Manager settings when the old primary had no remote' do
+    it 'adds no Code Manager settings, and warns about none, when the old primary had no remote' do
       stub_full_flow!
       expect_install_pe_conf_data({})
+      expect_out_message.with_params(message_containing('not carried across')).not_be_called
       expect_download(key_path).not_be_called
 
       expect(run_plan('peadm::migrate', base_params)).to be_ok
@@ -1011,7 +1014,7 @@ describe 'peadm::migrate' do
       stub_full_flow!
       stub_code_manager_config!('r10k_remote' => remote, 'r10k_private_key' => key_path)
       allow_download(key_path).error_with('msg' => 'No such file or directory', 'kind' => 'bolt/file-transfer-error')
-      expect_command(%r{chmod}).not_be_called
+      expect_command("chmod 0600 #{key_path}").not_be_called
       expect_nothing_changed
 
       result = run_plan('peadm::migrate', base_params)
@@ -1020,8 +1023,8 @@ describe 'peadm::migrate' do
       expect(result.value.kind).to eq('peadm/deploy-key-copy-failed')
       expect(result.value.msg).to eq(
         "Could not copy the Code Manager deploy key #{key_path} from #{old_primary_host} to #{new_primary_host}. " \
-        'Nothing has been backed up or installed yet: fix the cause, then run peadm::migrate again. ' \
-        'Error: No such file or directory',
+        "Nothing has been backed up or installed yet, but the key or its directory may already be on #{new_primary_host}: " \
+        'fix the cause, then run peadm::migrate again. Error: No such file or directory',
       )
     end
 
@@ -1032,7 +1035,7 @@ describe 'peadm::migrate' do
 
       with_downloaded_key do |local_key|
         expect_upload(local_key).error_with('msg' => 'Permission denied', 'kind' => 'bolt/file-transfer-error')
-        expect_command(%r{chmod}).not_be_called
+        expect_command("chmod 0600 #{key_path}").not_be_called
 
         result = run_plan('peadm::migrate', base_params)
 
@@ -1043,12 +1046,47 @@ describe 'peadm::migrate' do
       end
     end
 
+    it 'deletes the local copy and stops before the backup when the key directory cannot be made' do
+      stub_full_flow!
+      stub_code_manager_config!('r10k_remote' => remote, 'r10k_private_key' => key_path)
+      expect_nothing_changed
+
+      with_downloaded_key do |local_key|
+        expect_command('mkdir -p /etc/puppetlabs/puppetserver/ssh').error_with('msg' => 'Read-only file system', 'kind' => 'puppetlabs.tasks/command-error')
+        expect_upload(local_key).not_be_called
+        expect_command("chmod 0600 #{key_path}").not_be_called
+
+        result = run_plan('peadm::migrate', base_params)
+
+        expect(result.value.kind).to eq('peadm/deploy-key-copy-failed')
+        expect(result.value.msg).to end_with('Error: Read-only file system')
+        expect(File.exist?(local_key)).to be(false)
+      end
+    end
+
+    it 'deletes the local copy and stops before the backup when the key mode cannot be set' do
+      stub_full_flow!
+      stub_code_manager_config!('r10k_remote' => remote, 'r10k_private_key' => key_path)
+      expect_nothing_changed
+
+      with_downloaded_key do |local_key|
+        expect_upload(local_key).with_destination(key_path)
+        expect_command("chmod 0600 #{key_path}").error_with('msg' => 'Operation not permitted', 'kind' => 'puppetlabs.tasks/command-error')
+
+        result = run_plan('peadm::migrate', base_params)
+
+        expect(result.value.kind).to eq('peadm/deploy-key-copy-failed')
+        expect(result.value.msg).to end_with('Error: Operation not permitted')
+        expect(File.exist?(local_key)).to be(false)
+      end
+    end
+
     it 'stops before the backup, naming but not printing them, when settings have the wrong type' do
       stub_full_flow!
+      stub_pe_conf_read!({ "#{prefix}r10k_known_hosts" => 'SECRET.example.com ssh-rsa AAAA' }.to_json)
       stub_code_manager_config!(
         'r10k_remote' => remote,
-        'r10k_private_key' => 'relative/SECRET.rsa',
-        'r10k_known_hosts' => [{ 'name' => 'SECRET.example.com' }],
+        'r10k_private_key' => '/etc/puppetlabs/../SECRET.rsa',
         'r10k_git_provider' => 'SECRET',
       )
       expect_download(key_path).not_be_called
@@ -1060,9 +1098,33 @@ describe 'peadm::migrate' do
       expect(result.value.kind).to eq('peadm/invalid-code-manager-settings')
       expect(result.value.msg).to eq(
         "These Code Manager settings on #{old_primary_host} have values of the wrong type: " \
-        "#{prefix}r10k_private_key, #{prefix}r10k_known_hosts, #{prefix}r10k_git_provider. " \
+        "#{prefix}r10k_private_key in the PE Master node group (expected an absolute file path with no '..'), " \
+        "#{prefix}r10k_known_hosts in /etc/puppetlabs/enterprise/conf.d/pe.conf (expected an array of hashes), " \
+        "#{prefix}r10k_git_provider in the PE Master node group (expected 'rugged' or 'shellgit'). " \
         "Nothing has been changed: fix them on #{old_primary_host}, then run peadm::migrate again.",
       )
+    end
+
+    it 'accepts r10k_known_hosts entries with attributes peadm itself does not use' do
+      stub_full_flow!
+      hosts = [{ 'name' => 'github.com', 'type' => 'ssh-ed25519', 'key' => 'AAAAC3Nza', 'target' => '/root/.ssh/known_hosts' }]
+      stub_code_manager_config!('r10k_remote' => remote, 'r10k_known_hosts' => hosts)
+      expect_install_pe_conf_data("#{prefix}r10k_remote" => remote, "#{prefix}r10k_known_hosts" => hosts)
+
+      expect(run_plan('peadm::migrate', base_params)).to be_ok
+    end
+
+    it 'stops before the backup when the task returns output in an unexpected form' do
+      stub_full_flow!
+      allow_task('peadm::get_code_manager_config')
+        .with_targets([old_primary_host])
+        .always_return({ '_sensitive' => { 'settings' => { 'r10k_unknown' => 'x' } }, 'not_carried' => [] })
+      expect_nothing_changed
+
+      result = run_plan('peadm::migrate', base_params)
+
+      expect(result.value.kind).to eq('peadm/code-manager-settings-unreadable')
+      expect(result.value.msg).to end_with('Error: peadm::get_code_manager_config returned output in an unexpected form')
     end
 
     it 'names, without printing, settings it does not carry across, now and when the migration finishes' do
@@ -1078,13 +1140,13 @@ describe 'peadm::migrate' do
       end
       expect_out_message.with_params(
         'Warning: migration finished, but these Code Manager settings on the old primary were not carried across: ' \
-        "#{not_carried.join(', ')}",
+        "#{not_carried.join(', ')}. Set them on the new primary.",
       )
 
       expect(run_plan('peadm::migrate', base_params)).to be_ok
     end
 
-    it 'stops before the backup when the old Code Manager settings cannot be read' do
+    it 'stops before the backup, keeping the task error kind, when the old Code Manager settings cannot be read' do
       stub_full_flow!
       allow_task('peadm::get_code_manager_config')
         .error_with('msg' => 'Classifier returned HTTP 503', 'kind' => 'peadm/classifier-request-failed')
@@ -1094,9 +1156,10 @@ describe 'peadm::migrate' do
 
       expect(result).not_to be_ok
       expect(result.value.kind).to eq('peadm/code-manager-settings-unreadable')
+      expect(result.value.details).to include('task_error_kind' => 'peadm/classifier-request-failed')
       expect(result.value.msg).to eq(
         "Could not read the Code Manager settings of the PE Master node group on #{old_primary_host}. " \
-        "Nothing has been changed: check pe-console-services on #{old_primary_host}, then run peadm::migrate again. " \
+        'Nothing has been changed: fix the cause, then run peadm::migrate again. ' \
         'Error: Classifier returned HTTP 503',
       )
     end

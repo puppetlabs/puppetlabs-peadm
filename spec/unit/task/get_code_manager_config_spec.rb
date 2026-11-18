@@ -92,7 +92,10 @@ describe GetCodeManagerConfig do
       'r10k_proxy' => 'http://user:SECRET@proxy.example.com:3128',
       'r10k_postrun' => ['/bin/notify-SECRET'],
       'code_manager_auto_configure' => true,
+      'code_manager_certname' => 'SECRET.example.com',
+      'r10k_trace' => false,
       'replication_mode' => 'none',
+      'java_args' => { 'Xmx' => '2g' },
     ))))
 
     output, status = run_task
@@ -104,9 +107,43 @@ describe GetCodeManagerConfig do
       'not_carried' => [
         'puppet_enterprise::profile::master::r10k_proxy',
         'puppet_enterprise::profile::master::r10k_postrun',
+        'puppet_enterprise::profile::master::code_manager_certname',
+        'puppet_enterprise::profile::master::r10k_trace',
       ],
     )
     expect(output.first).not_to include('SECRET')
+  end
+
+  it "carries settings from PE Master's configuration data for the profile class, class parameters first" do
+    stub_groups(pe_master(
+      classes: profile('r10k_remote' => 'https://class.example.com/control.git'),
+      config_data: {
+        'puppet_enterprise::profile::master' => {
+          'r10k_remote' => 'https://data.example.com/control.git',
+          'r10k_private_key' => '/etc/puppetlabs/puppetserver/ssh/data.rsa',
+        },
+      },
+    ))
+
+    output, = run_task
+
+    expect(JSON.parse(output.first)).to eq(
+      '_sensitive' => {
+        'settings' => {
+          'r10k_remote' => 'https://class.example.com/control.git',
+          'r10k_private_key' => '/etc/puppetlabs/puppetserver/ssh/data.rsa',
+        },
+      },
+      'not_carried' => [],
+    )
+  end
+
+  it 'does not name settings that are empty' do
+    stub_groups(pe_master(classes: profile('r10k_postrun' => [], 'r10k_proxy' => '')))
+
+    output, = run_task
+
+    expect(JSON.parse(output.first)['not_carried']).to eq([])
   end
 
   it 'leaves out settings that are not set or are null' do
@@ -126,8 +163,14 @@ describe GetCodeManagerConfig do
       config_data: {
         'puppet_enterprise::master::code_manager' => { 'sources' => { 'a' => { 'remote' => 'SECRET' } } },
         'puppet_enterprise::master::code_management' => { 'git_private_key' => '/SECRET' },
-        'puppet_enterprise::profile::master' => { 'r10k_remote' => 'SECRET', 'java_args' => {} },
+        'puppet_enterprise::profile::master' => {
+          'r10k_proxy' => 'SECRET',
+          'code_manager_certname' => 'SECRET',
+          'code_manager_auto_configure' => true,
+          'java_args' => {},
+        },
         'puppet_enterprise::profile::console' => { 'r10k_unrelated' => 'x' },
+        'puppet_enterprise::master::code_manager_unrelated' => 'not a hash',
       },
     ))
 
@@ -136,7 +179,8 @@ describe GetCodeManagerConfig do
     expect(JSON.parse(output.first)['not_carried']).to eq([
                                                             'puppet_enterprise::master::code_manager::sources',
                                                             'puppet_enterprise::master::code_management::git_private_key',
-                                                            'puppet_enterprise::profile::master::r10k_remote',
+                                                            'puppet_enterprise::profile::master::r10k_proxy',
+                                                            'puppet_enterprise::profile::master::code_manager_certname',
                                                           ])
     expect(output.first).not_to include('SECRET')
   end
@@ -161,6 +205,22 @@ describe GetCodeManagerConfig do
     expect_error(["Classifier returned HTTP 503 for #{url}: classifier is down"], 'peadm/classifier-request-failed')
   end
 
+  it 'cuts a long error body short' do
+    stub_response(Net::HTTPServiceUnavailable, 'x' * 2000)
+
+    output, = run_task
+
+    msg = JSON.parse(output.first)['_error']['msg']
+    expect(msg).to end_with("#{'x' * 500}...")
+    expect(msg.length).to be < 700
+  end
+
+  it 'reports an unexpected error as _error JSON' do
+    stub_response(Net::HTTPOK, { 'not' => 'an array' }.to_json)
+
+    expect_error(['Unexpected error reading the Code Manager settings', 'TypeError'], 'peadm/classifier-request-failed')
+  end
+
   it 'fails when the classifier returns a body that is not JSON' do
     stub_response(Net::HTTPOK, '<html>proxy page</html>')
 
@@ -171,6 +231,7 @@ describe GetCodeManagerConfig do
     [Errno::ECONNREFUSED, 'connect(2) for primary.example.com port 4433', 'Connection refused'],
     [SocketError, 'getaddrinfo: Name or service not known', 'getaddrinfo'],
     [Net::OpenTimeout, 'execution expired', 'execution expired'],
+    [OpenSSL::SSL::SSLError, 'certificate verify failed', 'certificate verify failed'],
   ].each do |error_class, message, expected|
     it "fails with the _error JSON when the classifier cannot be reached (#{error_class})" do
       allow(https_dbl).to receive(:get).and_raise(error_class, message)
