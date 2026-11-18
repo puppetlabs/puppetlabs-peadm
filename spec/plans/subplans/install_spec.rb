@@ -790,6 +790,48 @@ describe 'peadm::subplans::install' do
     expect(primary_pe_conf).not_to include('"puppet_enterprise::database_host"')
   end
 
+  # PE-48755: peadm::migrate passes the old primary's Code Manager settings
+  # through pe_conf_data, so pe_conf_data must reach the primary's pe.conf and
+  # win over the keys install sets itself.
+  describe 'pe_conf_data in the primary pe.conf' do
+    let(:remote_key) { 'puppet_enterprise::profile::master::r10k_remote' }
+
+    # Runs the plan and returns the primary's pe.conf, parsed. The primary's is
+    # the only pe.conf with the real console password.
+    def primary_pe_conf(params)
+      written = []
+      allow(mockfile).to receive(:write) { |content| written << content }
+      base = { 'primary_host' => 'primary', 'console_password' => 'puppetLabs123!', 'version' => '2023.8.10' }
+
+      expect(run_plan('peadm::subplans::install', base.merge(params))).to be_ok
+
+      confs = written.filter_map { |content| JSON.parse(content) if content.include?('console_admin_password') }
+                     .select { |conf| conf['console_admin_password'] == 'puppetLabs123!' }
+      expect(confs.size).to eq(1)
+      confs.first
+    end
+
+    it 'adds a key that install does not set' do
+      conf = primary_pe_conf('pe_conf_data' => { 'puppet_enterprise::profile::master::r10k_proxy' => 'http://proxy:3128' })
+
+      expect(conf['puppet_enterprise::profile::master::r10k_proxy']).to eq('http://proxy:3128')
+    end
+
+    it 'wins over a key that install also sets' do
+      conf = primary_pe_conf('r10k_remote' => 'git@example.com:install/control.git',
+                             'pe_conf_data' => { remote_key => 'git@example.com:migrate/control.git' })
+
+      expect(conf[remote_key]).to eq('git@example.com:migrate/control.git')
+    end
+
+    it "keeps install's value for keys pe_conf_data does not set" do
+      conf = primary_pe_conf('r10k_remote' => 'git@example.com:install/control.git',
+                             'pe_conf_data' => { 'puppet_enterprise::profile::master::r10k_proxy' => 'http://proxy:3128' })
+
+      expect(conf).to include(remote_key => 'git@example.com:install/control.git', 'puppet_enterprise::puppet_master_host' => 'primary')
+    end
+  end
+
   # PE-46576: on split-database installs, the primary's own install pass
   # runs before the dedicated Postgres host is up. Every one-time bootstrap
   # step in that pass which depends on a database-backed service -- rbac's
