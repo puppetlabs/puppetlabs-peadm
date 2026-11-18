@@ -62,6 +62,7 @@ describe GetCodeManagerConfig do
     [output, status]
   end
 
+  # Returns the error message, for further checks.
   def expect_error(msg_parts, kind)
     output, status = run_task
     expect(status).to eq(1)
@@ -69,6 +70,7 @@ describe GetCodeManagerConfig do
     error = JSON.parse(output.first)['_error']
     expect(error['kind']).to eq(kind)
     expect(error['msg']).to include(*msg_parts)
+    error['msg']
   end
 
   before(:each) do
@@ -215,10 +217,33 @@ describe GetCodeManagerConfig do
     expect(msg.length).to be < 700
   end
 
-  it 'reports an unexpected error as _error JSON' do
-    stub_response(Net::HTTPOK, { 'not' => 'an array' }.to_json)
+  [
+    { 'r10k_remote' => 'https://user:SECRET@git.example.com/control.git' },
+    ['https://user:SECRET@git.example.com/control.git'],
+  ].each do |body|
+    it "fails, without the body, when the classifier returns JSON that is not a list of node groups (#{body.class})" do
+      stub_response(Net::HTTPOK, body.to_json)
 
-    expect_error(['Unexpected error reading the Code Manager settings', 'TypeError'], 'peadm/classifier-request-failed')
+      msg = expect_error(["Classifier returned JSON that is not a list of node groups for #{url}."], 'peadm/classifier-request-failed')
+      expect(msg).not_to include('SECRET')
+    end
+  end
+
+  # A forced error, so the check does not depend on which Ruby errors quote values.
+  it 'reports an unexpected error by class and task line, without its message' do
+    stub_groups(pe_master(classes: profile(carried)))
+    allow(task).to receive(:not_carried).and_raise(ArgumentError, 'https://user:SECRET@git.example.com/control.git')
+
+    msg = expect_error(['Unexpected error reading the Code Manager settings', 'ArgumentError at '], 'peadm/classifier-request-failed')
+    expect(msg).to match(%r{ at \S*tasks/get_code_manager_config\.rb:\d+})
+    expect(msg).not_to include('SECRET')
+  end
+
+  it 'names the missing method of an unexpected NoMethodError, without the value' do
+    stub_groups(pe_master(config_data: 'https://user:SECRET@git.example.com/control.git'))
+
+    msg = expect_error(['NoMethodError (transform_values) at '], 'peadm/classifier-request-failed')
+    expect(msg).not_to include('SECRET')
   end
 
   it 'fails when the classifier returns a body that is not JSON' do
@@ -231,20 +256,8 @@ describe GetCodeManagerConfig do
   it 'does not copy the body into the error when it is not JSON' do
     stub_response(Net::HTTPOK, '[{"r10k_remote": https://user:SECRET@git.example.com/control.git}]')
 
-    output, = run_task
-
-    expect(output.first).to include('not JSON')
-    expect(output.first).not_to include('SECRET')
-  end
-
-  # Some Ruby error messages quote the value they failed on.
-  it 'does not copy the failing value into an unexpected error' do
-    stub_groups(pe_master(config_data: 'https://user:SECRET@git.example.com/control.git'))
-
-    output, = run_task
-
-    expect(output.first).to include('Unexpected error reading the Code Manager settings', 'NoMethodError')
-    expect(output.first).not_to include('SECRET')
+    msg = expect_error(["Classifier returned a response that is not JSON for #{url}."], 'peadm/classifier-request-failed')
+    expect(msg).not_to include('SECRET')
   end
 
   [

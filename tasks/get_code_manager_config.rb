@@ -43,16 +43,25 @@ class GetCodeManagerConfig
     }.to_json)
   rescue StandardError => e
     # Not e.message: some Ruby errors quote the value they failed on, which can
-    # be a setting such as an r10k remote with a credential in it.
-    error!("Unexpected error reading the Code Manager settings from #{url}: #{e.class} at #{e.backtrace&.first}")
+    # be a setting such as an r10k remote with a credential in it. The class,
+    # the method name of a NameError and the line in this task are enough to
+    # find the cause.
+    name = e.is_a?(NameError) ? " (#{e.name})" : ''
+    line = e.backtrace&.find { |frame| frame.start_with?(__FILE__) } || e.backtrace&.first
+    error!("Unexpected error reading the Code Manager settings from #{url}: #{e.class}#{name} at #{line}")
   end
 
   def groups
     response = get_groups
+    # An error response's body is the classifier's error message, not node
+    # group data, so it is safe to show.
     error!("Classifier returned HTTP #{response.code} for #{url}: #{truncate(response.body)}") unless response.is_a?(Net::HTTPSuccess)
-    JSON.parse(response.body)
+    groups = JSON.parse(response.body)
+    error!("Classifier returned JSON that is not a list of node groups for #{url}.") unless groups.is_a?(Array) && groups.all?(Hash)
+    groups
   rescue JSON::ParserError
-    # Not the parser's message: it quotes the body, which holds the settings.
+    # Not the parser's message: it quotes the body, which holds every node
+    # group's class parameters and configuration data.
     error!("Classifier returned a response that is not JSON for #{url}.")
   end
 
