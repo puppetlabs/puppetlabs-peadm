@@ -37,9 +37,8 @@ function main()
 				
 				  deploy <environment>
 				    Roughly equivalent to "puppet code deploy <env>". Invokes r10k to
-				    deploy the environment to the staging-dir, invokes file-sync to
-				    commit and sync the files, then flushes puppetserver's environment
-				    cache.
+				    deploy the environment to the staging-dir, then invokes file-sync
+				    to commit and sync the files.
 				
 				  commit
 				    Commits all files in code-staging and deploys them.
@@ -69,6 +68,7 @@ function main()
 
 function deploy()
 {
+  # TODO PE-48270: usage and validation errors go to stdout, so Bolt's error message omits them.
   [ "$#" = 1 ] || { echo "specify an environment to deploy"; exit 1; }
   cm_r10k deploy environment "$1" -p && commit
 }
@@ -78,13 +78,14 @@ function commit()
   # Perform two calls to file-sync. First, commit the code from code-staging.
   # Second, force a sync/deploy to the code directory. The second step is
   # performed explicitly so that we are guaranteed the deploy is finished
-  # before we take any action that depends on that task being done.
-  fs_commit
-  fs_force_sync
+  # before we take any action that depends on that task being done. The
+  # force-sync is skipped if the commit fails.
+  fs_commit && fs_force_sync
 }
 
 function cm_r10k()
 {
+  # TODO PE-48267: arguments are pasted unquoted into the su -c string; pass them as argv.
   args=$@
   su - pe-puppet -s /bin/bash -c "/opt/puppetlabs/bin/r10k ${args} \
     -c /opt/puppetlabs/server/data/code-manager/r10k.yaml"
@@ -123,6 +124,7 @@ function file_sync()
 
 }
 
+# TODO PE-48268: -k turns off TLS verification, so --cacert has no effect in these calls.
 function fs_commit()
 {
   curl_wrapper -ks --request POST --header "Content-Type: application/json" \
@@ -151,17 +153,48 @@ function flush_environment_cache()
     'https://localhost:8140/puppet-admin-api/v1/environment-cache'
 }
 
+# Runs curl with the given arguments. The URL must be the last argument.
+#
+# Returns non-zero, printing the URL and the reason to stderr, when curl fails
+# or the server answers with any non-2xx status, redirects included. With
+# nothing on stdout, Bolt puts that stderr in the task's error message. -S
+# makes curl print its own error despite the callers' -s, captured so it can
+# be part of the curl-failure message. The status comes from -w because
+# --fail-with-body needs curl 7.76 and RHEL 8 ships 7.61.
 function curl_wrapper()
 {
+  local url="${!#}"
+  local errfile output exitcode curl_error http_code body
   [ "$g_verbose" = 'true' ] && echo "command: curl $@"
-  output=$(curl "$@")
+  errfile=$(mktemp) || { echo "Could not create a temporary file to call ${url}" >&2; return 1; }
+  output=$(curl -S -w '\n%{http_code}' "$@" 2>"$errfile")
   exitcode=$?
+  curl_error=$(cat "$errfile")
+  rm -f "$errfile"
+  http_code="${output##*$'\n'}"
+  body="${output%$'\n'*}"
   if [ "$g_verbose" = 'true' ]; then
     echo "output json:"
-    echo "$output" | python -m json.tool || echo "raw output: $output"
+    echo "$body" | python -m json.tool || echo "raw output: $body"
     echo "exitcode: $exitcode"
+    echo "http_code: $http_code"
     echo
   fi
+  if [ "$exitcode" -ne 0 ]; then
+    echo "curl exited ${exitcode} calling ${url}: ${curl_error}" >&2
+    return "$exitcode"
+  fi
+  case "$http_code" in
+    2??)
+      # TODO PE-48269: check whether file-sync can report a failed repo with a 2xx status.
+      return 0
+      ;;
+    *)
+      echo "HTTP ${http_code} from ${url}: ${body}" >&2
+      return 1
+      ;;
+  esac
 }
 
+# TODO PE-48267: PT_action is word-split and globbed unquoted.
 main $PT_action

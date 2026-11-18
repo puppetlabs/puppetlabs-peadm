@@ -208,19 +208,42 @@ plan peadm::subplans::install (
   # activity, ...) off the primary, but PE's replica profile always replicates
   # those from the primary node itself, so a DR replica would sync empty
   # databases and its console services would never start (PE-47384).
-  $primary_pe_conf = peadm::generate_pe_conf({
-      'console_admin_password'                                          => $console_password,
-      'puppet_enterprise::puppet_master_host'                           => $primary_target.peadm::certname(),
-      'pe_install::puppet_master_dnsaltnames'                           => $dns_alt_names,
-      'puppet_enterprise::puppetdb_database_host'                       => $primary_postgresql_target.peadm::certname(),
-      'puppet_enterprise::profile::master::code_manager_auto_configure' => $_code_manager_auto_configure,
-      'puppet_enterprise::profile::master::r10k_remote'                 => $r10k_remote,
-      'puppet_enterprise::profile::master::r10k_private_key'            => $r10k_private_key ? {
-        undef   => undef,
-        default => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
-      },
-      'puppet_enterprise::profile::master::r10k_known_hosts'            => $r10k_known_hosts,
-  }.delete_undef_values + $puppetdb_database_temp_config + $pe_conf_data)
+  $primary_pe_conf_data = {
+    'console_admin_password'                                          => $console_password,
+    'puppet_enterprise::puppet_master_host'                           => $primary_target.peadm::certname(),
+    'pe_install::puppet_master_dnsaltnames'                           => $dns_alt_names,
+    'puppet_enterprise::puppetdb_database_host'                       => $primary_postgresql_target.peadm::certname(),
+    'puppet_enterprise::profile::master::code_manager_auto_configure' => $_code_manager_auto_configure,
+    'puppet_enterprise::profile::master::r10k_remote'                 => $r10k_remote,
+    'puppet_enterprise::profile::master::r10k_private_key'            => $r10k_private_key ? {
+      undef   => undef,
+      default => '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
+    },
+    'puppet_enterprise::profile::master::r10k_known_hosts'            => $r10k_known_hosts,
+  }.delete_undef_values + $puppetdb_database_temp_config + $pe_conf_data
+  $primary_pe_conf = peadm::generate_pe_conf($primary_pe_conf_data)
+
+  # PE runs file-sync on the primary when profile::master::file_sync_enabled
+  # is true, or is 'automatic' (the default) and code_manager_auto_configure
+  # is true. Read both from the primary's pe.conf, where pe_conf_data
+  # overrides peadm's values. peadm turns Code Manager on whenever a replica
+  # or compilers are present, but pe_conf_data can turn it or file-sync off.
+  $file_sync_setting = $primary_pe_conf_data['puppet_enterprise::profile::master::file_sync_enabled']
+  $file_sync_enabled = $file_sync_setting ? {
+    Boolean => $file_sync_setting,
+    default => $primary_pe_conf_data['puppet_enterprise::profile::master::code_manager_auto_configure'] == true,
+  }
+
+  # Replication needs a file-sync commit (see below), so stop before
+  # installing anything rather than fail later in configure.
+  if $replica_host and !$file_sync_enabled {
+    fail_plan(@(MSG/L)
+      A replica needs file-sync on the primary, but pe_conf_data turns it off \
+      (puppet_enterprise::profile::master::code_manager_auto_configure or \
+      file_sync_enabled is false). Remove that setting to install a replica.
+      |-MSG
+    )
+  }
 
   $primary_postgresql_pe_conf = peadm::generate_pe_conf({
       'console_admin_password'                => 'not used',
@@ -487,8 +510,8 @@ plan peadm::subplans::install (
     fail_plan("Failed to obtain RBAC token after ${rbac_token_max_attempts} attempts: ${rbac_token_error}")
   }
 
-  # Stub a production environment and commit it to file-sync. At least one
-  # commit (content irrelevant) is necessary to be able to configure
+  # Stub a production environment and, when PE runs file-sync, commit it. At
+  # least one commit (content irrelevant) is necessary to be able to configure
   # replication. A production environment must exist when committed to avoid
   # corrupting the PE console. Create the site.pp file specifically to avoid
   # breaking the `puppet infra configure` command.
@@ -501,9 +524,15 @@ plan peadm::subplans::install (
     content => "# Empty manifest\n",
   )
 
-  run_task('peadm::code_manager', $primary_target,
-    action => 'file-sync commit',
-  )
+  # The commit endpoint exists only when PE runs file-sync. A failed commit
+  # fails the install, so first make sure puppetserver, started by the
+  # installer above, is serving requests.
+  if $file_sync_enabled {
+    peadm::wait_until_service_ready('pe-master', $primary_target)
+    run_task('peadm::code_manager', $primary_target,
+      action => 'file-sync commit',
+    )
+  }
 
   $bg_db_run = background('database-targets') || {
     run_task('peadm::puppet_runonce', $database_targets)

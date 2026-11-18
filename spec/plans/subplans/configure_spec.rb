@@ -367,6 +367,22 @@ describe 'peadm::subplans::configure' do
                        'primary_host'       => 'primary',
                        'deploy_environment' => 'production')).to be_ok
     end
+
+    # PE-47521: a failed r10k run, file-sync commit or force-sync makes the
+    # task exit non-zero, and configure must fail rather than report success.
+    it 'fails, naming peadm::code_manager, when the deploy fails' do
+      allow_standard_calls!
+
+      expect_task('peadm::code_manager')
+        .with_targets(['primary'])
+        .error_with('msg' => 'The task failed with exit code 1', 'kind' => 'puppetlabs.tasks/task-error')
+
+      result = run_plan('peadm::subplans::configure',
+                        'primary_host'       => 'primary',
+                        'deploy_environment' => 'production')
+      expect(result).not_to be_ok
+      expect(result.value.msg).to match(%r{peadm::code_manager.*failed on 1 target}m)
+    end
   end
 
   describe 'final_agent_state' do
