@@ -285,6 +285,7 @@ plan peadm::migrate (
       backup_type => 'migration',
   })
 
+  # TODO PE-48753: the backup tarball (PE secrets) is never removed from downloads/backup or from /tmp on the new primary.
   $download_results = download_file($backup_file['path'], 'backup', $old_primary_host)
   $download_path = $download_results[0]['path']
 
@@ -428,6 +429,7 @@ plan peadm::migrate (
 
   # provision a replica if one is provided
   if $replica_host {
+    # TODO PE-48752: add_replica does not copy the Code Manager deploy key to the replica.
     run_plan('peadm::add_replica', {
         primary_host => $new_primary_host,
         replica_host => $replica_host,
