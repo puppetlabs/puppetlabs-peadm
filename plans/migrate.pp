@@ -177,8 +177,8 @@ plan peadm::migrate (
   # group from its own install, so install it with the old primary's r10k
   # settings and copy the deploy key across. This is done before the backup,
   # so if it stops the plan, nothing has been backed up or installed. Messages
-  # name settings but never print their values: an r10k remote URL can hold a
-  # credential.
+  # never print the remote URL, known hosts or git provider (an r10k remote URL
+  # can hold a credential); only a failed key copy names the key's path.
   $old_primary_target = get_targets($old_primary_host)[0]
   $old_primary_pe_conf = peadm::get_pe_conf($old_primary_target)
   $code_manager_types = {
@@ -251,7 +251,9 @@ plan peadm::migrate (
   if $deploy_key {
     $key_download = download_file($deploy_key, 'code-manager-key', $old_primary_target, '_catch_errors' => true).first
     if $key_download.ok {
-      $key_dir = run_command("mkdir -p ${shellquote(dirname($deploy_key))}", $new_primary_host, '_catch_errors' => true).first
+      # 0700, as PE sets it once Code Manager is configured.
+      $key_dir_path = shellquote(dirname($deploy_key))
+      $key_dir = run_command("mkdir -p ${key_dir_path} && chmod 0700 ${key_dir_path}", $new_primary_host, '_catch_errors' => true).first
       $key_upload = $key_dir.ok ? {
         true    => upload_file($key_download['path'], $deploy_key, $new_primary_host, '_catch_errors' => true).first,
         default => $key_dir,

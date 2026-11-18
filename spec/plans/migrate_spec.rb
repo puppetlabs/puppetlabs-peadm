@@ -77,11 +77,16 @@ describe 'peadm::migrate' do
 
   # The old primary's PE Master Code Manager settings, as
   # peadm::get_code_manager_config reports them. None by default: the old
-  # primary had no Code Manager remote.
+  # primary had no Code Manager remote. _sensitive is wrapped in Sensitive as
+  # real Bolt does when it parses task output (BoltSpec's stub would otherwise
+  # hand the plan a plain Hash).
   def stub_code_manager_config!(settings = {}, not_carried = [])
     allow_task('peadm::get_code_manager_config')
       .with_targets([old_primary_host])
-      .always_return({ '_sensitive' => { 'settings' => settings }, 'not_carried' => not_carried })
+      .always_return({
+                       '_sensitive' => Puppet::Pops::Types::PSensitiveType::Sensitive.new({ 'settings' => settings }),
+                       'not_carried' => not_carried,
+                     })
   end
 
   # Stub the old primary's license file(s). A nil content mirrors the
@@ -1001,7 +1006,7 @@ describe 'peadm::migrate' do
       expect_install_pe_conf_data("#{prefix}r10k_remote" => remote, "#{prefix}r10k_private_key" => key_path)
 
       with_downloaded_key do |local_key|
-        expect_command('mkdir -p /etc/puppetlabs/puppetserver/ssh').with_targets([new_primary_host])
+        expect_command('mkdir -p /etc/puppetlabs/puppetserver/ssh && chmod 0700 /etc/puppetlabs/puppetserver/ssh').with_targets([new_primary_host])
         expect_upload(local_key).with_destination(key_path).with_targets([new_primary_host])
         expect_command("chmod 0600 #{key_path}").with_targets([new_primary_host])
 
@@ -1052,7 +1057,8 @@ describe 'peadm::migrate' do
       expect_nothing_changed
 
       with_downloaded_key do |local_key|
-        expect_command('mkdir -p /etc/puppetlabs/puppetserver/ssh').error_with('msg' => 'Read-only file system', 'kind' => 'puppetlabs.tasks/command-error')
+        expect_command('mkdir -p /etc/puppetlabs/puppetserver/ssh && chmod 0700 /etc/puppetlabs/puppetserver/ssh')
+          .error_with('msg' => 'Read-only file system', 'kind' => 'puppetlabs.tasks/command-error')
         expect_upload(local_key).not_be_called
         expect_command("chmod 0600 #{key_path}").not_be_called
 
