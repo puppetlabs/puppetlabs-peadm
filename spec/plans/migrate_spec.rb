@@ -1242,6 +1242,19 @@ describe 'peadm::migrate' do
         'Error: Classifier returned HTTP 503',
       )
     end
+
+    # CI passes each host as a one-element list, which SingleTargetSpec allows.
+    it 'names the old primary by certname when the hosts are given as lists' do
+      stub_full_flow!
+      allow_task('peadm::get_code_manager_config')
+        .error_with('msg' => 'Classifier returned HTTP 503', 'kind' => 'peadm/classifier-request-failed')
+
+      result = run_plan('peadm::migrate', 'old_primary_host' => [old_primary_host], 'new_primary_host' => [new_primary_host])
+
+      expect(result.value.msg).to start_with(
+        "Could not read the Code Manager settings of the PE Master node group on #{old_primary_host}. ",
+      )
+    end
   end
 
   # --------------------------------------------------------------------
@@ -1260,6 +1273,20 @@ describe 'peadm::migrate' do
       ))
 
       expect(run_plan('peadm::migrate', base_params)).to be_ok
+    end
+
+    # CI passes each host as a one-element list, which SingleTargetSpec allows.
+    it 'names the hosts by certname when they are given as lists' do
+      stub_full_flow!
+      expect_out_message.with_params(message_containing(
+        "Copies: #{old_primary_host}:#{backup_path}, this machine:#{downloaded_backup_path}, #{new_primary_host}:/tmp/mock-backup.tar.gz.",
+      ))
+      expect_out_message.with_params(
+        "Removed the migration backup copies /tmp/mock-backup.tar.gz and /tmp/mock-backup on #{new_primary_host}.",
+      )
+      expect_out_message.with_params(message_containing("is still at #{old_primary_host}:#{backup_path}."))
+
+      expect(run_plan('peadm::migrate', 'old_primary_host' => [old_primary_host], 'new_primary_host' => [new_primary_host])).to be_ok
     end
 
     it 'deletes the copies on this machine and the new primary after a successful migration' do

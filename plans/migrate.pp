@@ -189,6 +189,10 @@ plan peadm::migrate (
   # never print the remote URL, known hosts or git provider (an r10k remote URL
   # can hold a credential); only a failed key copy names the key's path.
   $old_primary_target = get_targets($old_primary_host)[0]
+  # For messages: the hosts may be given as one-element lists, which would
+  # print with brackets.
+  $old_primary_name = $old_primary_target.peadm::certname()
+  $new_primary_name = get_targets($new_primary_host)[0].peadm::certname()
   $old_primary_pe_conf = peadm::get_pe_conf($old_primary_target)
   $code_manager_types = {
     'r10k_remote'       => String[1],
@@ -216,7 +220,7 @@ plan peadm::migrate (
   if $code_manager_read_error {
     $task_error_kind = $code_manager_read.ok ? { true => undef, default => $code_manager_read.error.kind }
     fail_plan(@("MSG"/L), 'peadm/code-manager-settings-unreadable', { 'task_error_kind' => $task_error_kind })
-      Could not read the Code Manager settings of the PE Master node group on ${old_primary_host}. \
+      Could not read the Code Manager settings of the PE Master node group on ${old_primary_name}. \
       Nothing has been changed: fix the cause, then run peadm::migrate again. \
       Error: ${code_manager_read_error}
       |- MSG
@@ -241,8 +245,8 @@ plan peadm::migrate (
       "puppet_enterprise::profile::master::${setting} in ${source} (expected ${code_manager_expected[$setting]})"
     }.join(', ')
     fail_plan(@("MSG"/L), 'peadm/invalid-code-manager-settings')
-      These Code Manager settings on ${old_primary_host} have values of the wrong type: ${invalid_descriptions}. \
-      Nothing has been changed: fix them on ${old_primary_host}, then run peadm::migrate again.
+      These Code Manager settings on ${old_primary_name} have values of the wrong type: ${invalid_descriptions}. \
+      Nothing has been changed: fix them on ${old_primary_name}, then run peadm::migrate again.
       |- MSG
   }
   $code_manager_not_carried = $code_manager_read['not_carried']
@@ -283,8 +287,8 @@ plan peadm::migrate (
         default   => '',
       }
       fail_plan(@("MSG"/L), 'peadm/deploy-key-copy-failed')
-        Could not copy the Code Manager deploy key ${deploy_key} from ${old_primary_host} to ${new_primary_host}. \
-        Nothing has been backed up or installed yet, but the key or its directory may already be on ${new_primary_host}: \
+        Could not copy the Code Manager deploy key ${deploy_key} from ${old_primary_name} to ${new_primary_name}. \
+        Nothing has been backed up or installed yet, but the key or its directory may already be on ${new_primary_name}: \
         fix the cause, then run peadm::migrate again. Error: ${key_copy.error.message}${key_copy_output}
         |- MSG
     }
@@ -306,7 +310,7 @@ plan peadm::migrate (
 
   # Say where every copy of the backup is now, so the output has it even if a
   # later step fails. Nothing is deleted then (PE-48753).
-  $backup_copies = "${old_primary_host}:${backup_file['path']}, this machine:${download_path}, ${new_primary_host}:${remote_backup_path}"
+  $backup_copies = "${old_primary_name}:${backup_file['path']}, this machine:${download_path}, ${new_primary_name}:${remote_backup_path}"
   out::message(@("MSG"/L))
     The migration backup holds PE secrets. Copies: ${backup_copies}. \
     If the migration succeeds, the last two are deleted unless keep_backup is true.
@@ -504,7 +508,7 @@ plan peadm::migrate (
       '_catch_errors' => true,
     ).first
     if $remote_cleanup.ok {
-      out::message("Removed the migration backup copies ${remote_backup_path} and ${remote_backup_directory} on ${new_primary_host}.")
+      out::message("Removed the migration backup copies ${remote_backup_path} and ${remote_backup_directory} on ${new_primary_name}.")
       $remote_cleanup_failure = []
     } else {
       # A failed command's error message only gives the exit code; its output
@@ -514,12 +518,12 @@ plan peadm::migrate (
         default   => '',
       }
       $remote_cleanup_failure = [
-        "${new_primary_host}:${remote_backup_path} and ${remote_backup_directory} (${remote_cleanup.error.message}${remote_cleanup_output})",
+        "${new_primary_name}:${remote_backup_path} and ${remote_backup_directory} (${remote_cleanup.error.message}${remote_cleanup_output})",
       ]
     }
 
     out::message(@("MSG"/L))
-      The old primary's migration backup is still at ${old_primary_host}:${backup_file['path']}. \
+      The old primary's migration backup is still at ${old_primary_name}:${backup_file['path']}. \
       It holds PE secrets: delete it, or archive it somewhere safe.
       |- MSG
 
