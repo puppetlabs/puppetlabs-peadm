@@ -50,41 +50,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # SCRATCH (PE-48630): narrowed to one job for validating the migrate fix.
+        # Never merge this narrowing.
         architecture:
           - standard
-          - standard-with-dr
-          - large
-          - extra-large
-          - large-with-dr
-          - extra-large-with-dr
-        version: [2023.8.14, 2025.12.2, 2026.0.2]
+        version: [2026.0.2]
         image: [almalinux-cloud/almalinux-8]
-        include:
-          - architecture: standard
-            version: 2025.12.2
-            image: almalinux-cloud/almalinux-8
-            new_pe_version: 2026.0.2
-          - architecture: large
-            version: 2025.12.2
-            image: almalinux-cloud/almalinux-8
-            new_pe_version: 2026.0.2
-          - architecture: extra-large
-            version: 2025.12.2
-            image: almalinux-cloud/almalinux-8
-            new_pe_version: 2026.0.2
-          # excluding the following combinations as due to their long running nature they always fail due to
-          # the test nodes in GCP that litmus provisions becoming unreachable after a time. If we address PE-40902
-          # to change how we provision test nodes in CI then we will hopefully be able to include these
-        exclude:
-          - architecture: extra-large-with-dr
-            version: 2023.8.14
-            image: almalinux-cloud/almalinux-8
-          - architecture: extra-large-with-dr
-            version: 2025.12.2
-            image: almalinux-cloud/almalinux-8
-          - architecture: extra-large-with-dr
-            version: 2026.0.2
-            image: almalinux-cloud/almalinux-8
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
