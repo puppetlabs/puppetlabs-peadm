@@ -47,6 +47,7 @@ primary_host vs replica_host) the node was passed as.
 * [`peadm::recovery_opts_all`](#peadm--recovery_opts_all)
 * [`peadm::recovery_opts_default`](#peadm--recovery_opts_default)
 * [`peadm::sanitize_log_text`](#peadm--sanitize_log_text): Makes arbitrary external text safe to interpolate into a single log line.
+* [`peadm::secret_key_services`](#peadm--secret_key_services): PE services whose secret keys (/etc/puppetlabs/<service>/conf.d/secrets) encrypt data in their databases
 * [`peadm::update_pe_conf`](#peadm--update_pe_conf): Update the pe.conf file on a target with the provided hash
 * [`peadm::wait_until_service_ready`](#peadm--wait_until_service_ready): A convenience function to help remember port numbers for services and handle running the wait_until_service_ready task
 * [`peadm::warn_group_rules_overwrite`](#peadm--warn_group_rules_overwrite): Fetch and log the PE Infrastructure Agent group's current rules
@@ -1027,6 +1028,18 @@ ASCII-compatible encoding.
 Data type: `Integer[0]`
 
 Maximum length of the returned string.
+
+### <a name="peadm--secret_key_services"></a>`peadm::secret_key_services`
+
+Type: Puppet Language
+
+puppet-backup does not include these, so a recovery backup copies them separately.
+
+#### `peadm::secret_key_services()`
+
+puppet-backup does not include these, so a recovery backup copies them separately.
+
+Returns: `Array[String]`
 
 ### <a name="peadm--update_pe_conf"></a>`peadm::update_pe_conf`
 
