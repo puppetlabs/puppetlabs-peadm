@@ -169,6 +169,30 @@ plan peadm::migrate (
     )
   }
 
+  # With a database-backed CA, restoring the old primary's ssl directory onto
+  # the new primary leaves no cert/key for the new primary's own certname, and
+  # `puppet-backup restore` step 5 fails with "The private key is missing from
+  # .../private_keys/<new primary>.pem" (PE-48630). Issue that cert on the old
+  # CA now so it travels in the backup. Needs the old primary's CA to be
+  # database-backed (same check as peadm::restore); pe-puppetserver is stopped
+  # for the offline `--ca-client` signing and always started again.
+  $new_primary_certname = peadm::certname(get_targets($new_primary_host)[0])
+# lint:ignore:strict_indent
+  run_command(@("CMD"/L), $old_primary_host)
+    if grep -v '^[[:space:]]*#' /etc/puppetlabs/puppetserver/bootstrap.cfg \
+         | grep -q '^[[:space:]]*puppetlabs.services.ca.database-storage-service/' \
+       && [ ! -f "$(/opt/puppetlabs/bin/puppet config print ssldir)/certs/${shellquote($new_primary_certname)}.pem" ]; then
+      systemctl stop pe-puppetserver
+      /opt/puppetlabs/bin/puppetserver ca generate --ca-client \
+        --certname ${shellquote($new_primary_certname)} \
+        --subject-alt-names puppet,${shellquote($new_primary_certname)}
+      rc=$?
+      systemctl start pe-puppetserver
+      exit $rc
+    fi
+    | CMD
+# lint:endignore
+
   $backup_file = run_plan('peadm::backup', $old_primary_host, {
       backup_type => 'migration',
   })
