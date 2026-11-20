@@ -68,8 +68,9 @@ describe 'peadm::restore' do
     # before this point in the plan is ever reached, so the ldap-secret
     # message never fires there. Without this exclusion, expect_out_message
     # would register an unmet expectation and mask the assertions those tests
-    # actually care about.
-    unless example.metadata[:cluster_error]
+    # actually care about. Tests tagged `stops_at_certs_restore: true` fail the
+    # plan at the certs restore, which also comes before that message.
+    unless example.metadata[:cluster_error] || example.metadata[:stops_at_certs_restore]
       expect_out_message.with_params('# Restoring ldap secret key if it exists')
     end
     allow_task('peadm::puppet_runonce')
@@ -308,6 +309,124 @@ describe 'peadm::restore' do
       expect(drop_extension).to be > pe_ca_restore
       expect(call_log.count(ca_import)).to eq(1)
       expect(call_log.index(ca_import)).to be > call_log.index("/opt/puppetlabs/bin/puppet-infrastructure configure --no-recover\n")
+    end
+
+    # PE-48630: from puppetserver-ca 2.8.9 (PE 2025.12.2 / 2026.0.2) the certs
+    # restore's final configure run can't sign this primary's certificate
+    # through the CA database after the backup's CA is on disk. The plan
+    # re-runs that configure with the database CA service commented out of
+    # bootstrap.cfg, but only for that error and only on a pe-ca restore.
+    context 'when the certs restore fails' do
+      let(:certs_restore_command) { "/opt/puppetlabs/bin/puppet-backup restore   --scope=certs   --tempdir=/input/file   --force   /input/file/ca/pe_backup-*tgz\n" }
+      let(:signer_error) do
+        "Error: Configuring PE completed but with failures.\n" \
+          "Exec[generate node cert]/returns: Cannot sign offline with the CA database's signer: psql failed: psql: error: " \
+          'connection to server at "primary" (10.0.0.1), port 5432 failed: SSL error: certificate verify failed'
+      end
+      let(:other_error) { 'Error: Unable to restore the backup: archive is corrupt' }
+      let(:recovery_marker) { 'puppet-infrastructure configure   --detailed-exitcodes --no-noop --no-recover' }
+
+      # error_in: where puppet-backup's output carries the error text. The
+      # configure run's resource errors reach stdout, puppet-backup's own
+      # summary reaches stderr; the plan must match either.
+      def stub_commands(call_log, ca_restore_check:, certs_restore_error:, error_in: 'stderr', recovery_fails: false)
+        allow_any_command.return do |targets:, command:, **|
+          call_log << command
+          results = targets.map do |target|
+            if command == certs_restore_command
+              Bolt::Result.new(target, value: { 'stdout' => '', 'stderr' => '', error_in => certs_restore_error, 'exit_code' => 1 },
+                                       error: { 'msg' => 'The command failed with exit code 1',
+                                                'kind' => 'puppetlabs.tasks/command-error', 'details' => { 'exit_code' => 1 } })
+            elsif recovery_fails && command.include?(recovery_marker)
+              Bolt::Result.new(target, value: { 'stdout' => '', 'stderr' => 'Error: configure failed', 'exit_code' => 1 },
+                                       error: { 'msg' => 'The command failed with exit code 1',
+                                                'kind' => 'puppetlabs.tasks/command-error', 'details' => { 'exit_code' => 1 } })
+            else
+              Bolt::Result.new(target, value: { 'stdout' => command.include?('pe-ca.dump.d') ? ca_restore_check : '' })
+            end
+          end
+          Bolt::ResultSet.new(results)
+        end
+        allow_task('peadm::backup_classification')
+        allow_task('peadm::transform_classification_groups')
+        allow_task('peadm::restore_classification')
+        allow_task('peadm::rbac_token')
+      end
+
+      ['stderr', 'stdout'].each do |stream|
+        it "configures again from the restored CA files when the CA database cannot sign (error on #{stream})", valid_cluster: true do
+          call_log = []
+          stub_commands(call_log, ca_restore_check: 'restore', certs_restore_error: signer_error, error_in: stream)
+
+          expect(run_plan('peadm::restore', migration_params)).to be_ok
+
+          expect(call_log.count { |c| c.include?(recovery_marker) }).to eq(1)
+          recovery = call_log.index { |c| c.include?(recovery_marker) }
+          expect(call_log[recovery]).to include('# peadm-restore:', 'database-storage-service', '/etc/puppetlabs/puppetserver/bootstrap.cfg')
+          expect(call_log[recovery]).to include('/opt/puppetlabs/bin/puppet agent --enable')
+          expect(call_log[recovery]).to include("grep -q '^# peadm-restore: '", 'puppet config print hostcert')
+          # Every failure exit puts bootstrap.cfg back; only success clears it.
+          expect(call_log[recovery]).to include("trap 'mv -f \"$bootstrap.peadm-restore\" \"$bootstrap\"", 'trap - EXIT')
+          expect(call_log[recovery]).to include('--pe-environment "$(/opt/puppetlabs/bin/puppet config print environment)"')
+          expect(recovery).to be > call_log.index(certs_restore_command)
+          expect(recovery).to be < call_log.index('/opt/puppetlabs/bin/puppetserver ca storage --import')
+        end
+      end
+
+      it 'fails the plan when configuring again fails', valid_cluster: true, stops_at_certs_restore: true do
+        call_log = []
+        stub_commands(call_log, ca_restore_check: 'restore', certs_restore_error: signer_error, recovery_fails: true)
+
+        result = run_plan('peadm::restore', migration_params)
+
+        expect(result).not_to be_ok
+        # Not caught: Bolt's run failure, with the configure output, ends the plan.
+        expect(result.value.kind).to eq('bolt/run-failure')
+        expect(call_log.count { |c| c.include?(recovery_marker) }).to eq(1)
+        expect(call_log).not_to include('/opt/puppetlabs/bin/puppetserver ca storage --import')
+      end
+
+      it "fails the plan with puppet-backup's output for any other certs restore failure", valid_cluster: true, stops_at_certs_restore: true do
+        call_log = []
+        stub_commands(call_log, ca_restore_check: 'restore', certs_restore_error: other_error)
+
+        result = run_plan('peadm::restore', migration_params)
+
+        expect(result).not_to be_ok
+        expect(result.value.kind).to eq('puppetlabs.tasks/command-error')
+        # Bolt's own message is only "exit code 1"; the plan must carry
+        # puppet-backup's output so the operator sees why it failed.
+        expect(result.value.msg).to eq('Restoring the ca and ssl certificates failed on primary: Error: Unable to restore the backup: archive is corrupt')
+        expect(result.value.details).to include('exit_code' => 1)
+        expect(call_log).not_to include(a_string_including(recovery_marker))
+        expect(call_log).not_to include('/opt/puppetlabs/bin/puppetserver ca storage --import')
+      end
+
+      it 'reports only the end of a long puppet-backup output', valid_cluster: true, stops_at_certs_restore: true do
+        call_log = []
+        long_error = ('x' * 1000) + ' the actual reason'
+        stub_commands(call_log, ca_restore_check: 'restore', certs_restore_error: long_error)
+
+        result = run_plan('peadm::restore', migration_params)
+
+        expect(result).not_to be_ok
+        detail = result.value.msg.delete_prefix('Restoring the ca and ssl certificates failed on primary: ')
+        expect(detail).to start_with('...')
+        expect(detail).to end_with(' the actual reason')
+        expect(detail.length).to eq(603)
+      end
+
+      it 'does not try to recover when the CA is not restored into the database', valid_cluster: true, stops_at_certs_restore: true do
+        call_log = []
+        stub_commands(call_log, ca_restore_check: 'skip', certs_restore_error: signer_error)
+
+        result = run_plan('peadm::restore', migration_params)
+
+        expect(result).not_to be_ok
+        expect(result.value.kind).to eq('puppetlabs.tasks/command-error')
+        expect(result.value.msg).to include("Cannot sign offline with the CA database's signer")
+        expect(call_log).not_to include(a_string_including(recovery_marker))
+      end
     end
 
     # PE-47009: a permanent failure (wrong console_password) is tagged with

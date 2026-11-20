@@ -209,13 +209,94 @@ plan peadm::restore (
     if getvar('recovery_opts.ca') {
       out::message('# Restoring ca and ssl certificates')
   # lint:ignore:strict_indent
-      run_command(@("CMD"/L), $primary_target)
+      # The result and its Error stay local to the lambda: apply() below passes
+      # every plan variable to the catalog, and an Error value can't be
+      # serialized into it.
+      with(run_command(@("CMD"/L), $primary_target, { '_catch_errors' => true })) |$certs_restore| {
         /opt/puppetlabs/bin/puppet-backup restore \
           --scope=certs \
           --tempdir=${shellquote($recovery_directory)} \
           --force \
           ${shellquote($recovery_directory)}/ca/pe_backup-*tgz
         | CMD
+        unless $certs_restore.ok {
+          # Bolt's error message is only "The command failed with exit code N";
+          # the reason is in puppet-backup's own output. Make it a single valid
+          # UTF-8 line without colour codes, so it can be matched and reported.
+          $certs_restore_output = regsubst(peadm::sanitize_log_text(
+            "${certs_restore.first.value['stdout']} ${certs_restore.first.value['stderr']}", 1048576
+          ), /\e\[[0-9;]*m/, '', 'G').strip
+          $certs_restore_detail = $certs_restore_output.length > 600 ? {
+            true    => "...${certs_restore_output[-600, 600]}",
+            default => $certs_restore_output,
+          }
+
+          # From puppetserver-ca 2.8.9 (PE 2025.12.2 / 2026.0.2), `puppetserver ca
+          # generate --ca-client` on a database-backed CA signs through the CA
+          # database with psql (sslmode=verify-full, sslrootcert=ssl/certs/ca.pem).
+          # The certs restore's last step, `puppet-infrastructure configure`, uses
+          # it to issue this primary's host certificate after it has already put
+          # the backup's CA on disk, while PostgreSQL still presents this host's
+          # certificate from the CA being replaced (a restore onto a new primary).
+          # The TLS check fails and no host certificate is issued. puppet-backup's
+          # own pre-checks refuse a database-CA backup unless bootstrap.cfg names
+          # the database service, so that can't be changed beforehand. Instead,
+          # re-run that last step with the database CA storage service commented
+          # out of bootstrap.cfg: the host certificate is then signed from the
+          # restored CA files, as before 2.8.9. puppet-backup leaves the agent
+          # disabled when it fails, so enable it first.
+          #
+          # That configure run (and the `configure --no-recover` below) writes
+          # bootstrap.cfg for the filesystem backend, because the database
+          # backend setting isn't in user_data.conf yet. The puppet_runonce below
+          # applies the classification's ca_storage_backend and puts it back on
+          # the database backend, and the `ca storage --import` after it records
+          # the new certificate in the CA database. If any step of the script
+          # fails, bootstrap.cfg is put back as it was, so a re-run still
+          # detects the database CA.
+          #
+          # TODO PE-48630: remove once puppetserver-ca can sign offline during a
+          # restore onto a host whose PostgreSQL certificate is from another CA.
+          if $ca_restore_check == 'restore' and $certs_restore_output =~ /Cannot sign offline with the CA database's signer/ {
+            out::message('# The certs restore could not sign through the CA database; configuring again with the restored CA files')
+            out::message("puppet-backup reported: ${certs_restore_detail}")
+            run_command(@("CMD"/L$), $primary_target)
+              set -eu
+              bootstrap=/etc/puppetlabs/puppetserver/bootstrap.cfg
+              /opt/puppetlabs/bin/puppet agent --enable
+              cp -p "\$bootstrap" "\$bootstrap.peadm-restore"
+              # Any failure from here on puts bootstrap.cfg back as it was.
+              trap 'mv -f "\$bootstrap.peadm-restore" "\$bootstrap"; echo "\$bootstrap was put back" >&2' EXIT
+              sed -i 's|^\([[:space:]]*puppetlabs\.services\.ca\.database-storage-service/\)|# peadm-restore: \1|' "\$bootstrap"
+              if ! grep -q '^# peadm-restore: ' "\$bootstrap"; then
+                echo "Could not comment the database CA storage service out of \$bootstrap" >&2
+                exit 1
+              fi
+              rc=0
+              /opt/puppetlabs/bin/puppet-infrastructure configure \
+                --detailed-exitcodes --no-noop --no-recover \
+                --pe-environment "\$(/opt/puppetlabs/bin/puppet config print environment)" || rc=\$?
+              if [ "\$rc" -ne 0 ] && [ "\$rc" -ne 2 ]; then
+                echo "puppet-infrastructure configure exited \$rc" >&2
+                exit "\$rc"
+              fi
+              hostcert="\$(/opt/puppetlabs/bin/puppet config print hostcert)"
+              if [ ! -s "\$hostcert" ]; then
+                echo "puppet-infrastructure configure succeeded but issued no host certificate (\$hostcert)" >&2
+                exit 1
+              fi
+              trap - EXIT
+              rm -f "\$bootstrap.peadm-restore"
+              | CMD
+          } else {
+            fail_plan(
+              "Restoring the ca and ssl certificates failed on ${primary_target.peadm::certname()}: ${certs_restore_detail}",
+              $certs_restore.first.error.kind,
+              { 'exit_code' => $certs_restore.first.value['exit_code'] },
+            )
+          }
+        }
+      }
     }
 
     if getvar('recovery_opts.code') {
