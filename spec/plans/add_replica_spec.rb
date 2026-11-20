@@ -199,4 +199,201 @@ describe 'peadm::add_replica' do
       expect(result.value.msg).not_to match(%r{RBAC token})
     end
   end
+
+  # PE-48202: replacing a replica that is still running. PE's
+  # `puppet infrastructure forget` can't drop the primary's pglogical
+  # replication slots while the old replica holds them open, so it fails
+  # part-way and leaves the old replica pinned in PE HA Replica next to the
+  # new one. The plan stops the old replica first when it can reach it.
+  describe 'replacing a configured replica' do
+    let(:params) { { 'primary_host' => 'primary', 'replica_host' => 'replica' } }
+    let(:old_replica) { 'old-replica.example.com' }
+    let(:cfg) { { 'params' => { 'primary_host' => 'primary', 'replica_host' => old_replica } } }
+    let(:certdata) do
+      {
+        'certificate-exists' => true,
+        'certname'           => 'primary',
+        'extensions'         => { '1.3.6.1.4.1.34380.1.1.9813' => 'A' },
+        'dns-alt-names'      => []
+      }
+    end
+    # pxp-agent too: forgetting another node makes PE run Puppet on every
+    # infrastructure node through the orchestrator, which would restart the
+    # old replica's pe-postgresql and reopen the replication slots.
+    let(:stop_command) { "systemctl stop puppet.service pxp-agent.service 'pe-*'" }
+
+    # Records every command as [target names, command] in run order. Commands
+    # in `failing` return a failed result with `failure_output` on stderr.
+    def stub_plan(call_log, failing: [], failure_output: 'Error: boom', any_message: true)
+      allow_apply
+      allow_any_task
+      # BoltSpec's catch-all out::message stub takes every call, so a test that
+      # expects a specific message must not install it.
+      allow_any_out_message if any_message
+      allow_any_out_verbose
+      allow_task('peadm::code_manager_enabled').always_return({ 'code_manager_enabled' => true })
+      allow_task('peadm::get_peadm_config').always_return(cfg)
+      allow_task('peadm::cert_data').always_return(certdata)
+      allow_task('peadm::cert_valid_status').always_return({ 'certificate-status' => 'valid', 'reason' => 'ok' })
+      allow_task('package').always_return({ 'status' => 'uninstalled' })
+      allow_any_command.return do |targets:, command:, **|
+        call_log << [targets.map(&:name), command]
+        results = targets.map do |target|
+          if failing.any? { |f| command.include?(f) }
+            Bolt::Result.new(target, value: { 'stdout' => '', 'stderr' => failure_output, 'exit_code' => 1 },
+                                     error: { 'msg' => 'The command failed with exit code 1',
+                                              'kind' => 'puppetlabs.tasks/command-error', 'details' => { 'exit_code' => 1 } })
+          else
+            Bolt::Result.new(target, value: { 'stdout' => '' })
+          end
+        end
+        Bolt::ResultSet.new(results)
+      end
+    end
+
+    def index_of(call_log, command, target = nil)
+      call_log.index { |names, cmd| cmd.include?(command) && (target.nil? || names.include?(target)) }
+    end
+
+    it 'stops the old replica before forgetting it' do
+      call_log = []
+      stub_plan(call_log)
+
+      expect(run_plan('peadm::add_replica', params)).to be_ok
+
+      stop = index_of(call_log, stop_command, old_replica)
+      # A Puppet run already in progress (e.g. started by the orchestrator)
+      # would start the services again after they were stopped, so the agent
+      # is disabled and any run in progress waited for, first.
+      script = call_log[stop][1]
+      disable = script.index('/opt/puppetlabs/bin/puppet agent --disable')
+      wait = script.index('agent_catalog_run_lockfile')
+      expect(disable).not_to be_nil
+      expect(wait).not_to be_nil
+      expect(disable).to be < wait
+      expect(wait).to be < script.index(stop_command)
+      # Shell variables reach the shell literally (heredoc escaping), and only a
+      # live Puppet process named in the lockfile is waited for or ended.
+      expect(script).to include('--section agent', 'kill -0 "$pid"', %q(tr '\\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null | grep -q 'puppet agent'), 'while running && [ "$n" -lt 120 ]')
+      forget = index_of(call_log, "puppet infrastructure forget #{old_replica}", 'primary')
+      forget_new = index_of(call_log, 'puppet infrastructure forget replica', 'primary')
+      expect(stop).not_to be_nil
+      expect(forget).not_to be_nil
+      expect(stop).to be < forget
+      # The old replica first, straight after stopping it: nothing in between
+      # may restart its services.
+      expect(forget).to be < forget_new
+      expect(forget).to eq(stop + 1)
+    end
+
+    context 'when the inventory names the old replica by another name' do
+      let(:inventory_data) do
+        { 'targets' => [{ 'name' => '10.0.0.9', 'vars' => { 'certname' => old_replica } }] }
+      end
+
+      it 'stops it through the inventory target with that certname' do
+        call_log = []
+        stub_plan(call_log)
+
+        expect(run_plan('peadm::add_replica', params)).to be_ok
+
+        expect(index_of(call_log, stop_command, '10.0.0.9')).not_to be_nil
+        expect(index_of(call_log, stop_command, old_replica)).to be_nil
+      end
+    end
+
+    it 'carries on and forgets it when the old replica cannot be reached' do
+      call_log = []
+      expect_out_message.with_params("Couldn't stop the services on the previous replica #{old_replica}; continuing as if it were down.")
+      stub_plan(call_log, failing: [stop_command], any_message: false)
+
+      expect(run_plan('peadm::add_replica', params)).to be_ok
+
+      expect(index_of(call_log, "puppet infrastructure forget #{old_replica}", 'primary')).not_to be_nil
+    end
+
+    it 'warns with the output when forgetting the old replica fails' do
+      call_log = []
+      expect_out_message.with_params(
+        "WARN  Couldn't forget the previous replica #{old_replica} " \
+        '(ERROR: replication slot "pgl_pe_rbac_x" is active for PID 42). Its old certificate may not have been revoked. ' \
+        "Next: run 'puppet infrastructure forget #{old_replica}' on the primary, then check 'puppetserver ca list --all'.",
+      )
+      stub_plan(call_log, failing: ["puppet infrastructure forget #{old_replica}"],
+                          failure_output: 'ERROR: replication slot "pgl_pe_rbac_x" is active for PID 42',
+                          any_message: false)
+
+      expect(run_plan('peadm::add_replica', params)).to be_ok
+    end
+
+    it 'keeps the end of a long forget output, without colour codes, in the warning' do
+      call_log = []
+      reason = 'ERROR: replication slot "pgl_pe_rbac_x" is active for PID 42'
+      long_output = "\e[0;32mInfo: #{'x' * 600}\e[0m #{reason}"
+      kept = ('x' * 600 + ' ' + reason)[-500, 500]
+      expect_out_message.with_params(
+        "WARN  Couldn't forget the previous replica #{old_replica} (...#{kept}). Its old certificate may not have been revoked. " \
+        "Next: run 'puppet infrastructure forget #{old_replica}' on the primary, then check 'puppetserver ca list --all'.",
+      )
+      stub_plan(call_log, failing: ["puppet infrastructure forget #{old_replica}"], failure_output: long_output, any_message: false)
+
+      expect(run_plan('peadm::add_replica', params)).to be_ok
+    end
+
+    context 'when the configured replica is the primary' do
+      let(:cfg) { { 'params' => { 'primary_host' => 'primary', 'replica_host' => 'primary' } } }
+
+      it "doesn't stop the primary's services" do
+        call_log = []
+        stub_plan(call_log)
+
+        expect(run_plan('peadm::add_replica', params)).to be_ok
+
+        expect(index_of(call_log, stop_command)).to be_nil
+      end
+    end
+
+    context 'when no replica is configured yet' do
+      let(:cfg) { { 'params' => { 'primary_host' => 'primary', 'replica_host' => nil } } }
+
+      it 'stops nothing' do
+        call_log = []
+        stub_plan(call_log)
+
+        expect(run_plan('peadm::add_replica', params)).to be_ok
+
+        expect(index_of(call_log, stop_command)).to be_nil
+      end
+    end
+
+    context 'when the configured replica is the new replica host' do
+      let(:cfg) { { 'params' => { 'primary_host' => 'primary', 'replica_host' => 'replica' } } }
+
+      it 'does not stop the new replica' do
+        call_log = []
+        stub_plan(call_log)
+
+        expect(run_plan('peadm::add_replica', params)).to be_ok
+
+        expect(index_of(call_log, stop_command)).to be_nil
+      end
+    end
+
+    context 'when the new replica is named by IP in the inventory' do
+      let(:params) { { 'primary_host' => 'primary', 'replica_host' => '10.0.0.7' } }
+      let(:inventory_data) do
+        { 'targets' => [{ 'name' => '10.0.0.7', 'vars' => { 'certname' => 'new-replica.example.com' } }] }
+      end
+
+      it 'forgets the new replica host by its certname' do
+        call_log = []
+        stub_plan(call_log)
+
+        expect(run_plan('peadm::add_replica', params)).to be_ok
+
+        expect(index_of(call_log, 'puppet infrastructure forget new-replica.example.com', 'primary')).not_to be_nil
+        expect(index_of(call_log, 'puppet infrastructure forget 10.0.0.7')).to be_nil
+      end
+    end
+  end
 end

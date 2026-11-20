@@ -82,6 +82,8 @@ The plan performs the following steps:
 
 Please see the notes on these scenarios in [automated Recovery](automated_recovery.md#recover-from-failed-primary-puppet-server)
 
+When `add_replica` replaces a replica that is still running and reachable, it first disables the old replica's Puppet agent, waits for any Puppet run in progress to finish, and stops its `puppet`, `pxp-agent` and `pe-*` services, so that PE can forget it and drop its replication slots. The old replica is left with its services stopped and its agent disabled (reason: "peadm::add_replica is replacing this replica"). To reuse that host, reinstall it or run `puppet agent --enable` there.
+
 ## Known Issue on Puppet Enterprise Version 2021.x
 
 When running the add_replica plan to replace an existing replica in your infrastructure, the old replica will not be removed as expected. Instead, both the old and new primary replicas will be present.
