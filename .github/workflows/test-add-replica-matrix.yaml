@@ -41,8 +41,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture: [standard, standard-with-dr, large, extra-large]
-        version: [2023.8.14, 2025.12.2, 2026.0.2]
+        # SCRATCH (PE-48202): narrowed to the failing combinations to capture diagnostics.
+        # Never merge this narrowing.
+        architecture: [standard-with-dr]
+        version: [2023.8.14, 2026.0.2]
         image: [almalinux-cloud/almalinux-8]
     steps:
       - name: Checkout Source
@@ -104,6 +106,15 @@ jobs:
           bundle exec bolt plan run peadm_spec::verify_replica -v \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \
             --modulepath spec/fixtures/modules
+      - name: SCRATCH diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        timeout-minutes: 10
+        run: |
+          bundle exec bolt script run .github/scratch/replica-diag.sh \
+            --inventoryfile spec/fixtures/litmus_inventory.yaml \
+            --targets "$(yq -r '.groups[].targets[] | select(.vars.role == "primary") | .name' spec/fixtures/litmus_inventory.yaml)" \
+            --no-host-key-check --stream
       - name: Tear down test cluster
         if: ${{ always() }}
         continue-on-error: true
