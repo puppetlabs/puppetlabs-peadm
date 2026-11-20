@@ -77,9 +77,28 @@ plan peadm::add_replica(
 
     # Keep only the Boolean: the apply() below passes every plan variable to
     # the catalog, and a failed result's Error value can't be serialized.
-    $old_replica_stopped = run_command(
-      "systemctl stop puppet.service pxp-agent.service 'pe-*'", $old_replica_target, _catch_errors => true
-    ).ok
+    # A Puppet run already in progress (one the orchestrator started survives
+    # stopping pxp-agent) would start the services again, so disable the agent,
+    # wait up to 10 minutes for a run in progress to finish (end it if it
+    # hasn't), then stop the services. The old replica's agent is left
+    # disabled: it is being replaced.
+# lint:ignore:strict_indent
+    $old_replica_stopped = run_command(@("CMD"/L$), $old_replica_target, _catch_errors => true).ok
+      /opt/puppetlabs/bin/puppet agent --disable 'peadm::add_replica is replacing this replica' || true
+      lock="\$(/opt/puppetlabs/bin/puppet config print agent_catalog_run_lockfile --section agent)"
+      # A lockfile left by a run that died names a PID that is gone (or reused,
+      # for example by a PE service after a reboot), so only wait for, and only
+      # end, a live Puppet agent run ("puppet agent: applying configuration").
+      running() {
+        pid="\$(cat "\$lock" 2>/dev/null)" && [ -n "\$pid" ] && kill -0 "\$pid" 2>/dev/null \
+          && tr '\\0' ' ' < "/proc/\$pid/cmdline" 2>/dev/null | grep -q 'puppet agent'
+      }
+      n=0
+      while running && [ "\$n" -lt 120 ]; do sleep 5; n=\$((n + 1)); done
+      if running; then echo "Ending Puppet run \$pid, still running after 10 minutes"; kill "\$pid"; sleep 5; fi
+      systemctl stop puppet.service pxp-agent.service 'pe-*'
+      | CMD
+# lint:endignore
     unless $old_replica_stopped {
       out::message("Couldn't stop the services on the previous replica ${old_replica_certname}; continuing as if it were down.")
     }

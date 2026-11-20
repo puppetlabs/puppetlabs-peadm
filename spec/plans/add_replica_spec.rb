@@ -262,6 +262,19 @@ describe 'peadm::add_replica' do
       expect(run_plan('peadm::add_replica', params)).to be_ok
 
       stop = index_of(call_log, stop_command, old_replica)
+      # A Puppet run already in progress (e.g. started by the orchestrator)
+      # would start the services again after they were stopped, so the agent
+      # is disabled and any run in progress waited for, first.
+      script = call_log[stop][1]
+      disable = script.index('/opt/puppetlabs/bin/puppet agent --disable')
+      wait = script.index('agent_catalog_run_lockfile')
+      expect(disable).not_to be_nil
+      expect(wait).not_to be_nil
+      expect(disable).to be < wait
+      expect(wait).to be < script.index(stop_command)
+      # Shell variables reach the shell literally (heredoc escaping), and only a
+      # live Puppet process named in the lockfile is waited for or ended.
+      expect(script).to include('--section agent', 'kill -0 "$pid"', %q(tr '\\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null | grep -q 'puppet agent'), 'while running && [ "$n" -lt 120 ]')
       forget = index_of(call_log, "puppet infrastructure forget #{old_replica}", 'primary')
       forget_new = index_of(call_log, 'puppet infrastructure forget replica', 'primary')
       expect(stop).not_to be_nil
