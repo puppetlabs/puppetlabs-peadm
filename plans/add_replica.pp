@@ -38,10 +38,16 @@ plan peadm::add_replica(
   # Get current peadm config to ensure we forget active replicas
   $peadm_config = run_task('peadm::get_peadm_config', $primary_target).first.value
 
-  # Make list of all possible replicas, configured and provided
+  # Make list of all possible replicas, configured and provided. PE knows
+  # nodes by certname, so use the new replica's certname rather than the
+  # target name it was given (an IP address, in CI's inventory).
+  $new_replica_certname = $replica_target.peadm::certname()
+  $old_replica_certname = $peadm_config['params']['replica_host']
+  # The configured (old) replica comes first, so it is forgotten straight
+  # after its services are stopped below.
   $replicas = peadm::flatten_compact([
-      $replica_host,
-      $peadm_config['params']['replica_host'],
+      $old_replica_certname,
+      $new_replica_certname,
   ]).unique
 
   $certdata = run_task('peadm::cert_data', $primary_target).first.value
@@ -52,9 +58,55 @@ plan peadm::add_replica(
   # to Handle the case where there are no alt-names in the primary's certdata.
   $dns_alt_names = [$replica_target.peadm::certname()] + (pick($certdata['dns-alt-names'], []) - $certdata['certname'])
 
-  # This has the effect of revoking the node's certificate, if it exists
+  # When an existing replica is being replaced and is still running, its
+  # pglogical subscriptions keep the primary's replication slots active, and
+  # `puppet infrastructure forget` can't drop them: it fails part-way and
+  # leaves the old replica pinned in PE HA Replica next to the new one. Stop
+  # the old replica's agent and PE services first if it can be reached: by
+  # the inventory target with its certname, or else by the certname itself.
+  # pxp-agent too, because forgetting a node makes PE run Puppet on every
+  # infrastructure node through the orchestrator, which would restart the old
+  # replica's pe-postgresql. If it can't be reached, it's already down, which
+  # is what forget expects.
+  # Never the primary: a stale pin naming it (after a failover, say) must not
+  # stop the primary's own services.
+  if $old_replica_certname =~ String[1] and !($old_replica_certname in [$new_replica_certname, $primary_target.peadm::certname()]) {
+    $old_replica_target = get_targets('all').filter |$target| {
+      $target.peadm::certname() == $old_replica_certname
+    }.then |$matches| { $matches[0] }.lest || { get_target($old_replica_certname) }
+
+    # Keep only the Boolean: the apply() below passes every plan variable to
+    # the catalog, and a failed result's Error value can't be serialized.
+    $old_replica_stopped = run_command(
+      "systemctl stop puppet.service pxp-agent.service 'pe-*'", $old_replica_target, _catch_errors => true
+    ).ok
+    unless $old_replica_stopped {
+      out::message("Couldn't stop the services on the previous replica ${old_replica_certname}; continuing as if it were down.")
+    }
+  }
+
+  # This has the effect of revoking the node's certificate, if it exists.
+  # A failure leaves the new replica usable, so it's a warning
+  # (documentation/decisions/0001-failures-that-may-end-with-warnings.md, row 5).
   $replicas.each |$replica| {
-    run_command("/opt/puppetlabs/bin/puppet infrastructure forget ${replica}", $primary_target, _catch_errors => true)
+    $forget = run_command("/opt/puppetlabs/bin/puppet infrastructure forget ${replica}", $primary_target, _catch_errors => true)
+    unless $forget.ok {
+      # forget prints a long preamble before its errors: keep the end of its
+      # output, without colour codes.
+      $forget_raw = "${forget.first.value['stdout']} ${forget.first.value['stderr']}"
+      $forget_text = regsubst(peadm::sanitize_log_text($forget_raw, 1048576), /\e\[[0-9;]*m/, '', 'G').strip
+      $forget_output = $forget_text.length > 500 ? {
+        true    => "...${forget_text[-500, 500]}",
+        default => $forget_text,
+      }
+# lint:ignore:strict_indent
+      out::message(@("MSG"/L))
+        WARN  Couldn't forget the previous replica ${replica} (${forget_output}). Its old \
+        certificate may not have been revoked. Next: run 'puppet infrastructure forget ${replica}' \
+        on the primary, then check 'puppetserver ca list --all'.
+        |-MSG
+# lint:endignore
+    }
   }
 
   run_plan('peadm::subplans::component_install', $replica_target,
