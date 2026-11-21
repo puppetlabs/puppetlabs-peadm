@@ -80,6 +80,7 @@ before they get overwritten by a classification reassertion
 * [`download`](#download): Download a file using curl
 * [`enable_replica`](#enable_replica): Execute the enable replica puppet command
 * [`filesize`](#filesize): Return the size of a file in bytes
+* [`get_code_manager_config`](#get_code_manager_config): Run on a PE primary to read the Code Manager settings of the PE Master node group, for peadm::migrate.
 * [`get_group_rules`](#get_group_rules): Run on a PE primary node to return the rules currently applied to the PE Infrastructure Agent group
 * [`get_peadm_config`](#get_peadm_config): Run on a PE primary node to return the currently configured PEAdm parameters
 * [`get_psql_version`](#get_psql_version): Run on a PE PSQL node to return the major version of the PSQL server currently installed
@@ -1409,6 +1410,12 @@ Data type: `String`
 
 Path to the file to return the size of
 
+### <a name="get_code_manager_config"></a>`get_code_manager_config`
+
+Run on a PE primary to read the Code Manager settings of the PE Master node group, for peadm::migrate.
+
+**Supports noop?** false
+
 ### <a name="get_group_rules"></a>`get_group_rules`
 
 Run on a PE primary node to return the rules currently applied to the PE Infrastructure Agent group
@@ -2629,7 +2636,9 @@ Default value: `'1y'`
 
 ### <a name="peadm--migrate"></a>`peadm::migrate`
 
-Migrate a PE installation to new host(s)
+Migrates a PE installation to new host(s). The old primary's Code Manager
+r10k settings (remote, deploy key, known hosts, git provider) are carried
+across to the new primary; see documentation/migration/migrating.md.
 
 #### Parameters
 
@@ -2646,6 +2655,7 @@ The following parameters are available in the `peadm::migrate` plan:
 * [`download_mode`](#-peadm--migrate--download_mode)
 * [`pe_installer_source`](#-peadm--migrate--pe_installer_source)
 * [`upgrade_pe_installer_source`](#-peadm--migrate--upgrade_pe_installer_source)
+* [`keep_backup`](#-peadm--migrate--keep_backup)
 
 ##### <a name="-peadm--migrate--old_primary_host"></a>`old_primary_host`
 
@@ -2751,6 +2761,19 @@ Optional URL of the PE installer for upgrade_version. Only used when
 upgrade_version is set. Defaults to the standard public source.
 
 Default value: `undef`
+
+##### <a name="-peadm--migrate--keep_backup"></a>`keep_backup`
+
+Data type: `Boolean`
+
+The migration backup holds PE secrets. It is downloaded to the Bolt
+project's downloads/backup directory and uploaded to /tmp on the new
+primary, where it is also unpacked. When the migration succeeds, those
+copies are deleted unless this is true. The old primary's copy is always
+kept, and the plan says where it is. If the migration fails, nothing is
+deleted.
+
+Default value: `false`
 
 ### <a name="peadm--modify_certificate"></a>`peadm::modify_certificate`
 
