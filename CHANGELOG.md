@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.41.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.41.0) - 2026-11-23
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.40.0...v3.41.0)
+
+### Added
+
+- Adding support for PE 2023.8.14, 2025.12.2, and 2026.0.2 [#762](https://github.com/puppetlabs/puppetlabs-peadm/pull/762) ([CharithaDunuwille](https://github.com/CharithaDunuwille))
+- (PE-47680) Decide which failures may end a run with warnings [#756](https://github.com/puppetlabs/puppetlabs-peadm/pull/756) ([mehul-jain1](https://github.com/mehul-jain1))
+- (PE-47661) Add download_mode and installer sources to peadm::migrate [#753](https://github.com/puppetlabs/puppetlabs-peadm/pull/753) ([amitkarsale](https://github.com/amitkarsale))
+
+### Fixed
+
+- (PE-48201) Stop read_file running its path as code or printing broken JSON [#760](https://github.com/puppetlabs/puppetlabs-peadm/pull/760) ([amitkarsale](https://github.com/amitkarsale))
+- (PE-47521) Make code_manager fail when file-sync or cache-flush calls fail [#759](https://github.com/puppetlabs/puppetlabs-peadm/pull/759) ([mehul-jain1](https://github.com/mehul-jain1))
+- (PE-48037) Use bigger VM for FIPS 2023.8.13 standard-with-dr [#758](https://github.com/puppetlabs/puppetlabs-peadm/pull/758) ([Jade2153](https://github.com/Jade2153))
+- (PE-47662) Carry the PE license to the new primary in peadm::migrate [#757](https://github.com/puppetlabs/puppetlabs-peadm/pull/757) ([Jade2153](https://github.com/Jade2153))
+- (PE-47864) Assert the migrated primary's certificate is registered and not revoked [#738](https://github.com/puppetlabs/puppetlabs-peadm/pull/738) ([jonathannewman](https://github.com/jonathannewman))
+- (PE-47489) Back up and restore service secret keys in recovery backups [#733](https://github.com/puppetlabs/puppetlabs-peadm/pull/733) ([amitkarsale](https://github.com/amitkarsale))
+- (PE-47488) Count status per node so DR replicas can't mask primary failures [#732](https://github.com/puppetlabs/puppetlabs-peadm/pull/732) ([amitkarsale](https://github.com/amitkarsale))
+
 ## [v3.40.0](https://github.com/puppetlabs/puppetlabs-peadm/tree/v3.40.0) - 2026-11-05
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-peadm/compare/v3.39.0...v3.40.0)
