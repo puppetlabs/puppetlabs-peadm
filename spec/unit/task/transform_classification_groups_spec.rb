@@ -30,6 +30,27 @@ describe TransformClassificationGroups do
 
   let(:written_json) { [] }
 
+  def written_ids
+    JSON.parse(written_json.first).map { |g| g['id'] }
+  end
+
+  # Runs run! and returns [exit status, parsed _error] for a failing run.
+  def run_and_capture_error
+    status = nil
+    out = StringIO.new
+    previous_stdout = $stdout
+    $stdout = out
+    begin
+      task.run!
+    rescue SystemExit => e
+      status = e.status
+    ensure
+      $stdout = previous_stdout
+    end
+    expect(status).to eq(1), "expected run! to exit 1, got #{status.inspect}; stdout: #{out.string.inspect}"
+    [status, JSON.parse(out.string)['_error']]
+  end
+
   before(:each) do
     # Serialized on each read (not up front), so examples can tweak
     # source_groups/target_groups before calling the task.
@@ -128,16 +149,68 @@ describe TransformClassificationGroups do
   end
 
   # A group named 'PE Infrastructure' that isn't the real one (wrong parent,
-  # no puppet_enterprise class) must not be picked up.
-  it 'ignores a group that only has the PE Infrastructure name' do
+  # no puppet_enterprise class) must not be picked up as the infra group.
+  it 'ignores a group that only has the PE Infrastructure name when finding the infra group' do
     source_groups[0]['name'] = 'Renamed infra'
     source_groups << { 'id' => 'decoy', 'parent' => 'custom', 'name' => 'PE Infrastructure', 'classes' => {} }
+    # The target's infra group is renamed too, so the decoy doesn't clash
+    # with it (that case is covered by the name-conflict examples below).
+    target_groups[0]['name'] = 'Renamed infra'
 
     task.execute!
 
-    written = JSON.parse(written_json.first)
-    expect(written.map { |g| g['id'] }).to include('custom', 'decoy')
-    expect(written.map { |g| g['id'] }).not_to include('inf', 'inf-child', 'inf-grandchild')
+    expect(written_ids).to include('custom', 'decoy')
+    expect(written_ids).not_to include('inf', 'inf-child', 'inf-grandchild')
+  end
+
+  # The classifier rejects two groups with the same name and environment
+  # (422 uniqueness-violation), and import-hierarchy is all or nothing, so
+  # writing such a file would lose every restored group (PE-47659 review).
+  context 'when a kept source group has the same name and environment as a target PE Infrastructure group' do
+    before(:each) do
+      source_groups[0]['name'] = 'Renamed infra'
+      source_groups << { 'id' => 'decoy', 'parent' => 'custom', 'name' => 'PE Infrastructure', 'classes' => {} }
+    end
+
+    it 'raises a name conflict naming the group, and writes nothing' do
+      expect(File).not_to receive(:open)
+
+      expect { task.execute! }.to raise_error(described_class::ClassificationNameConflict) { |e|
+        expect(e.message).to include("'PE Infrastructure'")
+        expect(e.message).to include('source group decoy')
+        expect(e.message).to include('target group dr-inf')
+      }
+    end
+
+    it 'allows the same name in a different environment' do
+      source_groups.last['environment'] = 'development'
+      target_groups[0]['environment'] = 'production'
+
+      task.execute!
+
+      expect(written_ids).to include('decoy', 'dr-inf')
+    end
+
+    it 'reports the conflict as a Bolt _error with its own kind' do
+      expect(File).not_to receive(:open)
+      _status, error = run_and_capture_error
+
+      expect(error['kind']).to eq('peadm/classification-name-conflict')
+      expect(error['msg']).to include("'PE Infrastructure'")
+    end
+  end
+
+  # The All Nodes parent check: a nested group that has the puppet_enterprise
+  # class is not a candidate, so it is neither picked nor makes the lookup
+  # ambiguous.
+  it 'does not pick, or count as ambiguous, a nested group with the puppet_enterprise class' do
+    source_groups << { 'id' => 'nested-pe', 'parent' => 'custom', 'name' => 'Nested PE', 'classes' => pe_classes }
+    source_groups[0]['name'] = 'Renamed infra'
+
+    task.execute!
+
+    expect(written_ids).to include('custom', 'nested-pe')
+    expect(written_ids).not_to include('inf')
   end
 
   context 'when more than one top-level group carries the puppet_enterprise class' do
@@ -163,41 +236,84 @@ describe TransformClassificationGroups do
           "'Renamed infra' (inf), 'My PE Overrides' (extra).",
         )
         expect(e.message).to include('Remove the puppet_enterprise class')
+        expect(e.message).not_to include('then retry')
       }
     end
   end
 
-  it 'raises a clear error when the source has no PE Infrastructure group' do
+  it 'raises a clear error when the source has no PE Infrastructure group, saying how to fix the backup' do
     allow(File).to receive(:read).with('/src/classification_backup.json')
                                  .and_return([{ 'id' => 'custom', 'parent' => all_nodes, 'name' => 'My Custom Group', 'classes' => {} }].to_json)
+    expect(File).not_to receive(:open)
 
     expect { task.execute! }.to raise_error(described_class::InfraGroupNotFound) { |e|
       expect(e.message).to include(
         "Could not find the PE Infrastructure node group in the source cluster's classification backup (/src/classification_backup.json).",
       )
       expect(e.message).to include('directly under All Nodes that has the puppet_enterprise class')
+      # migrate can't simply be retried: the new primary is already installed.
+      expect(e.message).not_to include('then retry')
+      expect(e.message).to include('take a new backup (peadm::backup backup_type=migration)')
+      expect(e.message).to include("purge the old infrastructure nodes ('puppet node purge' on the new primary)")
+      expect(e.message).to include('copy it to the new primary')
+      # peadm::restore re-extracts the tarball, so editing the extracted file can't work.
+      expect(e.message).not_to include('edit ')
     }
   end
 
-  it 'raises a clear error when the target has no PE Infrastructure group' do
+  it 'raises a clear error when the target has no PE Infrastructure group, saying to fix it on the new primary' do
     target_groups[0]['classes'] = {}
+    expect(File).not_to receive(:open)
 
-    expect { task.execute! }.to raise_error(described_class::InfraGroupNotFound, %r{in the target cluster's current classification \(/work/classification_backup\.json\)})
+    expect { task.execute! }.to raise_error(described_class::InfraGroupNotFound) { |e|
+      expect(e.message).to include("in the target cluster's current classification (/work/classification_backup.json)")
+      expect(e.message).not_to include('then retry')
+      expect(e.message).to include('re-run peadm::restore restore_type=migration with the same backup')
+      expect(e.message).to include('purge the old infrastructure nodes', 'add_database, add_replica and upgrade', "'puppet agent --enable' on the new hosts")
+    }
+  end
+
+  # A classifier error body saved by backup_classification (401, 403, 500)
+  # is not a list of groups and must not be reported as a missing group.
+  context 'when a classification file is not a list of node groups' do
+    it 'raises an invalid-classification error quoting the start of the file' do
+      allow(File).to receive(:read).with('/work/classification_backup.json')
+                                   .and_return({ 'kind' => 'puppetlabs.rbac/user-unauthenticated', 'msg' => 'Route requires authentication' }.to_json)
+      expect(File).not_to receive(:open)
+
+      expect { task.execute! }.to raise_error(described_class::InvalidClassification) { |e|
+        expect(e.message).to include("the target cluster's current classification (/work/classification_backup.json)")
+        expect(e.message).to include('is not a list of node groups')
+        expect(e.message).to include('puppetlabs.rbac/user-unauthenticated')
+      }
+    end
+
+    it 'raises an invalid-classification error for a file that is not JSON' do
+      allow(File).to receive(:read).with('/src/classification_backup.json').and_return('<html>502 Bad Gateway</html>')
+      expect(File).not_to receive(:open)
+
+      expect { task.execute! }.to raise_error(described_class::InvalidClassification, %r{source cluster's classification backup.*not valid JSON.*502 Bad Gateway}m)
+    end
+
+    it 'reports it as a Bolt _error with its own kind' do
+      allow(File).to receive(:read).with('/work/classification_backup.json').and_return([1, 2].to_json)
+
+      _status, error = run_and_capture_error
+
+      expect(error['kind']).to eq('peadm/invalid-classification')
+      expect(error['msg']).to include('is not a list of node groups')
+    end
   end
 
   describe '#run!' do
-    it 'reports a missing PE Infrastructure group as a Bolt _error and exits 1' do
+    it 'reports a missing PE Infrastructure group as a Bolt _error and exits 1, writing nothing' do
       target_groups[0]['classes'] = {}
+      expect(File).not_to receive(:open)
 
-      exit_status = nil
-      expect {
-        begin
-          task.run!
-        rescue SystemExit => e
-          exit_status = e.status
-        end
-      }.to output(%r{"kind":"peadm/infra-group-not-found"}).to_stdout
-      expect(exit_status).to eq(1)
+      _status, error = run_and_capture_error
+
+      expect(error['kind']).to eq('peadm/infra-group-not-found')
+      expect(error['msg']).to include("Could not find the PE Infrastructure node group in the target cluster's current classification")
     end
 
     it 'writes the transformed file when the groups are found' do
