@@ -25,6 +25,8 @@ The plan accepts the following parameters:
 * _\<pe_installer_source\>_ - [Optional] URL of the PE installer for the old primary's PE version 
 * _\<upgrade_pe_installer_source\>_ - [Optional] URL of the PE installer for `upgrade_version` 
 
+* _\<keep_backup\>_ - [Optional] Keep the copies of the migration backup on the Bolt controller and the new primary after a successful migration. See [Migration backup](#migration-backup) 
+
 To perform a basic migration from one PE primary server to another run the following command: 
 ``` 
 bolt plan run peadm::migrate old_primary_host=\<old_primary_host\> new_primary_host=\<new_primary_host\> 
@@ -57,6 +59,8 @@ Please note, the optional parameters and values of the plan are as follows.
 | `upgrade_pe_installer_source` | `undef` | URL to download the PE installer from for `upgrade_version`. Only used when `upgrade_version` is set. By default the standard public source is used. |
 
 Both installer URLs must end in the standard file name, `puppet-enterprise-<version>-<platform>.tar.gz`, with no query string: `<version>` is the old primary's PE version for `pe_installer_source` and `upgrade_version` for `upgrade_pe_installer_source`, and `<platform>` is the new primary's platform. Before taking the backup, `migrate` checks the file names and checks that each installer can be downloaded from where it will be downloaded (the new hosts, or the Bolt machine with `download_mode=bolthost`), so a wrong URL or missing network access fails the plan before anything has changed. The download check is skipped when the Bolt machine runs Windows.
+
+| `keep_backup` | `false` | By default, the copies of the migration backup on the Bolt controller and the new primary are deleted when the migration succeeds. Set to `true` to keep them. See [Migration backup](#migration-backup). |
 
 ### Licenses
 
@@ -99,6 +103,35 @@ upgrade_pe_installer_source=https://mirror.example.com/pe/puppet-enterprise-2025
 ```
 
 **Note:** on a Windows Bolt machine, PEADM downloads the installer without checking the server's TLS certificate or the installer's signature. If you run Bolt on Windows, pre-stage installers you have verified, or use a Linux or macOS Bolt machine.
+
+### Migration backup
+
+`migrate` backs up the old primary with `peadm::backup` (`backup_type => migration`) and restores that backup on the new primary. The backup holds PE secrets, including the CA, so treat every copy of it as sensitive. There are three copies:
+
+* on the old primary, as `/tmp/pe-backup-<timestamp>.tar.gz`;
+* on the Bolt controller, in the Bolt project's `downloads/backup/<old primary>/` directory;
+* on the new primary, as `/tmp/pe-backup-<timestamp>.tar.gz`, which `peadm::restore` also unpacks to `/tmp/pe-backup-<timestamp>/`.
+
+The plan prints where each copy is as soon as they are made. When the migration succeeds, it deletes the copies on the Bolt controller and the new primary, and prints each one it removed. Set `keep_backup` to `true` to keep them; the plan then lists them again at the end. The old primary's copy is never deleted: the plan says where it is, so you can delete it or archive it somewhere safe. If the migration fails, nothing is deleted, so you can retry or clean up using the locations printed earlier.
+
+If a copy cannot be deleted, the migration has still finished, but the plan fails with the error kind `peadm/backup-cleanup-failed` and names each copy that is left. Delete them yourself.
+
+### Code Manager
+
+The new primary keeps the PE Master node group from its own install, not the old one, so `migrate` carries the old primary's Code Manager remote across. It reads these `puppet_enterprise::profile::master` settings from the old PE Master node group, as class parameters or, failing that, configuration data:
+
+* `r10k_remote`
+* `r10k_private_key`
+* `r10k_known_hosts`, taken from the old primary's `pe.conf` if the node group does not set it. PE's installer does not copy this setting from `pe.conf` into the node group, so a primary installed with `peadm::install`'s `r10k_known_hosts` has it only in `pe.conf`.
+* `r10k_git_provider`
+
+It passes them to `peadm::install` as `pe_conf_data`, so they are written to the new primary's `pe.conf` and PE configures Code Manager with them at install. If `r10k_private_key` is set, the key file is copied from the old primary to the same path on the new primary, through the Bolt project's `downloads` directory. Its directory is created if it does not exist, and the key is set to mode 0600; PE then gives it to the `pe-puppet` user at install. The local copy is deleted afterwards, whether or not the copy to the new primary works. If the run is interrupted, or the download itself fails, check `downloads/code-manager-key` in the Bolt project and delete anything left there.
+
+This happens before the backup. The plan stops if it cannot read the old PE Master node group, if any of the settings above has a value of the wrong type (the error names the setting, where it was read from and what was expected), or if the deploy key cannot be copied. Nothing has been backed up or installed at that point, though after a failed key copy the key or its directory may already be on the new primary. Fix the cause and run `migrate` again.
+
+Other Code Manager settings on the old PE Master node group are not carried across. These are the other `r10k_*` and `code_manager_*` settings of `puppet_enterprise::profile::master` (for example `r10k_proxy` or `r10k_postrun`), and any configuration data for `puppet_enterprise::master::code_manager` or `puppet_enterprise::master::code_management`. `code_manager_auto_configure` is the exception: `migrate` always turns Code Manager on. The plan prints a message beginning `Warning:` naming each setting it does not carry, and names them again when the migration finishes. Set them on the new primary after the migration. Apart from `r10k_known_hosts`, the old primary's `pe.conf` is not read for Code Manager settings: PE copies the ones it uses from `pe.conf` into the PE Master node group at install. Settings kept elsewhere, such as Hiera data in your control repository, are not read either. Hiera data in the control repository comes back with your code once you deploy it, if the remote carried across is that repository; check those settings after the first deploy.
+
+The plan's own messages name settings but do not print the remote URL, known hosts or git provider (a failed key copy names the key's path). The task that reads the settings returns them as sensitive values, which Bolt hides in its output, except with `--stream`, which prints the task's raw output first. The settings are then passed to `peadm::install` as plain text, as they would be if you supplied them to `peadm::install` yourself, so they can appear in `bolt-debug.log` and in `-v` output. If your r10k remote URL holds a credential, protect that log and any captured output, and avoid `--stream`.
 
 ## What exactly is migrated? 
  

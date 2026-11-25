@@ -135,6 +135,7 @@ jobs:
           cat spec/fixtures/litmus_inventory.yaml
       - name: Install PE on test cluster
         timeout-minutes: 120
+        # TODO PE-48754: no r10k_remote, so CI never tests that migrate carries Code Manager settings across.
         run: |
           bundle exec bolt plan run peadm_spec::install_test_cluster \
             --inventoryfile spec/fixtures/litmus_inventory.yaml \

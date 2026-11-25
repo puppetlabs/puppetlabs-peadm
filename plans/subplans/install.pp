@@ -208,6 +208,10 @@ plan peadm::subplans::install (
   # activity, ...) off the primary, but PE's replica profile always replicates
   # those from the primary node itself, so a DR replica would sync empty
   # databases and its console services would never start (PE-47384).
+  #
+  # pe_conf_data is merged last, so it wins over the keys set here:
+  # peadm::migrate relies on that to install the new primary with the old
+  # primary's Code Manager settings (PE-45912).
   $primary_pe_conf_data = {
     'console_admin_password'                                          => $console_password,
     'puppet_enterprise::puppet_master_host'                           => $primary_target.peadm::certname(),

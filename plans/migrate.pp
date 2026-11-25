@@ -1,5 +1,9 @@
 # @summary Migrate a PE installation to new host(s)
 #
+# Migrates a PE installation to new host(s). The old primary's Code Manager
+# r10k settings (remote, deploy key, known hosts, git provider) are carried
+# across to the new primary; see documentation/migration/migrating.md.
+#
 # @param old_primary_host
 #   The existing PE primary server that will be migrated from
 # @param new_primary_host
@@ -43,6 +47,13 @@
 # @param upgrade_pe_installer_source
 #   Optional URL of the PE installer for upgrade_version. Only used when
 #   upgrade_version is set. Defaults to the standard public source.
+# @param keep_backup
+#   The migration backup holds PE secrets. It is downloaded to the Bolt
+#   project's downloads/backup directory and uploaded to /tmp on the new
+#   primary, where it is also unpacked. When the migration succeeds, those
+#   copies are deleted unless this is true. The old primary's copy is always
+#   kept, and the plan says where it is. If the migration fails, nothing is
+#   deleted.
 plan peadm::migrate (
   Peadm::SingleTargetSpec $old_primary_host,
   Peadm::SingleTargetSpec $new_primary_host,
@@ -55,6 +66,7 @@ plan peadm::migrate (
   Peadm::Download_mode $download_mode = 'direct',
   Optional[Stdlib::HTTPSUrl] $pe_installer_source = undef,
   Optional[Stdlib::HTTPSUrl] $upgrade_pe_installer_source = undef,
+  Boolean $keep_backup = false,
 ) {
   # Log parameters for debugging. Do not add license_key_file/license_key_content
   # here: this prints values unmasked.
@@ -73,6 +85,7 @@ plan peadm::migrate (
     'upgrade_pe_installer_source' => $upgrade_pe_installer_source.then |$url| {
       $url.regsubst(/[?#].*\z/, '').split('/')[-1]
     },
+    'keep_backup' => $keep_backup,
   })
 
   # pre-migration checks
@@ -169,6 +182,118 @@ plan peadm::migrate (
     )
   }
 
+  # Code Manager settings (PE-45912). The new primary keeps the PE Master node
+  # group from its own install, so install it with the old primary's r10k
+  # settings and copy the deploy key across. This is done before the backup,
+  # so if it stops the plan, nothing has been backed up or installed. Messages
+  # never print the remote URL, known hosts or git provider (an r10k remote URL
+  # can hold a credential); only a failed key copy names the key's path.
+  $old_primary_target = get_targets($old_primary_host)[0]
+  # For messages: the hosts may be given as one-element lists, which would
+  # print with brackets.
+  $old_primary_name = $old_primary_target.peadm::certname()
+  $new_primary_name = get_targets($new_primary_host)[0].peadm::certname()
+  $old_primary_pe_conf = peadm::get_pe_conf($old_primary_target)
+  $code_manager_types = {
+    'r10k_remote'       => String[1],
+    # A file under /, with no '..' segment: the plan downloads, uploads and
+    # chmods this path as root.
+    'r10k_private_key'  => Pattern[/\A(?!.*\/\.\.(?:\/|\z))\/[^\0\n]*[^\/\0\n]\z/],
+    'r10k_known_hosts'  => Array[Hash],
+    'r10k_git_provider' => Enum['rugged', 'shellgit'],
+  }
+  $code_manager_expected = {
+    'r10k_remote'       => 'a non-empty string',
+    'r10k_private_key'  => "an absolute file path with no '..'",
+    'r10k_known_hosts'  => 'an array of hashes',
+    'r10k_git_provider' => "'rugged' or 'shellgit'",
+  }
+  $code_manager_read = run_task('peadm::get_code_manager_config', $old_primary_target, '_catch_errors' => true).first
+  $code_manager_read_error = if !$code_manager_read.ok {
+    $code_manager_read.error.message
+  # Bolt wraps _sensitive in Sensitive when it parses real task output; unwrap
+  # also accepts a plain value.
+  } elsif !($code_manager_read['_sensitive'].unwrap =~ Struct[{ 'settings' => Hash[Enum[$code_manager_types.keys], Data] }]
+    and $code_manager_read['not_carried'] =~ Array[String[1]]) {
+    'peadm::get_code_manager_config returned output in an unexpected form'
+  }
+  if $code_manager_read_error {
+    $task_error_kind = $code_manager_read.ok ? { true => undef, default => $code_manager_read.error.kind }
+    fail_plan(@("MSG"/L), 'peadm/code-manager-settings-unreadable', { 'task_error_kind' => $task_error_kind })
+      Could not read the Code Manager settings of the PE Master node group on ${old_primary_name}. \
+      Nothing has been changed: fix the cause, then run peadm::migrate again. \
+      Error: ${code_manager_read_error}
+      |- MSG
+  }
+  # PE's installer copies r10k_remote, r10k_private_key and r10k_git_provider
+  # from pe.conf into the PE Master group, but not r10k_known_hosts
+  # (pe_install::install::classification in PE 2025.12). So a primary
+  # installed with peadm::install's r10k_known_hosts has it only in pe.conf.
+  $pe_master_settings = $code_manager_read['_sensitive'].unwrap['settings']
+  $pe_conf_path = '/etc/puppetlabs/enterprise/conf.d/pe.conf'
+  $code_manager_settings = ({
+      'r10k_known_hosts' => $old_primary_pe_conf['puppet_enterprise::profile::master::r10k_known_hosts'],
+  } + $pe_master_settings).filter |$_setting, $value| {
+    !($value =~ Variant[Undef, String[0, 0], Collection[0, 0]])
+  }
+  $invalid_settings = $code_manager_types.keys.filter |$setting| {
+    $setting in $code_manager_settings and !($code_manager_settings[$setting] =~ $code_manager_types[$setting])
+  }
+  unless empty($invalid_settings) {
+    $invalid_descriptions = $invalid_settings.map |$setting| {
+      $source = $setting in $pe_master_settings ? { true => 'the PE Master node group', default => $pe_conf_path }
+      "puppet_enterprise::profile::master::${setting} in ${source} (expected ${code_manager_expected[$setting]})"
+    }.join(', ')
+    fail_plan(@("MSG"/L), 'peadm/invalid-code-manager-settings')
+      These Code Manager settings on ${old_primary_name} have values of the wrong type: ${invalid_descriptions}. \
+      Nothing has been changed: fix them on ${old_primary_name}, then run peadm::migrate again.
+      |- MSG
+  }
+  $code_manager_not_carried = $code_manager_read['not_carried']
+  $code_manager_not_carried.each |$setting| {
+    out::message(@("MSG"/L))
+      Warning: ${setting} is set on the old primary's PE Master node group but is not carried across. \
+      Set it on the new primary after the migration.
+      |- MSG
+  }
+
+  # The deploy key goes through the Bolt project's downloads directory, like
+  # the backup below. The local copy is deleted whether or not the copy to the
+  # new primary works.
+  $deploy_key = $code_manager_settings['r10k_private_key']
+  if $deploy_key {
+    $key_download = download_file($deploy_key, 'code-manager-key', $old_primary_target, '_catch_errors' => true).first
+    if $key_download.ok {
+      # As peadm::install does. PE then gives the key to pe-puppet and, for
+      # /etc/puppetlabs/puppetserver/ssh, sets the directory's owner and mode.
+      $key_dir = run_command("mkdir -p ${shellquote(dirname($deploy_key))}", $new_primary_host, '_catch_errors' => true).first
+      $key_upload = $key_dir.ok ? {
+        true    => upload_file($key_download['path'], $deploy_key, $new_primary_host, '_catch_errors' => true).first,
+        default => $key_dir,
+      }
+      $key_copy = $key_upload.ok ? {
+        true    => run_command("chmod 0600 ${shellquote($deploy_key)}", $new_primary_host, '_catch_errors' => true).first,
+        default => $key_upload,
+      }
+      file::delete($key_download['path'])
+    } else {
+      $key_copy = $key_download
+    }
+    unless $key_copy.ok {
+      # A failed command's error message only gives the exit code; its output
+      # says why.
+      $key_copy_output = $key_copy['merged_output'] ? {
+        String[1] => ": ${key_copy['merged_output'].strip}",
+        default   => '',
+      }
+      fail_plan(@("MSG"/L), 'peadm/deploy-key-copy-failed')
+        Could not copy the Code Manager deploy key ${deploy_key} from ${old_primary_name} to ${new_primary_name}. \
+        Nothing has been backed up or installed yet, but the key or its directory may already be on ${new_primary_name}: \
+        fix the cause, then run peadm::migrate again. Error: ${key_copy.error.message}${key_copy_output}
+        |- MSG
+    }
+  }
+
   $backup_file = run_plan('peadm::backup', $old_primary_host, {
       backup_type => 'migration',
   })
@@ -178,12 +303,21 @@ plan peadm::migrate (
 
   $backup_filename = basename($backup_file['path'])
   $remote_backup_path = "/tmp/${backup_filename}"
+  # Where peadm::restore unpacks it.
+  $remote_backup_directory = "/tmp/${basename($backup_filename, '.tar.gz')}"
 
   upload_file($download_path, $remote_backup_path, $new_primary_host)
 
-  $old_primary_target = get_targets($old_primary_host)[0]
-  $old_primary_password = peadm::get_pe_conf($old_primary_target)['console_admin_password']
-  $old_pe_conf = run_task('peadm::get_peadm_config', $old_primary_target).first.value
+  # Say where every copy of the backup is now, so the output has it even if a
+  # later step fails. Nothing is deleted then (PE-48753).
+  $backup_copies = "${old_primary_name}:${backup_file['path']}, this machine:${download_path}, ${new_primary_name}:${remote_backup_path}"
+  out::message(@("MSG"/L))
+    The migration backup holds PE secrets. Copies: ${backup_copies}. \
+    If the migration succeeds, the last two are deleted unless keep_backup is true.
+    |- MSG
+
+  $old_primary_password = $old_primary_pe_conf['console_admin_password']
+  $old_peadm_config = run_task('peadm::get_peadm_config', $old_primary_target).first.value
 
   # An operator-supplied license (never blank, checked above) wins; otherwise
   # carry the old primary's license across. Reads use _catch_errors because an
@@ -251,8 +385,11 @@ plan peadm::migrate (
       code_manager_auto_configure => true,
       download_mode               => $download_mode,
       pe_installer_source         => $pe_installer_source,
-      version                     => $old_pe_conf['pe_version'],
+      version                     => $old_peadm_config['pe_version'],
       license_key_content         => $install_license_content,
+      pe_conf_data                => Hash($code_manager_settings.map |$setting, $value| {
+          ["puppet_enterprise::profile::master::${setting}", $value]
+      }),
   })
 
   run_plan('peadm::restore', {
@@ -263,12 +400,12 @@ plan peadm::migrate (
   })
 
   $node_types = {
-    'primary_host'             => $old_pe_conf['params']['primary_host'],
-    'replica_host'             => $old_pe_conf['params']['replica_host'],
-    'primary_postgresql_host'  => $old_pe_conf['params']['primary_postgresql_host'],
-    'replica_postgresql_host'  => $old_pe_conf['params']['replica_postgresql_host'],
-    'compilers'                => $old_pe_conf['params']['compilers'],
-    'legacy_compilers'         => $old_pe_conf['params']['legacy_compilers'],
+    'primary_host'             => $old_peadm_config['params']['primary_host'],
+    'replica_host'             => $old_peadm_config['params']['replica_host'],
+    'primary_postgresql_host'  => $old_peadm_config['params']['primary_postgresql_host'],
+    'replica_postgresql_host'  => $old_peadm_config['params']['replica_postgresql_host'],
+    'compilers'                => $old_peadm_config['params']['compilers'],
+    'legacy_compilers'         => $old_peadm_config['params']['legacy_compilers'],
   }
 
   $nodes_to_purge = $node_types.reduce([]) |$memo, $entry| {
@@ -314,6 +451,7 @@ plan peadm::migrate (
 
   # provision a replica if one is provided
   if $replica_host {
+    # TODO PE-48752: add_replica does not copy the Code Manager deploy key to the replica.
     run_plan('peadm::add_replica', {
         primary_host => $new_primary_host,
         replica_host => $replica_host,
@@ -340,5 +478,61 @@ plan peadm::migrate (
   # progress output of a long run.
   unless $install_license_content {
     out::message('Warning: migration finished but no license key was installed on the new primary')
+  }
+  unless empty($code_manager_not_carried) {
+    out::message(@("MSG"/L))
+      Warning: migration finished, but these Code Manager settings on the old primary were not carried across: \
+      ${code_manager_not_carried.join(', ')}. Set them on the new primary.
+      |- MSG
+  }
+
+  # The migration has succeeded, so delete the backup copies it made (PE-48753).
+  # The old primary's copy is the operator's to keep or delete.
+  if $keep_backup {
+    out::message(@("MSG"/L))
+      Kept the migration backup copies, as keep_backup is true: ${backup_copies}. \
+      They hold PE secrets: delete them once you no longer need them.
+      |- MSG
+  } else {
+    $local_cleanup = catch_errors() || { file::delete($download_path) }
+    if $local_cleanup =~ Error {
+      $local_cleanup_failure = ["this machine:${download_path} (${local_cleanup.message})"]
+    } else {
+      out::message("Removed the migration backup copy ${download_path} on this machine.")
+      $local_cleanup_failure = []
+    }
+
+    $remote_cleanup = run_command(
+      "rm -rf ${shellquote($remote_backup_path)} ${shellquote($remote_backup_directory)}",
+      $new_primary_host,
+      '_catch_errors' => true,
+    ).first
+    if $remote_cleanup.ok {
+      out::message("Removed the migration backup copies ${remote_backup_path} and ${remote_backup_directory} on ${new_primary_name}.")
+      $remote_cleanup_failure = []
+    } else {
+      # A failed command's error message only gives the exit code; its output
+      # says why.
+      $remote_cleanup_output = $remote_cleanup['merged_output'] ? {
+        String[1] => ": ${remote_cleanup['merged_output'].strip}",
+        default   => '',
+      }
+      $remote_cleanup_failure = [
+        "${new_primary_name}:${remote_backup_path} and ${remote_backup_directory} (${remote_cleanup.error.message}${remote_cleanup_output})",
+      ]
+    }
+
+    out::message(@("MSG"/L))
+      The old primary's migration backup is still at ${old_primary_name}:${backup_file['path']}. \
+      It holds PE secrets: delete it, or archive it somewhere safe.
+      |- MSG
+
+    $cleanup_failures = $local_cleanup_failure + $remote_cleanup_failure
+    unless empty($cleanup_failures) {
+      fail_plan(@("MSG"/L), 'peadm/backup-cleanup-failed')
+        Migration finished, but these migration backup copies could not be deleted: ${cleanup_failures.join('; ')}. \
+        They hold PE secrets: delete them yourself.
+        |- MSG
+    }
   }
 }
