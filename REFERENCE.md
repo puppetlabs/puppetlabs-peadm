@@ -2208,7 +2208,7 @@ Data type: `Peadm::SingleTargetSpec`
 
 ##### <a name="-peadm--backup_ca--output_directory"></a>`output_directory`
 
-Data type: `Optional[String]`
+Data type: `Optional[Stdlib::Unixpath]`
 
 
 
