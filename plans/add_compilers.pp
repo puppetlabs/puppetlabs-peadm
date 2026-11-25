@@ -6,12 +6,14 @@
 # @param dns_alt_names _ An array of strings, where each string is a comma-separated list of DNS alt names for the compilers. Order matters; if a compiler doesn't need dns_alt_names, use "undef" as string.
 # @param primary_host _ The hostname and certname of the primary Puppet server
 # @param primary_postgresql_host _ The hostname and certname of the PE-PostgreSQL server with availability group $avail_group_letter
+# @param console_password Optional parameter accepted for params.json compatibility. Unused.
 plan peadm::add_compilers(
   Enum['A', 'B'] $avail_group_letter = 'A' ,
   Optional[Array[String[1]]] $dns_alt_names = undef,
   TargetSpec $compiler_hosts,
   Peadm::SingleTargetSpec $primary_host,
   Optional[Peadm::SingleTargetSpec] $primary_postgresql_host = undef,
+  Optional[String] $console_password = undef,
 ) {
   $compiler_targets          = peadm::get_targets($compiler_hosts)
   $primary_target            = peadm::get_targets($primary_host, 1)

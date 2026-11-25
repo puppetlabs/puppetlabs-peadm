@@ -44,7 +44,7 @@ describe 'peadm::convert' do
     it 'single primary no dr valid' do
       allow_any_task
 
-      expect(run_plan('peadm::convert', params)).to be_ok
+      expect(run_plan('peadm::convert', params.merge('console_password' => 'existing-password'))).to be_ok
     end
 
     it 'updates PE Master rules before the first Puppet run on compilers' do

@@ -5,6 +5,7 @@
 # runs. It is necessary to do it this way because node_manager requires a
 # configuration file, located in $confdir. But, when Bolt applies a catalog, it
 # does so using a unique, dynamic $confdir.
+# @param primary_host The primary server target.
 class peadm::setup::node_manager_yaml (
   String $primary_host
 ) {

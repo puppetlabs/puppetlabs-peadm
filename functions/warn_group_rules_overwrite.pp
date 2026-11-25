@@ -7,6 +7,7 @@
 # aborting whatever protective reassertion step called this.
 #
 # @param target the target to fetch the PE Infrastructure Agent group's rules from
+# @return The result of logging the rules or a fallback warning.
 function peadm::warn_group_rules_overwrite(Peadm::SingleTargetSpec $target) {
   $rules_result = run_task('peadm::get_group_rules', $target, { '_catch_errors' => true }).first
   if $rules_result.ok {

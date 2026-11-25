@@ -2,6 +2,10 @@
 #
 # Useful for excluding PCP when it's not appopriate
 #
+# @param nodes Targets whose transports should be checked.
+# @param transport Transport protocol to reject, such as pcp.
+# @param message Explanation included in the failure when a target uses the rejected transport.
+# @return The checked targets when none uses the rejected transport; otherwise raises an error.
 function peadm::fail_on_transport (
   TargetSpec $nodes,
   String     $transport,

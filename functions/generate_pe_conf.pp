@@ -4,6 +4,7 @@
 #   A hash of settings to set in the config file. Any keys that are set to
 #   undef will not be included in the config file.
 #
+# @return The JSON configuration with undef settings omitted.
 function peadm::generate_pe_conf (
   Hash $settings,
 )  >> String {

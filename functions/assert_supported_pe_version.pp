@@ -1,8 +1,9 @@
 # @summary Assert that the PE version given is supported by PEAdm
-# @return [Boolean] true if the version is supported, raise error otherwise
-# @param [Optional[String]] the version number to check. May be undef or a
+# @return A hash containing the supported flag; raises unless unsupported versions are permitted.
+# @param version The version number to check. May be undef or a
 #   malformed string when derived from a tarball filename (e.g. via
 #   'pe_installer_source') that didn't split into a version segment as expected.
+# @param permit_unsafe_versions Allow valid version strings outside the supported release range.
 function peadm::assert_supported_pe_version (
   Optional[String] $version,
   Boolean $permit_unsafe_versions = false,
@@ -21,8 +22,8 @@ function peadm::assert_supported_pe_version (
   }
 
   $oldest = '2019.7'
-  $newest = '2026.0'
-  $supported = ($version =~ SemVerRange(">= ${oldest} <= ${newest}"))
+  $newest = '2027' # exclusive upper bound: supports every release before this major version
+  $supported = ($version =~ SemVerRange(">= ${oldest} < ${newest}"))
 
   if $permit_unsafe_versions {
 # lint:ignore:strict_indent
@@ -48,7 +49,7 @@ function peadm::assert_supported_pe_version (
       For PE versions older than ${oldest}, please check to see if version 1.x \
       or 2.x of the puppetlabs-peadm module supports your PE version.
 
-      For PE versions newer than ${newest}, check to see if a new version of peadm \
+      For PE versions ${newest} and newer, check to see if a new version of peadm \
       exists which supports that version of PE.
 
       | REASON

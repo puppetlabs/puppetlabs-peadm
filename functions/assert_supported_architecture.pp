@@ -1,4 +1,5 @@
 # @summary Assert that the architecture given is a supported one
+# @return A hash containing supported, architecture, and disaster-recovery values; raises for invalid layouts.
 function peadm::assert_supported_architecture (
   TargetSpec                 $primary_host,
   Variant[TargetSpec, Undef] $replica_host = undef,

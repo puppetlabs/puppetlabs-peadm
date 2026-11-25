@@ -36,6 +36,14 @@ describe 'peadm::assert_supported_pe_version' do
       is_expected.to run.with_params('2035.0.0').and_raise_error(Puppet::ParseError, %r{This\ version\ of\ the})
     end
 
+    it 'rejects the first version of the next major release (upper bound is < 2027)' do
+      is_expected.to run.with_params('2027.0.0').and_raise_error(Puppet::ParseError, %r{2027\ and\ newer})
+    end
+
+    it 'rejects a prerelease of the next major release' do
+      is_expected.to run.with_params('2027.0.0-rc1').and_raise_error(Puppet::ParseError, %r{This\ version\ of\ the})
+    end
+
     it 'rejects PE versions that are too old' do
       is_expected.to run.with_params('2018.1.9').and_raise_error(Puppet::ParseError, %r{This\ version\ of\ the})
     end
@@ -50,6 +58,12 @@ describe 'peadm::assert_supported_pe_version' do
       is_expected.to run.with_params('2025.1.0').and_return({ 'supported' => true })
     end
 
+    ['2026.0.0', '2026.0.2', '2026.99.0'].each do |version|
+      it "accepts any release in the 2026 major version (#{version})" do
+        is_expected.to run.with_params(version).and_return({ 'supported' => true })
+      end
+    end
+
     it 'accepts a version in the middle' do
       is_expected.to run.with_params('2019.8.7').and_return({ 'supported' => true })
     end
@@ -62,6 +76,10 @@ describe 'peadm::assert_supported_pe_version' do
 
     it 'accepts PE versions that are too new' do
       is_expected.to run.with_params('2035.0.0', true).and_return({ 'supported' => false })
+    end
+
+    it 'accepts the first version of the next major release as unsupported' do
+      is_expected.to run.with_params('2027.0.0', true).and_return({ 'supported' => false })
     end
 
     it 'accepts PE versions that are in the supported range' do

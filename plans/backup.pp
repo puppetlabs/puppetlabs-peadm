@@ -4,7 +4,7 @@
 # @param backup_type Currently, the recovery and custom backup types are supported
 # @param backup A hash of custom backup options, see the peadm::recovery_opts_default() function for the default values
 # @param output_directory The directory to place the backup in
-# @example 
+# @example Back up the primary
 #   bolt plan run peadm::backup -t primary1.example.com
 #
 plan peadm::backup (

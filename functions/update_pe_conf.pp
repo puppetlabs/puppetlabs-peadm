@@ -1,6 +1,7 @@
 # @summary Update the pe.conf file on a target with the provided hash
-# @param target [Bolt::Target] The target to update the pe.conf file on
-# @param updated_pe_conf_hash [Hash] The hash to update the pe.conf file with
+# @param target The target to update the pe.conf file on
+# @param updated_pe_conf_hash The hash to update the pe.conf file with
+# @return The result of writing the configuration file to the target.
 function peadm::update_pe_conf(Target $target, Hash $updated_pe_conf_hash) {
   # Convert the updated hash back to a pretty JSON string
   $updated_pe_conf_content = stdlib::to_json_pretty($updated_pe_conf_hash)
