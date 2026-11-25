@@ -25,6 +25,8 @@
 #   classifier groups it manages do not pin the primary's certname as the
 #   puppetdb database host. Leave unset for the default on-prem topology.
 #
+# @param node_group_environment environment for the PEADM specific node groups, if not set it will be gathered from pe.conf or production
+#
 plan peadm::subplans::configure (
   # Standard
   Peadm::SingleTargetSpec           $primary_host,
@@ -51,7 +53,8 @@ plan peadm::subplans::configure (
 
   # Other
   String           $stagingdir                   = '/tmp',
-  Enum['running', 'stopped'] $final_agent_state  = 'running'
+  Enum['running', 'stopped'] $final_agent_state  = 'running',
+  String[1] $node_group_environment = peadm::get_node_group_environment($primary_host),
 ) {
   # TODO: get and validate PE version
 
@@ -115,6 +118,7 @@ plan peadm::subplans::configure (
       internal_compiler_a_pool_address => $internal_compiler_a_pool_address,
       internal_compiler_b_pool_address => $internal_compiler_b_pool_address,
       cloud_database_host              => $cloud_database_host,
+      node_group_environment           => $node_group_environment,
       require                          => Class['peadm::setup::node_manager_yaml'],
     }
   }
