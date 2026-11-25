@@ -3,11 +3,11 @@
   "parameters": {
     "source_directory": {
       "type": "String",
-      "description": "Location of Source node group yaml file"
+      "description": "Directory holding the source cluster's classification_backup.json"
     },
     "working_directory": {
       "type": "String",
-      "description": "Location of target node group yaml file and where to create the transformed file"
+      "description": "Directory holding the target cluster's classification_backup.json, where transformed_classification.json is written"
     }
   },
   "input_method": "stdin",

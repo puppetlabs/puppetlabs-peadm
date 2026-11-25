@@ -1865,13 +1865,13 @@ Transform the user groups from a source backup to a list of groups on the target
 
 Data type: `String`
 
-Location of Source node group yaml file
+Directory holding the source cluster's classification_backup.json
 
 ##### `working_directory`
 
 Data type: `String`
 
-Location of target node group yaml file and where to create the transformed file
+Directory holding the target cluster's classification_backup.json, where transformed_classification.json is written
 
 ### <a name="update_pe_master_rules"></a>`update_pe_master_rules`
 
